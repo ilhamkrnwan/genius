@@ -17,6 +17,10 @@
     "build:user": "bun --filter @genius-unu/user build",
     "build:admin": "bun --filter @genius-unu/admin build",
     "build:backend": "bun --filter @genius-unu/backend build",
-    "typecheck": "bun --filter '*' typecheck"
+    "typecheck": "bun --filter '*' typecheck",
+    "db:push": "bun --filter @genius-unu/backend db:push",
+    "db:generate": "bun --filter @genius-unu/backend db:generate",
+    "db:studio": "bun --filter @genius-unu/backend db:studio",
+    "db:seed": "bun --filter @genius-unu/backend db:seed"
   }
 }
