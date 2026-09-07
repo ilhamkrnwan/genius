@@ -16,7 +16,7 @@ export const reflectionRoutes = new Elysia({
   // POST /api/reflections — Mahasiswa kirim kuesioner evaluasi harian (+25 XP)
   .post(
     "/",
-    async ({ body, user, set }) => {
+    async ({ body, user, set }: any) => {
       const participantId = body.participantId || user?.userId;
       const { day, ratingFasilitas, ratingMateri, ratingBuddy, essayInsight } = body;
 

@@ -263,7 +263,7 @@ export const teamRoutes = new Elysia({
   // POST /api/teams/:id/captain — Submitting & Setting Team Captain (Ketua Tim dari Peserta)
   .post(
     "/:id/captain",
-    async ({ params, body, set }) => {
+    async ({ params, body, set }: any) => {
       const { captainId } = body;
 
       if (captainId) {
@@ -327,7 +327,7 @@ export const teamRoutes = new Elysia({
   // POST /api/teams — Create team
   .post(
     "/",
-    async ({ body, user, set }) => {
+    async ({ body, user, set }: any) => {
       if (user?.role !== "ADMIN") {
         set.status = 403;
         return { success: false, error: { code: "FORBIDDEN", message: "Admin permission required" } };
@@ -366,7 +366,7 @@ export const teamRoutes = new Elysia({
   // PUT /api/teams/:id — Update team
   .put(
     "/:id",
-    async ({ params, body, user, set }) => {
+    async ({ params, body, user, set }: any) => {
       if (user?.role !== "ADMIN") {
         set.status = 403;
         return { success: false, error: { code: "FORBIDDEN", message: "Admin permission required" } };
@@ -417,7 +417,7 @@ export const teamRoutes = new Elysia({
   // POST /api/teams/batch-delete — Delete multiple teams and cascade relations
   .post(
     "/batch-delete",
-    async ({ body, user, set }) => {
+    async ({ body, user, set }: any) => {
       if (user?.role !== "ADMIN") {
         set.status = 403;
         return { success: false, error: { code: "FORBIDDEN", message: "Admin permission required" } };
@@ -439,7 +439,7 @@ export const teamRoutes = new Elysia({
   // POST /api/teams/batch-status — Batch update status (ACTIVE / INACTIVE)
   .post(
     "/batch-status",
-    async ({ body, user, set }) => {
+    async ({ body, user, set }: any) => {
       if (user?.role !== "ADMIN") {
         set.status = 403;
         return { success: false, error: { code: "FORBIDDEN", message: "Admin permission required" } };
@@ -462,7 +462,7 @@ export const teamRoutes = new Elysia({
   // POST /api/teams/:id/members — Add member to team
   .post(
     "/:id/members",
-    async ({ params, body, user, set }) => {
+    async ({ params, body, user, set }: any) => {
       if (user?.role !== "ADMIN") {
         set.status = 403;
         return { success: false, error: { code: "FORBIDDEN", message: "Admin permission required" } };
@@ -498,7 +498,7 @@ export const teamRoutes = new Elysia({
   // POST /api/teams/:id/batch-members — Batch assign participants to team
   .post(
     "/:id/batch-members",
-    async ({ params, body, user, set }) => {
+    async ({ params, body, user, set }: any) => {
       if (user?.role !== "ADMIN") {
         set.status = 403;
         return { success: false, error: { code: "FORBIDDEN", message: "Admin permission required" } };

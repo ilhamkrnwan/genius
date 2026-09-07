@@ -28,7 +28,7 @@ export const stageRoutes = new Elysia({
 
   .post(
     "/",
-    async ({ body }) => {
+    async ({ body }: any) => {
       const [stage] = await db.insert(stages).values({
         name: body.name,
         description: body.description,
@@ -51,7 +51,7 @@ export const stageRoutes = new Elysia({
 
   .put(
     "/:id",
-    async ({ params, body, set }) => {
+    async ({ params, body, set }: any) => {
       const updates: Record<string, unknown> = { updatedAt: new Date() };
       if (body.name) updates.name = body.name;
       if (body.description !== undefined) updates.description = body.description;

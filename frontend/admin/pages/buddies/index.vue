@@ -990,7 +990,7 @@ async function openResetPasswordModal(b: any) {
     confirmText: "Ya, Reset Password",
     cancelText: "Batal",
     variant: "warning",
-    icon: "key",
+    icon: "shield",
   });
   if (!confirmed) return;
 

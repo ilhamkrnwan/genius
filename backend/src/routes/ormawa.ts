@@ -256,7 +256,7 @@ export const ormawaRoutes = new Elysia({
   // POST /api/ormawa/booths — Admin buat stan Ormawa baru
   .post(
     "/booths",
-    async ({ body, user, set }) => {
+    async ({ body, user, set }: any) => {
       const code = body.code.toUpperCase().trim();
       const qrCode = (body.qrCode || `ORMAWA-QR-${code.replace(/[^A-Z0-9]/g, "-")}-UNU2026`).trim();
 
@@ -332,7 +332,7 @@ export const ormawaRoutes = new Elysia({
   // PUT /api/ormawa/booths/:id — Admin perbarui data stan Ormawa
   .put(
     "/booths/:id",
-    async ({ params, body, set }) => {
+    async ({ params, body, set }: any) => {
       const updates: Record<string, any> = {};
       if (body.name) updates.name = body.name.trim();
       if (body.shortName !== undefined) updates.shortName = body.shortName ? body.shortName.trim() : null;
@@ -423,7 +423,7 @@ export const ormawaRoutes = new Elysia({
   // POST /api/ormawa/booths/batch-delete — Admin hapus banyak stan Ormawa
   .post(
     "/booths/batch-delete",
-    async ({ body, set }) => {
+    async ({ body, set }: any) => {
       const boothIds = body.boothIds;
       if (!boothIds || boothIds.length === 0) {
         set.status = 400;
@@ -454,7 +454,7 @@ export const ormawaRoutes = new Elysia({
   // POST /api/ormawa/booths/batch-status — Admin aktif/nonaktifkan banyak stan
   .post(
     "/booths/batch-status",
-    async ({ body, set }) => {
+    async ({ body, set }: any) => {
       const { boothIds, isActive } = body;
       if (!boothIds || boothIds.length === 0) {
         set.status = 400;
@@ -486,7 +486,7 @@ export const ormawaRoutes = new Elysia({
   // POST /api/ormawa/scan — Mahasiswa scan QR stan UKM (+75 XP capped 10 stan)
   .post(
     "/scan",
-    async ({ body, user, set }) => {
+    async ({ body, user, set }: any) => {
       const participantId = body.participantId || user?.userId;
       const qrCode = (body.qrCode || (body as any).qrToken || "").trim();
 

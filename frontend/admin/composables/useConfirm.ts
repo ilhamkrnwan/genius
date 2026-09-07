@@ -2,7 +2,8 @@ import { ref } from "vue";
 
 export interface ConfirmOptions {
   title: string;
-  description: string;
+  description?: string;
+  message?: string;
   confirmText?: string;
   cancelText?: string;
   variant?: "danger" | "warning" | "info" | "primary";
@@ -33,6 +34,7 @@ export function useConfirm() {
       icon: "alert",
       loading: false,
       ...opts,
+      description: opts.description || opts.message || "Apakah Anda yakin?",
     };
     isOpen.value = true;
     isBusy.value = false;
@@ -41,6 +43,8 @@ export function useConfirm() {
       resolvePromise = resolve;
     });
   }
+
+  const ask = show;
 
   function handleConfirm() {
     isOpen.value = false;
@@ -65,6 +69,7 @@ export function useConfirm() {
     isBusy,
     options,
     show,
+    ask,
     handleConfirm,
     handleCancel,
   };

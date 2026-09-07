@@ -21,7 +21,7 @@ export const scoreRoutes = new Elysia({
   // Bisa di-hit oleh modul game, scan QR, booth, buddy, atau curl langsung (menerima UUID atau NIM)
   .post(
     "/award",
-    async ({ body, user, set }) => {
+    async ({ body, user, set }: any) => {
       const { participantId, amount, reason, sourceType, teamId, stageId, gameSessionId } = body;
 
       if (!amount || amount === 0) {
@@ -155,7 +155,7 @@ export const scoreRoutes = new Elysia({
   // Alias /add-xp
   .post(
     "/add-xp",
-    async (context) => {
+    async (context: any) => {
       const { body, user, set } = context;
       const { participantId, amount, reason, sourceType, teamId, stageId, gameSessionId } = body;
 
@@ -286,7 +286,7 @@ export const scoreRoutes = new Elysia({
   // POST /api/scores — Submit game or activity score
   .post(
     "/",
-    async ({ body, user, set }) => {
+    async ({ body, user, set }: any) => {
       if (!user) {
         set.status = 401;
         return { success: false, error: { code: "UNAUTHORIZED", message: "Not authenticated" } };
@@ -469,7 +469,7 @@ export const scoreRoutes = new Elysia({
   // POST /api/scores/buddy-bonus — Award buddy bonus within budget
   .post(
     "/buddy-bonus",
-    async ({ body, user, set }) => {
+    async ({ body, user, set }: any) => {
       if (!user) {
         set.status = 401;
         return { success: false, error: { code: "UNAUTHORIZED", message: "Not authenticated" } };
@@ -561,7 +561,7 @@ export const scoreRoutes = new Elysia({
   // POST /api/scores/bonus — Generic bonus endpoint
   .post(
     "/bonus",
-    async ({ body, user }) => {
+    async ({ body, user }: any) => {
       const [tx] = await db
         .insert(scoreTransactions)
         .values({
@@ -596,7 +596,7 @@ export const scoreRoutes = new Elysia({
   // POST /api/scores/correction — Admin manual score adjustment (preserves ledger integrity)
   .post(
     "/correction",
-    async ({ body, user }) => {
+    async ({ body, user }: any) => {
       const [tx] = await db
         .insert(scoreTransactions)
         .values({
@@ -638,7 +638,7 @@ export const scoreRoutes = new Elysia({
   // POST /api/scores/bulk-correction — Admin mass adjustment for multiple participants
   .post(
     "/bulk-correction",
-    async ({ body, user }) => {
+    async ({ body, user }: any) => {
       const { participantIds, teamId, amount, reason, stageId } = body;
 
       const inserts = participantIds.map((pId) => ({

@@ -373,8 +373,8 @@ export const userRoutes = new Elysia({
   // POST /api/users — Create single user
   .post(
     "/",
-    async ({ body, set }) => {
-      const existing = await db
+    async ({ body, set }: any) => {
+      const [existing] = await db
         .select()
         .from(users)
         .where(eq(users.username, body.username))
@@ -436,7 +436,7 @@ export const userRoutes = new Elysia({
   // POST /api/users/bulk-import — Bulk import participants / users from CSV/JSON
   .post(
     "/bulk-import",
-    async ({ body }) => {
+    async ({ body }: { body: any }) => {
       const { items, defaultPassword = "genius2026", defaultRole = "PARTICIPANT" } = body;
       const defaultHash = await hashPassword(defaultPassword);
 
@@ -561,7 +561,7 @@ export const userRoutes = new Elysia({
   // POST /api/users/batch-assign-team — Batch assign multiple participants/buddies to a team
   .post(
     "/batch-assign-team",
-    async ({ body }) => {
+    async ({ body }: { body: any }) => {
       const { userIds, teamId, buddyRole } = body;
 
       if (!userIds || userIds.length === 0) {
@@ -601,7 +601,7 @@ export const userRoutes = new Elysia({
   // POST /api/users/batch-delete — Delete multiple users and their relations in cascade
   .post(
     "/batch-delete",
-    async ({ body, set }) => {
+    async ({ body, set }: { body: any; set: any }) => {
       const { userIds } = body;
       if (!userIds || userIds.length === 0) {
         return { success: true, count: 0 };
@@ -619,7 +619,7 @@ export const userRoutes = new Elysia({
   // POST /api/users/batch-status — Batch update status (ACTIVE / INACTIVE)
   .post(
     "/batch-status",
-    async ({ body, set }) => {
+    async ({ body, set }: { body: any; set: any }) => {
       const { userIds, status } = body;
       if (!userIds || userIds.length === 0) {
         return { success: true, count: 0 };
@@ -638,7 +638,7 @@ export const userRoutes = new Elysia({
   // POST /api/users/batch-reset-password — Batch reset password for users
   .post(
     "/batch-reset-password",
-    async ({ body, set }) => {
+    async ({ body, set }: { body: any; set: any }) => {
       const { userIds, password = "genius2026" } = body;
       if (!userIds || userIds.length === 0) {
         return { success: true, count: 0 };
@@ -658,7 +658,7 @@ export const userRoutes = new Elysia({
   // POST /api/users/:id/reset-password — Quick password reset
   .post(
     "/:id/reset-password",
-    async ({ params, body, set }) => {
+    async ({ params, body, set }: { params: any; body: any; set: any }) => {
       const newPassword = body.password || "genius2026";
       const passwordHash = await hashPassword(newPassword);
 
@@ -685,7 +685,7 @@ export const userRoutes = new Elysia({
   // POST /api/users/:id/assign-buddy — Assign / Reassign a Buddy to a specific team
   .post(
     "/:id/assign-buddy",
-    async ({ params, body, set }) => {
+    async ({ params, body, set }: { params: any; body: any; set: any }) => {
       const { teamId, buddyRole = "PRIMARY" } = body;
 
       const [user] = await db
@@ -749,7 +749,7 @@ export const userRoutes = new Elysia({
   // PUT /api/users/:id — Update user
   .put(
     "/:id",
-    async ({ params, body, set }) => {
+    async ({ params, body, set }: { params: any; body: any; set: any }) => {
       const updates: Record<string, unknown> = {
         updatedAt: new Date(),
       };
@@ -822,7 +822,7 @@ export const userRoutes = new Elysia({
   // POST /api/users/:id/award-title — Award a title & optionally upgrade character tier
   .post(
     "/:id/award-title",
-    async ({ params, body, set }) => {
+    async ({ params, body, set }: { params: any; body: any; set: any }) => {
       const { title, upgradeTier } = body;
 
       const [user] = await db

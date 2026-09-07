@@ -229,6 +229,7 @@ export interface StampRecord {
 }
 
 export interface Participant {
+  id?: string;
   name: string;
   nim: string;
   prodi: string;
@@ -239,6 +240,7 @@ export interface Participant {
   stamps: Record<string, StampRecord>;
   groupId?: string;
   groupName?: string;
+  teamId?: string;
   isRegistered?: boolean;
 }
 

@@ -62,7 +62,7 @@ export const systemRoutes = new Elysia({
   // PUT /api/system/settings — Update pengaturan event oleh Admin
   .put(
     "/settings",
-    async ({ body }) => {
+    async ({ body }: any) => {
       currentSettings = {
         ...currentSettings,
         ...body,
@@ -98,7 +98,7 @@ export const systemRoutes = new Elysia({
   // POST /api/system/freeze-leaderboard — Bekukan leaderboard panggung menjelang Awarding
   .post(
     "/freeze-leaderboard",
-    async ({ body }) => {
+    async ({ body }: any) => {
       const message = body?.freezeMessage || "Klasemen telah dibekukan panitia panggung menjelang Pengumuman Juara!";
       
       currentSettings.isLeaderboardFrozen = true;

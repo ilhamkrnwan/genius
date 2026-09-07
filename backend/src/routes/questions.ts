@@ -105,7 +105,7 @@ export const questionRoutes = new Elysia({
   // POST /api/questions/bulk-import — Bulk import questions
   .post(
     "/bulk-import",
-    async ({ body, user }) => {
+    async ({ body, user }: any) => {
       const { items } = body;
       if (!items || items.length === 0) {
         return { success: true, count: 0, message: "No items to import" };
@@ -155,7 +155,7 @@ export const questionRoutes = new Elysia({
   // POST /api/questions — Create single question
   .post(
     "/",
-    async ({ body, user }) => {
+    async ({ body, user }: any) => {
       const [question] = await db
         .insert(questions)
         .values({
@@ -194,7 +194,7 @@ export const questionRoutes = new Elysia({
   // PUT /api/questions/:id — Update question
   .put(
     "/:id",
-    async ({ params, body, set }) => {
+    async ({ params, body, set }: any) => {
       const updates: Record<string, unknown> = { updatedAt: new Date() };
       if (body.category !== undefined) updates.category = body.category;
       if (body.difficulty) updates.difficulty = body.difficulty;
@@ -254,7 +254,7 @@ export const questionRoutes = new Elysia({
   // POST /api/questions/batch-delete — Delete multiple questions
   .post(
     "/batch-delete",
-    async ({ body }) => {
+    async ({ body }: any) => {
       const { questionIds } = body;
       if (!questionIds || questionIds.length === 0) {
         return { success: true, count: 0 };

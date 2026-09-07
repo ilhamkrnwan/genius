@@ -230,6 +230,10 @@ class SoundEngine {
       // Ignore
     }
   }
+
+  public playFanfare() {
+    this.playLevelUp();
+  }
 }
 
 export const soundEngine = new SoundEngine();

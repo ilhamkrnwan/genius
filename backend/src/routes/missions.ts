@@ -105,7 +105,7 @@ export const missionRoutes = new Elysia({
   // POST /api/missions — Create mission
   .post(
     "/",
-    async ({ body }) => {
+    async ({ body }: any) => {
       const [mission] = await db
         .insert(missions)
         .values({
@@ -140,7 +140,7 @@ export const missionRoutes = new Elysia({
   // PUT /api/missions/:id — Update mission
   .put(
     "/:id",
-    async ({ params, body, set }) => {
+    async ({ params, body, set }: any) => {
       const updates: Record<string, unknown> = { updatedAt: new Date() };
       if (body.name) updates.name = body.name.trim();
       if (body.description !== undefined) updates.description = body.description?.trim() || null;

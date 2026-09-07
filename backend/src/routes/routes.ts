@@ -119,7 +119,7 @@ export const routeRoutes = new Elysia({
   // POST /api/routes — Create new route
   .post(
     "/",
-    async ({ body }) => {
+    async ({ body }: any) => {
       const [route] = await db
         .insert(routes)
         .values({
@@ -140,7 +140,7 @@ export const routeRoutes = new Elysia({
   // PUT /api/routes/:id — Update route
   .put(
     "/:id",
-    async ({ params, body, set }) => {
+    async ({ params, body, set }: any) => {
       const updates: Record<string, unknown> = { updatedAt: new Date() };
       if (body.name) updates.name = body.name.trim();
       if (body.status) updates.status = body.status;
@@ -176,7 +176,7 @@ export const routeRoutes = new Elysia({
   // POST /api/routes/:id/stops — Add stop to route
   .post(
     "/:id/stops",
-    async ({ params, body }) => {
+    async ({ params, body }: any) => {
       const [stop] = await db
         .insert(routeStops)
         .values({
@@ -202,7 +202,7 @@ export const routeRoutes = new Elysia({
   // POST /api/routes/:id/reorder-stops — Reorder all stops for a route
   .post(
     "/:id/reorder-stops",
-    async ({ params, body }) => {
+    async ({ params, body }: any) => {
       const { stops } = body;
       for (const item of stops) {
         await db
