@@ -12,6 +12,15 @@
       </button>
 
       <NuxtLink
+        to="/ormawa/scan"
+        class="pixel-btn h-8 px-3 text-xs font-mono font-bold bg-[#132215] text-[#4ade80] border-[#22c55e] flex items-center gap-1.5 hover:bg-[#172e1e] cursor-pointer"
+        title="Dashboard Scanner PIC Ormawa"
+      >
+        <ScanLine class="h-3.5 w-3.5" />
+        <span class="hidden md:inline font-pixel text-[11px]">SCANNER PIC</span>
+      </NuxtLink>
+
+      <NuxtLink
         to="/qr-center"
         class="pixel-btn h-8 px-3 text-xs font-mono font-bold bg-[#271d15] text-[#facc15] border-[#ca8a04] flex items-center gap-1.5 hover:bg-[#3d2d1e] cursor-pointer"
         title="Buka QR Print Center"

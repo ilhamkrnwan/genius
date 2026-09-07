@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import {
   PhStorefront,
-  PhQrCode,
   PhMagnifyingGlass,
   PhCheckCircle,
   PhMapPin,
@@ -13,41 +12,83 @@ import {
   PhPhone,
   PhListChecks,
   PhFlag,
-  PhArrowsClockwise,
+  PhQrCode,
+  PhSpinner,
+  PhWarning,
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
 import { ORMAWA_STANDS } from '@/data/ormawaData';
 import { OrmawaStand } from '@/types/ormawa';
-import QrScannerModal from '@/components/common/QrScannerModal.vue';
 import PixelCard from '@/components/ui/PixelCard.vue';
 import PixelButton from '@/components/ui/PixelButton.vue';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
 import { soundEngine } from '@/lib/sound';
+import { api } from '@/lib/api';
 
 const gameStore = useGameStore();
 
+// ─── State ────────────────────────────────────────────────────────────────────
 const selectedFloor = ref<number | 'ALL'>('ALL');
 const searchQuery = ref('');
-const showScanner = ref(false);
 const activeStandDetail = ref<OrmawaStand | null>(null);
-const scanToast = ref<{ message: string; success: boolean; xp: number } | null>(null);
+const isLoading = ref(false);
+const apiError = ref<string | null>(null);
 
-// Preset QR codes untuk testing/demo di lapangan
-const ormawaPresets = computed(() => {
-  return ORMAWA_STANDS.map((s) => ({
-    label: `${s.shortName} (Lt ${s.floor})`,
-    code: s.qrToken,
-    description: s.name,
-  }));
+// Katalog stan: akan diisi dari API, fallback ke data lokal
+const apiStands = ref<OrmawaStand[]>([]);
+const stands = computed(() => apiStands.value.length > 0 ? apiStands.value : ORMAWA_STANDS);
+
+// QR Code Maba — menampilkan NIM sebagai QR agar bisa di-scan PIC Ormawa
+const mabaQrValue = computed(() => {
+  const nim = gameStore.participant.nim || 'BELUM-REGISTRASI';
+  return `GENIUS-MABA-${nim}`;
+});
+const mabaQrUrl = computed(() => {
+  const encoded = encodeURIComponent(mabaQrValue.value);
+  return `https://api.qrserver.com/v1/create-qr-code/?data=${encoded}&size=220x220&color=f0d060&bgcolor=1a1109&qzone=1`;
 });
 
-const filteredStands = computed(() => {
-  let list = ORMAWA_STANDS;
+// ─── Fetch Data dari API ───────────────────────────────────────────────────────
+onMounted(async () => {
+  isLoading.value = true;
+  apiError.value = null;
+  try {
+    const res = await api.getOrmawaBooths();
+    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      // Normalisasi data dari backend ke format OrmawaStand yang diharapkan UI
+      apiStands.value = res.data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        shortName: item.shortName || item.name,
+        category: item.category,
+        floor: item.floorNumber || 3,
+        location: item.floorName ? `Selasar Lantai ${item.floorNumber} — ${item.floorName}` : `Lantai ${item.floorNumber}`,
+        qrToken: item.qrCode,
+        tagline: item.description || '',
+        description: item.description || '',
+        instagram: item.instagram || '',
+        badgeTitle: item.name,
+        badgeColor: item.badgeColor || '#16a34a',
+        activities: [],
+        requirements: [],
+        contactPerson: item.contactPerson || '',
+        logoUrl: item.logoUrl || null,
+      }));
+    }
+  } catch (err) {
+    apiError.value = 'Gagal memuat katalog stan dari server. Menampilkan data sementara.';
+    console.warn('[OrmawaExpo] API fetch failed, using local fallback:', err);
+  } finally {
+    isLoading.value = false;
+  }
+});
 
+// ─── Filter & Computed ────────────────────────────────────────────────────────
+const filteredStands = computed(() => {
+  let list = stands.value;
   if (selectedFloor.value !== 'ALL') {
     list = list.filter((s) => s.floor === selectedFloor.value);
   }
-
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase();
     list = list.filter(
@@ -58,7 +99,6 @@ const filteredStands = computed(() => {
         s.category.toLowerCase().includes(q)
     );
   }
-
   return list;
 });
 
@@ -66,21 +106,7 @@ const visitedCount = computed(() => gameStore.visitedOrmawaCount);
 const xpEarned = computed(() => gameStore.ormawaXpEarned);
 const isCapped = computed(() => gameStore.isOrmawaCapped);
 
-const handleScanResult = (scannedCode: string) => {
-  showScanner.value = false;
-  const result = gameStore.scanOrmawa(scannedCode);
-
-  scanToast.value = {
-    message: result.message,
-    success: result.success,
-    xp: result.xpEarned,
-  };
-
-  setTimeout(() => {
-    scanToast.value = null;
-  }, 4500);
-};
-
+// ─── UI Actions ───────────────────────────────────────────────────────────────
 const openStandDetail = (stand: OrmawaStand) => {
   if (gameStore.soundEnabled) soundEngine.playSelect();
   activeStandDetail.value = stand;
@@ -92,31 +118,29 @@ const closeStandDetail = () => {
 };
 
 const getCategoryLabel = (category: string) => {
-  switch (category) {
-    case 'BELA_DIRI':
-      return 'Bela Diri';
-    case 'TEKNOLOGI':
-      return 'Teknologi & AI';
-    case 'SENI_BUDAYA':
-      return 'Seni & Budaya';
-    case 'SOSIAL_KEMANUSIAAN':
-      return 'Sosial & Relawan';
-    case 'OLAHRAGA':
-      return 'Olahraga';
-    case 'PENALARAN_KEISLAMAN':
-      return 'Penalaran & Aswaja';
-    default:
-      return category;
-  }
+  const labels: Record<string, string> = {
+    BELA_DIRI: 'Bela Diri',
+    TEKNOLOGI: 'Teknologi & AI',
+    SENI_BUDAYA: 'Seni & Budaya',
+    SOSIAL_KEMANUSIAAN: 'Sosial & Relawan',
+    OLAHRAGA: 'Olahraga',
+    PENALARAN_KEISLAMAN: 'Penalaran & Aswaja',
+    Olahraga: 'Olahraga',
+    Seni: 'Seni & Budaya',
+    Penalaran: 'Penalaran',
+    Keagamaan: 'Keagamaan',
+  };
+  return labels[category] || category;
 };
 </script>
 
 <template>
   <div class="min-h-[100dvh] bg-[#140e08] text-amber-100 pb-16 pt-2 px-3 sm:px-6">
     <div class="max-w-4xl mx-auto space-y-4">
+
       <!-- Top Hero Header -->
       <PixelCard variant="gold" class="p-4 sm:p-5 relative overflow-hidden">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div class="space-y-1.5">
             <div class="flex items-center gap-2">
               <PixelBadge variant="warning" class="text-[9px] font-pixel uppercase tracking-widest">
@@ -128,102 +152,113 @@ const getCategoryLabel = (category: string) => {
               ORMAWA EXPO DISCOVERY
             </h1>
             <p class="font-sans text-xs text-amber-200/90 leading-relaxed max-w-xl">
-              Kunjungi stan Unit Kegiatan Mahasiswa (UKM) & Lembaga Kampus UNU Yogyakarta. Pindai QR stand untuk mengoleksi lencana dan memperoleh hingga +750 XP!
+              Kunjungi stan UKM & Himpunan Mahasiswa UNU Yogyakarta. <strong>Tunjukkan QR Code kamu</strong> kepada PIC stan untuk mendapatkan lencana dan bonus XP!
             </p>
           </div>
 
-          <!-- Quick QR Trigger CTA -->
-          <div class="shrink-0 flex items-center">
-            <PixelButton
-              variant="primary"
-              size="md"
-              class="w-full sm:w-auto flex items-center justify-center gap-2 shadow-lg"
-              @click="showScanner = true"
-            >
-              <PhQrCode :size="18" weight="bold" />
-              <span>PINDAI QR STAN</span>
-            </PixelButton>
+          <!-- XP Counter Badge -->
+          <div class="shrink-0 flex flex-col items-center justify-center bg-[#1a1109] border-2 border-[#ca8a04]/60 rounded-xl p-3 min-w-[90px] text-center">
+            <PhSparkle :size="22" weight="fill" class="text-[#facc15] mb-1" />
+            <span class="font-pixel text-[#fef08a] text-lg font-bold leading-none">+{{ xpEarned }}</span>
+            <span class="font-mono text-[10px] text-amber-300/70 mt-0.5">XP TERKUMPUL</span>
           </div>
         </div>
       </PixelCard>
 
-      <!-- Toast Feedback -->
-      <transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="transform -translate-y-2 opacity-0"
-        enter-to-class="transform translate-y-0 opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
+      <!-- API Error Notice -->
+      <div
+        v-if="apiError"
+        class="p-3 rounded-lg border border-[#f59e0b]/50 bg-[#201609] text-xs font-mono text-amber-300 flex items-center gap-2"
       >
-        <div
-          v-if="scanToast"
-          :class="[
-            'p-3 rounded-lg border-2 flex items-center justify-between gap-3 text-xs font-mono shadow-xl',
-            scanToast.success
-              ? 'bg-[#142314] border-[#22c55e] text-[#86efac]'
-              : 'bg-[#291717] border-[#ef4444] text-[#fca5a5]'
-          ]"
-        >
-          <div class="flex items-center gap-2">
-            <PhCheckCircle v-if="scanToast.success" :size="18" weight="fill" class="shrink-0 text-[#4ade80]" />
-            <PhInfo v-else :size="18" weight="fill" class="shrink-0 text-[#f87171]" />
-            <span>{{ scanToast.message }}</span>
-          </div>
-          <button
-            type="button"
-            @click="scanToast = null"
-            class="text-gray-400 hover:text-white shrink-0 p-1"
-          >
-            <PhX :size="14" />
-          </button>
-        </div>
-      </transition>
+        <PhWarning :size="16" class="text-[#f59e0b] shrink-0" />
+        <span>{{ apiError }}</span>
+      </div>
 
-      <!-- XP Capping Live HUD Meter -->
-      <div class="p-3.5 bg-[#1c130b] border-2 border-[#5a3a18] rounded-xl space-y-2.5 shadow-md font-mono">
-        <div class="flex items-center justify-between text-xs">
-          <div class="flex items-center gap-2">
-            <PhSparkle :size="16" weight="fill" class="text-[#facc15]" />
-            <span class="font-bold text-amber-200 uppercase tracking-wider text-[11px]">
-              XP Capping Stand Progress
-            </span>
-          </div>
-          <div class="text-right">
-            <span class="font-pixel text-[#86efac] font-bold text-xs sm:text-sm">
-              {{ visitedCount }}/10 STAN
-            </span>
-            <span class="text-amber-300/80 text-[10px] ml-1.5">
-              (+{{ xpEarned }}/750 XP)
-            </span>
-          </div>
+      <!-- ══════════════════════════════════════════════════════════ -->
+      <!--   QR CODE MABA — Tunjukkan ke PIC Ormawa untuk di-scan   -->
+      <!-- ══════════════════════════════════════════════════════════ -->
+      <div class="bg-[#1a1109] border-2 border-[#ca8a04] rounded-xl p-4 sm:p-5 space-y-3 shadow-[0_0_20px_rgba(202,138,4,0.15)]">
+        <div class="flex items-center gap-2">
+          <PhQrCode :size="18" weight="fill" class="text-[#facc15]" />
+          <span class="font-pixel text-[#fef08a] text-xs font-bold uppercase tracking-wide">
+            QR Code Paspor Kamu
+          </span>
         </div>
 
-        <!-- Visual Progress Bar -->
-        <div class="w-full bg-[#100a06] h-3 rounded-full border border-[#3d2613] p-0.5 overflow-hidden">
-          <div
-            class="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-[#ca8a04] via-[#eab308] to-[#22c55e]"
-            :style="{ width: `${Math.min(100, (visitedCount / 10) * 100)}%` }"
-          ></div>
-        </div>
+        <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+          <!-- QR Image -->
+          <div class="shrink-0 relative">
+            <div class="w-[140px] h-[140px] sm:w-[160px] sm:h-[160px] bg-[#1a1109] border-4 border-[#ca8a04] rounded-xl overflow-hidden flex items-center justify-center">
+              <img
+                v-if="gameStore.isLoggedIn && gameStore.participant.nim"
+                :src="mabaQrUrl"
+                :alt="`QR Code ${gameStore.participant.nim}`"
+                class="w-full h-full object-contain"
+                loading="lazy"
+              />
+              <div v-else class="text-center p-3">
+                <PhQrCode :size="48" class="text-amber-400/30 mx-auto" />
+                <p class="text-[9px] text-amber-300/60 font-mono mt-1">Login dulu ya!</p>
+              </div>
+            </div>
+            <!-- Glow ring -->
+            <div class="absolute inset-0 rounded-xl ring-2 ring-[#facc15]/20 pointer-events-none"></div>
+          </div>
 
-        <!-- Capping Status Notice -->
-        <div class="flex items-center justify-between text-[10px] text-amber-300/70 pt-0.5">
-          <span v-if="!isCapped">
-            Tiap stan baru memberikan <strong>+75 XP</strong> (Maksimal 10 stan).
-          </span>
-          <span v-else class="text-[#86efac] font-bold">
-            Batas Maksimum XP (10 Stan / +750 XP) Tercapai! Kunjungan stan selanjutnya tetap tercatat di paspor.
-          </span>
+          <!-- Info Text -->
+          <div class="space-y-2 text-center sm:text-left">
+            <div v-if="gameStore.isLoggedIn && gameStore.participant.nim">
+              <p class="font-pixel text-[#fef08a] text-sm font-bold">{{ gameStore.participant.name || 'Mahasiswa' }}</p>
+              <p class="font-mono text-amber-300 text-xs mt-0.5">NIM: {{ gameStore.participant.nim }}</p>
+            </div>
 
-          <span class="text-gray-400">
-            Total Stan di Kampus: {{ ORMAWA_STANDS.length }}
-          </span>
+            <div class="space-y-1.5 text-xs font-sans text-amber-200/80 leading-relaxed">
+              <p class="flex items-start gap-1.5">
+                <span class="text-[#facc15] font-bold mt-0.5">1.</span>
+                Datangi stan UKM/Himpunan yang ingin kamu kunjungi.
+              </p>
+              <p class="flex items-start gap-1.5">
+                <span class="text-[#facc15] font-bold mt-0.5">2.</span>
+                <strong>Tunjukkan QR Code ini</strong> kepada PIC/petugas stan.
+              </p>
+              <p class="flex items-start gap-1.5">
+                <span class="text-[#facc15] font-bold mt-0.5">3.</span>
+                Petugas akan scan QR kamu — lencana & XP otomatis masuk ke paspormu!
+              </p>
+            </div>
+
+            <!-- Progress mini -->
+            <div class="pt-1">
+              <div class="flex items-center justify-between text-[10px] font-mono mb-1">
+                <span class="text-amber-300/70">{{ visitedCount }}/10 stan dikunjungi</span>
+                <span :class="isCapped ? 'text-[#86efac]' : 'text-amber-300/70'">
+                  {{ isCapped ? '✓ KUOTA PENUH' : `+${xpEarned} XP` }}
+                </span>
+              </div>
+              <div class="w-full bg-[#100a06] h-2 rounded-full border border-[#3d2613] overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-[#ca8a04] via-[#eab308] to-[#22c55e]"
+                  :style="{ width: `${Math.min(100, (visitedCount / 10) * 100)}%` }"
+                ></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Filters & Floor Selector Bar -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
+      <!-- ═══════════════════════════════════════ -->
+      <!--   KATALOG STAN UKM & HIMPUNAN          -->
+      <!-- ═══════════════════════════════════════ -->
+
+      <!-- Section Title -->
+      <div class="flex items-center gap-2 pt-1">
+        <PhStorefront :size="16" weight="fill" class="text-[#c084fc]" />
+        <span class="font-pixel text-xs text-amber-200 uppercase tracking-wide">Katalog Stan Expo</span>
+        <span class="ml-auto font-mono text-[10px] text-amber-300/60">{{ stands.length }} stan terdaftar</span>
+      </div>
+
+      <!-- Filters & Floor Selector -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <!-- Floor Chips -->
         <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 font-pixel text-[9px] sm:text-[10px]">
           <button
@@ -236,7 +271,7 @@ const getCategoryLabel = (category: string) => {
                 : 'bg-[#1f150c] text-amber-200 border-[#5a3a18] hover:border-[#8b6538]'
             ]"
           >
-            SEMUA STAN ({{ ORMAWA_STANDS.length }})
+            SEMUA ({{ stands.length }})
           </button>
           <button
             type="button"
@@ -259,15 +294,21 @@ const getCategoryLabel = (category: string) => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Cari stan UKM, robotika, seni..."
+            placeholder="Cari stan, robotika, seni..."
             class="w-full bg-[#1b1209] border border-[#5a3a18] focus:border-[#facc15] rounded-lg pl-8 pr-3 py-1.5 text-xs text-amber-100 placeholder-amber-200/40 outline-none font-mono"
           />
           <PhMagnifyingGlass :size="14" class="text-amber-400/60 absolute left-2.5 top-2.5" />
         </div>
       </div>
 
-      <!-- Stands Grid (2-Column Responsive Layout) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+      <!-- Loading State -->
+      <div v-if="isLoading" class="flex items-center justify-center py-10 gap-3 text-amber-300/70 font-mono text-xs">
+        <PhSpinner :size="20" class="animate-spin text-[#facc15]" />
+        <span>Memuat katalog stan...</span>
+      </div>
+
+      <!-- Stands Grid -->
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
         <div
           v-for="stand in filteredStands"
           :key="stand.id"
@@ -278,19 +319,29 @@ const getCategoryLabel = (category: string) => {
               : 'bg-[#1b1209] border-[#442c17] hover:border-[#78512b]'
           ]"
         >
-          <!-- Top Row: Badges & Floor -->
           <div class="space-y-1.5">
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="px-2 py-0.5 rounded bg-[#2b1c11] border border-[#ca8a04]/40 text-[8px] font-pixel text-[#facc15]">
-                  LT {{ stand.floor }}
-                </span>
-                <span class="px-2 py-0.5 rounded bg-[#101824] border border-[#0284c7]/40 text-[8px] font-mono text-[#38bdf8]">
-                  {{ getCategoryLabel(stand.category) }}
-                </span>
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
+                <!-- Logo jika tersedia dari backend -->
+                <img
+                  v-if="(stand as any).logoUrl"
+                  :src="(stand as any).logoUrl"
+                  :alt="stand.shortName"
+                  class="w-8 h-8 rounded-full object-cover border border-[#ca8a04]/40 shrink-0"
+                />
+                <div class="space-y-1">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="px-2 py-0.5 rounded bg-[#2b1c11] border border-[#ca8a04]/40 text-[8px] font-pixel text-[#facc15]">
+                      LT {{ stand.floor }}
+                    </span>
+                    <span class="px-2 py-0.5 rounded bg-[#101824] border border-[#0284c7]/40 text-[8px] font-mono text-[#38bdf8]">
+                      {{ getCategoryLabel(stand.category) }}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <!-- Visited Status Indicator -->
+              <!-- Visited Badge -->
               <span
                 v-if="gameStore.isStandVisited(stand.id)"
                 class="px-2 py-0.5 rounded bg-[#142314] border border-[#22c55e] text-[8px] font-pixel text-[#86efac] flex items-center gap-1 shrink-0"
@@ -298,10 +349,7 @@ const getCategoryLabel = (category: string) => {
                 <PhCheckCircle :size="11" weight="fill" />
                 <span>TERVERIFIKASI</span>
               </span>
-              <span
-                v-else
-                class="text-[8px] text-amber-400/60 font-mono italic shrink-0"
-              >
+              <span v-else class="text-[8px] text-amber-400/60 font-mono italic shrink-0">
                 Belum Dikunjungi
               </span>
             </div>
@@ -311,88 +359,84 @@ const getCategoryLabel = (category: string) => {
               <h3 class="font-pixel text-xs sm:text-sm text-[#fef08a] font-bold leading-snug">
                 {{ stand.name }}
               </h3>
-              <p class="font-sans text-[11px] text-amber-200/70 italic mt-0.5">
+              <p v-if="stand.tagline" class="font-sans text-[11px] text-amber-200/70 italic mt-0.5">
                 "{{ stand.tagline }}"
               </p>
             </div>
 
-            <!-- Location info -->
-            <div class="flex items-center gap-1 text-[10px] text-gray-300 font-mono pt-1">
+            <!-- Location -->
+            <div v-if="stand.location" class="flex items-center gap-1 text-[10px] text-gray-300 font-mono pt-1">
               <PhMapPin :size="13" class="text-[#f59e0b] shrink-0" />
               <span class="line-clamp-1">{{ stand.location }}</span>
             </div>
           </div>
 
-          <!-- Bottom Row: Action Buttons -->
-          <div class="pt-2 border-t border-[#3d2613] grid grid-cols-2 gap-2">
+          <!-- Action Button -->
+          <div class="pt-2 border-t border-[#3d2613]">
             <button
               type="button"
               @click="openStandDetail(stand)"
-              class="h-8 px-2 bg-[#2a1d12] hover:bg-[#3d2919] border border-[#6b4724] text-amber-200 font-pixel text-[9px] rounded flex items-center justify-center gap-1 cursor-pointer transition-colors active:scale-95"
+              class="w-full h-8 px-2 bg-[#2a1d12] hover:bg-[#3d2919] border border-[#6b4724] text-amber-200 font-pixel text-[9px] rounded flex items-center justify-center gap-1 cursor-pointer transition-colors active:scale-95"
             >
               <PhInfo :size="13" />
-              <span>DETAIL STAN</span>
-            </button>
-
-            <button
-              type="button"
-              @click="handleScanResult(stand.qrToken)"
-              :disabled="gameStore.isStandVisited(stand.id)"
-              :class="[
-                'h-8 px-2 font-pixel text-[9px] font-bold rounded flex items-center justify-center gap-1 transition-all',
-                gameStore.isStandVisited(stand.id)
-                  ? 'bg-[#182a17] text-[#86efac] opacity-70 cursor-default'
-                  : 'bg-[#ca8a04] hover:bg-[#eab308] text-[#140e08] cursor-pointer shadow active:scale-95'
-              ]"
-            >
-              <PhQrCode :size="13" weight="bold" />
-              <span>{{ gameStore.isStandVisited(stand.id) ? 'TERCATAT' : 'PINDAI STAN' }}</span>
+              <span>LIHAT DETAIL STAN</span>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Empty Filter State -->
+      <!-- Empty State -->
       <div
-        v-if="filteredStands.length === 0"
+        v-if="!isLoading && filteredStands.length === 0"
         class="p-8 text-center bg-[#1b1209] border-2 border-dashed border-[#5a3a18] rounded-xl space-y-2 font-mono"
       >
         <PhStorefront :size="32" class="text-amber-400 mx-auto opacity-40" />
-        <p class="text-xs text-amber-200">Tidak ada stan ormawa yang cocok dengan pencarian.</p>
+        <p class="text-xs text-amber-200">Tidak ada stan yang cocok dengan pencarian.</p>
         <button
           type="button"
           @click="searchQuery = ''; selectedFloor = 'ALL'"
           class="text-[10px] text-[#facc15] underline cursor-pointer"
         >
-          Reset Filter &amp; Pencarian
+          Reset Filter & Pencarian
         </button>
       </div>
     </div>
 
-    <!-- Stand Detail Modal -->
+    <!-- ══════════════════════════════════ -->
+    <!-- Stand Detail Modal                -->
+    <!-- ══════════════════════════════════ -->
     <div
       v-if="activeStandDetail"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
       @click.self="closeStandDetail"
     >
       <div class="w-full max-w-lg bg-[#1a1109] border-2 border-[#f59e0b] rounded-xl shadow-2xl p-4 sm:p-5 space-y-4 max-h-[90vh] overflow-y-auto font-sans">
         <!-- Modal Header -->
         <div class="flex items-start justify-between gap-3 border-b border-[#3d2613] pb-3">
-          <div class="space-y-1">
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded bg-[#2b1c11] border border-[#ca8a04]/40 text-[8px] font-pixel text-[#facc15]">
-                LANTAI {{ activeStandDetail.floor }}
-              </span>
-              <span class="text-[10px] text-gray-400 font-mono">
-                {{ getCategoryLabel(activeStandDetail.category) }}
-              </span>
+          <div class="flex items-center gap-3">
+            <!-- Logo -->
+            <img
+              v-if="(activeStandDetail as any).logoUrl"
+              :src="(activeStandDetail as any).logoUrl"
+              :alt="activeStandDetail.shortName"
+              class="w-12 h-12 rounded-full object-cover border-2 border-[#ca8a04]/50 shrink-0"
+            />
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-[#2b1c11] border border-[#ca8a04]/40 text-[8px] font-pixel text-[#facc15]">
+                  LANTAI {{ activeStandDetail.floor }}
+                </span>
+                <span class="text-[10px] text-gray-400 font-mono">
+                  {{ getCategoryLabel(activeStandDetail.category) }}
+                </span>
+              </div>
+              <h2 class="font-pixel text-sm sm:text-base text-[#fef08a] font-bold">
+                {{ activeStandDetail.name }}
+              </h2>
+              <p v-if="activeStandDetail.tagline" class="text-xs text-amber-200/80 italic">
+                "{{ activeStandDetail.tagline }}"
+              </p>
             </div>
-            <h2 class="font-pixel text-sm sm:text-base text-[#fef08a] font-bold">
-              {{ activeStandDetail.name }}
-            </h2>
-            <p class="text-xs text-amber-200/80 italic">
-              "{{ activeStandDetail.tagline }}"
-            </p>
           </div>
 
           <button
@@ -404,8 +448,17 @@ const getCategoryLabel = (category: string) => {
           </button>
         </div>
 
+        <!-- Visited Badge -->
+        <div
+          v-if="gameStore.isStandVisited(activeStandDetail.id)"
+          class="flex items-center gap-2 p-2.5 bg-[#142314] border border-[#22c55e] rounded-lg text-xs font-mono text-[#86efac]"
+        >
+          <PhCheckCircle :size="16" weight="fill" class="text-[#4ade80] shrink-0" />
+          <span>Anda sudah mengunjungi stan ini! Lencana sudah tercatat di paspor.</span>
+        </div>
+
         <!-- Description -->
-        <div class="space-y-1">
+        <div v-if="activeStandDetail.description" class="space-y-1">
           <span class="text-[10px] text-gray-400 font-mono font-bold uppercase block">
             TENTANG UKM / ORGANISASI
           </span>
@@ -415,10 +468,10 @@ const getCategoryLabel = (category: string) => {
         </div>
 
         <!-- Kegiatan Rutin -->
-        <div class="space-y-1.5">
+        <div v-if="activeStandDetail.activities?.length" class="space-y-1.5">
           <span class="text-[10px] text-gray-400 font-mono font-bold uppercase flex items-center gap-1">
             <PhListChecks :size="14" class="text-[#facc15]" />
-            <span>KEGIATAN UTAMA &amp; AGENDA</span>
+            <span>KEGIATAN UTAMA & AGENDA</span>
           </span>
           <ul class="space-y-1 text-xs text-amber-100/85">
             <li
@@ -432,8 +485,8 @@ const getCategoryLabel = (category: string) => {
           </ul>
         </div>
 
-        <!-- Syarat Pendaftaran -->
-        <div class="space-y-1.5">
+        <!-- Syarat Bergabung -->
+        <div v-if="activeStandDetail.requirements?.length" class="space-y-1.5">
           <span class="text-[10px] text-gray-400 font-mono font-bold uppercase flex items-center gap-1">
             <PhFlag :size="14" class="text-[#38bdf8]" />
             <span>SYARAT BERGABUNG</span>
@@ -452,7 +505,7 @@ const getCategoryLabel = (category: string) => {
 
         <!-- Social & Narahubung -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
-          <div class="flex items-center gap-2 p-2 bg-[#120b06] rounded border border-[#2e1d0f] text-gray-300">
+          <div v-if="activeStandDetail.instagram" class="flex items-center gap-2 p-2 bg-[#120b06] rounded border border-[#2e1d0f] text-gray-300">
             <PhInstagramLogo :size="16" class="text-pink-400 shrink-0" />
             <span>{{ activeStandDetail.instagram }}</span>
           </div>
@@ -466,34 +519,20 @@ const getCategoryLabel = (category: string) => {
           </div>
         </div>
 
-        <!-- Modal CTA -->
-        <div class="pt-2 border-t border-[#3d2613] flex items-center justify-between gap-2">
-          <span class="text-[10px] text-gray-400 font-mono">
-            Kode: <code class="text-[#facc15]">{{ activeStandDetail.qrToken }}</code>
-          </span>
-
+        <!-- CTA: Petunjuk Cara Mendapat Lencana -->
+        <div class="pt-2 border-t border-[#3d2613] space-y-2">
+          <p class="text-[10px] text-amber-300/70 font-mono text-center">
+            Datangi stan ini & tunjukkan QR Code paspormu kepada petugas untuk mendapat lencana!
+          </p>
           <button
             type="button"
-            @click="handleScanResult(activeStandDetail.qrToken); closeStandDetail()"
-            :disabled="gameStore.isStandVisited(activeStandDetail.id)"
-            class="h-9 px-4 bg-[#ca8a04] hover:bg-[#eab308] disabled:bg-[#1f2e1e] text-[#140e08] disabled:text-[#86efac] font-pixel text-[10px] font-bold rounded flex items-center gap-1.5 cursor-pointer disabled:cursor-default transition-all active:scale-95 shadow"
+            @click="closeStandDetail"
+            class="w-full h-9 bg-[#2a1d12] hover:bg-[#3d2919] text-amber-200 font-pixel text-[10px] rounded border border-[#6b4724] cursor-pointer transition-all"
           >
-            <PhQrCode :size="15" weight="bold" />
-            <span>{{ gameStore.isStandVisited(activeStandDetail.id) ? 'SUDAH TERVERIFIKASI' : 'SIMULASIKAN SCAN STAN' }}</span>
+            TUTUP
           </button>
         </div>
       </div>
     </div>
-
-    <!-- Reusable QrScannerModal -->
-    <QrScannerModal
-      :is-open="showScanner"
-      title="SCAN QR STAN ORMAWA (HARI 3)"
-      subtitle="Arahkan kamera ke QR Code di meja stan atau pilih stan demo di bawah"
-      expected-pattern="UNU-ORMAWA"
-      :preset-codes="ormawaPresets"
-      @close="showScanner = false"
-      @scan-success="handleScanResult"
-    />
   </div>
 </template>

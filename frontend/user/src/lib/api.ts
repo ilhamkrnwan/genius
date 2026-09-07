@@ -153,16 +153,21 @@ export const api = {
     });
   },
 
-  async scanOrmawa(qrCode: string, participantId?: string) {
+  async getOrmawaBooths(category?: string) {
+    const query = category ? '?category=' + encodeURIComponent(category) : '';
+    return this.request('/ormawa/booths' + query);
+  },
+
+  async scanOrmawa(qrToken: string, participantId?: string) {
+    // Backend accepts both qrToken and qrCode — sending qrToken per spec
     return this.request('/ormawa/scan', {
       method: 'POST',
-      body: JSON.stringify({ qrCode, participantId }),
+      body: JSON.stringify({ qrToken, participantId }),
     });
   },
 
-  async getMyOrmawaBadges(participantId?: string) {
-    const query = participantId ? '?participantId=' + participantId : '';
-    return this.request('/ormawa/my-badges' + query);
+  async getMyOrmawaBadges(participantId: string) {
+    return this.request('/ormawa/my-badges/' + encodeURIComponent(participantId));
   },
 
   async createGameSession(payload: { missionId: string; teamId: string; allowReplay?: boolean }) {
