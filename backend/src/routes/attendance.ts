@@ -5,6 +5,11 @@ import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { authMiddleware } from "../middleware/auth";
 import { broadcastLeaderboardUpdate, broadcastAdminEvent } from "../realtime";
 
+function generateSecureSessionToken(type: string = "CHECK_IN"): string {
+  const randomSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+  return `UNU-PRESENSI-${type}-${randomSuffix}`;
+}
+
 async function getOrCreateDefaultSessions() {
   const existing = await db.select().from(attendanceSessions).limit(1);
   if (existing.length === 0) {
@@ -15,7 +20,7 @@ async function getOrCreateDefaultSessions() {
         description: "Presensi gerbang kedatangan pagi mahasiswa baru PKKMB UNU 2026",
         type: "CHECK_IN",
         isActive: true,
-        qrToken: "UNU-PRESENSI-GATE-2026",
+        qrToken: generateSecureSessionToken("CHECK_IN"),
         xpReward: 100,
         allowLate: true,
         lateTime: "07:30",
@@ -29,7 +34,7 @@ async function getOrCreateDefaultSessions() {
         description: "Presensi kepulangan sore hari setelah seluruh rangkaian acara",
         type: "CHECK_OUT",
         isActive: false,
-        qrToken: "UNU-PRESENSI-CHECKOUT-2026",
+        qrToken: generateSecureSessionToken("CHECK_OUT"),
         xpReward: 50,
         allowLate: true,
         lateTime: "17:00",
@@ -48,10 +53,10 @@ export const attendanceRoutes = new Elysia({
 })
   .use(authMiddleware)
 
-  // GET /api/attendance/active-session — Ambil sesi presensi yang sedang aktif
+  // GET /api/attendance/active-session — Ambil sesi presensi yang sedang aktif (qrToken hanya untuk panitia/admin)
   .get(
     "/active-session",
-    async () => {
+    async ({ user }) => {
       await getOrCreateDefaultSessions();
       const [active] = await db
         .select()
@@ -59,32 +64,64 @@ export const attendanceRoutes = new Elysia({
         .where(eq(attendanceSessions.isActive, true))
         .limit(1);
 
+      if (!active) {
+        return {
+          success: true,
+          data: null,
+        };
+      }
+
+      // CRITICAL: Sembunyikan qrToken dari peserta/maba agar tidak bisa dibypass tanpa scan QR fisik gerbang
+      const isStaff = user && (user.role === "ADMIN" || user.role === "BUDDY");
+      const safeSession = {
+        id: active.id,
+        title: active.title,
+        description: active.description,
+        type: active.type,
+        isActive: active.isActive,
+        xpReward: active.xpReward,
+        allowLate: active.allowLate,
+        lateTime: active.lateTime,
+        startTime: active.startTime,
+        endTime: active.endTime,
+        createdAt: active.createdAt,
+        updatedAt: active.updatedAt,
+        ...(isStaff ? { qrToken: active.qrToken } : {}),
+      };
+
       return {
         success: true,
-        data: active || null,
+        data: safeSession,
       };
     },
     {
       detail: {
-        summary: "Ambil sesi presensi aktif untuk generate QR dan scanner maba",
-        description: "Mengembalikan status sesi presensi aktif (apakah CHECK_IN atau CHECK_OUT, token QR, dan XP reward).",
+        summary: "Ambil sesi presensi aktif untuk scanner maba & proyektor gate",
+        description: "Mengembalikan status sesi presensi aktif. qrToken hanya disertakan jika diakses oleh Panitia/Admin.",
       },
     }
   )
 
-  // GET /api/attendance/sessions — Ambil daftar seluruh sesi presensi
+  // GET /api/attendance/sessions — Ambil daftar seluruh sesi presensi (Admin & Panitia)
   .get(
     "/sessions",
-    async () => {
+    async ({ user, set }) => {
       await getOrCreateDefaultSessions();
       const list = await db
         .select()
         .from(attendanceSessions)
         .orderBy(desc(attendanceSessions.createdAt));
 
+      const isStaff = user && (user.role === "ADMIN" || user.role === "BUDDY");
+      const safeList = list.map((s) => {
+        if (isStaff) return s;
+        const { qrToken, ...rest } = s;
+        return rest;
+      });
+
       return {
         success: true,
-        data: list,
+        data: safeList,
       };
     },
     {
@@ -97,7 +134,12 @@ export const attendanceRoutes = new Elysia({
   // POST /api/attendance/sessions — Buat sesi presensi baru
   .post(
     "/sessions",
-    async ({ body, set }) => {
+    async ({ body, user, set }) => {
+      if (!user || user.role !== "ADMIN") {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Hanya Admin yang dapat membuat sesi presensi baru" } };
+      }
+
       const {
         title,
         description,
@@ -111,7 +153,7 @@ export const attendanceRoutes = new Elysia({
 
       const finalQrToken =
         qrToken?.trim() ||
-        `UNU-PRESENSI-${type}-${Date.now().toString(36).toUpperCase()}`;
+        generateSecureSessionToken(type);
 
       if (isActive) {
         await db.update(attendanceSessions).set({ isActive: false });
@@ -159,7 +201,12 @@ export const attendanceRoutes = new Elysia({
   // PUT /api/attendance/sessions/:id/activate — Aktifkan sesi presensi tertentu
   .put(
     "/sessions/:id/activate",
-    async ({ params, set }) => {
+    async ({ params, user, set }) => {
+      if (!user || user.role !== "ADMIN") {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Hanya Admin yang dapat mengaktifkan sesi presensi" } };
+      }
+
       const { id } = params;
 
       // 1. Nonaktifkan semua sesi lainnya
@@ -196,7 +243,12 @@ export const attendanceRoutes = new Elysia({
   // PUT /api/attendance/sessions/:id/deactivate — Tutup / nonaktifkan sesi presensi
   .put(
     "/sessions/:id/deactivate",
-    async ({ params, set }) => {
+    async ({ params, user, set }) => {
+      if (!user || user.role !== "ADMIN") {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Hanya Admin yang dapat menonaktifkan sesi presensi" } };
+      }
+
       const { id } = params;
 
       const [updated] = await db
@@ -229,7 +281,12 @@ export const attendanceRoutes = new Elysia({
   // PUT /api/attendance/sessions/:id — Edit detail sesi presensi
   .put(
     "/sessions/:id",
-    async ({ params, body, set }) => {
+    async ({ params, body, user, set }) => {
+      if (!user || user.role !== "ADMIN") {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Hanya Admin yang dapat mengubah sesi presensi" } };
+      }
+
       const { id } = params;
       const [updated] = await db
         .update(attendanceSessions)
@@ -271,7 +328,12 @@ export const attendanceRoutes = new Elysia({
   // DELETE /api/attendance/sessions/:id — Hapus sesi presensi
   .delete(
     "/sessions/:id",
-    async ({ params, set }) => {
+    async ({ params, user, set }) => {
+      if (!user || user.role !== "ADMIN") {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Hanya Admin yang dapat menghapus sesi presensi" } };
+      }
+
       const { id } = params;
       await db.delete(attendanceSessions).where(eq(attendanceSessions.id, id));
       return {
@@ -342,9 +404,22 @@ export const attendanceRoutes = new Elysia({
         };
       }
 
-      // Jika qrToken tidak disertakan tapi ada participant (misal panitia scan badge maba), gunakan qrToken sesi aktif
-      if (!rawQrToken && activeSession) {
+      const isStaff = user && (user.role === "ADMIN" || user.role === "BUDDY");
+
+      // Hanya panitia/admin yang memindai badge maba yang boleh menggunakan token sesi aktif secara otomatis
+      if (!rawQrToken && isStaff && activeSession) {
         rawQrToken = activeSession.qrToken;
+      }
+
+      if (!rawQrToken) {
+        set.status = 400;
+        return {
+          success: false,
+          error: {
+            code: "MISSING_QR_TOKEN",
+            message: "Token QR presensi wajib dipindai langsung dari proyektor/banner gerbang resmi.",
+          },
+        };
       }
 
       const participantId = rawParticipant;
@@ -403,17 +478,12 @@ export const attendanceRoutes = new Elysia({
         if (defaultTeam) targetTeamId = defaultTeam.id;
       }
 
-      // 4. Validasi kecocokan token QR (Mendukung Dynamic 5-minute salt e.g. BASE-SALT)
+      // 4. Validasi ketat kecocokan token QR (Mendukung dynamic time-based salt e.g. BASE-SALT)
       const inputToken = rawQrToken.trim().toUpperCase();
       const baseToken = activeSession.qrToken.trim().toUpperCase();
       const isValid =
         inputToken === baseToken ||
-        inputToken.startsWith(baseToken + "-") ||
-        inputToken.includes(baseToken) ||
-        baseToken.includes(inputToken) ||
-        inputToken.startsWith("QR-PRESENSI") ||
-        inputToken.includes("GATE") ||
-        inputToken.includes("PRESENSI");
+        inputToken.startsWith(baseToken + "-");
 
       if (!isValid) {
         set.status = 400;
@@ -421,7 +491,7 @@ export const attendanceRoutes = new Elysia({
           success: false,
           error: {
             code: "INVALID_QR_TOKEN",
-            message: `Token QR "${rawQrToken}" tidak valid untuk sesi "${activeSession.title}". Pastikan memindai QR resmi sesi presensi yang sedang berlangsung.`,
+            message: "Kode QR presensi tidak valid atau telah kedaluwarsa. Pastikan memindai QR resmi yang ditampilkan di gerbang.",
           },
         };
       }
@@ -947,10 +1017,18 @@ export const attendanceRoutes = new Elysia({
   // GET /api/attendance/recap — Rekapitulasi kehadiran untuk admin & buddy
   .get(
     "/recap",
-    async ({ query }) => {
+    async ({ query, user }) => {
       await getOrCreateDefaultSessions();
       const activeSession = (await db.select().from(attendanceSessions).where(eq(attendanceSessions.isActive, true)).limit(1))[0] || null;
       const allSessions = await db.select().from(attendanceSessions).orderBy(desc(attendanceSessions.createdAt));
+
+      const isStaff = user && (user.role === "ADMIN" || user.role === "BUDDY");
+      const sanitizeSession = (s: any) => {
+        if (!s) return s;
+        if (isStaff) return s;
+        const { qrToken, ...rest } = s;
+        return rest;
+      };
 
       const targetSessionId = query.sessionId || (activeSession ? activeSession.id : null);
       const day = query.day ? Number(query.day) : 1;
@@ -1008,9 +1086,9 @@ export const attendanceRoutes = new Elysia({
         data: {
           day,
           sessionId: targetSessionId,
-          activeSession,
-          currentSession: currentSessionInfo,
-          sessions: allSessions,
+          activeSession: sanitizeSession(activeSession),
+          currentSession: sanitizeSession(currentSessionInfo),
+          sessions: allSessions.map(sanitizeSession),
           summary: {
             totalCheckedIn: Number(totalCheckedIn),
             onTime: Number(onTimeCount),

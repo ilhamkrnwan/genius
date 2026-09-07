@@ -30,7 +30,7 @@ interface AttendanceSession {
   description?: string | null;
   type: 'CHECK_IN' | 'CHECK_OUT';
   isActive: boolean;
-  qrToken: string;
+  qrToken?: string;
   xpReward: number;
   allowLate: boolean;
   lateTime?: string | null;
@@ -142,7 +142,6 @@ const fetchActiveSession = async () => {
       description: 'Pindai QR Standing Banner di Gerbang Utama Lantai 1',
       type: 'CHECK_IN',
       isActive: true,
-      qrToken: 'UNU-PRESENSI-GATE-2026',
       xpReward: 100,
       allowLate: true,
       lateTime: '07:30',
@@ -199,35 +198,9 @@ const handleTokenScanned = async (token: string) => {
       if (gameStore.soundEnabled) soundEngine.playWrong();
     }
   } catch (err: any) {
-    // Offline / fallback scan handling
-    const upper = token.trim().toUpperCase();
-    const expected = activeSession.value?.qrToken?.toUpperCase() || 'UNU-PRESENSI';
-
-    if (upper.includes(expected) || upper.includes('GATE') || upper.includes('PRESENSI') || upper.includes('CHECKOUT')) {
-      const awarded = activeSession.value?.xpReward || (activeSession.value?.type === 'CHECK_OUT' ? 50 : 100);
-      gameStore.participant.totalXp += awarded;
-      gameStore.saveToStorage();
-
-      const newLog: AttendedLog = {
-        sessionId: activeSession.value?.id || 'offline-session',
-        sessionTitle: activeSession.value?.title || 'Presensi Mandiri Offline',
-        type: activeSession.value?.type || 'CHECK_IN',
-        timestamp: new Date().toISOString(),
-        status: 'ON_TIME',
-        xpAwarded: awarded,
-        qrToken: token,
-      };
-
-      attendedLogs.value.unshift(newLog);
-      saveLogs();
-
-      if (gameStore.soundEnabled) soundEngine.playCorrect();
-      triggerConfetti();
-      showNotification('success', `Presensi Terverifikasi Offline! (+${awarded} XP)`);
-    } else {
-      showNotification('error', 'Token QR tidak dikenali untuk sesi presensi ini.');
-      if (gameStore.soundEnabled) soundEngine.playWrong();
-    }
+    const message = err?.message || 'Gagal menghubungi server presensi. Pastikan perangkat terhubung ke internet.';
+    showNotification('error', message);
+    if (gameStore.soundEnabled) soundEngine.playWrong();
   } finally {
     isSubmittingScan.value = false;
   }
@@ -736,7 +709,7 @@ onMounted(() => {
       v-model="isScannerOpen"
       :title="activeSession?.type === 'CHECK_OUT' ? 'SCAN GERBANG KEPULANGAN' : 'SCAN GERBANG MASUK'"
       :subtitle="activeSession?.title || 'Arahkan kamera ke QR Gerbang Resmi Panitia'"
-      :preset-tokens="activeSession ? [activeSession.qrToken, `${activeSession.qrToken}-LIVE`, 'UNU-PRESENSI-GATE-2026', 'UNU-PRESENSI-CHECKOUT-2026'] : ['UNU-PRESENSI-GATE-2026', 'UNU-PRESENSI-CHECKOUT-2026']"
+      :preset-tokens="[]"
       @scan="handleTokenScanned"
     />
   </div>
