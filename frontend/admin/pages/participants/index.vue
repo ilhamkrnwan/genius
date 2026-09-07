@@ -42,34 +42,6 @@
     <!-- Sticky Top Pixel Toolbar (Flush nempel Topbar) -->
     <div class="pixel-toolbar-sticky px-4 md:px-6 py-2.5 space-y-2.5 shrink-0">
       <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <!-- View Mode Switcher -->
-        <div class="flex items-center gap-1">
-          <button
-            @click="viewMode = 'table'"
-            :class="[
-              'h-7 px-2.5 text-xs font-pixel flex items-center gap-1.5 transition-colors border',
-              viewMode === 'table'
-                ? 'bg-[#f59e0b] border-[#f59e0b] text-[#16110d] font-bold'
-                : 'bg-[#271d15] border-[#523e2b] text-muted-foreground hover:text-foreground'
-            ]"
-          >
-            <TableIcon class="h-3 w-3" />
-            <span>TABEL</span>
-          </button>
-          <button
-            @click="viewMode = 'grid'"
-            :class="[
-              'h-7 px-2.5 text-xs font-pixel flex items-center gap-1.5 transition-colors border',
-              viewMode === 'grid'
-                ? 'bg-[#f59e0b] border-[#f59e0b] text-[#16110d] font-bold'
-                : 'bg-[#271d15] border-[#523e2b] text-muted-foreground hover:text-foreground'
-            ]"
-          >
-            <LayoutGrid class="h-3 w-3" />
-            <span>KARTU</span>
-          </button>
-        </div>
-
         <!-- Search Input -->
         <div class="relative flex-1 max-w-md">
           <Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#f59e0b]" />
@@ -81,20 +53,8 @@
           />
         </div>
 
-        <!-- Filter Dropdowns -->
+        <!-- Filter Dropdowns (Gender, Status, Tim) -->
         <div class="flex flex-wrap items-center gap-2">
-          <!-- Filter Tier Evolusi -->
-          <select
-            v-model="selectedTierFilter"
-            class="h-7 bg-[#1d1611] border border-[#523e2b] px-2 text-xs font-mono text-foreground focus:outline-none focus:border-[#f59e0b]"
-            @change="currentPage = 1; fetchParticipants()"
-          >
-            <option value="">Semua Tier</option>
-            <option value="1">⭐ Tier 1: Novice</option>
-            <option value="2">⭐⭐ Tier 2: Advanced</option>
-            <option value="3">👑 Tier 3: Ascended</option>
-          </select>
-
           <!-- Filter Gender -->
           <select
             v-model="selectedGenderFilter"
@@ -106,16 +66,15 @@
             <option value="FEMALE">♀ Perempuan</option>
           </select>
 
-          <!-- Filter Character Class -->
+          <!-- Filter Status -->
           <select
-            v-model="selectedClassFilter"
+            v-model="selectedStatusFilter"
             class="h-7 bg-[#1d1611] border border-[#523e2b] px-2 text-xs font-mono text-foreground focus:outline-none focus:border-[#f59e0b]"
             @change="currentPage = 1; fetchParticipants()"
           >
-            <option value="">Semua Kelas RPG</option>
-            <option v-for="cls in characterClassesList" :key="cls.id" :value="cls.id">
-              {{ cls.icon }} {{ cls.nameId }}
-            </option>
+            <option value="">Semua Status</option>
+            <option value="ACTIVE">Aktif</option>
+            <option value="INACTIVE">Nonaktif</option>
           </select>
 
           <!-- Filter Team -->
@@ -131,45 +90,47 @@
               {{ team.name }} ({{ team.code }})
             </option>
           </select>
-
-          <!-- Filter Status -->
-          <select
-            v-model="selectedStatusFilter"
-            class="h-7 bg-[#1d1611] border border-[#523e2b] px-2 text-xs font-mono text-foreground focus:outline-none focus:border-[#f59e0b]"
-            @change="currentPage = 1; fetchParticipants()"
-          >
-            <option value="">Semua Status</option>
-            <option value="ACTIVE">Aktif</option>
-            <option value="INACTIVE">Nonaktif</option>
-          </select>
         </div>
       </div>
 
       <!-- Batch Actions Bar (Shows when selected) -->
       <div
         v-if="selectedUserIds.length > 0"
-        class="flex items-center justify-between gap-2 bg-[#2a1d14] border border-[#ca8a04] px-3 py-1.5 text-xs font-mono text-[#facc15]"
+        class="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-[#2a1d14] via-[#352115] to-[#2a1d14] border-t border-[#ca8a04]/50 px-4 md:px-6 py-2 text-xs font-mono text-[#facc15] shadow-inner"
       >
-        <div class="flex items-center gap-1.5">
-          <CheckSquare class="h-3.5 w-3.5 text-[#f59e0b]" />
-          <span>{{ selectedUserIds.length }} peserta terpilih</span>
+        <div class="flex items-center gap-2">
+          <CheckSquare class="h-4 w-4 text-[#f59e0b]" />
+          <span class="font-bold">{{ selectedUserIds.length }} peserta terpilih</span>
+          <span class="text-muted-foreground text-[11px] hidden sm:inline">(dari {{ filteredParticipants.length }})</span>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center flex-wrap gap-2">
           <button
-            class="pixel-btn h-6 px-2 text-[10px] bg-[#ca8a04] text-[#16110d] font-bold border-[#eab308]"
+            class="pixel-btn h-6 px-2.5 text-[10px] bg-[#ca8a04] text-[#16110d] font-bold border-[#eab308] hover:bg-[#eab308] transition-colors"
             @click="showBatchAssignModal = true"
           >
             Plotting Tim
           </button>
           <button
-            class="pixel-btn h-6 px-2 text-[10px] bg-[#78350f] text-[#fef08a] font-bold border-[#92400e]"
+            class="pixel-btn h-6 px-2.5 text-[10px] bg-[#78350f] text-[#fef08a] font-bold border-[#92400e] hover:bg-[#92400e] transition-colors"
             @click="batchUnassignTeam"
           >
             Lepas Tim
           </button>
           <button
-            class="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+            class="pixel-btn h-6 px-2.5 text-[10px] bg-[#1e293b] text-[#38bdf8] font-bold border-[#0284c7] hover:bg-[#0284c7] hover:text-white transition-colors"
+            @click="batchResetPassword"
+          >
+            Reset Password
+          </button>
+          <button
+            class="pixel-btn h-6 px-2.5 text-[10px] bg-[#450a0a] text-[#f87171] font-bold border-[#dc2626] hover:bg-[#dc2626] hover:text-white transition-colors"
+            @click="batchDeleteParticipants"
+          >
+            Hapus Terpilih
+          </button>
+          <button
+            class="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground hover:underline transition-colors"
             @click="selectedUserIds = []"
           >
             Batal
@@ -178,392 +139,199 @@
       </div>
     </div>
 
-    <!-- Main Page Content Area (Self-managed padding for Table / Grid) -->
-    <div class="p-4 md:p-6 space-y-4 flex-1">
-      <!-- Content Area: Table View (Default) -->
-      <div v-if="viewMode === 'table'" class="pixel-card overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="pixel-table w-full text-left text-xs">
-          <thead class="bg-[#15100c] border-b-2 border-[#4a3624]">
-            <tr>
-              <th class="p-3 w-8 text-center">
-                <input
-                  type="checkbox"
-                  :checked="isAllSelected"
-                  class="rounded bg-[#1a140f] border-[#523e2b] text-[#f59e0b] focus:ring-[#f59e0b] cursor-pointer"
-                  @change="toggleSelectAll"
-                />
-              </th>
-              <th class="p-3">MAHASISWA PESERTA</th>
-              <th class="p-3">TIER & EVOLUSI KELAS</th>
-              <th class="p-3">GENDER & TITLE</th>
-              <th class="p-3">TIM PETUALANG</th>
-              <th class="p-3 text-center">TOTAL SKOR</th>
-              <th class="p-3 text-center">STATUS</th>
-              <th class="p-3 text-right">AKSI</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-[#3d2d1e]/60 font-mono">
-            <tr v-if="loading" class="text-center">
-              <td colspan="8" class="p-8 text-muted-foreground">
-                <div class="flex items-center justify-center gap-2">
-                  <RotateCw class="h-4 w-4 animate-spin text-[#f59e0b]" />
-                  <span>Memuat data peserta & evolusi RPG...</span>
-                </div>
-              </td>
-            </tr>
+    <!-- Main Page Content Area: Flush Table without extra gaps -->
+    <div class="flex-1 min-h-0 overflow-x-auto">
+      <table class="pixel-table w-full text-left text-xs border-collapse">
+        <thead class="bg-[#15100c] border-b-2 border-[#4a3624] sticky top-0 z-10">
+          <tr>
+            <th class="pl-4 md:pl-6 pr-3 py-2.5 w-10 text-center">
+              <input
+                type="checkbox"
+                :checked="isAllSelected"
+                class="rounded bg-[#1a140f] border-[#523e2b] text-[#f59e0b] focus:ring-[#f59e0b] cursor-pointer"
+                @change="toggleSelectAll"
+              />
+            </th>
+            <th class="px-3 py-2.5">MAHASISWA PESERTA</th>
+            <th class="px-3 py-2.5">TIER & KELAS</th>
+            <th class="px-3 py-2.5">GENDER & TITLE</th>
+            <th class="px-3 py-2.5">TIM PETUALANG</th>
+            <th class="px-3 py-2.5 text-center">TOTAL SKOR</th>
+            <th class="px-3 py-2.5 text-center">STATUS</th>
+            <th class="pr-4 md:pr-6 pl-3 py-2.5 text-center w-16">AKSI</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[#3d2d1e]/60 font-mono">
+          <tr v-if="loading" class="text-center">
+            <td colspan="8" class="p-8 text-muted-foreground">
+              <div class="flex items-center justify-center gap-2">
+                <RotateCw class="h-4 w-4 animate-spin text-[#f59e0b]" />
+                <span>Memuat data peserta & evolusi RPG...</span>
+              </div>
+            </td>
+          </tr>
 
-            <tr v-else-if="paginatedParticipants.length === 0" class="text-center">
-              <td colspan="8" class="p-8 text-muted-foreground">
-                Tidak ada data peserta yang cocok dengan filter.
-              </td>
-            </tr>
+          <tr v-else-if="paginatedParticipants.length === 0" class="text-center">
+            <td colspan="8" class="p-8 text-muted-foreground">
+              Tidak ada data peserta yang cocok dengan filter.
+            </td>
+          </tr>
 
-            <tr
-              v-for="p in paginatedParticipants"
-              :key="p.id"
-              class="hover:bg-[#271d15]/50 transition-colors"
-            >
-              <!-- Checkbox -->
-              <td class="p-3 text-center">
-                <input
-                  type="checkbox"
-                  :value="p.id"
-                  v-model="selectedUserIds"
-                  class="rounded bg-[#1a140f] border-[#523e2b] text-[#f59e0b] focus:ring-[#f59e0b] cursor-pointer"
-                />
-              </td>
+          <tr
+            v-for="p in paginatedParticipants"
+            :key="p.id"
+            class="hover:bg-[#271d15]/50 transition-colors"
+          >
+            <!-- Checkbox -->
+            <td class="py-2.5 pl-4 md:pl-6 pr-3 text-center">
+              <input
+                type="checkbox"
+                :value="p.id"
+                v-model="selectedUserIds"
+                class="rounded bg-[#1a140f] border-[#523e2b] text-[#f59e0b] focus:ring-[#f59e0b] cursor-pointer"
+              />
+            </td>
 
-              <!-- Name & Avatar with Tier Aura -->
-              <td class="p-3">
+            <!-- Name & Avatar -->
+            <td class="py-2.5 px-3">
+              <div
+                class="flex items-center gap-2.5 cursor-pointer group"
+                @click="openTacticalDetail(p)"
+                title="Klik untuk Inspect Loadout RPG"
+              >
                 <div
-                  class="flex items-center gap-2.5 cursor-pointer group"
-                  @click="openTacticalDetail(p)"
-                  title="Klik untuk Inspect Loadout RPG & Stats Detail"
+                  class="h-8 w-8 rounded border border-[#523e2b] bg-[#1a140f] overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
+                  :style="{
+                    borderColor: getTierColor(p.characterTier),
+                  }"
                 >
-                  <div
-                    class="h-9 w-9 rounded-lg overflow-hidden border-2 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
-                    :style="{
-                      borderColor: getTierColor(p.characterTier),
-                      boxShadow: `0 0 10px ${getTierColor(p.characterTier)}55`,
-                      background: '#1a140f',
-                    }"
-                  >
-                    <img
-                      :src="p.avatarUrl || (p.gender === 'FEMALE' ? '/character-cewek-avatar.png' : '/character-cowok-avatar.png')"
-                      :alt="p.fullName"
-                      class="h-full w-full object-cover"
-                      style="image-rendering: pixelated;"
-                    />
-                  </div>
-                  <div>
-                    <div class="font-sans font-semibold text-foreground text-xs leading-tight group-hover:text-[#f59e0b] transition-colors flex items-center gap-1">
-                      <span>{{ p.fullName }}</span>
-                      <Crosshair class="h-3 w-3 text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                    <div class="text-[10px] text-muted-foreground">
-                      @{{ p.username }}
-                    </div>
-                  </div>
+                  <img
+                    :src="p.avatarUrl || (p.gender === 'FEMALE' ? '/character-cewek-avatar.png' : '/character-cowok-avatar.png')"
+                    :alt="p.fullName"
+                    class="h-full w-full object-cover"
+                    style="image-rendering: pixelated;"
+                  />
                 </div>
-              </td>
-
-              <!-- Tier & Evolved Class -->
-              <td class="p-3">
-                <div class="space-y-1">
-                  <!-- Tier Pill Badge -->
-                  <div>
-                    <span
-                      class="px-1.5 py-0.5 text-[9px] font-pixel border rounded inline-block"
-                      :style="{
-                        borderColor: getTierColor(p.characterTier),
-                        backgroundColor: `${getTierColor(p.characterTier)}18`,
-                        color: getTierColor(p.characterTier),
-                      }"
-                    >
-                      {{ getTierBadge(p.characterTier) }}
-                    </span>
+                <div class="min-w-0">
+                  <div class="font-sans font-semibold text-foreground text-xs leading-tight group-hover:text-[#f59e0b] transition-colors flex items-center gap-1">
+                    <span class="truncate max-w-[160px]">{{ p.fullName }}</span>
+                    <Crosshair class="h-3 w-3 text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </div>
-
-                  <!-- Evolved Class Name -->
-                  <div
-                    class="font-mono text-[11px] font-bold"
-                    :style="{ color: getClassColor(p.characterClass) }"
-                  >
-                    {{ getClassIcon(p.characterClass) }} {{ getEvolvedClassName(p.characterClass, p.characterTier) }}
-                  </div>
-                </div>
-              </td>
-
-              <!-- Gender & Title -->
-              <td class="p-3">
-                <div class="space-y-1">
-                  <div class="flex items-center gap-1.5">
-                    <span
-                      v-if="p.gender === 'FEMALE'"
-                      class="px-1.5 py-0.5 border border-[#ec4899]/50 bg-[#3b1227] text-[#f472b6] text-[9px] font-bold rounded"
-                    >
-                      ♀ Perempuan
-                    </span>
-                    <span
-                      v-else
-                      class="px-1.5 py-0.5 border border-[#0284c7]/50 bg-[#0c2a3f] text-[#38bdf8] text-[9px] font-bold rounded"
-                    >
-                      ♂ Laki-laki
-                    </span>
-                  </div>
-
-                  <!-- Title Banner -->
-                  <div class="font-pixel text-[10px] text-[#facc15]">
-                    [{{ p.characterTitle || 'Novice Adventurer' }}]
-                  </div>
-                </div>
-              </td>
-
-              <!-- Team -->
-              <td class="p-3">
-                <div v-if="p.teamName" class="flex items-center gap-1.5">
-                  <span class="px-1.5 py-0.5 border border-[#ca8a04]/60 bg-[#2b2014] text-[#facc15] text-[10px] font-pixel">
-                    {{ p.teamName }}
-                  </span>
-                  <span class="text-[10px] text-muted-foreground">({{ p.teamCode }})</span>
-                </div>
-                <span v-else class="text-[#ca8a04] italic text-[10px]">Free Agent</span>
-              </td>
-
-              <!-- Total Score -->
-              <td class="p-3 text-center font-bold text-[#4ade80] text-xs">
-                {{ Number(p.totalScore || 0).toLocaleString() }} pts
-              </td>
-
-              <!-- Status -->
-              <td class="p-3 text-center">
-                <span
-                  :class="[
-                    'px-2 py-0.5 text-[9px] font-pixel border',
-                    p.status === 'ACTIVE'
-                      ? 'border-[#16a34a]/60 bg-[#162518] text-[#4ade80]'
-                      : 'border-[#dc2626]/60 bg-[#2a1414] text-[#f87171]'
-                  ]"
-                >
-                  {{ p.status === 'ACTIVE' ? 'AKTIF' : 'NONAKTIF' }}
-                </span>
-              </td>
-
-              <!-- Actions -->
-              <td class="p-3 text-right">
-                <div class="flex items-center justify-end gap-1">
-                  <!-- Inspect RPG Loadout & Tactical Detail Button -->
-                  <button
-                    class="h-7 w-7 border border-[#ca8a04] bg-[#271d15] text-[#facc15] hover:bg-[#ca8a04] hover:text-[#16110d] flex items-center justify-center shadow-[0_0_8px_rgba(202,138,4,0.3)] transition-all"
-                    title="Inspect RPG Loadout & Stats Hexagon"
-                    @click="openTacticalDetail(p)"
-                  >
-                    <Crosshair class="h-3.5 w-3.5" />
-                  </button>
-
-                  <!-- Award Title Button -->
-                  <button
-                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#facc15] hover:bg-[#ca8a04]/20 flex items-center justify-center"
-                    title="Sematkan Gelar & Promosi Tier"
-                    @click="openAwardTitleModal(p)"
-                  >
-                    <Award class="h-3.5 w-3.5" />
-                  </button>
-
-                  <button
-                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#38bdf8] hover:border-[#0284c7] flex items-center justify-center"
-                    title="Riwayat Skor Ledger"
-                    @click="openLedgerModal(p)"
-                  >
-                    <History class="h-3.5 w-3.5" />
-                  </button>
-
-                  <button
-                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#f59e0b] hover:border-[#f59e0b] flex items-center justify-center"
-                    title="Edit Profil & Tier RPG"
-                    @click="openEditModal(p)"
-                  >
-                    <Edit class="h-3.5 w-3.5" />
-                  </button>
-
-                  <button
-                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#facc15] hover:border-[#facc15] flex items-center justify-center"
-                    title="Reset Password"
-                    @click="openResetPasswordModal(p)"
-                  >
-                    <KeyRound class="h-3.5 w-3.5" />
-                  </button>
-
-                  <button
-                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#f87171] hover:border-[#dc2626] flex items-center justify-center"
-                    title="Hapus"
-                    @click="confirmDelete(p)"
-                  >
-                    <Trash2 class="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Content Area: Grid View (Pixel RPG Cards) -->
-    <div v-else class="space-y-4">
-      <div v-if="loading" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div v-for="i in 6" :key="i" class="pixel-card p-4 animate-pulse h-36 bg-[#271d15]"></div>
-      </div>
-
-      <div v-else-if="paginatedParticipants.length === 0" class="pixel-card p-8 text-center text-xs text-muted-foreground font-mono">
-        Tidak ada data peserta ditemukan.
-      </div>
-
-      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div
-          v-for="p in paginatedParticipants"
-          :key="p.id"
-          class="pixel-card p-4 space-y-3 flex flex-col justify-between"
-          :style="{ borderColor: getTierColor(p.characterTier) }"
-        >
-          <div class="space-y-2.5">
-            <!-- Header with Avatar & Details -->
-            <div class="flex items-start justify-between gap-2">
-              <div class="flex items-center gap-2.5">
-                <!-- Avatar with class border & gender tag -->
-                <div class="relative">
-                  <div
-                    class="h-11 w-11 rounded-lg overflow-hidden border-2 flex items-center justify-center shrink-0"
-                    :style="{
-                      borderColor: getTierColor(p.characterTier),
-                      boxShadow: `0 0 12px ${getTierColor(p.characterTier)}55`,
-                      background: '#15100c',
-                    }"
-                  >
-                    <img
-                      :src="p.avatarUrl || (p.gender === 'FEMALE' ? '/character-cewek-avatar.png' : '/character-cowok-avatar.png')"
-                      :alt="p.fullName"
-                      class="h-full w-full object-cover"
-                      style="image-rendering: pixelated;"
-                    />
-                  </div>
-                  <span
-                    class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-bold border border-[#080C14]"
-                    :class="p.gender === 'FEMALE' ? 'bg-[#ec4899] text-white' : 'bg-[#0284c7] text-white'"
-                  >
-                    {{ p.gender === 'FEMALE' ? '♀' : '♂' }}
-                  </span>
-                </div>
-
-                <div>
-                  <div class="font-bold text-foreground text-xs leading-tight">
-                    {{ p.fullName }}
-                  </div>
-                  <div class="font-mono text-[10px] text-muted-foreground">
+                  <div class="text-[10px] text-muted-foreground font-mono truncate">
                     @{{ p.username }}
                   </div>
                 </div>
               </div>
+            </td>
 
-              <!-- Tier Badge -->
-              <span
-                class="px-1.5 py-0.5 text-[8px] font-pixel border rounded"
-                :style="{
-                  borderColor: getTierColor(p.characterTier),
-                  backgroundColor: `${getTierColor(p.characterTier)}22`,
-                  color: getTierColor(p.characterTier),
-                }"
-              >
-                {{ getTierBadge(p.characterTier) }}
-              </span>
-            </div>
-
-            <!-- RPG Title & Job Class Banner -->
-            <div
-              class="border p-2 text-xs font-mono space-y-1 rounded"
-              :style="{
-                borderColor: `${getClassColor(p.characterClass)}44`,
-                background: `${getClassColor(p.characterClass)}10`,
-              }"
-            >
-              <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold" :style="{ color: getClassColor(p.characterClass) }">
+            <!-- Tier & Evolusi Kelas -->
+            <td class="py-2.5 px-3">
+              <div class="flex flex-col gap-0.5 min-w-0">
+                <span
+                  class="px-1.5 py-0.2 text-[9px] font-mono font-bold rounded border inline-block w-fit"
+                  :style="{
+                    borderColor: `${getTierColor(p.characterTier)}70`,
+                    backgroundColor: `${getTierColor(p.characterTier)}15`,
+                    color: getTierColor(p.characterTier),
+                  }"
+                >
+                  {{ p.characterTier === 3 ? '👑 Tier 3' : (p.characterTier === 2 ? '⭐ Tier 2' : 'Tier 1') }}
+                </span>
+                <span
+                  class="font-mono text-[11px] font-semibold truncate max-w-[130px]"
+                  :style="{ color: getClassColor(p.characterClass) }"
+                >
                   {{ getClassIcon(p.characterClass) }} {{ getEvolvedClassName(p.characterClass, p.characterTier) }}
                 </span>
-                <span class="font-pixel text-[9px] text-[#facc15]">
-                  [{{ p.characterTitle || 'Novice Adventurer' }}]
+              </div>
+            </td>
+
+            <!-- Gender & Title -->
+            <td class="py-2.5 px-3">
+              <div class="flex flex-col gap-0.5 min-w-0">
+                <span class="text-[10px] font-mono" :class="p.gender === 'FEMALE' ? 'text-pink-400' : 'text-sky-400'">
+                  {{ p.gender === 'FEMALE' ? '♀ Perempuan' : '♂ Laki-laki' }}
+                </span>
+                <span class="text-[11px] font-mono text-[#facc15] truncate max-w-[150px]" :title="p.characterTitle">
+                  {{ p.characterTitle || 'Novice Adventurer' }}
                 </span>
               </div>
-            </div>
+            </td>
 
-            <!-- Team Details -->
-            <div class="border border-[#4a3624] bg-[#15100c] p-2 text-xs font-mono">
-              <div class="text-[10px] text-muted-foreground">TIM PETUALANG:</div>
-              <div v-if="p.teamName" class="font-pixel text-[11px] text-[#facc15] mt-0.5">
-                {{ p.teamName }} ({{ p.teamCode }})
+            <!-- Team -->
+            <td class="py-2.5 px-3">
+              <div v-if="p.teamName" class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-[#facc15] truncate max-w-[140px]" :title="p.teamName">
+                  {{ p.teamName }}
+                </span>
+                <span class="text-[10px] font-mono text-muted-foreground">({{ p.teamCode }})</span>
               </div>
-              <div v-else class="text-[#ca8a04] text-[10px] italic mt-0.5">
-                Free Agent (Belum Ber-tim)
-              </div>
-            </div>
+              <span v-else class="text-[11px] text-muted-foreground/60 italic">Free Agent</span>
+            </td>
 
-            <!-- Score Pill -->
-            <div class="flex items-center justify-between font-mono text-xs border-t border-[#3d2d1e] pt-2">
-              <span class="text-muted-foreground text-[11px]">Skor Terkumpul:</span>
-              <span class="font-bold text-[#4ade80] font-pixel text-xs">
-                {{ Number(p.totalScore || 0).toLocaleString() }} PTS
+            <!-- Total Score -->
+            <td class="py-2.5 px-3 text-center whitespace-nowrap font-mono font-bold text-[#4ade80] text-xs">
+              {{ Number(p.totalScore || 0).toLocaleString() }} pts
+            </td>
+
+            <!-- Status -->
+            <td class="py-2.5 px-3 text-center">
+              <span
+                :class="[
+                  'inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-semibold rounded-full border',
+                  p.status === 'ACTIVE'
+                    ? 'border-[#16a34a]/60 bg-[#162518] text-[#4ade80]'
+                    : 'border-[#dc2626]/60 bg-[#2a1414] text-[#f87171]'
+                ]"
+              >
+                <span class="h-1.5 w-1.5 rounded-full" :class="p.status === 'ACTIVE' ? 'bg-[#4ade80]' : 'bg-[#f87171]'" />
+                {{ p.status === 'ACTIVE' ? 'Aktif' : 'Nonaktif' }}
               </span>
-            </div>
-          </div>
+            </td>
 
-          <!-- Actions -->
-          <div class="border-t border-[#3d2d1e] pt-2 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <button
-                class="text-[11px] font-mono text-[#facc15] hover:text-[#fde047] flex items-center gap-1 font-bold"
-                @click="openTacticalDetail(p)"
-              >
-                <Crosshair class="h-3 w-3 text-amber-400" />
-                <span>Inspect Loadout</span>
-              </button>
-
-              <button
-                class="text-[11px] font-mono text-gray-400 hover:text-white flex items-center gap-1"
-                @click="openAwardTitleModal(p)"
-              >
-                <Award class="h-3 w-3" />
-                <span>Gelar</span>
-              </button>
-            </div>
-
-            <div class="flex items-center gap-1">
-              <button
-                class="h-6 w-6 border border-[#523e2b] bg-[#271d15] text-[#38bdf8] hover:border-[#0284c7] flex items-center justify-center text-xs"
-                title="Ledger"
-                @click="openLedgerModal(p)"
-              >
-                <History class="h-3 w-3" />
-              </button>
-              <button
-                class="h-6 w-6 border border-[#523e2b] bg-[#271d15] text-[#f59e0b] hover:border-[#f59e0b] flex items-center justify-center text-xs"
-                title="Edit"
-                @click="openEditModal(p)"
-              >
-                <Edit class="h-3 w-3" />
-              </button>
-              <button
-                class="h-6 w-6 border border-[#523e2b] bg-[#271d15] text-[#f87171] hover:border-[#dc2626] flex items-center justify-center text-xs"
-                title="Hapus"
-                @click="confirmDelete(p)"
-              >
-                <Trash2 class="h-3 w-3" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            <!-- Actions (Dropdown) -->
+            <td class="py-2.5 pr-4 md:pr-6 pl-3 text-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <button
+                    class="h-7 w-7 rounded border border-[#523e2b] bg-[#271d15] text-muted-foreground hover:text-[#facc15] hover:border-[#f59e0b] hover:bg-[#3d2d1e] inline-flex items-center justify-center transition-colors shadow-sm"
+                    title="Menu Aksi"
+                  >
+                    <MoreHorizontal class="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-48 bg-[#1e140d] border border-[#5a3a18] text-foreground text-xs font-mono shadow-2xl p-1 z-50">
+                  <DropdownMenuItem @click="openTacticalDetail(p)" class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <Crosshair class="mr-2 h-3.5 w-3.5 text-[#f59e0b]" />
+                    <span>Inspect Loadout</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="openAwardTitleModal(p)" class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <Award class="mr-2 h-3.5 w-3.5 text-[#facc15]" />
+                    <span>Sematkan Gelar</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="openLedgerModal(p)" class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <History class="mr-2 h-3.5 w-3.5 text-[#38bdf8]" />
+                    <span>Riwayat Skor</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="openEditModal(p)" class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <Edit class="mr-2 h-3.5 w-3.5 text-[#f59e0b]" />
+                    <span>Edit Peserta</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="openResetPasswordModal(p)" class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <KeyRound class="mr-2 h-3.5 w-3.5 text-[#eab308]" />
+                    <span>Reset Password</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator class="bg-[#4a321e] my-1" />
+                  <DropdownMenuItem @click="confirmDelete(p)" class="cursor-pointer text-red-400 hover:bg-red-950/50 focus:bg-red-950/50 focus:text-red-300 py-1.5 px-2">
+                    <Trash2 class="mr-2 h-3.5 w-3.5 text-red-400" />
+                    <span>Hapus Peserta</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Sticky Bottom Dashboard Footer: Pixel Pagination -->
@@ -1036,11 +804,17 @@ import {
   Trash2,
   KeyRound,
   CheckSquare,
-  LayoutGrid,
-  Table as TableIcon,
   Award,
   Crosshair,
+  MoreHorizontal,
 } from "lucide-vue-next";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -1070,13 +844,10 @@ const saving = ref(false);
 const importing = ref(false);
 const participants = ref<any[]>([]);
 const teamsList = ref<any[]>([]);
-const viewMode = ref<"table" | "grid">("table");
 const searchQuery = ref("");
 const selectedTeamFilter = ref("");
 const selectedStatusFilter = ref("");
 const selectedGenderFilter = ref("");
-const selectedClassFilter = ref("");
-const selectedTierFilter = ref("");
 const selectedUserIds = ref<string[]>([]);
 
 // Pagination state
@@ -1213,16 +984,15 @@ async function fetchParticipants() {
     if (selectedGenderFilter.value) {
       params.gender = selectedGenderFilter.value;
     }
-    if (selectedClassFilter.value) {
-      params.characterClass = selectedClassFilter.value;
-    }
-    if (selectedTierFilter.value) {
-      params.tier = selectedTierFilter.value;
-    }
 
     const res = await api.get<{ success: boolean; data: any[] }>("/api/users", params);
     if (res.success && res.data) {
-      let list = res.data;
+      const seen = new Set<string>();
+      let list = res.data.filter((p) => {
+        if (!p?.id || seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      });
       if (selectedStatusFilter.value) {
         list = list.filter((p) => p.status === selectedStatusFilter.value);
       }
@@ -1382,38 +1152,106 @@ async function confirmDelete(p: any) {
 }
 
 async function executeBatchAssign() {
-  if (!batchTargetTeamId.value) return;
+  if (!batchTargetTeamId.value || selectedUserIds.value.length === 0) return;
   saving.value = true;
   try {
     await api.post("/api/users/batch-assign-team", {
       userIds: selectedUserIds.value,
       teamId: batchTargetTeamId.value,
     });
+    toast.success("Plotting Berhasil!", `${selectedUserIds.value.length} peserta berhasil dialokasikan ke tim.`);
     showBatchAssignModal.value = false;
     selectedUserIds.value = [];
     await fetchParticipants();
   } catch (err: any) {
-    alert("Gagal alokasi tim: " + err.message);
+    toast.error("Gagal Alokasi Tim", err.data?.error?.message || err.message || "Gagal alokasi tim.");
   } finally {
     saving.value = false;
   }
 }
 
 async function batchUnassignTeam() {
-  if (confirm(`Lepaskan ${selectedUserIds.value.length} peserta dari tim?`)) {
-    saving.value = true;
-    try {
-      await api.post("/api/users/batch-assign-team", {
-        userIds: selectedUserIds.value,
-        teamId: null,
-      });
-      selectedUserIds.value = [];
-      await fetchParticipants();
-    } catch (err: any) {
-      alert("Gagal melepaskan peserta: " + err.message);
-    } finally {
-      saving.value = false;
-    }
+  if (selectedUserIds.value.length === 0) return;
+  const count = selectedUserIds.value.length;
+  const confirmed = await confirmModal.show({
+    title: `Lepaskan ${count} Peserta Dari Tim?`,
+    description: `Peserta terpilih akan berstatus sebagai Free Agent (tanpa tim).`,
+    confirmText: "Ya, Lepas Dari Tim",
+    cancelText: "Batal",
+    variant: "warning",
+    icon: "shield",
+  });
+  if (!confirmed) return;
+
+  saving.value = true;
+  try {
+    await api.post("/api/users/batch-assign-team", {
+      userIds: selectedUserIds.value,
+      teamId: null,
+    });
+    toast.success("Peserta Dilepas!", `${count} peserta berhasil dilepaskan dari tim.`);
+    selectedUserIds.value = [];
+    await fetchParticipants();
+  } catch (err: any) {
+    toast.error("Gagal Melepaskan Peserta", err.message || "Terjadi kesalahan sistem.");
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function batchResetPassword() {
+  if (selectedUserIds.value.length === 0) return;
+  const count = selectedUserIds.value.length;
+  const confirmed = await confirmModal.show({
+    title: `Reset Password ${count} Peserta?`,
+    description: `Password untuk ${count} peserta terpilih akan di-reset ke default 'genius2026'.`,
+    confirmText: "Ya, Reset Semua",
+    cancelText: "Batal",
+    variant: "warning",
+    icon: "shield",
+  });
+  if (!confirmed) return;
+
+  saving.value = true;
+  try {
+    await api.post("/api/users/batch-reset-password", {
+      userIds: selectedUserIds.value,
+      password: "genius2026",
+    });
+    toast.success("Password Di-reset!", `Password untuk ${count} peserta berhasil di-reset ke 'genius2026'.`);
+    selectedUserIds.value = [];
+  } catch (err: any) {
+    toast.error("Gagal Reset Password Massal", err.message || "Terjadi kesalahan sistem.");
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function batchDeleteParticipants() {
+  if (selectedUserIds.value.length === 0) return;
+  const count = selectedUserIds.value.length;
+  const confirmed = await confirmModal.show({
+    title: `Hapus ${count} Peserta Terpilih?`,
+    description: `Tindakan ini permanen! Seluruh data akun, riwayat petualangan, skor, dan keanggotaan tim dari ${count} peserta akan dihapus.`,
+    confirmText: "Ya, Hapus Semua",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "trash",
+  });
+  if (!confirmed) return;
+
+  saving.value = true;
+  try {
+    await api.post("/api/users/batch-delete", {
+      userIds: selectedUserIds.value,
+    });
+    toast.success("Peserta Dihapus!", `${count} peserta terpilih berhasil dihapus.`);
+    selectedUserIds.value = [];
+    await fetchParticipants();
+  } catch (err: any) {
+    toast.error("Gagal Menghapus Peserta Massal", err.message || "Terjadi kesalahan sistem.");
+  } finally {
+    saving.value = false;
   }
 }
 

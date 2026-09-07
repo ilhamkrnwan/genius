@@ -3,6 +3,15 @@
     <!-- Topbar Actions Teleport -->
     <TopbarActions>
       <button
+        @click="exportAllCsv"
+        class="pixel-btn h-8 px-3 text-xs font-mono font-bold bg-[#162518] text-[#4ade80] border-[#16a34a] flex items-center gap-1.5 hover:bg-[#1f3822] cursor-pointer"
+        title="Export Data Ledger CSV"
+      >
+        <Download class="w-3.5 h-3.5 text-[#4ade80]" />
+        <span class="hidden sm:inline font-pixel">EXPORT (CSV)</span>
+      </button>
+
+      <button
         @click="openCorrectionModal"
         class="pixel-btn h-8 px-3 text-xs font-mono font-bold bg-[#ca8a04] text-[#16110d] border-[#eab308] flex items-center gap-1.5 hover:bg-[#eab308] cursor-pointer"
         title="Input Koreksi Skor Baru"
@@ -22,7 +31,7 @@
     </TopbarActions>
 
     <!-- Subtitle / Info Header -->
-    <div class="px-4 md:px-6 pt-4 pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#4a3624]/60 text-xs text-muted-foreground">
+    <div class="px-4 md:px-6 pt-3 pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#4a3624]/60 text-xs text-muted-foreground bg-[#15100c] shrink-0">
       <div>
         <h1 class="font-pixel text-xs sm:text-sm text-[#f59e0b] font-bold uppercase tracking-wider flex items-center gap-2">
           <ScrollText class="h-4 w-4 text-[#facc15]" />
@@ -41,238 +50,231 @@
       </div>
     </div>
 
-    <!-- Main Content Area -->
-    <div class="p-4 md:p-6 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
-      <!-- 1. Stats HUD Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <!-- Total Transaksi -->
-        <div class="pixel-card p-3 border border-[#523e2b] bg-[#1a140f] space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="text-[9px] font-pixel text-gray-400 uppercase">TOTAL TRANSAKSI</span>
-            <span class="text-xs">📜</span>
-          </div>
-          <div class="font-pixel text-lg text-foreground font-bold">
-            {{ meta.total || 0 }}
-          </div>
-          <span class="text-[10px] text-muted-foreground">Mutasi Terverifikasi</span>
+    <!-- Stats HUD Cards (Compact Top Deck) -->
+    <div class="px-4 md:px-6 py-2.5 grid grid-cols-2 lg:grid-cols-4 gap-2 border-b border-[#3d2a1b] bg-[#120d09] shrink-0">
+      <div class="p-2 border border-[#523e2b] bg-[#1a140f] rounded flex items-center justify-between">
+        <div>
+          <span class="text-[8px] font-pixel text-gray-400 uppercase block">TOTAL TRANSAKSI</span>
+          <span class="font-pixel text-base text-foreground font-bold">{{ meta.total || 0 }}</span>
         </div>
-
-        <!-- Koreksi Admin -->
-        <div class="pixel-card p-3 border border-[#ca8a04] bg-[#221a0f] space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="text-[9px] font-pixel text-[#facc15] uppercase">KOREKSI ADMIN</span>
-            <span class="text-xs">⚖️</span>
-          </div>
-          <div class="font-pixel text-lg text-[#facc15] font-bold">
-            {{ correctionCount }}
-          </div>
-          <span class="text-[10px] text-[#fde047]">Penyesuaian Manual</span>
-        </div>
-
-        <!-- Total Poin Terdistribusi -->
-        <div class="pixel-card p-3 border border-[#16a34a] bg-[#132215] space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="text-[9px] font-pixel text-[#4ade80] uppercase">TOTAL MUTASI POIN</span>
-            <span class="text-xs">✨</span>
-          </div>
-          <div class="font-pixel text-lg text-[#4ade80] font-bold">
-            {{ totalPointsDistributed.toLocaleString('id-ID') }} XP
-          </div>
-          <span class="text-[10px] text-[#86efac]">Volume Ledger Halaman Ini</span>
-        </div>
-
-        <!-- Integritas Ledger -->
-        <div class="pixel-card p-3 border border-[#0284c7] bg-[#0c1a24] space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="text-[9px] font-pixel text-[#38bdf8] uppercase">STATUS LEDGER</span>
-            <span class="text-xs">🔒</span>
-          </div>
-          <div class="font-pixel text-xs text-[#38bdf8] font-bold flex items-center gap-1.5 mt-1">
-            <CheckCircle2 class="w-4 h-4 text-[#38bdf8]" />
-            <span>APPEND-ONLY IMMUTABLE</span>
-          </div>
-          <span class="text-[10px] text-[#7dd3fc]">Tanpa Overwrite Fisik</span>
-        </div>
+        <span class="text-[10px] text-muted-foreground">📜 Terverifikasi</span>
       </div>
 
-      <!-- 2. Filters & Search Bar -->
-      <div class="pixel-toolbar-sticky p-3 rounded-lg border border-[#4a3624] flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div class="flex flex-1 items-center gap-2 max-w-md">
-          <div class="relative w-full">
-            <Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#f59e0b]" />
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Cari Nama Petualang, Tim, atau Alasan..."
-              class="w-full h-8 pl-8 pr-3 bg-[#1d1611] border border-[#523e2b] text-xs text-foreground focus:outline-none focus:border-[#f59e0b]"
-            />
-          </div>
+      <div class="p-2 border border-[#ca8a04] bg-[#221a0f] rounded flex items-center justify-between">
+        <div>
+          <span class="text-[8px] font-pixel text-[#facc15] uppercase block">KOREKSI ADMIN</span>
+          <span class="font-pixel text-base text-[#facc15] font-bold">{{ correctionCount }}</span>
         </div>
-
-        <div class="flex flex-wrap items-center gap-2 text-xs">
-          <!-- Filter Sumber Transaksi -->
-          <select
-            v-model="filters.sourceType"
-            @change="handleFilterChange"
-            class="h-8 bg-[#1d1611] border border-[#523e2b] px-2.5 text-foreground focus:outline-none focus:border-[#f59e0b]"
-          >
-            <option value="">Semua Tipe Sumber</option>
-            <option value="GAME">GAME (Permainan Pos)</option>
-            <option value="BONUS">BONUS (Buddy / Ormawa)</option>
-            <option value="CORRECTION">CORRECTION (Koreksi Admin)</option>
-          </select>
-
-          <!-- Ukuran Halaman -->
-          <select
-            v-model="meta.pageSize"
-            @change="handleFilterChange"
-            class="h-8 bg-[#1d1611] border border-[#523e2b] px-2 text-foreground focus:outline-none focus:border-[#f59e0b]"
-          >
-            <option :value="25">25 Baris</option>
-            <option :value="50">50 Baris</option>
-            <option :value="100">100 Baris</option>
-          </select>
-        </div>
+        <span class="text-[10px] text-[#fde047]">⚖️ Manual</span>
       </div>
 
-      <!-- 3. Ledger Table -->
-      <div class="pixel-card overflow-hidden border border-[#523e2b] bg-[#1a140f] rounded-lg shadow-xl">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr class="bg-[#140f0b] border-b-2 border-[#523e2b] text-[#f59e0b] font-pixel text-[10px] tracking-wider">
-                <th class="p-3">WAKTU (WIB)</th>
-                <th class="p-3">PETUALANG</th>
-                <th class="p-3">TIM / REGU</th>
-                <th class="p-3">SUMBER</th>
-                <th class="p-3">ALASAN / URAIAN</th>
-                <th class="p-3 text-right">MUTASI POIN</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[#3a2818] font-mono">
-              <tr v-if="loading" class="text-center text-gray-500">
-                <td colspan="6" class="p-8">
-                  <div class="flex items-center justify-center gap-2 text-gray-400">
-                    <RotateCw class="w-4 h-4 animate-spin text-[#f59e0b]" />
-                    <span>Memuat riwayat buku besar...</span>
-                  </div>
-                </td>
-              </tr>
-              <tr v-else-if="filteredTransactions.length === 0" class="text-center text-gray-500">
-                <td colspan="6" class="p-8 text-gray-400">
-                  Tidak ada transaksi poin yang sesuai kriteria pencarian.
-                </td>
-              </tr>
-              <tr
-                v-for="tx in filteredTransactions"
-                :key="tx.id"
-                class="hover:bg-[#251b13] transition-colors"
-              >
-                <!-- Waktu -->
-                <td class="p-3 text-gray-400 whitespace-nowrap text-[11px]">
-                  {{ formatDateTime(tx.createdAt) }}
-                </td>
-
-                <!-- Petualang -->
-                <td class="p-3">
-                  <div class="font-sans font-bold text-foreground text-xs">
-                    {{ tx.participantName || 'Tanpa Nama' }}
-                  </div>
-                  <span class="text-gray-400 font-mono text-[11px] block mt-0.5">
-                    @{{ tx.participantUsername || '-' }}
-                  </span>
-                </td>
-
-                <!-- Tim -->
-                <td class="p-3 text-amber-300/90 font-sans">
-                  {{ tx.teamName || 'Individu' }}
-                </td>
-
-                <!-- Tipe Sumber -->
-                <td class="p-3">
-                  <span
-                    class="px-2 py-0.5 rounded text-[9px] font-pixel border inline-flex items-center gap-1"
-                    :class="{
-                      'bg-[#132215] text-[#4ade80] border-[#16a34a]': tx.sourceType === 'GAME',
-                      'bg-[#221a0f] text-[#facc15] border-[#ca8a04]': tx.sourceType === 'BONUS',
-                      'bg-[#2a1735] text-[#d8b4fe] border-[#9333ea]': tx.sourceType === 'CORRECTION',
-                    }"
-                  >
-                    <span v-if="tx.sourceType === 'GAME'">🎮 GAME</span>
-                    <span v-else-if="tx.sourceType === 'BONUS'">⭐ BONUS</span>
-                    <span v-else-if="tx.sourceType === 'CORRECTION'">⚖️ KOREKSI</span>
-                    <span v-else>{{ tx.sourceType }}</span>
-                  </span>
-                </td>
-
-                <!-- Alasan -->
-                <td class="p-3 font-sans text-gray-300 max-w-sm">
-                  <div class="truncate" :title="tx.reason || '-'">
-                    {{ tx.reason || '-' }}
-                  </div>
-                  <div v-if="tx.stageName" class="text-[10px] text-gray-500 font-mono mt-0.5">
-                    Stage: {{ tx.stageName }}
-                  </div>
-                </td>
-
-                <!-- Mutasi Poin -->
-                <td class="p-3 text-right font-bold text-sm whitespace-nowrap">
-                  <span
-                    :class="[
-                      'font-pixel text-xs flex items-center justify-end gap-1',
-                      tx.amount >= 0 ? 'text-[#4ade80]' : 'text-rose-400'
-                    ]"
-                  >
-                    <ArrowUpRight v-if="tx.amount >= 0" class="w-3.5 h-3.5 text-[#4ade80]" />
-                    <ArrowDownRight v-else class="w-3.5 h-3.5 text-rose-400" />
-                    {{ tx.amount >= 0 ? '+' : '' }}{{ tx.amount }} XP
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="p-2 border border-[#16a34a] bg-[#132215] rounded flex items-center justify-between">
+        <div>
+          <span class="text-[8px] font-pixel text-[#4ade80] uppercase block">TOTAL MUTASI POIN</span>
+          <span class="font-pixel text-base text-[#4ade80] font-bold">{{ totalPointsDistributed.toLocaleString('id-ID') }} XP</span>
         </div>
+        <span class="text-[10px] text-[#86efac]">✨ Hal. Ini</span>
+      </div>
 
-        <!-- Pagination Controls -->
-        <div class="p-3 bg-[#140f0b] border-t border-[#523e2b] flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
-          <div>
-            Menampilkan <span class="text-white font-bold">{{ filteredTransactions.length }}</span> dari
-            <span class="text-white font-bold">{{ meta.total }}</span> total transaksi
-          </div>
-
-          <div class="flex items-center gap-2">
-            <button
-              @click="prevPage"
-              :disabled="meta.page <= 1 || loading"
-              class="pixel-btn h-7 px-2.5 bg-[#271d15] text-[#f59e0b] border border-[#523e2b] text-[10px] font-pixel disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#3d2d1e] cursor-pointer"
-            >
-              <ChevronLeft class="w-3.5 h-3.5" />
-              <span>SEBELUMNYA</span>
-            </button>
-
-            <span class="px-2 font-mono text-gray-300 text-[11px]">
-              Hal. <strong class="text-[#facc15]">{{ meta.page }}</strong> / {{ totalPages }}
-            </span>
-
-            <button
-              @click="nextPage"
-              :disabled="meta.page >= totalPages || loading"
-              class="pixel-btn h-7 px-2.5 bg-[#271d15] text-[#f59e0b] border border-[#523e2b] text-[10px] font-pixel disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#3d2d1e] cursor-pointer"
-            >
-              <span>BERIKUTNYA</span>
-              <ChevronRight class="w-3.5 h-3.5" />
-            </button>
+      <div class="p-2 border border-[#0284c7] bg-[#0c1a24] rounded flex items-center justify-between">
+        <div>
+          <span class="text-[8px] font-pixel text-[#38bdf8] uppercase block">STATUS LEDGER</span>
+          <div class="font-pixel text-[10px] text-[#38bdf8] font-bold flex items-center gap-1 mt-0.5">
+            <CheckCircle2 class="w-3.5 h-3.5 text-[#38bdf8]" />
+            <span>IMMUTABLE</span>
           </div>
         </div>
+        <span class="text-[9px] text-[#7dd3fc]">🔒 Append-Only</span>
       </div>
     </div>
+
+    <!-- Sticky Top Pixel Toolbar (Flush nempel Topbar) -->
+    <div class="pixel-toolbar-sticky px-4 md:px-6 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
+      <div class="relative flex-1 max-w-md">
+        <Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#f59e0b]" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Cari Nama Petualang, Tim, atau Alasan..."
+          class="w-full h-7 pl-8 pr-3 bg-[#1d1611] border border-[#523e2b] text-xs font-mono text-foreground focus:outline-none focus:border-[#f59e0b]"
+        />
+      </div>
+
+      <div class="flex items-center gap-2 text-xs">
+        <!-- Filter Sumber Transaksi -->
+        <select
+          v-model="filters.sourceType"
+          @change="handleFilterChange"
+          class="h-7 bg-[#1d1611] border border-[#523e2b] px-2.5 text-xs font-mono text-foreground focus:outline-none focus:border-[#f59e0b]"
+        >
+          <option value="">Semua Tipe Sumber</option>
+          <option value="GAME">GAME (Permainan Pos)</option>
+          <option value="BONUS">BONUS (Buddy / Ormawa)</option>
+          <option value="CORRECTION">CORRECTION (Koreksi Admin)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Bulk Action Bar -->
+    <div
+      v-if="selectedTxIds.length > 0"
+      class="bg-[#271d15] border-b-2 border-[#ca8a04] px-4 md:px-6 py-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono animate-in fade-in slide-in-from-top-1 shrink-0"
+    >
+      <div class="flex items-center gap-2 text-[#f59e0b]">
+        <CheckSquare class="h-4 w-4" />
+        <span><b>{{ selectedTxIds.length }}</b> transaksi terpilih</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          @click="exportSelectedCsv"
+          class="pixel-btn h-7 px-3 text-[11px] font-bold bg-[#162518] text-[#4ade80] border-[#16a34a] hover:bg-[#1f3822] flex items-center gap-1.5 cursor-pointer"
+        >
+          <Download class="h-3.5 w-3.5" />
+          <span>Export Terpilih (CSV)</span>
+        </button>
+        <button
+          @click="selectedTxIds = []"
+          class="h-7 px-2.5 text-[11px] border border-[#523e2b] bg-[#1d1611] text-muted-foreground hover:text-foreground cursor-pointer"
+        >
+          Batal
+        </button>
+      </div>
+    </div>
+
+    <!-- Flush Edge-to-Edge Table -->
+    <div class="flex-1 overflow-x-auto min-h-0">
+      <table class="pixel-table w-full text-left text-xs font-mono">
+        <thead class="bg-[#15100c] border-b-2 border-[#4a3624] sticky top-0 z-10">
+          <tr>
+            <th class="pl-4 md:pl-6 pr-3 py-3 w-10 text-center">
+              <input
+                type="checkbox"
+                :checked="isAllSelected"
+                @change="toggleSelectAll"
+                class="accent-[#f59e0b] cursor-pointer"
+                title="Pilih Semua Halaman Ini"
+              />
+            </th>
+            <th class="p-3">WAKTU (WIB)</th>
+            <th class="p-3">PETUALANG</th>
+            <th class="p-3">TIM / REGU</th>
+            <th class="p-3 text-center">SUMBER</th>
+            <th class="p-3">ALASAN / URAIAN</th>
+            <th class="pr-4 md:pr-6 pl-3 py-3 text-right">MUTASI POIN</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[#3d2d1e]/60">
+          <tr v-if="loading" class="text-center text-gray-500">
+            <td colspan="7" class="p-8">
+              <div class="flex items-center justify-center gap-2 text-gray-400">
+                <RotateCw class="w-4 h-4 animate-spin text-[#f59e0b]" />
+                <span>Memuat riwayat buku besar...</span>
+              </div>
+            </td>
+          </tr>
+          <tr v-else-if="filteredTransactions.length === 0" class="text-center text-gray-500">
+            <td colspan="7" class="p-8 text-gray-400">
+              Tidak ada transaksi poin yang sesuai kriteria pencarian.
+            </td>
+          </tr>
+          <tr
+            v-for="tx in filteredTransactions"
+            :key="tx.id"
+            :class="[
+              'hover:bg-[#271d15]/50 transition-colors',
+              selectedTxIds.includes(tx.id) ? 'bg-[#3b2716]/30' : ''
+            ]"
+          >
+            <!-- Checkbox -->
+            <td class="pl-4 md:pl-6 pr-3 py-3 text-center">
+              <input
+                type="checkbox"
+                :checked="selectedTxIds.includes(tx.id)"
+                @change="toggleSelect(tx.id)"
+                class="accent-[#f59e0b] cursor-pointer"
+              />
+            </td>
+
+            <!-- Waktu -->
+            <td class="p-3 text-gray-400 whitespace-nowrap text-[11px]">
+              {{ formatDateTime(tx.createdAt) }}
+            </td>
+
+            <!-- Petualang -->
+            <td class="p-3">
+              <div class="font-sans font-bold text-foreground text-xs">
+                {{ tx.participantName || 'Tanpa Nama' }}
+              </div>
+              <span class="text-gray-400 font-mono text-[10px] block mt-0.5">
+                @{{ tx.participantUsername || '-' }}
+              </span>
+            </td>
+
+            <!-- Tim -->
+            <td class="p-3 text-amber-300/90 font-sans">
+              {{ tx.teamName || 'Individu' }}
+            </td>
+
+            <!-- Tipe Sumber -->
+            <td class="p-3 text-center">
+              <span
+                class="px-2 py-0.5 text-[9px] font-pixel border inline-flex items-center gap-1"
+                :class="{
+                  'bg-[#132215] text-[#4ade80] border-[#16a34a]': tx.sourceType === 'GAME',
+                  'bg-[#221a0f] text-[#facc15] border-[#ca8a04]': tx.sourceType === 'BONUS',
+                  'bg-[#2a1735] text-[#d8b4fe] border-[#9333ea]': tx.sourceType === 'CORRECTION',
+                }"
+              >
+                <span v-if="tx.sourceType === 'GAME'">🎮 GAME</span>
+                <span v-else-if="tx.sourceType === 'BONUS'">⭐ BONUS</span>
+                <span v-else-if="tx.sourceType === 'CORRECTION'">⚖️ KOREKSI</span>
+                <span v-else>{{ tx.sourceType }}</span>
+              </span>
+            </td>
+
+            <!-- Alasan -->
+            <td class="p-3 font-sans text-gray-300 max-w-sm">
+              <div class="truncate" :title="tx.reason || '-'">
+                {{ tx.reason || '-' }}
+              </div>
+              <div v-if="tx.stageName" class="text-[10px] text-gray-500 font-mono mt-0.5">
+                Stage: {{ tx.stageName }}
+              </div>
+            </td>
+
+            <!-- Mutasi Poin -->
+            <td class="pr-4 md:pr-6 pl-3 py-3 text-right font-bold text-sm whitespace-nowrap">
+              <span
+                :class="[
+                  'font-pixel text-xs flex items-center justify-end gap-1',
+                  tx.amount >= 0 ? 'text-[#4ade80]' : 'text-rose-400'
+                ]"
+              >
+                <ArrowUpRight v-if="tx.amount >= 0" class="w-3.5 h-3.5 text-[#4ade80]" />
+                <ArrowDownRight v-else class="w-3.5 h-3.5 text-rose-400" />
+                {{ tx.amount >= 0 ? '+' : '' }}{{ tx.amount }} XP
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Sticky Bottom Dashboard Footer: Pixel Pagination -->
+    <PixelPagination
+      :current-page="meta.page"
+      :total-items="meta.total"
+      :page-size="meta.pageSize"
+      @update:current-page="fetchTransactions($event)"
+      @update:page-size="meta.pageSize = $event; fetchTransactions(1)"
+    />
 
     <!-- Modal Form Koreksi Skor Admin -->
     <div
       v-if="isModalOpen"
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in select-none font-mono"
     >
-      <div class="w-full max-w-lg bg-[#1a140f] border-2 border-[#eab308] rounded-xl p-5 shadow-2xl space-y-4">
+      <div class="w-full max-w-lg bg-[#1a140f] border-2 border-[#eab308] rounded p-5 shadow-2xl space-y-4">
         <div class="flex justify-between items-center border-b border-[#4a3624] pb-2.5">
           <h3 class="font-pixel text-xs sm:text-sm text-[#facc15] font-bold flex items-center gap-2">
             <span>⚖️</span>
@@ -374,7 +376,7 @@
               <span class="text-xs font-pixel text-[#f59e0b] shrink-0">XP POIN</span>
             </div>
             <p class="text-[10px] text-gray-500 mt-1 font-sans">
-              Gunakan angka positif (misal: <code>100</code>) untuk menambah, angka negatif (misal: <code>-50</code>) untuk sanksi diskualifikasi.
+              Gunakan angka positif (misal: <code>100</code>) untuk menambah, angka negatif (misal: <code>-50</code>) untuk sanksi.
             </p>
           </div>
 
@@ -386,7 +388,7 @@
             <textarea
               v-model="correctionForm.reason"
               rows="3"
-              placeholder="Jelaskan alasan penyesuaian skor (misal: 'Kompensasi error sistem pos B2-A', 'Sanksi kecurangan TTS')..."
+              placeholder="Jelaskan alasan penyesuaian skor..."
               class="w-full p-2.5 bg-[#130d08] border border-[#523e2b] rounded text-white focus:outline-none focus:border-[#eab308] font-sans text-xs"
             ></textarea>
           </div>
@@ -421,12 +423,13 @@ import {
   RotateCw,
   CheckCircle2,
   X,
-  ChevronLeft,
-  ChevronRight,
   Coins,
   ArrowUpRight,
   ArrowDownRight,
+  Download,
+  CheckSquare,
 } from 'lucide-vue-next';
+import PixelPagination from '@/components/PixelPagination.vue';
 import { useApi } from '@/composables/useApi';
 import { useToast } from '@/composables/useToast';
 
@@ -437,6 +440,8 @@ const transactions = ref<any[]>([]);
 const loading = ref(false);
 const submitting = ref(false);
 const isModalOpen = ref(false);
+
+const selectedTxIds = ref<string[]>([]);
 
 const meta = ref({
   page: 1,
@@ -463,10 +468,6 @@ const participantsList = ref<any[]>([]);
 const participantSearch = ref('');
 const selectedParticipant = ref<any | null>(null);
 
-const totalPages = computed(() => {
-  return Math.max(1, Math.ceil((meta.value.total || 0) / meta.value.pageSize));
-});
-
 const correctionCount = computed(() => {
   return transactions.value.filter((t) => t.sourceType === 'CORRECTION').length;
 });
@@ -487,6 +488,33 @@ const filteredTransactions = computed(() => {
     );
   });
 });
+
+const isAllSelected = computed(() => {
+  if (filteredTransactions.value.length === 0) return false;
+  return filteredTransactions.value.every((tx) => selectedTxIds.value.includes(tx.id));
+});
+
+function toggleSelectAll() {
+  if (isAllSelected.value) {
+    selectedTxIds.value = selectedTxIds.value.filter(
+      (id) => !filteredTransactions.value.some((tx) => tx.id === id)
+    );
+  } else {
+    const toAdd = filteredTransactions.value
+      .map((tx) => tx.id)
+      .filter((id) => !selectedTxIds.value.includes(id));
+    selectedTxIds.value.push(...toAdd);
+  }
+}
+
+function toggleSelect(id: string) {
+  const idx = selectedTxIds.value.indexOf(id);
+  if (idx > -1) {
+    selectedTxIds.value.splice(idx, 1);
+  } else {
+    selectedTxIds.value.push(id);
+  }
+}
 
 const filteredParticipants = computed(() => {
   if (!participantSearch.value.trim()) return [];
@@ -518,8 +546,9 @@ const fetchTransactions = async (page = meta.value.page) => {
         meta.value.total = res.meta.total;
       }
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Gagal mengambil data transaksi skor:', err);
+    toast.error('Gagal memuat transaksi: ' + (err.data?.error?.message || err.message));
   } finally {
     loading.value = false;
   }
@@ -533,17 +562,49 @@ const handleFilterChange = () => {
   fetchTransactions(1);
 };
 
-const prevPage = () => {
-  if (meta.value.page > 1) {
-    fetchTransactions(meta.value.page - 1);
-  }
-};
+function exportSelectedCsv() {
+  const toExport = transactions.value.filter((tx) => selectedTxIds.value.includes(tx.id));
+  if (toExport.length === 0) return;
+  generateCsvDownload(toExport, `ledger-terpilih-${Date.now()}.csv`);
+  toast.success(`Berhasil mengunduh ${toExport.length} data ledger terpilih.`);
+}
 
-const nextPage = () => {
-  if (meta.value.page < totalPages.value) {
-    fetchTransactions(meta.value.page + 1);
+function exportAllCsv() {
+  if (filteredTransactions.value.length === 0) {
+    toast.warning('Tidak ada data ledger untuk diexport.');
+    return;
   }
-};
+  generateCsvDownload(filteredTransactions.value, `point-ledger-export-${Date.now()}.csv`);
+  toast.success(`Berhasil mengunduh data ledger (${filteredTransactions.value.length} baris).`);
+}
+
+function generateCsvDownload(rows: any[], filename: string) {
+  const headers = ['Waktu', 'Nama Mahasiswa', 'NIM', 'Tim', 'Tipe Sumber', 'Alasan', 'Stage', 'Mutasi Poin'];
+  const csvContent = [
+    headers.join(','),
+    ...rows.map((r) =>
+      [
+        `"${formatDateTime(r.createdAt)}"`,
+        `"${(r.participantName || '').replace(/"/g, '""')}"`,
+        `"${r.participantUsername || ''}"`,
+        `"${(r.teamName || 'Individu').replace(/"/g, '""')}"`,
+        `"${r.sourceType || ''}"`,
+        `"${(r.reason || '').replace(/"/g, '""')}"`,
+        `"${(r.stageName || '').replace(/"/g, '""')}"`,
+        `"${r.amount || 0}"`,
+      ].join(',')
+    ),
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
 
 const fetchParticipantsForModal = async () => {
   try {
@@ -586,21 +647,20 @@ const clearSelectedParticipant = () => {
 
 const submitCorrection = async () => {
   if (!correctionForm.value.participantId) {
-    toast.warning('Validasi Gagal', 'Pilih mahasiswa target terlebih dahulu.');
+    toast.warning('Pilih mahasiswa target terlebih dahulu.');
     return;
   }
   if (!correctionForm.value.amount) {
-    toast.warning('Validasi Gagal', 'Nominal poin penyesuaian wajib diisi.');
+    toast.warning('Nominal poin penyesuaian wajib diisi.');
     return;
   }
   if (!correctionForm.value.reason.trim()) {
-    toast.warning('Validasi Gagal', 'Alasan koreksi skor wajib diisi.');
+    toast.warning('Alasan koreksi skor wajib diisi.');
     return;
   }
 
   submitting.value = true;
   try {
-    // If teamId is empty, try to find any default team or send empty
     const payload = {
       participantId: correctionForm.value.participantId,
       teamId: correctionForm.value.teamId || '00000000-0000-0000-0000-000000000000',
@@ -610,15 +670,15 @@ const submitCorrection = async () => {
 
     const res: any = await api.post('/api/scores/correction', payload);
     if (!res?.success) {
-      toast.error('Gagal Menyimpan', res?.error?.message || 'Gagal menyimpan koreksi skor.');
+      toast.error(res?.error?.message || 'Gagal menyimpan koreksi skor.');
       return;
     }
 
-    toast.success('Koreksi Skor Disimpan!', 'Penyesuaian poin berhasil dicatat ke buku besar.');
+    toast.success('Koreksi skor berhasil dicatat ke buku besar.');
     isModalOpen.value = false;
     await fetchTransactions(1);
   } catch (err: any) {
-    toast.error('Terjadi Kesalahan', err?.data?.error?.message || err?.message || 'Gagal menyimpan koreksi skor.');
+    toast.error(err?.data?.error?.message || err?.message || 'Gagal menyimpan koreksi skor.');
   } finally {
     submitting.value = false;
   }

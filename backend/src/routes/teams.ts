@@ -1,8 +1,49 @@
 import { Elysia, t } from "elysia";
 import { db } from "../db";
-import { teams, teamMembers, users, routes, scoreTransactions } from "../db/schema";
+import { teams, teamMembers, users, routes, scoreTransactions, gameSessions, fgdEvaluations } from "../db/schema";
 import { eq, sql, desc, inArray, or, ilike, and } from "drizzle-orm";
 import { requireAdmin, requireBuddyOrAdmin } from "../middleware/auth";
+
+/**
+ * Cascading deletion helper for teams to prevent Foreign Key Constraint errors
+ */
+export async function deleteTeamsCascade(teamIds: string[]) {
+  if (!teamIds || teamIds.length === 0) return 0;
+
+  // 1. Unset captainId
+  await db
+    .update(teams)
+    .set({ captainId: null })
+    .where(inArray(teams.id, teamIds));
+
+  // 2. Delete score transactions for these teams
+  await db
+    .delete(scoreTransactions)
+    .where(inArray(scoreTransactions.teamId, teamIds));
+
+  // 3. Delete game sessions for these teams
+  await db
+    .delete(gameSessions)
+    .where(inArray(gameSessions.teamId, teamIds));
+
+  // 4. Delete fgd evaluations for these teams
+  await db
+    .delete(fgdEvaluations)
+    .where(inArray(fgdEvaluations.teamId, teamIds));
+
+  // 5. Delete team memberships
+  await db
+    .delete(teamMembers)
+    .where(inArray(teamMembers.teamId, teamIds));
+
+  // 6. Delete teams
+  const deleted = await db
+    .delete(teams)
+    .where(inArray(teams.id, teamIds))
+    .returning({ id: teams.id });
+
+  return deleted.length;
+}
 
 export const teamRoutes = new Elysia({
   prefix: "/api/teams",
@@ -359,20 +400,64 @@ export const teamRoutes = new Elysia({
     }
   )
 
-  // DELETE /api/teams/:id — Delete team
+  // DELETE /api/teams/:id — Delete team with cascade relations
   .delete("/:id", async ({ params, user, set }) => {
     if (user?.role !== "ADMIN") {
       set.status = 403;
       return { success: false, error: { code: "FORBIDDEN", message: "Admin permission required" } };
     }
-    await db.delete(teamMembers).where(eq(teamMembers.teamId, params.id));
-    const [team] = await db.delete(teams).where(eq(teams.id, params.id)).returning({ id: teams.id });
-    if (!team) {
+    const count = await deleteTeamsCascade([params.id]);
+    if (count === 0) {
       set.status = 404;
       return { success: false, error: { code: "NOT_FOUND", message: "Team not found" } };
     }
-    return { success: true, data: { id: team.id } };
+    return { success: true, data: { id: params.id } };
   })
+
+  // POST /api/teams/batch-delete — Delete multiple teams and cascade relations
+  .post(
+    "/batch-delete",
+    async ({ body, user, set }) => {
+      if (user?.role !== "ADMIN") {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Admin permission required" } };
+      }
+      const { teamIds } = body;
+      if (!teamIds || teamIds.length === 0) {
+        return { success: true, count: 0 };
+      }
+      const count = await deleteTeamsCascade(teamIds);
+      return { success: true, message: `${count} tim berhasil dihapus`, count };
+    },
+    {
+      body: t.Object({
+        teamIds: t.Array(t.String()),
+      }),
+    }
+  )
+
+  // POST /api/teams/batch-status — Batch update status (ACTIVE / INACTIVE)
+  .post(
+    "/batch-status",
+    async ({ body, user, set }) => {
+      if (user?.role !== "ADMIN") {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Admin permission required" } };
+      }
+      const { teamIds, status } = body;
+      if (!teamIds || teamIds.length === 0) {
+        return { success: true, count: 0 };
+      }
+      await db.update(teams).set({ status: status as any, updatedAt: new Date() }).where(inArray(teams.id, teamIds));
+      return { success: true, message: `Status ${teamIds.length} tim berhasil diperbarui`, count: teamIds.length };
+    },
+    {
+      body: t.Object({
+        teamIds: t.Array(t.String()),
+        status: t.String(),
+      }),
+    }
+  )
 
   // POST /api/teams/:id/members — Add member to team
   .post(

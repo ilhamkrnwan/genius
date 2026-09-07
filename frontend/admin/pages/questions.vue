@@ -1,9 +1,9 @@
 <template>
-  <div class="flex-1 flex flex-col min-h-0">
+  <div class="flex-1 flex flex-col min-h-0 select-none font-mono">
     <!-- Topbar Actions Teleport -->
     <TopbarActions>
       <button
-        class="pixel-btn h-8 px-3 text-xs font-mono font-bold bg-[#6366f1] text-white border-[#818cf8] flex items-center gap-1.5 hover:bg-[#4f46e5]"
+        class="pixel-btn h-8 px-3 text-xs font-mono font-bold bg-[#6366f1] text-white border-[#818cf8] flex items-center gap-1.5 hover:bg-[#4f46e5] cursor-pointer"
         @click="showAiModal = true"
         title="Generate AI Soal"
       >
@@ -12,7 +12,7 @@
       </button>
 
       <button
-        class="pixel-btn h-8 px-3 text-xs font-mono font-bold bg-[#ca8a04] text-[#16110d] border-[#eab308] flex items-center gap-1.5 hover:bg-[#eab308]"
+        class="pixel-btn h-8 px-3 text-xs font-mono font-bold bg-[#ca8a04] text-[#16110d] border-[#eab308] flex items-center gap-1.5 hover:bg-[#eab308] cursor-pointer"
         @click="openCreateModal"
         title="Tambah Manual"
       >
@@ -21,7 +21,7 @@
       </button>
 
       <button
-        class="pixel-btn h-8 w-8 bg-[#271d15] text-[#f59e0b] border-[#523e2b] flex items-center justify-center hover:bg-[#3d2d1e]"
+        class="pixel-btn h-8 w-8 bg-[#271d15] text-[#f59e0b] border-[#523e2b] flex items-center justify-center hover:bg-[#3d2d1e] cursor-pointer"
         @click="fetchQuestions"
         :disabled="loading"
         title="Refresh Data"
@@ -29,6 +29,26 @@
         <RotateCw :class="['h-3.5 w-3.5', loading && 'animate-spin']" />
       </button>
     </TopbarActions>
+
+    <!-- Subtitle / Info Header -->
+    <div class="px-4 md:px-6 pt-3 pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#4a3624]/60 text-xs text-muted-foreground bg-[#15100c] shrink-0">
+      <div>
+        <h1 class="font-pixel text-xs sm:text-sm text-[#f59e0b] font-bold uppercase tracking-wider flex items-center gap-2">
+          <HelpCircle class="h-4 w-4 text-[#facc15]" />
+          <span>BANK SOAL & KUIS GAMIFIKASI LANTAI</span>
+        </h1>
+        <p class="text-[11px] text-gray-400 mt-0.5">
+          Repositori pertanyaan kuis pos, tantangan mini-game, dan generator soal otomatis berbasis Google Gemini AI.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <span class="border border-[#ca8a04]/40 bg-[#2b2014] px-2.5 py-1 text-[10px] font-pixel text-[#facc15] flex items-center gap-1.5">
+          <Sparkles class="h-3 w-3 text-[#818cf8]" />
+          TOTAL {{ questions.length }} SOAL
+        </span>
+      </div>
+    </div>
 
     <!-- Sticky Top Pixel Toolbar (Flush nempel Topbar) -->
     <div class="pixel-toolbar-sticky px-4 md:px-6 py-2.5 space-y-2 shrink-0">
@@ -53,7 +73,7 @@
           >
             <option value="">Semua Kategori</option>
             <option value="Kampus UNU">Wawasan Kampus UNU</option>
-            <option value="Sains & AI">Sains & Teknologi</option>
+            <option value="Sains & AI">Sains & AI</option>
             <option value="Logika">Logika Komputasi</option>
             <option value="Umum">Pengetahuan Umum</option>
           </select>
@@ -73,108 +93,163 @@
       </div>
     </div>
 
-    <!-- Main Page Content Area (Self-managed padding for Table) -->
-    <div class="p-4 md:p-6 space-y-4 flex-1">
-      <!-- Questions Table (Pixel Theme) -->
-      <div class="pixel-card overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="pixel-table w-full text-left text-xs font-mono">
-            <thead class="bg-[#15100c] border-b-2 border-[#4a3624]">
-              <tr>
-                <th class="p-3 w-12 text-center">#</th>
-                <th class="p-3">PERTANYAAN SOAL</th>
-                <th class="p-3 text-center">KATEGORI</th>
-                <th class="p-3 text-center">TINGKAT</th>
-                <th class="p-3 text-center">KUNCI JAWABAN</th>
-                <th class="p-3 text-right">AKSI</th>
-              </tr>
-            </thead>
-          <tbody class="divide-y divide-[#3d2d1e]/60">
-            <tr v-if="loading" class="text-center">
-              <td colspan="6" class="p-8 text-muted-foreground">
-                <div class="flex items-center justify-center gap-2">
-                  <RotateCw class="h-4 w-4 animate-spin text-[#f59e0b]" />
-                  <span>Memuat bank soal...</span>
-                </div>
-              </td>
-            </tr>
-
-            <tr v-else-if="paginatedQuestions.length === 0" class="text-center">
-              <td colspan="6" class="p-8 text-muted-foreground">
-                Tidak ada soal yang sesuai dengan filter.
-              </td>
-            </tr>
-
-            <tr
-              v-for="(q, idx) in paginatedQuestions"
-              :key="q.id"
-              class="hover:bg-[#271d15]/50 transition-colors"
-            >
-              <td class="p-3 text-center text-muted-foreground font-pixel text-[10px]">
-                {{ (currentPage - 1) * pageSize + idx + 1 }}
-              </td>
-
-              <td class="p-3">
-                <div class="font-sans font-semibold text-foreground text-xs leading-relaxed max-w-lg">
-                  {{ q.questionText }}
-                </div>
-                <div class="flex items-center gap-2 text-[10px] text-muted-foreground mt-1">
-                  <span>{{ q.options?.length || 4 }} Pilihan Jawaban</span>
-                  <span>•</span>
-                  <span class="text-[#4ade80]">+{{ q.points || 10 }} pts</span>
-                </div>
-              </td>
-
-              <td class="p-3 text-center">
-                <span class="px-1.5 py-0.5 text-[9px] font-pixel border border-[#ca8a04]/80 bg-[#2b2014] text-[#facc15]">
-                  {{ q.category || 'Umum' }}
-                </span>
-              </td>
-
-              <td class="p-3 text-center">
-                <span
-                  :class="[
-                    'px-1.5 py-0.5 text-[8px] font-pixel border',
-                    q.difficulty === 'EASY'
-                      ? 'border-[#16a34a] text-[#4ade80] bg-[#162518]'
-                      : q.difficulty === 'HARD'
-                      ? 'border-[#dc2626] text-[#f87171] bg-[#2a1414]'
-                      : 'border-[#ca8a04] text-[#facc15] bg-[#2b2014]'
-                  ]"
-                >
-                  {{ q.difficulty || 'MEDIUM' }}
-                </span>
-              </td>
-
-              <td class="p-3 text-center">
-                <span class="px-2 py-0.5 text-[10px] font-pixel border border-[#16a34a] bg-[#162518] text-[#4ade80]">
-                  OPSI {{ q.correctOptionIndex !== undefined ? String.fromCharCode(65 + Number(q.correctOptionIndex)) : 'A' }}
-                </span>
-              </td>
-
-              <td class="p-3 text-right">
-                <div class="flex items-center justify-end gap-1">
-                  <button
-                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#f59e0b] hover:border-[#f59e0b] flex items-center justify-center text-xs"
-                    title="Edit Soal"
-                    @click="openEditModal(q)"
-                  >
-                    <Edit class="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#f87171] hover:border-[#dc2626] flex items-center justify-center text-xs"
-                    title="Hapus Soal"
-                    @click="confirmDelete(q)"
-                  >
-                    <Trash2 class="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Bulk Action Bar -->
+    <div
+      v-if="selectedQuestionIds.length > 0"
+      class="bg-[#271d15] border-b-2 border-[#ca8a04] px-4 md:px-6 py-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono animate-in fade-in slide-in-from-top-1 shrink-0"
+    >
+      <div class="flex items-center gap-2 text-[#f59e0b]">
+        <CheckSquare class="h-4 w-4" />
+        <span><b>{{ selectedQuestionIds.length }}</b> soal terpilih</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          @click="bulkDeleteQuestions"
+          :disabled="processingBulk"
+          class="pixel-btn h-7 px-3 text-[11px] font-bold bg-[#dc2626] text-white border-[#ef4444] hover:bg-[#b91c1c] flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+        >
+          <Trash2 class="h-3.5 w-3.5" />
+          <span>Hapus Soal Terpilih</span>
+        </button>
+        <button
+          @click="selectedQuestionIds = []"
+          class="h-7 px-2.5 text-[11px] border border-[#523e2b] bg-[#1d1611] text-muted-foreground hover:text-foreground cursor-pointer"
+        >
+          Batal
+        </button>
       </div>
     </div>
+
+    <!-- Flush Edge-to-Edge Questions Table -->
+    <div class="flex-1 overflow-x-auto min-h-0">
+      <table class="pixel-table w-full text-left text-xs font-mono">
+        <thead class="bg-[#15100c] border-b-2 border-[#4a3624] sticky top-0 z-10">
+          <tr>
+            <th class="pl-4 md:pl-6 pr-3 py-3 w-10 text-center">
+              <input
+                type="checkbox"
+                :checked="isAllSelected"
+                @change="toggleSelectAll"
+                class="accent-[#f59e0b] cursor-pointer"
+                title="Pilih Semua Halaman Ini"
+              />
+            </th>
+            <th class="p-3 w-12 text-center">#</th>
+            <th class="p-3">PERTANYAAN SOAL</th>
+            <th class="p-3 text-center">KATEGORI</th>
+            <th class="p-3 text-center">TINGKAT</th>
+            <th class="p-3 text-center">KUNCI JAWABAN</th>
+            <th class="pr-4 md:pr-6 pl-3 py-3 text-right w-16">AKSI</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[#3d2d1e]/60">
+          <tr v-if="loading" class="text-center">
+            <td colspan="7" class="p-8 text-muted-foreground">
+              <div class="flex items-center justify-center gap-2">
+                <RotateCw class="h-4 w-4 animate-spin text-[#f59e0b]" />
+                <span>Memuat bank soal...</span>
+              </div>
+            </td>
+          </tr>
+
+          <tr v-else-if="paginatedQuestions.length === 0" class="text-center">
+            <td colspan="7" class="p-8 text-muted-foreground">
+              Tidak ada soal yang sesuai dengan filter.
+            </td>
+          </tr>
+
+          <tr
+            v-for="(q, idx) in paginatedQuestions"
+            :key="q.id"
+            :class="[
+              'hover:bg-[#271d15]/50 transition-colors',
+              selectedQuestionIds.includes(q.id) ? 'bg-[#3b2716]/30' : ''
+            ]"
+          >
+            <!-- Checkbox -->
+            <td class="pl-4 md:pl-6 pr-3 py-3 text-center">
+              <input
+                type="checkbox"
+                :checked="selectedQuestionIds.includes(q.id)"
+                @change="toggleSelect(q.id)"
+                class="accent-[#f59e0b] cursor-pointer"
+              />
+            </td>
+
+            <td class="p-3 text-center text-muted-foreground font-pixel text-[10px]">
+              {{ (currentPage - 1) * pageSize + idx + 1 }}
+            </td>
+
+            <td class="p-3">
+              <div class="font-sans font-semibold text-foreground text-xs leading-relaxed max-w-lg">
+                {{ q.questionText }}
+              </div>
+              <div class="flex items-center gap-2 text-[10px] text-muted-foreground mt-1">
+                <span>{{ q.options?.length || 4 }} Pilihan Jawaban</span>
+                <span>•</span>
+                <span class="text-[#4ade80]">+{{ q.points || 10 }} pts</span>
+              </div>
+            </td>
+
+            <td class="p-3 text-center">
+              <span class="px-1.5 py-0.5 text-[9px] font-pixel border border-[#ca8a04]/80 bg-[#2b2014] text-[#facc15]">
+                {{ q.category || 'Umum' }}
+              </span>
+            </td>
+
+            <td class="p-3 text-center">
+              <span
+                :class="[
+                  'px-1.5 py-0.5 text-[8px] font-pixel border',
+                  q.difficulty === 'EASY'
+                    ? 'border-[#16a34a] text-[#4ade80] bg-[#162518]'
+                    : q.difficulty === 'HARD'
+                    ? 'border-[#dc2626] text-[#f87171] bg-[#2a1414]'
+                    : 'border-[#ca8a04] text-[#facc15] bg-[#2b2014]'
+                ]"
+              >
+                {{ q.difficulty || 'MEDIUM' }}
+              </span>
+            </td>
+
+            <td class="p-3 text-center">
+              <span class="px-2 py-0.5 text-[10px] font-pixel border border-[#16a34a] bg-[#162518] text-[#4ade80]">
+                OPSI {{ q.correctOptionIndex !== undefined ? String.fromCharCode(65 + Number(q.correctOptionIndex)) : 'A' }}
+              </span>
+            </td>
+
+            <td class="pr-4 md:pr-6 pl-3 py-3 text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <button
+                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#f59e0b] hover:border-[#f59e0b] flex items-center justify-center text-xs cursor-pointer ml-auto"
+                    title="Opsi Soal"
+                  >
+                    <MoreHorizontal class="h-3.5 w-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-40 bg-[#1e1711] border-2 border-[#523e2b] text-foreground font-mono text-xs">
+                  <DropdownMenuItem
+                    @click="openEditModal(q)"
+                    class="cursor-pointer hover:bg-[#3d2d1e] focus:bg-[#3d2d1e] flex items-center gap-2 text-[#f59e0b]"
+                  >
+                    <Edit class="h-3.5 w-3.5" />
+                    <span>Edit Soal</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator class="bg-[#523e2b]" />
+                  <DropdownMenuItem
+                    @click="confirmDelete(q)"
+                    class="cursor-pointer hover:bg-[#2a1414] focus:bg-[#2a1414] text-[#f87171] flex items-center gap-2"
+                  >
+                    <Trash2 class="h-3.5 w-3.5" />
+                    <span>Hapus Soal</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Sticky Bottom Dashboard Footer: Pixel Pagination -->
@@ -266,14 +341,14 @@
           <DialogFooter class="pt-3 flex items-center justify-end gap-2">
             <button
               type="button"
-              class="h-8 px-3 text-xs border border-[#523e2b] bg-[#271d15] text-muted-foreground hover:text-foreground"
+              class="h-8 px-3 text-xs border border-[#523e2b] bg-[#271d15] text-muted-foreground hover:text-foreground cursor-pointer"
               @click="showQuestionModal = false"
             >
               Batal
             </button>
             <button
               type="submit"
-              class="pixel-btn h-8 px-4 text-xs font-pixel bg-[#ca8a04] text-[#16110d] border-[#eab308] font-bold"
+              class="pixel-btn h-8 px-4 text-xs font-pixel bg-[#ca8a04] text-[#16110d] border-[#eab308] font-bold cursor-pointer"
               :disabled="saving"
             >
               <RotateCw v-if="saving" class="h-3 w-3 animate-spin mr-1 inline" />
@@ -353,7 +428,7 @@
               type="checkbox"
               id="aiAutoSave"
               v-model="aiForm.autoSave"
-              class="accent-[#6366f1]"
+              class="accent-[#6366f1] cursor-pointer"
             />
             <label for="aiAutoSave" class="text-xs cursor-pointer text-gray-300">
               Langsung simpan hasil soal yang dibuat ke Bank Soal
@@ -381,14 +456,14 @@
           <DialogFooter class="pt-3 flex items-center justify-end gap-2">
             <button
               type="button"
-              class="h-8 px-3 text-xs border border-[#523e2b] bg-[#271d15] text-muted-foreground hover:text-foreground"
+              class="h-8 px-3 text-xs border border-[#523e2b] bg-[#271d15] text-muted-foreground hover:text-foreground cursor-pointer"
               @click="showAiModal = false"
             >
               Tutup
             </button>
             <button
               type="submit"
-              class="pixel-btn h-8 px-4 text-xs font-pixel bg-[#6366f1] text-white border-[#818cf8] font-bold"
+              class="pixel-btn h-8 px-4 text-xs font-pixel bg-[#6366f1] text-white border-[#818cf8] font-bold cursor-pointer"
               :disabled="generatingAi"
             >
               <RotateCw v-if="generatingAi" class="h-3 w-3 animate-spin mr-1 inline" />
@@ -411,6 +486,8 @@ import {
   Edit,
   Trash2,
   Sparkles,
+  MoreHorizontal,
+  CheckSquare,
 } from "lucide-vue-next";
 import { Label } from "@/components/ui/label";
 import {
@@ -420,10 +497,21 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import PixelPagination from "@/components/PixelPagination.vue";
 import { useApi } from "@/composables/useApi";
+import { useToast } from "@/composables/useToast";
+import { useConfirm } from "@/composables/useConfirm";
 
 const api = useApi();
+const toast = useToast();
+const confirmModal = useConfirm();
 
 const loading = ref(false);
 const saving = ref(false);
@@ -444,6 +532,10 @@ const questions = ref<any[]>([]);
 const searchQuery = ref("");
 const categoryFilter = ref("");
 const difficultyFilter = ref("");
+
+// Selection & Bulk Actions
+const selectedQuestionIds = ref<string[]>([]);
+const processingBulk = ref(false);
 
 // Pagination
 const currentPage = ref(1);
@@ -482,6 +574,33 @@ const paginatedQuestions = computed(() => {
   return filteredQuestions.value.slice(start, start + pageSize.value);
 });
 
+const isAllSelected = computed(() => {
+  if (paginatedQuestions.value.length === 0) return false;
+  return paginatedQuestions.value.every((q) => selectedQuestionIds.value.includes(q.id));
+});
+
+function toggleSelectAll() {
+  if (isAllSelected.value) {
+    selectedQuestionIds.value = selectedQuestionIds.value.filter(
+      (id) => !paginatedQuestions.value.some((q) => q.id === id)
+    );
+  } else {
+    const toAdd = paginatedQuestions.value
+      .map((q) => q.id)
+      .filter((id) => !selectedQuestionIds.value.includes(id));
+    selectedQuestionIds.value.push(...toAdd);
+  }
+}
+
+function toggleSelect(id: string) {
+  const idx = selectedQuestionIds.value.indexOf(id);
+  if (idx > -1) {
+    selectedQuestionIds.value.splice(idx, 1);
+  } else {
+    selectedQuestionIds.value.push(id);
+  }
+}
+
 async function fetchQuestions() {
   loading.value = true;
   try {
@@ -489,8 +608,9 @@ async function fetchQuestions() {
     if (res.success && res.data) {
       questions.value = res.data;
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error("Failed to load questions:", err);
+    toast.error("Gagal memuat bank soal: " + (err.data?.error?.message || err.message));
   } finally {
     loading.value = false;
   }
@@ -536,6 +656,7 @@ async function submitQuestionForm() {
         correctOptionIndex: form.value.correctOptionIndex,
         points: form.value.points,
       });
+      toast.success("Soal kuis berhasil diperbarui.");
     } else {
       await api.post("/api/questions", {
         questionText: form.value.questionText,
@@ -545,24 +666,62 @@ async function submitQuestionForm() {
         correctOptionIndex: form.value.correctOptionIndex,
         points: form.value.points,
       });
+      toast.success("Soal kuis baru berhasil ditambahkan.");
     }
     showQuestionModal.value = false;
     await fetchQuestions();
   } catch (err: any) {
-    alert("Gagal menyimpan soal: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal menyimpan soal: " + (err.data?.error?.message || err.message));
   } finally {
     saving.value = false;
   }
 }
 
 async function confirmDelete(q: any) {
-  if (confirm(`Hapus soal '${q.questionText.slice(0, 30)}...'?`)) {
-    try {
-      await api.del(`/api/questions/${q.id}`);
+  const ok = await confirmModal.ask({
+    title: "Hapus Soal Kuis?",
+    message: `Apakah Anda yakin ingin menghapus soal "${q.questionText?.slice(0, 50)}..."?`,
+    confirmText: "Ya, Hapus",
+    cancelText: "Batal",
+    variant: "danger",
+  });
+  if (!ok) return;
+
+  try {
+    await api.del(`/api/questions/${q.id}`);
+    toast.success("Soal berhasil dihapus.");
+    selectedQuestionIds.value = selectedQuestionIds.value.filter((id) => id !== q.id);
+    await fetchQuestions();
+  } catch (err: any) {
+    toast.error("Gagal menghapus soal: " + (err.data?.error?.message || err.message));
+  }
+}
+
+async function bulkDeleteQuestions() {
+  if (selectedQuestionIds.value.length === 0) return;
+  const ok = await confirmModal.ask({
+    title: "Hapus Soal Terpilih?",
+    message: `Apakah Anda yakin ingin menghapus ${selectedQuestionIds.value.length} soal kuis terpilih secara permanen?`,
+    confirmText: "Ya, Hapus Semua",
+    cancelText: "Batal",
+    variant: "danger",
+  });
+  if (!ok) return;
+
+  processingBulk.value = true;
+  try {
+    const res = await api.post<{ success: boolean; message: string }>("/api/questions/batch-delete", {
+      questionIds: selectedQuestionIds.value,
+    });
+    if (res.success) {
+      toast.success(res.message || `${selectedQuestionIds.value.length} soal berhasil dihapus.`);
+      selectedQuestionIds.value = [];
       await fetchQuestions();
-    } catch (err: any) {
-      alert("Gagal menghapus soal: " + err.message);
     }
+  } catch (err: any) {
+    toast.error(err.data?.error?.message || err.message || "Gagal menghapus soal terpilih.");
+  } finally {
+    processingBulk.value = false;
   }
 }
 
@@ -589,10 +748,10 @@ async function generateAiQuestionsHandler() {
       if (aiForm.value.autoSave) {
         await fetchQuestions();
       }
-      alert(res.message || "Soal berhasil di-generate!");
+      toast.success(res.message || "Soal kuis AI berhasil di-generate!");
     }
   } catch (err: any) {
-    alert("Gagal men-generate soal AI: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal men-generate soal AI: " + (err.data?.error?.message || err.message));
   } finally {
     generatingAi.value = false;
   }

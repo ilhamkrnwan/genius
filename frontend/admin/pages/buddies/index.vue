@@ -33,34 +33,6 @@
     <!-- Sticky Top Pixel Toolbar (Flush nempel Topbar) -->
     <div class="pixel-toolbar-sticky px-4 md:px-6 py-2.5 space-y-2.5 shrink-0">
       <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <!-- View Mode Switcher -->
-        <div class="flex items-center gap-1">
-          <button
-            @click="viewMode = 'grid'"
-            :class="[
-              'h-7 px-2.5 text-xs font-pixel flex items-center gap-1.5 transition-colors border',
-              viewMode === 'grid'
-                ? 'bg-[#f59e0b] border-[#f59e0b] text-[#16110d] font-bold'
-                : 'bg-[#271d15] border-[#523e2b] text-muted-foreground hover:text-foreground'
-            ]"
-          >
-            <LayoutGrid class="h-3 w-3" />
-            <span>KARTU</span>
-          </button>
-          <button
-            @click="viewMode = 'table'"
-            :class="[
-              'h-7 px-2.5 text-xs font-pixel flex items-center gap-1.5 transition-colors border',
-              viewMode === 'table'
-                ? 'bg-[#f59e0b] border-[#f59e0b] text-[#16110d] font-bold'
-                : 'bg-[#271d15] border-[#523e2b] text-muted-foreground hover:text-foreground'
-            ]"
-          >
-            <TableIcon class="h-3 w-3" />
-            <span>TABEL</span>
-          </button>
-        </div>
-
         <!-- Search Input -->
         <div class="relative flex-1 max-w-md">
           <Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#f59e0b]" />
@@ -73,7 +45,7 @@
         </div>
 
         <!-- Filter Dropdowns -->
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <!-- Filter Assignment -->
           <select
             v-model="assignmentFilter"
@@ -95,33 +67,123 @@
             <option value="PRIMARY">PRIMARY (GM)</option>
             <option value="ASSISTANT">ASSISTANT</option>
           </select>
+
+          <!-- Filter Status -->
+          <select
+            v-model="statusFilter"
+            class="h-7 bg-[#1d1611] border border-[#523e2b] px-2 text-xs font-mono text-foreground focus:outline-none focus:border-[#f59e0b]"
+            @change="currentPage = 1; fetchBuddies()"
+          >
+            <option value="">Semua Status</option>
+            <option value="ACTIVE">Aktif</option>
+            <option value="INACTIVE">Nonaktif</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Batch Actions Bar (Shows when selected) -->
+      <div
+        v-if="selectedBuddyIds.length > 0"
+        class="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-[#2a1d14] via-[#352115] to-[#2a1d14] border-t border-[#ca8a04]/50 px-4 md:px-6 py-2 text-xs font-mono text-[#facc15] shadow-inner"
+      >
+        <div class="flex items-center gap-2">
+          <CheckSquare class="h-4 w-4 text-[#38bdf8]" />
+          <span class="font-bold text-[#38bdf8]">{{ selectedBuddyIds.length }} buddy terpilih</span>
+          <span class="text-muted-foreground text-[11px] hidden sm:inline">(dari {{ filteredBuddies.length }})</span>
+        </div>
+
+        <div class="flex items-center flex-wrap gap-2">
+          <button
+            class="pixel-btn h-6 px-2.5 text-[10px] bg-[#0284c7] text-[#f0f9ff] font-bold border-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#0f172a] transition-colors"
+            @click="showBatchAssignModal = true"
+          >
+            Plotting Tim Massal
+          </button>
+          <button
+            class="pixel-btn h-6 px-2.5 text-[10px] bg-[#78350f] text-[#fef08a] font-bold border-[#92400e] hover:bg-[#92400e] transition-colors"
+            @click="batchUnassignTeam"
+          >
+            Lepas Tim
+          </button>
+          <button
+            class="pixel-btn h-6 px-2.5 text-[10px] bg-[#1e293b] text-[#38bdf8] font-bold border-[#0284c7] hover:bg-[#0284c7] hover:text-white transition-colors"
+            @click="batchResetPassword"
+          >
+            Reset Password
+          </button>
+          <button
+            class="pixel-btn h-6 px-2.5 text-[10px] bg-[#450a0a] text-[#f87171] font-bold border-[#dc2626] hover:bg-[#dc2626] hover:text-white transition-colors"
+            @click="batchDeleteBuddies"
+          >
+            Hapus Terpilih
+          </button>
+          <button
+            class="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground hover:underline transition-colors"
+            @click="selectedBuddyIds = []"
+          >
+            Batal
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Main Page Content Area (Self-managed padding for Grid / Table) -->
-    <div class="p-4 md:p-6 space-y-4 flex-1">
-      <!-- Content Area: Grid View (Pixel Cards) -->
-      <div v-if="viewMode === 'grid'" class="space-y-4">
-      <div v-if="loading" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div v-for="i in 6" :key="i" class="pixel-card p-4 animate-pulse h-36 bg-[#271d15]"></div>
-      </div>
+    <!-- Main Page Content Area: Flush Table without extra gaps -->
+    <div class="flex-1 min-h-0 overflow-x-auto">
+      <table class="pixel-table w-full text-left text-xs border-collapse">
+        <thead class="bg-[#15100c] border-b-2 border-[#4a3624] sticky top-0 z-10">
+          <tr>
+            <th class="pl-4 md:pl-6 pr-3 py-2.5 w-10 text-center">
+              <input
+                type="checkbox"
+                :checked="isAllSelected"
+                class="rounded bg-[#1a140f] border-[#523e2b] text-[#38bdf8] focus:ring-[#0284c7] cursor-pointer"
+                @change="toggleSelectAll"
+              />
+            </th>
+            <th class="px-3 py-2.5">BUDDY (GAME MASTER)</th>
+            <th class="px-3 py-2.5">PERAN OTORITAS</th>
+            <th class="px-3 py-2.5">TIM BINAAN</th>
+            <th class="px-3 py-2.5 text-center">BONUS DIBERIKAN</th>
+            <th class="px-3 py-2.5 text-center">STATUS</th>
+            <th class="px-3 py-2.5">TERDAFTAR</th>
+            <th class="pr-4 md:pr-6 pl-3 py-2.5 text-center w-16">AKSI</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[#3d2d1e]/60 font-mono">
+          <tr v-if="loading" class="text-center">
+            <td colspan="8" class="p-8 text-muted-foreground">
+              <div class="flex items-center justify-center gap-2">
+                <RotateCw class="h-4 w-4 animate-spin text-[#f59e0b]" />
+                <span>Memuat data Buddy...</span>
+              </div>
+            </td>
+          </tr>
 
-      <div v-else-if="paginatedBuddies.length === 0" class="pixel-card p-8 text-center text-xs text-muted-foreground font-mono">
-        Tidak ada data Buddy yang sesuai dengan filter.
-      </div>
+          <tr v-else-if="paginatedBuddies.length === 0" class="text-center">
+            <td colspan="8" class="p-8 text-muted-foreground">
+              Tidak ada data Buddy yang sesuai dengan filter.
+            </td>
+          </tr>
 
-      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div
-          v-for="b in paginatedBuddies"
-          :key="b.id"
-          class="pixel-card p-4 space-y-3 flex flex-col justify-between"
-        >
-          <div class="space-y-2.5">
-            <!-- Header -->
-            <div class="flex items-start justify-between gap-2">
-              <NuxtLink :to="'/buddies/' + b.id" class="flex items-center gap-2.5 cursor-pointer group">
-                <div class="h-9 w-9 border-2 border-[#0284c7] bg-[#16222f] overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-[0_0_8px_rgba(56,189,248,0.3)]">
+          <tr
+            v-for="b in paginatedBuddies"
+            :key="b.id"
+            :class="['hover:bg-[#271d15]/50 transition-colors', selectedBuddyIds.includes(b.id) ? 'bg-[#1e293b]/30' : '']"
+          >
+            <!-- Checkbox -->
+            <td class="py-2.5 pl-4 md:pl-6 pr-3 text-center">
+              <input
+                type="checkbox"
+                :value="b.id"
+                v-model="selectedBuddyIds"
+                class="rounded bg-[#1a140f] border-[#523e2b] text-[#38bdf8] focus:ring-[#0284c7] cursor-pointer"
+              />
+            </td>
+
+            <!-- Buddy Profile -->
+            <td class="px-3 py-2.5">
+              <NuxtLink :to="'/buddies/' + b.id" class="flex items-center gap-2.5 group cursor-pointer">
+                <div class="h-7 w-7 border border-[#0284c7]/50 bg-[#16222f] overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-[0_0_8px_rgba(56,189,248,0.3)]">
                   <img
                     :src="getBuddyAvatar(b)"
                     :alt="b.fullName"
@@ -130,266 +192,121 @@
                   />
                 </div>
                 <div>
-                  <div class="font-bold text-foreground text-xs leading-tight group-hover:text-[#38bdf8] transition-colors">
+                  <div class="font-sans font-semibold text-foreground text-xs leading-tight group-hover:text-[#38bdf8] transition-colors">
                     {{ b.fullName }}
                   </div>
-                  <div class="font-mono text-[10px] text-muted-foreground">
+                  <div class="text-[10px] text-muted-foreground">
                     @{{ b.username }}
                   </div>
                 </div>
               </NuxtLink>
+            </td>
 
-              <!-- Badge Role -->
+            <!-- Peran Otoritas -->
+            <td class="px-3 py-2.5">
               <span
                 v-if="b.buddyRole === 'PRIMARY'"
-                class="px-1.5 py-0.5 text-[8px] font-pixel border border-[#ca8a04]/80 bg-[#2b2014] text-[#facc15] flex items-center gap-1 shrink-0"
+                class="px-1.5 py-0.5 text-[9px] font-pixel border border-[#ca8a04]/80 bg-[#2b2014] text-[#facc15] inline-flex items-center gap-1"
               >
                 <Crown class="h-2.5 w-2.5 text-[#facc15]" />
                 PRIMARY
               </span>
               <span
                 v-else-if="b.buddyRole === 'ASSISTANT'"
-                class="px-1.5 py-0.5 text-[8px] font-pixel border border-[#0284c7]/80 bg-[#16222f] text-[#38bdf8] shrink-0"
+                class="px-1.5 py-0.5 text-[9px] font-pixel border border-[#0284c7]/80 bg-[#16222f] text-[#38bdf8]"
               >
                 ASSISTANT
               </span>
+              <span v-else class="text-muted-foreground italic text-[10px]">Cadangan</span>
+            </td>
+
+            <!-- Tim Binaan -->
+            <td class="px-3 py-2.5">
+              <div v-if="b.teamName" class="font-pixel text-[10px] text-[#facc15]">
+                {{ b.teamName }} <span class="text-muted-foreground font-mono">({{ b.teamCode }})</span>
+              </div>
+              <span v-else class="text-[#ca8a04] italic text-[10px]">Belum Ditugaskan</span>
+            </td>
+
+            <!-- Bonus Diberikan -->
+            <td class="px-3 py-2.5 text-center font-bold text-[#facc15] text-[11px]">
+              {{ Number(b.bonusSpent || 0) }} / 100 pts
+            </td>
+
+            <!-- Status -->
+            <td class="px-3 py-2.5 text-center">
               <span
-                v-else
-                class="px-1.5 py-0.5 text-[8px] font-pixel border border-[#523e2b] bg-[#271d15] text-muted-foreground shrink-0"
+                :class="[
+                  'inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-semibold rounded-full border',
+                  b.status === 'ACTIVE'
+                    ? 'border-[#16a34a]/60 bg-[#162518] text-[#4ade80]'
+                    : 'border-[#dc2626]/60 bg-[#2a1414] text-[#f87171]'
+                ]"
               >
-                CADANGAN
+                <span class="h-1.5 w-1.5 rounded-full" :class="b.status === 'ACTIVE' ? 'bg-[#4ade80]' : 'bg-[#f87171]'" />
+                {{ b.status === 'ACTIVE' ? 'Aktif' : 'Nonaktif' }}
               </span>
-            </div>
+            </td>
 
-            <!-- Team Assigned -->
-            <div class="border border-[#4a3624] bg-[#15100c] p-2 text-xs font-mono space-y-1">
-              <div class="flex items-center justify-between text-[10px]">
-                <span class="text-muted-foreground">TIM BINAAN:</span>
-                <button
-                  class="text-[9px] text-[#f59e0b] hover:underline font-bold"
-                  @click="openAssignModal(b)"
-                >
-                  {{ b.teamId ? '[ GANTI ]' : '[ PLOTTING ]' }}
-                </button>
-              </div>
+            <!-- Terdaftar -->
+            <td class="px-3 py-2.5 text-[11px] text-muted-foreground">
+              {{ formatDate(b.createdAt) }}
+            </td>
 
-              <div v-if="b.teamName" class="font-pixel text-[11px] text-[#facc15]">
-                {{ b.teamName }} ({{ b.teamCode }})
-              </div>
-              <div v-else class="text-[#ca8a04] text-[10px] italic">
-                Belum ditugaskan ke tim (Cadangan)
-              </div>
-            </div>
-
-            <!-- Bonus Budget Tracker -->
-            <div class="space-y-1 font-mono text-xs">
-              <div class="flex items-center justify-between text-[10px] text-muted-foreground">
-                <span>Bonus Budget Terpakai:</span>
-                <span class="font-bold text-[#facc15]">
-                  {{ Number(b.bonusSpent || 0) }} / 100 PTS
-                </span>
-              </div>
-              <div class="h-2 w-full bg-[#15100c] border border-[#4a3624] p-0.5">
-                <div
-                  class="h-full bg-gradient-to-r from-[#0284c7] to-[#f59e0b]"
-                  :style="{ width: `${Math.min(100, (Number(b.bonusSpent || 0) / 100) * 100)}%` }"
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer Actions -->
-          <div class="border-t border-[#3d2d1e] pt-2 flex items-center justify-between">
-            <NuxtLink
-              :to="'/buddies/' + b.id"
-              class="pixel-btn h-6 px-2 text-[9px] font-pixel bg-[#16222f] text-[#38bdf8] border-[#0284c7] hover:bg-[#0284c7]/20 flex items-center gap-1"
-            >
-              <Eye class="h-2.5 w-2.5" />
-              <span>DETAIL</span>
-            </NuxtLink>
-
-            <div class="flex items-center gap-1">
-              <button
-                class="h-6 w-6 border border-[#523e2b] bg-[#271d15] text-[#facc15] hover:border-[#facc15] flex items-center justify-center text-xs"
-                title="Reset Password"
-                @click="openResetPasswordModal(b)"
-              >
-                <KeyRound class="h-3 w-3" />
-              </button>
-              <button
-                class="h-6 w-6 border border-[#523e2b] bg-[#271d15] text-[#f59e0b] hover:border-[#f59e0b] flex items-center justify-center text-xs"
-                title="Edit"
-                @click="openEditModal(b)"
-              >
-                <Edit class="h-3 w-3" />
-              </button>
-              <button
-                class="h-6 w-6 border border-[#523e2b] bg-[#271d15] text-[#f87171] hover:border-[#dc2626] flex items-center justify-center text-xs"
-                title="Hapus"
-                @click="confirmDelete(b)"
-              >
-                <Trash2 class="h-3 w-3" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Content Area: Table View -->
-    <div v-else class="pixel-card overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="pixel-table w-full text-left text-xs">
-          <thead class="bg-[#15100c] border-b-2 border-[#4a3624]">
-            <tr>
-              <th class="p-3">BUDDY (GAME MASTER)</th>
-              <th class="p-3">PERAN OTORITAS</th>
-              <th class="p-3">TIM BINAAN</th>
-              <th class="p-3 text-center">BONUS DIBERIKAN</th>
-              <th class="p-3 text-center">STATUS</th>
-              <th class="p-3">TERDAFTAR</th>
-              <th class="p-3 text-right">AKSI</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-[#3d2d1e]/60 font-mono">
-            <tr v-if="loading" class="text-center">
-              <td colspan="7" class="p-8 text-muted-foreground">
-                <div class="flex items-center justify-center gap-2">
-                  <RotateCw class="h-4 w-4 animate-spin text-[#f59e0b]" />
-                  <span>Memuat data Buddy...</span>
-                </div>
-              </td>
-            </tr>
-
-            <tr v-else-if="paginatedBuddies.length === 0" class="text-center">
-              <td colspan="7" class="p-8 text-muted-foreground">
-                Tidak ada data Buddy yang sesuai.
-              </td>
-            </tr>
-
-            <tr
-              v-for="b in paginatedBuddies"
-              :key="b.id"
-              class="hover:bg-[#271d15]/50 transition-colors"
-            >
-              <td class="p-3">
-                <NuxtLink :to="'/buddies/' + b.id" class="flex items-center gap-2.5 cursor-pointer group">
-                  <div class="h-7 w-7 border border-[#0284c7]/50 bg-[#16222f] overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-[0_0_8px_rgba(56,189,248,0.3)]">
-                    <img
-                      :src="getBuddyAvatar(b)"
-                      :alt="b.fullName"
-                      class="h-full w-full object-cover"
-                      style="image-rendering: pixelated;"
-                    />
-                  </div>
-                  <div>
-                    <div class="font-sans font-semibold text-foreground text-xs leading-tight group-hover:text-[#38bdf8] transition-colors">
-                      {{ b.fullName }}
-                    </div>
-                    <div class="text-[10px] text-muted-foreground">
-                      @{{ b.username }}
-                    </div>
-                  </div>
-                </NuxtLink>
-              </td>
-
-              <td class="p-3">
-                <span
-                  v-if="b.buddyRole === 'PRIMARY'"
-                  class="px-1.5 py-0.5 text-[9px] font-pixel border border-[#ca8a04]/80 bg-[#2b2014] text-[#facc15] inline-flex items-center gap-1"
-                >
-                  <Crown class="h-2.5 w-2.5 text-[#facc15]" />
-                  PRIMARY
-                </span>
-                <span
-                  v-else-if="b.buddyRole === 'ASSISTANT'"
-                  class="px-1.5 py-0.5 text-[9px] font-pixel border border-[#0284c7]/80 bg-[#16222f] text-[#38bdf8]"
-                >
-                  ASSISTANT
-                </span>
-                <span v-else class="text-muted-foreground italic text-[10px]">Cadangan</span>
-              </td>
-
-              <td class="p-3">
-                <div v-if="b.teamName" class="font-pixel text-[10px] text-[#facc15]">
-                  {{ b.teamName }} ({{ b.teamCode }})
-                </div>
-                <span v-else class="text-[#ca8a04] italic text-[10px]">Belum Ditugaskan</span>
-              </td>
-
-              <td class="p-3 text-center font-bold text-[#facc15] text-[11px]">
-                {{ Number(b.bonusSpent || 0) }} / 100 pts
-              </td>
-
-              <td class="p-3 text-center">
-                <span
-                  :class="[
-                    'px-2 py-0.5 text-[9px] font-pixel border',
-                    b.status === 'ACTIVE'
-                      ? 'border-[#16a34a]/60 bg-[#162518] text-[#4ade80]'
-                      : 'border-[#dc2626]/60 bg-[#2a1414] text-[#f87171]'
-                  ]"
-                >
-                  {{ b.status === 'ACTIVE' ? 'AKTIF' : 'NONAKTIF' }}
-                </span>
-              </td>
-
-              <td class="p-3 text-[11px] text-muted-foreground">
-                {{ formatDate(b.createdAt) }}
-              </td>
-
-              <td class="p-3 text-right">
-                <div class="flex items-center justify-end gap-1">
-                  <NuxtLink
-                    :to="'/buddies/' + b.id"
-                    class="h-7 px-2 border border-[#0284c7] bg-[#16222f] text-[#38bdf8] hover:bg-[#0284c7]/20 flex items-center gap-1 text-[10px] font-pixel rounded"
-                    title="Lihat Detail & Kepemimpinan Buddy"
-                  >
-                    <Eye class="h-3 w-3" />
-                    <span>DETAIL</span>
-                  </NuxtLink>
-
+            <!-- Actions (Dropdown) -->
+            <td class="py-2.5 pr-4 md:pr-6 pl-3 text-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
                   <button
-                    class="h-7 px-2 border border-[#523e2b] bg-[#271d15] text-[#f59e0b] hover:border-[#f59e0b] flex items-center gap-1 text-[10px]"
-                    @click="openAssignModal(b)"
+                    class="h-7 w-7 rounded border border-[#523e2b] bg-[#271d15] text-muted-foreground hover:text-[#38bdf8] hover:border-[#0284c7] hover:bg-[#3d2d1e] inline-flex items-center justify-center transition-colors shadow-sm"
+                    title="Menu Aksi"
                   >
-                    <ArrowRightLeft class="h-3 w-3" />
-                    <span>Plotting</span>
+                    <MoreHorizontal class="h-4 w-4" />
                   </button>
-
-                  <button
-                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#facc15] hover:border-[#facc15] flex items-center justify-center"
-                    title="Reset Password"
-                    @click="openResetPasswordModal(b)"
-                  >
-                    <KeyRound class="h-3.5 w-3.5" />
-                  </button>
-
-                  <button
-                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#f87171] hover:border-[#dc2626] flex items-center justify-center"
-                    title="Hapus"
-                    @click="confirmDelete(b)"
-                  >
-                    <Trash2 class="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-48 bg-[#1e140d] border border-[#5a3a18] text-foreground text-xs font-mono shadow-2xl p-1 z-50">
+                  <DropdownMenuItem as-child class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <NuxtLink :to="'/buddies/' + b.id" class="flex items-center w-full">
+                      <Eye class="mr-2 h-3.5 w-3.5 text-[#38bdf8]" />
+                      <span>Inspect Profil</span>
+                    </NuxtLink>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="openAssignModal(b)" class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <ArrowRightLeft class="mr-2 h-3.5 w-3.5 text-[#f59e0b]" />
+                    <span>Plotting Tim</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="openEditModal(b)" class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <Edit class="mr-2 h-3.5 w-3.5 text-[#ca8a04]" />
+                    <span>Edit Data Buddy</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="openResetPasswordModal(b)" class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <KeyRound class="mr-2 h-3.5 w-3.5 text-[#facc15]" />
+                    <span>Reset Password</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator class="bg-[#4a3624] my-1" />
+                  <DropdownMenuItem @click="confirmDelete(b)" class="cursor-pointer hover:bg-[#2a1414] focus:bg-[#2a1414] text-[#f87171] py-1.5 px-2">
+                    <Trash2 class="mr-2 h-3.5 w-3.5 text-[#f87171]" />
+                    <span>Hapus Buddy</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Sticky Bottom Dashboard Footer: Pixel Pagination -->
-    <PixelPagination
-      :current-page="currentPage"
-      :total-items="filteredBuddies.length"
-      :page-size="pageSize"
-      :page-size-options="[50, 25, 10, 100]"
-      @update:current-page="currentPage = $event"
-      @update:page-size="pageSize = $event; currentPage = 1"
-    />
+    <div class="border-t border-[#4a3624] bg-[#1a130e] shrink-0">
+      <PixelPagination
+        :current-page="currentPage"
+        :total-items="filteredBuddies.length"
+        :page-size="pageSize"
+        :page-size-options="[50, 25, 10, 100]"
+        @update:current-page="currentPage = $event"
+        @update:page-size="pageSize = $event; currentPage = 1"
+      />
+    </div>
 
     <!-- Modal: Create / Edit Buddy -->
     <Dialog :open="showFormModal" @update:open="showFormModal = $event">
@@ -597,6 +514,66 @@
         </div>
       </DialogContent>
     </Dialog>
+
+    <!-- Dialog: Batch Assign Buddy Modal -->
+    <Dialog :open="showBatchAssignModal" @update:open="showBatchAssignModal = $event">
+      <DialogContent class="bg-[#1f1610] border-2 border-[#0284c7] text-foreground font-mono sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle class="text-sm font-pixel text-[#38bdf8] flex items-center gap-2">
+            <Users class="h-4 w-4 text-[#38bdf8]" />
+            Plotting Massal Buddy ({{ selectedBuddyIds.length }} Buddy)
+          </DialogTitle>
+          <DialogDescription class="text-xs text-muted-foreground">
+            Tugaskan semua Buddy yang dipilih ke tim tujuan sekaligus.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-2 text-xs">
+          <div>
+            <Label class="text-muted-foreground text-[10px] uppercase font-semibold">PILIH TIM TUJUAN</Label>
+            <select
+              v-model="batchTargetTeamId"
+              class="w-full mt-1 bg-[#15100c] border border-[#523e2b] text-foreground text-xs p-2 focus:border-[#0284c7] focus:outline-none"
+            >
+              <option :value="null" disabled>-- Pilih Tim --</option>
+              <option v-for="t in teamsList" :key="t.id" :value="t.id">
+                {{ t.name }} ({{ t.code }})
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <Label class="text-muted-foreground text-[10px] uppercase font-semibold">PERAN BUDDY DALAM TIM</Label>
+            <select
+              v-model="batchTargetRole"
+              class="w-full mt-1 bg-[#15100c] border border-[#523e2b] text-foreground text-xs p-2 focus:border-[#0284c7] focus:outline-none"
+            >
+              <option value="PRIMARY">PRIMARY (Game Master Utama)</option>
+              <option value="ASSISTANT">ASSISTANT (Pendamping)</option>
+            </select>
+          </div>
+        </div>
+
+        <DialogFooter class="flex items-center justify-end gap-2 border-t border-[#3d2d1e] pt-3">
+          <button
+            type="button"
+            class="h-7 px-3 text-xs text-muted-foreground hover:text-white"
+            @click="showBatchAssignModal = false"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            class="pixel-btn h-7 px-3 text-xs bg-[#0284c7] text-[#f0f9ff] font-bold border-[#38bdf8] flex items-center gap-1.5"
+            :disabled="!batchTargetTeamId || saving"
+            @click="executeBatchAssign"
+          >
+            <RotateCw v-if="saving" class="h-3 w-3 animate-spin" />
+            <span>Tugaskan Sekarang</span>
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -608,36 +585,50 @@ import {
   RotateCw,
   Download,
   Search,
-  LayoutGrid,
-  Table as TableIcon,
   Crown,
   ArrowRightLeft,
   KeyRound,
   Edit,
   Trash2,
+  Eye,
+  MoreHorizontal,
+  CheckSquare,
+  Users,
 } from "lucide-vue-next";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import PixelPagination from "@/components/PixelPagination.vue";
 import { useApi } from "@/composables/useApi";
+import { useToast } from "@/composables/useToast";
+import { useConfirm } from "@/composables/useConfirm";
 import { OFFICIAL_BUDDIES } from "@/lib/officialBuddies";
 
 const api = useApi();
+const toast = useToast();
+const confirmModal = useConfirm();
 
 const loading = ref(false);
 const saving = ref(false);
 const buddies = ref<any[]>([]);
 const teamsList = ref<any[]>([]);
-const viewMode = ref<"grid" | "table">("grid");
 const searchQuery = ref("");
 const assignmentFilter = ref("");
 const roleFilter = ref("");
+const statusFilter = ref("");
 
 // Pagination state (default to 50 to display all 50 official buddies immediately)
 const currentPage = ref(1);
@@ -668,6 +659,133 @@ const paginatedBuddies = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value;
   return filteredBuddies.value.slice(start, start + pageSize.value);
 });
+
+const selectedBuddyIds = ref<string[]>([]);
+const showBatchAssignModal = ref(false);
+const batchTargetTeamId = ref<string | null>(null);
+const batchTargetRole = ref<"PRIMARY" | "ASSISTANT">("PRIMARY");
+
+const isAllSelected = computed(() => {
+  if (paginatedBuddies.value.length === 0) return false;
+  return paginatedBuddies.value.every((b) => selectedBuddyIds.value.includes(b.id));
+});
+
+function toggleSelectAll() {
+  const pageIds = new Set(paginatedBuddies.value.map((b) => b.id));
+  if (isAllSelected.value) {
+    selectedBuddyIds.value = selectedBuddyIds.value.filter((id) => !pageIds.has(id));
+  } else {
+    selectedBuddyIds.value = Array.from(new Set([...selectedBuddyIds.value, ...pageIds]));
+  }
+}
+
+async function executeBatchAssign() {
+  if (!batchTargetTeamId.value || selectedBuddyIds.value.length === 0) return;
+  saving.value = true;
+  try {
+    await api.post("/api/users/batch-assign-team", {
+      userIds: selectedBuddyIds.value,
+      teamId: batchTargetTeamId.value,
+      buddyRole: batchTargetRole.value,
+    });
+    toast.success("Plotting Berhasil!", `${selectedBuddyIds.value.length} Buddy berhasil dialokasikan ke tim.`);
+    showBatchAssignModal.value = false;
+    selectedBuddyIds.value = [];
+    await fetchBuddies();
+    await fetchTeams();
+  } catch (err: any) {
+    toast.error("Gagal Plotting Buddy Massal", err.data?.error?.message || err.message || "Gagal plotting tim.");
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function batchUnassignTeam() {
+  if (selectedBuddyIds.value.length === 0) return;
+  const count = selectedBuddyIds.value.length;
+  const confirmed = await confirmModal.show({
+    title: `Lepaskan ${count} Buddy Dari Tim?`,
+    description: `Buddy terpilih akan kembali berstatus sebagai Cadangan (Bebas tanpa tim binaan).`,
+    confirmText: "Ya, Lepas Dari Tim",
+    cancelText: "Batal",
+    variant: "warning",
+    icon: "shield",
+  });
+  if (!confirmed) return;
+
+  saving.value = true;
+  try {
+    await api.post("/api/users/batch-assign-team", {
+      userIds: selectedBuddyIds.value,
+      teamId: null,
+    });
+    toast.success("Buddy Dilepaskan!", `${count} Buddy berhasil dilepaskan dari tim binaan.`);
+    selectedBuddyIds.value = [];
+    await fetchBuddies();
+    await fetchTeams();
+  } catch (err: any) {
+    toast.error("Gagal Melepaskan Buddy", err.message || "Terjadi kesalahan sistem.");
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function batchResetPassword() {
+  if (selectedBuddyIds.value.length === 0) return;
+  const count = selectedBuddyIds.value.length;
+  const confirmed = await confirmModal.show({
+    title: `Reset Password ${count} Buddy?`,
+    description: `Password untuk ${count} Buddy terpilih akan di-reset ke default 'genius2026'.`,
+    confirmText: "Ya, Reset Semua",
+    cancelText: "Batal",
+    variant: "warning",
+    icon: "shield",
+  });
+  if (!confirmed) return;
+
+  saving.value = true;
+  try {
+    await api.post("/api/users/batch-reset-password", {
+      userIds: selectedBuddyIds.value,
+      password: "genius2026",
+    });
+    toast.success("Password Di-reset!", `Password untuk ${count} Buddy berhasil di-reset ke 'genius2026'.`);
+    selectedBuddyIds.value = [];
+  } catch (err: any) {
+    toast.error("Gagal Reset Password Massal", err.message || "Terjadi kesalahan sistem.");
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function batchDeleteBuddies() {
+  if (selectedBuddyIds.value.length === 0) return;
+  const count = selectedBuddyIds.value.length;
+  const confirmed = await confirmModal.show({
+    title: `Hapus ${count} Akun Buddy?`,
+    description: `Tindakan ini permanen! Seluruh data akun Buddy dan penugasan tim dari ${count} Buddy akan dihapus.`,
+    confirmText: "Ya, Hapus Semua",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "trash",
+  });
+  if (!confirmed) return;
+
+  saving.value = true;
+  try {
+    await api.post("/api/users/batch-delete", {
+      userIds: selectedBuddyIds.value,
+    });
+    toast.success("Buddy Dihapus!", `${count} akun Buddy berhasil dihapus.`);
+    selectedBuddyIds.value = [];
+    await fetchBuddies();
+    await fetchTeams();
+  } catch (err: any) {
+    toast.error("Gagal Menghapus Buddy Massal", err.message || "Terjadi kesalahan sistem.");
+  } finally {
+    saving.value = false;
+  }
+}
 
 let debounceTimer: any = null;
 function debounceFetch() {
@@ -757,6 +875,18 @@ async function fetchBuddies() {
       list = list.filter((b) => b.buddyRole === roleFilter.value);
     }
 
+    if (statusFilter.value) {
+      list = list.filter((b) => b.status === statusFilter.value);
+    }
+
+    // Deduplicate by id defensively
+    const seen = new Set<string>();
+    list = list.filter((b) => {
+      if (!b?.id || seen.has(b.id)) return false;
+      seen.add(b.id);
+      return true;
+    });
+
     buddies.value = list;
   } catch (err) {
     console.error("Failed to load buddies:", err);
@@ -805,6 +935,7 @@ async function submitForm() {
       };
       if (form.value.password) payload.password = form.value.password;
       await api.put(`/api/users/${form.value.id}`, payload);
+      toast.success("Buddy Diperbarui!", `Data "${form.value.fullName}" berhasil disimpan.`);
     } else {
       await api.post("/api/users", {
         username: form.value.username,
@@ -815,11 +946,12 @@ async function submitForm() {
         buddyRole: form.value.buddyRole,
         status: form.value.status,
       });
+      toast.success("Buddy Dibuat!", `Buddy "${form.value.fullName}" (@${form.value.username}) berhasil didaftarkan.`);
     }
     showFormModal.value = false;
     await fetchBuddies();
   } catch (err: any) {
-    alert("Gagal menyimpan Buddy: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Menyimpan Buddy", err.data?.error?.message || err.message || "Terjadi kesalahan.");
   } finally {
     saving.value = false;
   }
@@ -840,35 +972,53 @@ async function executeAssignBuddy() {
       teamId: assignTargetTeamId.value,
       buddyRole: assignTargetRole.value,
     });
+    toast.success("Plotting Berhasil!", `Penugasan tim untuk "${selectedBuddyForAssign.value.fullName}" telah diperbarui.`);
     showAssignModal.value = false;
     await fetchBuddies();
     await fetchTeams();
   } catch (err: any) {
-    alert("Gagal plotting Buddy: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Plotting Buddy", err.data?.error?.message || err.message || "Terjadi kesalahan.");
   } finally {
     saving.value = false;
   }
 }
 
 async function openResetPasswordModal(b: any) {
-  if (confirm(`Reset password untuk ${b.fullName} (@${b.username}) ke default 'genius2026'?`)) {
-    try {
-      await api.post(`/api/users/${b.id}/reset-password`, { password: "genius2026" });
-      alert(`Password untuk @${b.username} berhasil di-reset ke: genius2026`);
-    } catch (err: any) {
-      alert("Gagal reset password: " + err.message);
-    }
+  const confirmed = await confirmModal.show({
+    title: "Reset Password Buddy?",
+    description: `Reset password untuk ${b.fullName} (@${b.username}) ke password default 'genius2026'?`,
+    confirmText: "Ya, Reset Password",
+    cancelText: "Batal",
+    variant: "warning",
+    icon: "key",
+  });
+  if (!confirmed) return;
+
+  try {
+    await api.post(`/api/users/${b.id}/reset-password`, { password: "genius2026" });
+    toast.success("Password Di-reset!", `Password @${b.username} telah di-reset ke: genius2026`);
+  } catch (err: any) {
+    toast.error("Gagal Reset Password", err.message || "Terjadi kesalahan.");
   }
 }
 
 async function confirmDelete(b: any) {
-  if (confirm(`Hapus akun Buddy ${b.fullName} (@${b.username})?`)) {
-    try {
-      await api.del(`/api/users/${b.id}`);
-      await fetchBuddies();
-    } catch (err: any) {
-      alert("Gagal menghapus: " + err.message);
-    }
+  const confirmed = await confirmModal.show({
+    title: "Hapus Akun Buddy?",
+    description: `Yakin ingin menghapus akun Buddy ${b.fullName} (@${b.username})? Tindakan ini tidak dapat dibatalkan.`,
+    confirmText: "Ya, Hapus Buddy",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "trash",
+  });
+  if (!confirmed) return;
+
+  try {
+    await api.del(`/api/users/${b.id}`);
+    toast.success("Buddy Dihapus", `Akun '${b.fullName}' berhasil dihapus.`);
+    await fetchBuddies();
+  } catch (err: any) {
+    toast.error("Gagal Menghapus Buddy", err.message || "Terjadi kesalahan.");
   }
 }
 

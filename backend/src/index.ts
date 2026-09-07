@@ -20,7 +20,7 @@ import { auditLogRoutes } from "./routes/audit-logs";
 import { monitoringRoutes } from "./routes/monitoring";
 import { aiRoutes } from "./routes/ai";
 import { incubationRoutes } from "./routes/incubation";
-import { attendanceRoutes } from "./routes/attendance";
+import { attendanceRoutes } from "./routes/attendance"; // Flexible active attendance sessions
 import { fgdRoutes } from "./routes/fgd";
 import { ormawaRoutes } from "./routes/ormawa";
 import { reflectionRoutes } from "./routes/reflections";

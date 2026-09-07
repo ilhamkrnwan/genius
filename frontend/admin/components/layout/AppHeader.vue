@@ -79,7 +79,7 @@ const routeLabels: Record<string, string> = {
   buddies: "Manajemen Buddy (GM)",
   teams: "Manajemen Tim Petualang",
   users: "Manajemen Pengguna",
-  floors: "9 Lantai & Lokasi UNU",
+  floors: "Lantai UNU",
   routes: "Rute Perjalanan",
   missions: "Misi & Pos Tantangan",
   stages: "Game Stages",

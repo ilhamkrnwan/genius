@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
  * Parses JWT token from either 'Authorization: Bearer <token>' header or 'auth_token' cookie.
  */
 export const authMiddleware = new Elysia({ name: "auth-middleware" })
-  .derive({ as: "scoped" }, async ({ request, cookie }) => {
+  .derive({ as: "global" }, async ({ request, cookie }) => {
     let token: string | null = null;
 
     const authHeader = request.headers.get("Authorization");

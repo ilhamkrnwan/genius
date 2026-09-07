@@ -141,7 +141,7 @@ const navGroups = [
     label: "Main Quest",
     items: [
       { to: "/", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/leaderboard", label: "Live Leaderboard", icon: Trophy },
+      { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
       { to: "/sessions", label: "Live Matches", icon: Radio },
     ],
   },
@@ -149,31 +149,30 @@ const navGroups = [
     label: "Organisasi Tim",
     items: [
       { to: "/attendance", label: "Presensi Harian", icon: CalendarCheck },
-      { to: "/buddy", label: "Portal Buddy (Lapangan)", icon: UserCheck },
-      { to: "/participants", label: "Peserta RPG", icon: GraduationCap },
-      { to: "/buddies", label: "Buddy (GM)", icon: UserCheck },
-      { to: "/teams", label: "Tim Petualang", icon: Users },
-      { to: "/users", label: "Semua Pengguna", icon: UserCog },
+      { to: "/participants", label: "Peserta", icon: GraduationCap },
+      { to: "/buddies", label: "Buddy", icon: UserCheck },
+      { to: "/teams", label: "Team", icon: Users },
+      { to: "/users", label: "Pengguna", icon: UserCog },
     ],
   },
   {
     label: "Kampus & Pos",
     items: [
-      { to: "/floors", label: "9 Lantai UNU", icon: Building2 },
+      { to: "/floors", label: "Lantai", icon: Building2 },
       { to: "/routes", label: "Rute Perjalanan", icon: GitFork },
       { to: "/missions", label: "Misi & Pos", icon: Target },
       { to: "/stages", label: "Game Stages", icon: Layers },
-      { to: "/ormawa", label: "Stan Ormawa Expo", icon: Store },
-      { to: "/qr-center", label: "QR Print Center", icon: QrCode },
+      { to: "/ormawa", label: "Stan Ormawa", icon: Store },
+      { to: "/qr-center", label: "QR Center", icon: QrCode },
     ],
   },
   {
-    label: "Games, AI & Gelar",
+    label: "Games & AI",
     items: [
       { to: "/games", label: "Arena Games", icon: Gamepad2 },
       { to: "/questions", label: "Bank Soal", icon: HelpCircle },
       { to: "/ai-studio", label: "AI Studio", icon: Sparkles },
-      { to: "/achievements", label: "Gelar & Achievements", icon: Award },
+      { to: "/achievements", label: "Achievements", icon: Award },
     ],
   },
   {
@@ -181,7 +180,7 @@ const navGroups = [
     items: [
       { to: "/scores", label: "Point Ledger", icon: ScrollText },
       { to: "/audit-logs", label: "Audit Logs", icon: History },
-      { to: "/settings", label: "Emergency & Settings", icon: ShieldAlert },
+      { to: "/settings", label: "Settings", icon: ShieldAlert },
     ],
   },
 ];

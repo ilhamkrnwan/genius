@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia";
 import { db } from "../db";
 import { questions } from "../db/schema";
-import { eq, sql, desc, and } from "drizzle-orm";
+import { eq, sql, desc, and, inArray } from "drizzle-orm";
 import { requireAdmin, authMiddleware } from "../middleware/auth";
 
 export const questionRoutes = new Elysia({
@@ -249,4 +249,22 @@ export const questionRoutes = new Elysia({
     }
 
     return { success: true, data: { id: question.id } };
-  });
+  })
+
+  // POST /api/questions/batch-delete — Delete multiple questions
+  .post(
+    "/batch-delete",
+    async ({ body }) => {
+      const { questionIds } = body;
+      if (!questionIds || questionIds.length === 0) {
+        return { success: true, count: 0 };
+      }
+      await db.delete(questions).where(inArray(questions.id, questionIds));
+      return { success: true, message: `${questionIds.length} soal berhasil dihapus`, count: questionIds.length };
+    },
+    {
+      body: t.Object({
+        questionIds: t.Array(t.String()),
+      }),
+    }
+  );

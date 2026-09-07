@@ -34,7 +34,7 @@
       <AppHeader />
 
       <!-- Page Content View with self-managed padding per page -->
-      <main class="flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col">
+      <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col w-full">
         <slot />
       </main>
     </div>

@@ -295,11 +295,33 @@ export const auditLogs = pgTable("audit_logs", {
 // Event Flow Tables (PKKMB 3-Day Program: Presensi, FGD, Ormawa, Refleksi)
 // ============================================================
 
-// --- Attendances (Presensi Harian Hari 1, 2, 3) ---
+// --- Attendance Sessions (Sesi Presensi Fleksibel: Check-In & Check-Out) ---
+export const attendanceSessions = pgTable("attendance_sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  type: varchar("type", { length: 50 }).notNull().default("CHECK_IN"), // 'CHECK_IN' | 'CHECK_OUT'
+  isActive: boolean("is_active").notNull().default(false),
+  qrToken: varchar("qr_token", { length: 255 }).notNull(),
+  xpReward: integer("xp_reward").notNull().default(100),
+  allowLate: boolean("allow_late").notNull().default(true),
+  lateTime: varchar("late_time", { length: 10 }).default("07:30"), // Batas toleransi jam tepat waktu
+  startTime: timestamp("start_time", { withTimezone: true }),
+  endTime: timestamp("end_time", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("attendance_sessions_active_idx").on(table.isActive),
+  index("attendance_sessions_type_idx").on(table.type),
+  index("attendance_sessions_qr_idx").on(table.qrToken),
+]);
+
+// --- Attendances (Log Kehadiran Mahasiswa) ---
 export const attendances = pgTable("attendances", {
   id: uuid("id").defaultRandom().primaryKey(),
   participantId: uuid("participant_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  day: integer("day").notNull(), // 1, 2, 3
+  sessionId: uuid("session_id").references(() => attendanceSessions.id, { onDelete: "set null" }),
+  day: integer("day").default(1), // Tetap ada untuk backward compatibility
   date: varchar("date", { length: 20 }).notNull(), // e.g. "2026-09-22"
   checkInAt: timestamp("check_in_at", { withTimezone: true }),
   checkInStatus: attendanceStatusEnum("check_in_status").default("ON_TIME"),
@@ -310,8 +332,8 @@ export const attendances = pgTable("attendances", {
   xpAwarded: integer("xp_awarded").default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
-  uniqueIndex("attendances_participant_day_unique").on(table.participantId, table.day),
   index("attendances_participant_idx").on(table.participantId),
+  index("attendances_session_idx").on(table.sessionId),
   index("attendances_date_idx").on(table.date),
 ]);
 

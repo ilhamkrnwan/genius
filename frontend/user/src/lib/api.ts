@@ -89,6 +89,17 @@ export const api = {
   },
 
   // Attendance Gate & Daily Reflections
+  async getActiveAttendanceSession() {
+    return this.request('/attendance/active-session');
+  },
+
+  async scanAttendance(qrToken: string, participantId?: string) {
+    return this.request('/attendance/scan', {
+      method: 'POST',
+      body: JSON.stringify({ qrToken, participantId }),
+    });
+  },
+
   async checkIn(day: number, qrToken: string, participantId?: string) {
     return this.request('/attendance/check-in', {
       method: 'POST',

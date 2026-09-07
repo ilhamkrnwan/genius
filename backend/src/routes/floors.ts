@@ -12,24 +12,27 @@ export const floorRoutes = new Elysia({
 })
   .use(requireAdmin)
 
-  // GET /api/floors — List all 9 floors with location counts
+  // GET /api/floors — List all 9 floors with location counts and checkpoints
   .get("/", async () => {
     const allFloors = await db.select().from(floors).orderBy(asc(floors.number));
+    const allLocations = await db.select().from(locations).orderBy(asc(locations.code));
 
-    const locationCounts = await db
-      .select({
-        floorId: locations.floorId,
-        count: sql<number>`count(*)`,
-      })
-      .from(locations)
-      .groupBy(locations.floorId);
+    const locationsByFloorId = new Map<string, typeof allLocations>();
+    for (const loc of allLocations) {
+      const list = locationsByFloorId.get(loc.floorId) || [];
+      list.push(loc);
+      locationsByFloorId.set(loc.floorId, list);
+    }
 
-    const countMap = new Map(locationCounts.map((c) => [c.floorId, Number(c.count)]));
-
-    const data = allFloors.map((f) => ({
-      ...f,
-      locationCount: countMap.get(f.id) || 0,
-    }));
+    const data = allFloors.map((f) => {
+      const locs = locationsByFloorId.get(f.id) || [];
+      return {
+        ...f,
+        status: "ACTIVE",
+        locationCount: locs.length,
+        locations: locs,
+      };
+    });
 
     return { success: true, data };
   })

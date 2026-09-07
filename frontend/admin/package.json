@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "@genius/types": "workspace:*",
-    "lucide-vue-next": "^0.475.0"
+    "@types/qrcode": "^1.5.6",
+    "lucide-vue-next": "^0.475.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.14.0",

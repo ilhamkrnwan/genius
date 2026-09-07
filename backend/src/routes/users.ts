@@ -1,10 +1,106 @@
 import { Elysia, t } from "elysia";
 import { db } from "../db";
-import { users, teams, teamMembers, scoreTransactions } from "../db/schema";
+import {
+  users,
+  teams,
+  teamMembers,
+  scoreTransactions,
+  attendances,
+  dailyReflections,
+  fgdEvaluations,
+  ormawaScans,
+  participantAchievements,
+  gameSessions,
+  questions,
+  auditLogs,
+} from "../db/schema";
 import { eq, like, or, sql, desc, inArray, and } from "drizzle-orm";
 import { hashPassword } from "../lib/password";
 import { requireAdmin, requireBuddyOrAdmin } from "../middleware/auth";
 import { RPG_CHARACTERS, TITLE_CATALOG, PRESET_AVATARS } from "@genius/types";
+
+/**
+ * Cascading deletion helper for users to prevent Foreign Key Constraint errors
+ */
+export async function deleteUsersCascade(userIds: string[]) {
+  if (!userIds || userIds.length === 0) return 0;
+
+  // 1. Unset team captain if user was captain
+  await db
+    .update(teams)
+    .set({ captainId: null })
+    .where(inArray(teams.captainId, userIds));
+
+  // 2. Delete score transactions for participant or createdBy
+  await db
+    .delete(scoreTransactions)
+    .where(
+      or(
+        inArray(scoreTransactions.participantId, userIds),
+        inArray(scoreTransactions.createdBy, userIds)
+      )
+    );
+
+  // 3. Delete attendance records
+  await db
+    .delete(attendances)
+    .where(inArray(attendances.participantId, userIds));
+
+  // 4. Delete daily reflections
+  await db
+    .delete(dailyReflections)
+    .where(inArray(dailyReflections.participantId, userIds));
+
+  // 5. Delete FGD evaluations
+  await db
+    .delete(fgdEvaluations)
+    .where(
+      or(
+        inArray(fgdEvaluations.participantId, userIds),
+        inArray(fgdEvaluations.buddyId, userIds)
+      )
+    );
+
+  // 6. Delete ormawa booth scans
+  await db
+    .delete(ormawaScans)
+    .where(inArray(ormawaScans.participantId, userIds));
+
+  // 7. Delete participant achievements
+  await db
+    .delete(participantAchievements)
+    .where(inArray(participantAchievements.participantId, userIds));
+
+  // 8. Delete game sessions conducted by buddy
+  await db
+    .delete(gameSessions)
+    .where(inArray(gameSessions.buddyId, userIds));
+
+  // 9. Unset questions createdBy
+  await db
+    .update(questions)
+    .set({ createdBy: null })
+    .where(inArray(questions.createdBy, userIds));
+
+  // 10. Unset audit logs actorId
+  await db
+    .update(auditLogs)
+    .set({ actorId: null })
+    .where(inArray(auditLogs.actorId, userIds));
+
+  // 11. Delete team memberships
+  await db
+    .delete(teamMembers)
+    .where(inArray(teamMembers.userId, userIds));
+
+  // 12. Finally delete users
+  const deleted = await db
+    .delete(users)
+    .where(inArray(users.id, userIds))
+    .returning({ id: users.id });
+
+  return deleted.length;
+}
 
 export const userRoutes = new Elysia({
   prefix: "/api/users",
@@ -60,6 +156,19 @@ export const userRoutes = new Elysia({
       .groupBy(scoreTransactions.createdBy)
       .as("sq_buddy_bonus");
 
+    // Subquery for user's latest team membership (guarantees exactly 1 row per user)
+    const latestTeamMemberSubquery = db
+      .selectDistinctOn([teamMembers.userId], {
+        id: teamMembers.id,
+        userId: teamMembers.userId,
+        teamId: teamMembers.teamId,
+        buddyRole: teamMembers.buddyRole,
+        joinedAt: teamMembers.joinedAt,
+      })
+      .from(teamMembers)
+      .orderBy(teamMembers.userId, desc(teamMembers.joinedAt))
+      .as("sq_team_member");
+
     let baseQuery = db
       .select({
         id: users.id,
@@ -74,18 +183,18 @@ export const userRoutes = new Elysia({
         unlockedTitles: users.unlockedTitles,
         avatarUrl: users.avatarUrl,
         createdAt: users.createdAt,
-        teamMemberId: teamMembers.id,
+        teamMemberId: latestTeamMemberSubquery.id,
         teamId: teams.id,
         teamName: teams.name,
         teamCode: teams.code,
-        buddyRole: teamMembers.buddyRole,
-        joinedTeamAt: teamMembers.joinedAt,
+        buddyRole: latestTeamMemberSubquery.buddyRole,
+        joinedTeamAt: latestTeamMemberSubquery.joinedAt,
         totalScore: sql<number>`COALESCE(${userScoreSubquery.totalScore}, 0)`,
         bonusSpent: sql<number>`COALESCE(${buddyBonusSubquery.totalBonusGiven}, 0)`,
       })
       .from(users)
-      .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
-      .leftJoin(teams, eq(teamMembers.teamId, teams.id))
+      .leftJoin(latestTeamMemberSubquery, eq(users.id, latestTeamMemberSubquery.userId))
+      .leftJoin(teams, eq(latestTeamMemberSubquery.teamId, teams.id))
       .leftJoin(userScoreSubquery, eq(users.id, userScoreSubquery.participantId))
       .leftJoin(buddyBonusSubquery, eq(users.id, buddyBonusSubquery.buddyId))
       .$dynamic();
@@ -135,8 +244,8 @@ export const userRoutes = new Elysia({
     let countQuery = db
       .select({ count: sql<number>`count(DISTINCT ${users.id})` })
       .from(users)
-      .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
-      .leftJoin(teams, eq(teamMembers.teamId, teams.id))
+      .leftJoin(latestTeamMemberSubquery, eq(users.id, latestTeamMemberSubquery.userId))
+      .leftJoin(teams, eq(latestTeamMemberSubquery.teamId, teams.id))
       .$dynamic();
 
     if (conditions.length > 0) {
@@ -183,6 +292,7 @@ export const userRoutes = new Elysia({
       .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
       .leftJoin(teams, eq(teamMembers.teamId, teams.id))
       .where(eq(users.id, params.id))
+      .orderBy(desc(teamMembers.joinedAt))
       .limit(1);
 
     if (!user) {
@@ -488,6 +598,63 @@ export const userRoutes = new Elysia({
     }
   )
 
+  // POST /api/users/batch-delete — Delete multiple users and their relations in cascade
+  .post(
+    "/batch-delete",
+    async ({ body, set }) => {
+      const { userIds } = body;
+      if (!userIds || userIds.length === 0) {
+        return { success: true, count: 0 };
+      }
+      const count = await deleteUsersCascade(userIds);
+      return { success: true, message: `${count} pengguna berhasil dihapus`, count };
+    },
+    {
+      body: t.Object({
+        userIds: t.Array(t.String()),
+      }),
+    }
+  )
+
+  // POST /api/users/batch-status — Batch update status (ACTIVE / INACTIVE)
+  .post(
+    "/batch-status",
+    async ({ body, set }) => {
+      const { userIds, status } = body;
+      if (!userIds || userIds.length === 0) {
+        return { success: true, count: 0 };
+      }
+      await db.update(users).set({ status: status as any, updatedAt: new Date() }).where(inArray(users.id, userIds));
+      return { success: true, message: `Status ${userIds.length} pengguna berhasil diperbarui`, count: userIds.length };
+    },
+    {
+      body: t.Object({
+        userIds: t.Array(t.String()),
+        status: t.String(),
+      }),
+    }
+  )
+
+  // POST /api/users/batch-reset-password — Batch reset password for users
+  .post(
+    "/batch-reset-password",
+    async ({ body, set }) => {
+      const { userIds, password = "genius2026" } = body;
+      if (!userIds || userIds.length === 0) {
+        return { success: true, count: 0 };
+      }
+      const passwordHash = await hashPassword(password);
+      await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(inArray(users.id, userIds));
+      return { success: true, message: `Password ${userIds.length} pengguna berhasil di-reset`, count: userIds.length };
+    },
+    {
+      body: t.Object({
+        userIds: t.Array(t.String()),
+        password: t.Optional(t.String()),
+      }),
+    }
+  )
+
   // POST /api/users/:id/reset-password — Quick password reset
   .post(
     "/:id/reset-password",
@@ -710,21 +877,15 @@ export const userRoutes = new Elysia({
     }
   )
 
-  // DELETE /api/users/:id — Delete user
+  // DELETE /api/users/:id — Delete user with all cascading relations
   .delete("/:id", async ({ params, set }) => {
-    // Delete team membership first
-    await db.delete(teamMembers).where(eq(teamMembers.userId, params.id));
+    const count = await deleteUsersCascade([params.id]);
 
-    const [user] = await db
-      .delete(users)
-      .where(eq(users.id, params.id))
-      .returning({ id: users.id });
-
-    if (!user) {
+    if (count === 0) {
       set.status = 404;
       return { success: false, error: { code: "NOT_FOUND", message: "User not found" } };
     }
 
-    return { success: true, data: { id: user.id } };
+    return { success: true, data: { id: params.id } };
   });
 

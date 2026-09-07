@@ -95,12 +95,6 @@
                     ]"
                   />
                   <span v-if="!sidebarCollapsed" class="truncate font-sans text-xs">{{ item.label }}</span>
-                  <Badge
-                    v-if="item.badge && !sidebarCollapsed"
-                    class="ml-auto text-[8px] font-pixel px-1.5 py-0 bg-[#3a291c] text-[#facc15] border border-[#ca8a04]/40"
-                  >
-                    {{ item.badge }}
-                  </Badge>
                 </NuxtLink>
               </TooltipTrigger>
               <TooltipContent side="right" v-if="sidebarCollapsed" class="bg-[#271d15] text-[#facc15] border-[#f59e0b] text-xs">
@@ -227,7 +221,6 @@ import {
 } from "lucide-vue-next";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { useLayoutState } from "@/composables/useLayoutState";
 import { useAuth } from "@/composables/useAuth";
 
@@ -245,39 +238,38 @@ const navGroups = [
     label: "Main Quest",
     items: [
       { label: "Dashboard", to: "/", icon: LayoutDashboard },
-      { label: "Leaderboard", to: "/leaderboard", icon: Trophy, badge: "LIVE" },
-      { label: "Live Matches", to: "/sessions", icon: Radio, badge: "RADAR" },
+      { label: "Leaderboard", to: "/leaderboard", icon: Trophy },
+      { label: "Live Matches", to: "/sessions", icon: Radio },
     ],
   },
   {
     label: "Organisasi Tim",
     items: [
-      { label: "Presensi Harian", to: "/attendance", icon: CalendarCheck, badge: "GATE" },
-      { label: "Portal Buddy", to: "/buddy", icon: UserCheck, badge: "FIELD" },
-      { label: "Peserta RPG", to: "/participants", icon: GraduationCap },
-      { label: "Buddy (GM)", to: "/buddies", icon: UserCheck },
-      { label: "Tim Petualang", to: "/teams", icon: Users },
-      { label: "Semua Pengguna", to: "/users", icon: UserCog },
+      { label: "Presensi Harian", to: "/attendance", icon: CalendarCheck },
+      { label: "Peserta", to: "/participants", icon: GraduationCap },
+      { label: "Buddy", to: "/buddies", icon: UserCheck },
+      { label: "Team", to: "/teams", icon: Users },
+      { label: "Pengguna", to: "/users", icon: UserCog },
     ],
   },
   {
     label: "Kampus & Pos",
     items: [
-      { label: "9 Lantai UNU", to: "/floors", icon: Building2 },
+      { label: "Lantai", to: "/floors", icon: Building2 },
       { label: "Rute Perjalanan", to: "/routes", icon: GitFork },
       { label: "Misi & Pos", to: "/missions", icon: Target },
       { label: "Game Stages", to: "/stages", icon: Layers },
-      { label: "Stan Ormawa Expo", to: "/ormawa", icon: Store, badge: "DAY 3" },
-      { label: "QR Print Center", to: "/qr-center", icon: QrCode },
+      { label: "Stan Ormawa", to: "/ormawa", icon: Store },
+      { label: "QR Center", to: "/qr-center", icon: QrCode },
     ],
   },
   {
-    label: "Games, AI & Gelar",
+    label: "Games & AI",
     items: [
       { label: "Arena Games", to: "/games", icon: Gamepad2 },
       { label: "Bank Soal", to: "/questions", icon: HelpCircle },
-      { label: "AI Studio", to: "/ai-studio", icon: Sparkles, badge: "AI" },
-      { label: "Gelar & Achievements", to: "/achievements", icon: Award },
+      { label: "AI Studio", to: "/ai-studio", icon: Sparkles },
+      { label: "Achievements", to: "/achievements", icon: Award },
     ],
   },
   {
@@ -285,7 +277,7 @@ const navGroups = [
     items: [
       { label: "Point Ledger", to: "/scores", icon: ScrollText },
       { label: "Audit Logs", to: "/audit-logs", icon: History },
-      { label: "Emergency & Settings", to: "/settings", icon: ShieldAlert },
+      { label: "Settings", to: "/settings", icon: ShieldAlert },
     ],
   },
 ];

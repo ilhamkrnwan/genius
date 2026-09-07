@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia";
 import { db } from "../db";
 import { ormawaBooths, ormawaScans, users, teams, teamMembers, scoreTransactions, floors } from "../db/schema";
-import { eq, and, sql, desc, or, ilike } from "drizzle-orm";
+import { eq, and, sql, desc, or, ilike, inArray } from "drizzle-orm";
 import { authMiddleware, requireAdmin } from "../middleware/auth";
 import { broadcastLeaderboardUpdate, broadcastAdminEvent } from "../realtime";
 
@@ -417,6 +417,69 @@ export const ormawaRoutes = new Elysia({
     },
     {
       params: t.Object({ id: t.String() }),
+    }
+  )
+
+  // POST /api/ormawa/booths/batch-delete — Admin hapus banyak stan Ormawa
+  .post(
+    "/booths/batch-delete",
+    async ({ body, set }) => {
+      const boothIds = body.boothIds;
+      if (!boothIds || boothIds.length === 0) {
+        set.status = 400;
+        return { success: false, error: { code: "INVALID_INPUT", message: "Daftar ID stan tidak boleh kosong" } };
+      }
+
+      await db.delete(ormawaScans).where(inArray(ormawaScans.boothId, boothIds));
+      const deleted = await db
+        .delete(ormawaBooths)
+        .where(inArray(ormawaBooths.id, boothIds))
+        .returning({ id: ormawaBooths.id });
+
+      broadcastAdminEvent("ORMAWA_BOOTH_DELETED", { boothIds });
+
+      return {
+        success: true,
+        message: `${deleted.length} stan ormawa berhasil dihapus.`,
+        data: { deletedCount: deleted.length },
+      };
+    },
+    {
+      body: t.Object({
+        boothIds: t.Array(t.String()),
+      }),
+    }
+  )
+
+  // POST /api/ormawa/booths/batch-status — Admin aktif/nonaktifkan banyak stan
+  .post(
+    "/booths/batch-status",
+    async ({ body, set }) => {
+      const { boothIds, isActive } = body;
+      if (!boothIds || boothIds.length === 0) {
+        set.status = 400;
+        return { success: false, error: { code: "INVALID_INPUT", message: "Daftar ID stan tidak boleh kosong" } };
+      }
+
+      const updated = await db
+        .update(ormawaBooths)
+        .set({ isActive })
+        .where(inArray(ormawaBooths.id, boothIds))
+        .returning({ id: ormawaBooths.id });
+
+      broadcastAdminEvent("ORMAWA_BOOTH_UPDATED", { boothIds, isActive });
+
+      return {
+        success: true,
+        message: `${updated.length} stan ormawa berhasil ${isActive ? "diaktifkan" : "dinonaktifkan"}.`,
+        data: { updatedCount: updated.length },
+      };
+    },
+    {
+      body: t.Object({
+        boothIds: t.Array(t.String()),
+        isActive: t.Boolean(),
+      }),
     }
   )
 

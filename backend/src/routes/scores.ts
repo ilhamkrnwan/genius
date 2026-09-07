@@ -16,6 +16,271 @@ export const scoreRoutes = new Elysia({
   },
 })
   .use(authMiddleware)
+
+  // POST /api/scores/award & /add-xp — Universal Reusable XP Award Endpoint
+  // Bisa di-hit oleh modul game, scan QR, booth, buddy, atau curl langsung (menerima UUID atau NIM)
+  .post(
+    "/award",
+    async ({ body, user, set }) => {
+      const { participantId, amount, reason, sourceType, teamId, stageId, gameSessionId } = body;
+
+      if (!amount || amount === 0) {
+        set.status = 400;
+        return { success: false, error: { code: "INVALID_AMOUNT", message: "Jumlah XP tidak boleh 0" } };
+      }
+
+      // 1. Resolve participant (bisa berupa UUID atau NIM/username)
+      const targetId = participantId || user?.userId;
+      if (!targetId) {
+        set.status = 400;
+        return { success: false, error: { code: "MISSING_PARTICIPANT", message: "ID Mahasiswa atau NIM wajib disertakan" } };
+      }
+
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+      let participant: { id: string; fullName: string; username: string } | undefined = undefined;
+
+      if (isUuid) {
+        const [found] = await db
+          .select({ id: users.id, fullName: users.fullName, username: users.username })
+          .from(users)
+          .where(eq(users.id, targetId))
+          .limit(1);
+        participant = found;
+      } else {
+        const [found] = await db
+          .select({ id: users.id, fullName: users.fullName, username: users.username })
+          .from(users)
+          .where(eq(users.username, targetId))
+          .limit(1);
+        participant = found;
+      }
+
+      if (!participant) {
+        set.status = 404;
+        return { success: false, error: { code: "PARTICIPANT_NOT_FOUND", message: `Mahasiswa dengan ID/NIM "${targetId}" tidak ditemukan` } };
+      }
+
+      // 2. Resolve team
+      let targetTeamId = teamId;
+      if (!targetTeamId) {
+        const [membership] = await db
+          .select({ teamId: teamMembers.teamId })
+          .from(teamMembers)
+          .where(eq(teamMembers.userId, participant.id))
+          .limit(1);
+        targetTeamId = membership?.teamId;
+      }
+
+      if (!targetTeamId) {
+        const [defaultTeam] = await db.select({ id: teams.id }).from(teams).limit(1);
+        targetTeamId = defaultTeam?.id;
+      }
+
+      // 3. Catat transaksi ke ledger
+      const finalAmount = Math.round(Number(amount));
+      const finalSourceType = (sourceType as any) || "BONUS";
+      const finalReason = reason ? reason.trim() : "Penambahan Poin XP";
+
+      const [tx] = await db
+        .insert(scoreTransactions)
+        .values({
+          participantId: participant.id,
+          teamId: targetTeamId,
+          amount: finalAmount,
+          sourceType: finalSourceType,
+          reason: finalReason,
+          stageId: stageId || null,
+          gameSessionId: gameSessionId || null,
+          createdBy: user?.userId || participant.id,
+        })
+        .returning();
+
+      // 4. Hitung total XP terkini
+      const [totalRow] = await db
+        .select({ total: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)` })
+        .from(scoreTransactions)
+        .where(eq(scoreTransactions.participantId, participant.id));
+
+      const currentTotalXp = Number(totalRow?.total || 0);
+
+      // 5. Broadcast real-time ke Leaderboard & Admin
+      broadcastLeaderboardUpdate({
+        type: "SCORE_SUBMITTED",
+        teamId: targetTeamId,
+        participantId: participant.id,
+        amount: finalAmount,
+      });
+
+      broadcastAdminEvent("XP_AWARDED", {
+        participantId: participant.id,
+        participantName: participant.fullName,
+        amount: finalAmount,
+        reason: finalReason,
+        totalXp: currentTotalXp,
+      });
+
+      return {
+        success: true,
+        message: `Berhasil ${finalAmount >= 0 ? 'menambahkan +' : ''}${finalAmount} XP ke ${participant.fullName}!`,
+        data: {
+          transactionId: tx.id,
+          participantId: participant.id,
+          participantName: participant.fullName,
+          username: participant.username,
+          teamId: targetTeamId,
+          amount: finalAmount,
+          totalXp: currentTotalXp,
+          sourceType: finalSourceType,
+          reason: finalReason,
+        },
+      };
+    },
+    {
+      detail: {
+        summary: "Universal Reusable XP Award Endpoint",
+        description: "Menambahkan poin XP ke mahasiswa (menerima UUID atau NIM) dan otomatis sinkron ke ledger dan leaderboard real-time.",
+      },
+      body: t.Object({
+        participantId: t.Optional(t.String()),
+        amount: t.Number(),
+        reason: t.Optional(t.String()),
+        sourceType: t.Optional(t.String()),
+        teamId: t.Optional(t.String()),
+        stageId: t.Optional(t.String()),
+        gameSessionId: t.Optional(t.String()),
+      }),
+    }
+  )
+
+  // Alias /add-xp
+  .post(
+    "/add-xp",
+    async (context) => {
+      const { body, user, set } = context;
+      const { participantId, amount, reason, sourceType, teamId, stageId, gameSessionId } = body;
+
+      if (!amount || amount === 0) {
+        set.status = 400;
+        return { success: false, error: { code: "INVALID_AMOUNT", message: "Jumlah XP tidak boleh 0" } };
+      }
+
+      const targetId = participantId || user?.userId;
+      if (!targetId) {
+        set.status = 400;
+        return { success: false, error: { code: "MISSING_PARTICIPANT", message: "ID Mahasiswa atau NIM wajib disertakan" } };
+      }
+
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+      let participant: { id: string; fullName: string; username: string } | undefined = undefined;
+
+      if (isUuid) {
+        const [found] = await db
+          .select({ id: users.id, fullName: users.fullName, username: users.username })
+          .from(users)
+          .where(eq(users.id, targetId))
+          .limit(1);
+        participant = found;
+      } else {
+        const [found] = await db
+          .select({ id: users.id, fullName: users.fullName, username: users.username })
+          .from(users)
+          .where(eq(users.username, targetId))
+          .limit(1);
+        participant = found;
+      }
+
+      if (!participant) {
+        set.status = 404;
+        return { success: false, error: { code: "PARTICIPANT_NOT_FOUND", message: `Mahasiswa dengan ID/NIM "${targetId}" tidak ditemukan` } };
+      }
+
+      let targetTeamId = teamId;
+      if (!targetTeamId) {
+        const [membership] = await db
+          .select({ teamId: teamMembers.teamId })
+          .from(teamMembers)
+          .where(eq(teamMembers.userId, participant.id))
+          .limit(1);
+        targetTeamId = membership?.teamId;
+      }
+
+      if (!targetTeamId) {
+        const [defaultTeam] = await db.select({ id: teams.id }).from(teams).limit(1);
+        targetTeamId = defaultTeam?.id;
+      }
+
+      const finalAmount = Math.round(Number(amount));
+      const finalSourceType = (sourceType as any) || "BONUS";
+      const finalReason = reason ? reason.trim() : "Penambahan Poin XP";
+
+      const [tx] = await db
+        .insert(scoreTransactions)
+        .values({
+          participantId: participant.id,
+          teamId: targetTeamId,
+          amount: finalAmount,
+          sourceType: finalSourceType,
+          reason: finalReason,
+          stageId: stageId || null,
+          gameSessionId: gameSessionId || null,
+          createdBy: user?.userId || participant.id,
+        })
+        .returning();
+
+      const [totalRow] = await db
+        .select({ total: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)` })
+        .from(scoreTransactions)
+        .where(eq(scoreTransactions.participantId, participant.id));
+
+      const currentTotalXp = Number(totalRow?.total || 0);
+
+      broadcastLeaderboardUpdate({
+        type: "SCORE_SUBMITTED",
+        teamId: targetTeamId,
+        participantId: participant.id,
+        amount: finalAmount,
+      });
+
+      broadcastAdminEvent("XP_AWARDED", {
+        participantId: participant.id,
+        participantName: participant.fullName,
+        amount: finalAmount,
+        reason: finalReason,
+        totalXp: currentTotalXp,
+      });
+
+      return {
+        success: true,
+        message: `Berhasil ${finalAmount >= 0 ? 'menambahkan +' : ''}${finalAmount} XP ke ${participant.fullName}!`,
+        data: {
+          transactionId: tx.id,
+          participantId: participant.id,
+          participantName: participant.fullName,
+          username: participant.username,
+          teamId: targetTeamId,
+          amount: finalAmount,
+          totalXp: currentTotalXp,
+          sourceType: finalSourceType,
+          reason: finalReason,
+        },
+      };
+    },
+    {
+      detail: {
+        summary: "Universal Reusable XP Award Endpoint (Alias /add-xp)",
+      },
+      body: t.Object({
+        participantId: t.Optional(t.String()),
+        amount: t.Number(),
+        reason: t.Optional(t.String()),
+        sourceType: t.Optional(t.String()),
+        teamId: t.Optional(t.String()),
+        stageId: t.Optional(t.String()),
+        gameSessionId: t.Optional(t.String()),
+      }),
+    }
+  )
+
   .use(requireUser)
 
   // POST /api/scores — Submit game or activity score
@@ -29,17 +294,32 @@ export const scoreRoutes = new Elysia({
 
       const participantId = body.participantId || user.userId;
 
-      // Ensure participant exists
-      const [participant] = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.id, participantId))
-        .limit(1);
+      // Ensure participant exists (Bisa berupa UUID atau NIM/username)
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(participantId);
+      let participant: { id: string } | undefined = undefined;
+
+      if (isUuid) {
+        const [found] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.id, participantId))
+          .limit(1);
+        participant = found;
+      } else {
+        const [found] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.username, participantId))
+          .limit(1);
+        participant = found;
+      }
 
       if (!participant) {
         set.status = 404;
         return { success: false, error: { code: "PARTICIPANT_NOT_FOUND", message: "Peserta tidak ditemukan" } };
       }
+
+      const verifiedUserId = participant.id;
 
       // Determine teamId
       let targetTeamId = body.teamId;
@@ -47,7 +327,7 @@ export const scoreRoutes = new Elysia({
         const [membership] = await db
           .select({ teamId: teamMembers.teamId })
           .from(teamMembers)
-          .where(eq(teamMembers.userId, participantId))
+          .where(eq(teamMembers.userId, verifiedUserId))
           .limit(1);
         targetTeamId = membership?.teamId;
       }
@@ -60,7 +340,7 @@ export const scoreRoutes = new Elysia({
       const [tx] = await db
         .insert(scoreTransactions)
         .values({
-          participantId,
+          participantId: verifiedUserId,
           teamId: targetTeamId,
           amount: Math.round(Number(body.amount)),
           sourceType: (body.sourceType as any) || "GAME",
@@ -71,7 +351,7 @@ export const scoreRoutes = new Elysia({
         })
         .returning();
 
-      broadcastLeaderboardUpdate({ type: "SCORE_SUBMITTED", teamId: targetTeamId, participantId, amount: tx.amount });
+      broadcastLeaderboardUpdate({ type: "SCORE_SUBMITTED", teamId: targetTeamId, participantId: verifiedUserId, amount: tx.amount });
 
       return {
         success: true,

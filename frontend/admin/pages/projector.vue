@@ -132,11 +132,11 @@
 
             <div class="space-y-1">
               <h3 class="font-sans text-sm sm:text-base font-bold text-white line-clamp-1">
-                {{ podiumData[1].name }}
+                {{ podiumData[1]?.name || 'Regu Juara 2' }}
               </h3>
-              <span class="text-[10px] text-gray-400 block">Buddy: {{ podiumData[1].buddy }}</span>
+              <span class="text-[10px] text-gray-400 block">Buddy: {{ podiumData[1]?.buddy || '-' }}</span>
               <div class="font-pixel text-sm sm:text-base text-[#e2e8f0] font-bold">
-                {{ podiumData[1].score.toLocaleString() }} PTS
+                {{ (podiumData[1]?.score || 0).toLocaleString() }} PTS
               </div>
             </div>
 
@@ -161,11 +161,11 @@
                 JUARA UMUM ANGKATAN 2026
               </div>
               <h3 class="font-sans text-base sm:text-lg font-bold text-[#fef08a]">
-                {{ podiumData[0].name }}
+                {{ podiumData[0]?.name || 'Regu Juara 1' }}
               </h3>
-              <span class="text-[11px] text-amber-200/90 block">Buddy: {{ podiumData[0].buddy }}</span>
+              <span class="text-[11px] text-amber-200/90 block">Buddy: {{ podiumData[0]?.buddy || '-' }}</span>
               <div class="font-pixel text-lg sm:text-2xl text-[#86efac] font-bold">
-                {{ podiumData[0].score.toLocaleString() }} PTS
+                {{ (podiumData[0]?.score || 0).toLocaleString() }} PTS
               </div>
             </div>
 
@@ -187,11 +187,11 @@
 
             <div class="space-y-1">
               <h3 class="font-sans text-sm sm:text-base font-bold text-white line-clamp-1">
-                {{ podiumData[2].name }}
+                {{ podiumData[2]?.name || 'Regu Juara 3' }}
               </h3>
-              <span class="text-[10px] text-gray-400 block">Buddy: {{ podiumData[2].buddy }}</span>
+              <span class="text-[10px] text-gray-400 block">Buddy: {{ podiumData[2]?.buddy || '-' }}</span>
               <div class="font-pixel text-sm sm:text-base text-[#fb923c] font-bold">
-                {{ podiumData[2].score.toLocaleString() }} PTS
+                {{ (podiumData[2]?.score || 0).toLocaleString() }} PTS
               </div>
             </div>
 
@@ -385,7 +385,12 @@ interface TeamRankItem {
 const rawTeamsList = ref<TeamRankItem[]>([]);
 
 const podiumData = computed(() => {
-  return rawTeamsList.value.slice(0, 3);
+  const list = rawTeamsList.value;
+  return [
+    list[0] || { rank: 1, name: "Regu Juara 1", buddy: "-", score: 0, completedStamps: 0 },
+    list[1] || { rank: 2, name: "Regu Juara 2", buddy: "-", score: 0, completedStamps: 0 },
+    list[2] || { rank: 3, name: "Regu Juara 3", buddy: "-", score: 0, completedStamps: 0 },
+  ];
 });
 
 const allTeamsData = computed(() => {
@@ -409,14 +414,15 @@ async function fetchLiveLeaderboard() {
   try {
     const res: any = await api.get("/api/leaderboard?limit=50");
     const data = res?.data !== undefined ? res.data : res;
-    if (data && Array.isArray(data.topTeams)) {
-      rawTeamsList.value = data.topTeams.map((t: any, idx: number) => ({
+    const teamList = data?.teamLeaderboard || data?.topTeams || [];
+    if (Array.isArray(teamList)) {
+      rawTeamsList.value = teamList.map((t: any, idx: number) => ({
         rank: t.rank || idx + 1,
-        id: t.teamId,
-        name: t.teamName || `Regu ${t.teamCode || idx + 1}`,
-        buddy: t.buddyName || "Game Master",
-        score: Number(t.totalScore || 0),
-        completedStamps: Number(t.transactionCount || 0),
+        id: t.teamId || t.id,
+        name: t.teamName || t.name || `Regu ${t.teamCode || idx + 1}`,
+        buddy: t.buddy || t.mentor || t.buddyName || "-",
+        score: Number(t.totalScore ?? t.score ?? 0),
+        completedStamps: Number(t.transactionCount ?? t.txCount ?? 0),
       }));
     }
   } catch (err) {

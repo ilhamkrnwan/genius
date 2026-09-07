@@ -24,34 +24,6 @@
     <!-- Sticky Top Pixel Toolbar (Flush nempel Topbar) -->
     <div class="pixel-toolbar-sticky px-4 md:px-6 py-2.5 space-y-2.5 shrink-0">
       <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <!-- View Mode Switcher -->
-        <div class="flex items-center gap-1">
-          <button
-            @click="viewMode = 'grid'"
-            :class="[
-              'h-7 px-2.5 text-xs font-pixel flex items-center gap-1.5 transition-colors border',
-              viewMode === 'grid'
-                ? 'bg-[#f59e0b] border-[#f59e0b] text-[#16110d] font-bold'
-                : 'bg-[#271d15] border-[#523e2b] text-muted-foreground hover:text-foreground'
-            ]"
-          >
-            <LayoutGrid class="h-3 w-3" />
-            <span>KARTU</span>
-          </button>
-          <button
-            @click="viewMode = 'table'"
-            :class="[
-              'h-7 px-2.5 text-xs font-pixel flex items-center gap-1.5 transition-colors border',
-              viewMode === 'table'
-                ? 'bg-[#f59e0b] border-[#f59e0b] text-[#16110d] font-bold'
-                : 'bg-[#271d15] border-[#523e2b] text-muted-foreground hover:text-foreground'
-            ]"
-          >
-            <TableIcon class="h-3 w-3" />
-            <span>TABEL</span>
-          </button>
-        </div>
-
         <!-- Search Input -->
         <div class="relative flex-1 max-w-md">
           <Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#f59e0b]" />
@@ -61,246 +33,244 @@
             class="w-full h-7 text-xs font-mono pl-8 pr-3 bg-[#1d1611] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
           />
         </div>
+
+        <!-- Filter Dropdowns -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Filter Rute -->
+          <select
+            v-model="selectedRouteFilter"
+            class="h-7 bg-[#1d1611] border border-[#523e2b] px-2 text-xs font-mono text-foreground focus:outline-none focus:border-[#f59e0b]"
+            @change="currentPage = 1"
+          >
+            <option value="">Semua Rute Pos</option>
+            <option v-for="r in routesList" :key="r.id" :value="r.id">
+              {{ r.name }}
+            </option>
+          </select>
+
+          <!-- Filter Status -->
+          <select
+            v-model="selectedStatusFilter"
+            class="h-7 bg-[#1d1611] border border-[#523e2b] px-2 text-xs font-mono text-foreground focus:outline-none focus:border-[#f59e0b]"
+            @change="currentPage = 1"
+          >
+            <option value="">Semua Status</option>
+            <option value="ACTIVE">Aktif</option>
+            <option value="INACTIVE">Nonaktif</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Batch Actions Bar (Shows when selected) -->
+      <div
+        v-if="selectedTeamIds.length > 0"
+        class="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-[#2a1d14] via-[#352115] to-[#2a1d14] border-t border-[#ca8a04]/50 px-4 md:px-6 py-2 text-xs font-mono text-[#facc15] shadow-inner"
+      >
+        <div class="flex items-center gap-2">
+          <CheckSquare class="h-4 w-4 text-[#f59e0b]" />
+          <span class="font-bold">{{ selectedTeamIds.length }} tim terpilih</span>
+          <span class="text-muted-foreground text-[11px] hidden sm:inline">(dari {{ filteredTeams.length }})</span>
+        </div>
+
+        <div class="flex items-center flex-wrap gap-2">
+          <button
+            class="pixel-btn h-6 px-2.5 text-[10px] bg-[#166534] text-[#86efac] font-bold border-[#22c55e] hover:bg-[#22c55e] hover:text-[#0f172a] transition-colors"
+            @click="batchUpdateStatus('ACTIVE')"
+          >
+            Aktifkan Tim
+          </button>
+          <button
+            class="pixel-btn h-6 px-2.5 text-[10px] bg-[#78350f] text-[#fef08a] font-bold border-[#92400e] hover:bg-[#92400e] transition-colors"
+            @click="batchUpdateStatus('INACTIVE')"
+          >
+            Nonaktifkan Tim
+          </button>
+          <button
+            class="pixel-btn h-6 px-2.5 text-[10px] bg-[#450a0a] text-[#f87171] font-bold border-[#dc2626] hover:bg-[#dc2626] hover:text-white transition-colors"
+            @click="batchDeleteTeams"
+          >
+            Hapus Tim Terpilih
+          </button>
+          <button
+            class="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground hover:underline transition-colors"
+            @click="selectedTeamIds = []"
+          >
+            Batal
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Main Page Content Area (Self-managed padding for Grid / Table) -->
-    <div class="p-4 md:p-6 space-y-4 flex-1">
-      <!-- Content Area: Grid View (Pixel Squad Cards) -->
-      <div v-if="viewMode === 'grid'" class="space-y-4">
-      <div v-if="loading" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div v-for="i in 6" :key="i" class="pixel-card p-4 animate-pulse h-40 bg-[#271d15]"></div>
-      </div>
+    <!-- Main Page Content Area: Flush Table without extra gaps -->
+    <div class="flex-1 min-h-0 overflow-x-auto">
+      <table class="pixel-table w-full text-left text-xs border-collapse">
+        <thead class="bg-[#15100c] border-b-2 border-[#4a3624] sticky top-0 z-10">
+          <tr>
+            <th class="pl-4 md:pl-6 pr-3 py-2.5 w-10 text-center">
+              <input
+                type="checkbox"
+                :checked="isAllSelected"
+                class="rounded bg-[#1a140f] border-[#523e2b] text-[#f59e0b] focus:ring-[#f59e0b] cursor-pointer"
+                @change="toggleSelectAll"
+              />
+            </th>
+            <th class="px-3 py-2.5">TIM PETUALANG</th>
+            <th class="px-3 py-2.5">KODE TIM</th>
+            <th class="px-3 py-2.5">RUTE POS</th>
+            <th class="px-3 py-2.5">BUDDY PENDAMPING</th>
+            <th class="px-3 py-2.5 text-center">ANGGOTA</th>
+            <th class="px-3 py-2.5 text-center">STATUS</th>
+            <th class="pr-4 md:pr-6 pl-3 py-2.5 text-center w-16">AKSI</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[#3d2d1e]/60 font-mono">
+          <tr v-if="loading" class="text-center">
+            <td colspan="8" class="p-8 text-muted-foreground">
+              <div class="flex items-center justify-center gap-2">
+                <RotateCw class="h-4 w-4 animate-spin text-[#f59e0b]" />
+                <span>Memuat data tim petualang...</span>
+              </div>
+            </td>
+          </tr>
 
-      <div v-else-if="paginatedTeams.length === 0" class="pixel-card p-8 text-center text-xs text-muted-foreground font-mono">
-        Tidak ada tim ditemukan.
-      </div>
+          <tr v-else-if="paginatedTeams.length === 0" class="text-center">
+            <td colspan="8" class="p-8 text-muted-foreground">
+              Tidak ada data tim yang sesuai dengan filter.
+            </td>
+          </tr>
 
-      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div
-          v-for="t in paginatedTeams"
-          :key="t.id"
-          class="pixel-card p-4 space-y-3 flex flex-col justify-between"
-        >
-          <div class="space-y-2.5">
-            <!-- Header -->
-            <div class="flex items-start justify-between gap-2">
-              <NuxtLink :to="'/teams/' + t.id" class="flex items-center gap-2.5 cursor-pointer group">
-                <div class="h-9 w-9 border-2 border-[#f59e0b] bg-[#271d15] flex items-center justify-center font-pixel text-xs text-[#f59e0b] shrink-0 group-hover:scale-105 transition-transform shadow-[0_0_8px_rgba(245,158,11,0.3)]">
+          <tr
+            v-for="t in paginatedTeams"
+            :key="t.id"
+            :class="['hover:bg-[#271d15]/50 transition-colors', selectedTeamIds.includes(t.id) ? 'bg-[#3b2716]/30' : '']"
+          >
+            <!-- Checkbox -->
+            <td class="py-2.5 pl-4 md:pl-6 pr-3 text-center">
+              <input
+                type="checkbox"
+                :value="t.id"
+                v-model="selectedTeamIds"
+                class="rounded bg-[#1a140f] border-[#523e2b] text-[#f59e0b] focus:ring-[#f59e0b] cursor-pointer"
+              />
+            </td>
+
+            <!-- Tim -->
+            <td class="px-3 py-2.5">
+              <NuxtLink :to="'/teams/' + t.id" class="flex items-center gap-2.5 group cursor-pointer">
+                <div class="h-7 w-7 border border-[#f59e0b] bg-[#271d15] flex items-center justify-center font-pixel text-[10px] text-[#f59e0b] shrink-0 group-hover:scale-105 transition-transform shadow-[0_0_8px_rgba(245,158,11,0.25)]">
                   {{ t.name.slice(0, 2).toUpperCase() }}
                 </div>
                 <div>
-                  <div class="font-bold text-foreground text-xs leading-tight group-hover:text-[#f59e0b] transition-colors">
+                  <div class="font-sans font-semibold text-foreground text-xs leading-tight group-hover:text-[#f59e0b] transition-colors">
                     {{ t.name }}
                   </div>
-                  <div class="font-mono text-[10px] text-[#facc15]">
+                  <div class="text-[10px] text-muted-foreground font-mono">
                     {{ t.code }}
                   </div>
                 </div>
               </NuxtLink>
+            </td>
 
-              <span
-                :class="[
-                  'px-1.5 py-0.5 text-[8px] font-pixel border',
-                  t.status === 'ACTIVE'
-                    ? 'border-[#16a34a]/60 bg-[#162518] text-[#4ade80]'
-                    : 'border-[#dc2626]/60 bg-[#2a1414] text-[#f87171]'
-                ]"
-              >
-                {{ t.status === 'ACTIVE' ? 'AKTIF' : 'NONAKTIF' }}
+            <!-- Kode Tim -->
+            <td class="px-3 py-2.5">
+              <span class="text-[#facc15] font-bold text-xs font-mono">
+                {{ t.code }}
               </span>
-            </div>
+            </td>
 
-            <!-- Route Info -->
-            <div class="flex items-center justify-between border border-[#4a3624] bg-[#15100c] px-2.5 py-1.5 font-mono text-xs">
-              <span class="text-muted-foreground text-[10px]">RUTE POS:</span>
-              <span v-if="t.routeName" class="text-[#facc15] font-pixel text-[10px] flex items-center gap-1">
+            <!-- Rute Pos -->
+            <td class="px-3 py-2.5">
+              <span v-if="t.routeName" class="text-[#38bdf8] font-pixel text-[10px] flex items-center gap-1">
                 <Route class="h-3 w-3" />
                 {{ t.routeName }}
               </span>
-              <span v-else class="text-muted-foreground/60 italic text-[10px]">Belum Ditugaskan</span>
-            </div>
+              <span v-else class="text-muted-foreground/60 italic text-[11px]">-</span>
+            </td>
 
-            <!-- Buddies List -->
-            <div class="space-y-1 font-mono text-xs">
-              <div class="text-muted-foreground text-[10px]">BUDDY PENDAMPING:</div>
+            <!-- Buddy Pendamping -->
+            <td class="px-3 py-2.5">
               <div v-if="t.buddies && t.buddies.length > 0" class="flex flex-wrap gap-1">
                 <span
                   v-for="b in t.buddies"
                   :key="b.userId"
-                  class="border border-[#0284c7]/80 bg-[#16222f] text-[#38bdf8] text-[9px] px-1.5 py-0.5 font-pixel flex items-center gap-1"
+                  class="border border-[#0284c7]/80 bg-[#16222f] text-[#38bdf8] text-[9px] px-1.5 py-0.5 font-pixel inline-flex items-center gap-1"
                 >
                   <UserCheck class="h-2.5 w-2.5" />
                   <span>{{ b.fullName }} ({{ b.buddyRole }})</span>
                 </span>
               </div>
-              <div v-else class="text-[#ca8a04] text-[10px] italic">
-                Belum ada Buddy
-              </div>
-            </div>
+              <span v-else class="text-[#ca8a04] italic text-[10px]">Belum Ada</span>
+            </td>
 
-            <!-- Members Count -->
-            <div class="flex items-center justify-between font-mono text-xs border-t border-[#3d2d1e] pt-1.5">
-              <span class="text-muted-foreground text-[11px]">Anggota Mahasiswa:</span>
-              <span class="font-bold text-[#4ade80] font-pixel text-xs">
-                {{ t.participantCount || 0 }} PESERTA
+            <!-- Anggota -->
+            <td class="px-3 py-2.5 text-center font-bold text-[#4ade80] text-xs">
+              {{ t.participantCount || 0 }}
+            </td>
+
+            <!-- Status -->
+            <td class="px-3 py-2.5 text-center">
+              <span
+                :class="[
+                  'inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-semibold rounded-full border',
+                  t.status === 'ACTIVE'
+                    ? 'border-[#16a34a]/60 bg-[#162518] text-[#4ade80]'
+                    : 'border-[#dc2626]/60 bg-[#2a1414] text-[#f87171]'
+                ]"
+              >
+                <span class="h-1.5 w-1.5 rounded-full" :class="t.status === 'ACTIVE' ? 'bg-[#4ade80]' : 'bg-[#f87171]'" />
+                {{ t.status === 'ACTIVE' ? 'Aktif' : 'Nonaktif' }}
               </span>
-            </div>
-          </div>
+            </td>
 
-          <!-- Card Actions Footer -->
-          <div class="border-t border-[#3d2d1e] pt-2 flex items-center justify-between">
-            <NuxtLink
-              :to="'/teams/' + t.id"
-              class="pixel-btn h-7 px-2.5 text-[10px] font-pixel bg-[#16222f] text-[#38bdf8] border-[#0284c7] hover:bg-[#0284c7]/20 flex items-center gap-1.5 transition-all"
-            >
-              <Users class="h-3 w-3" />
-              <span>INSPECT SQUAD</span>
-            </NuxtLink>
-
-            <div class="flex items-center gap-1">
-              <button
-                class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#f59e0b] hover:border-[#f59e0b] flex items-center justify-center text-xs"
-                title="Edit Tim"
-                @click="openEditModal(t)"
-              >
-                <Edit class="h-3.5 w-3.5" />
-              </button>
-              <button
-                class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#f87171] hover:border-[#dc2626] flex items-center justify-center text-xs"
-                title="Hapus Tim"
-                @click="confirmDelete(t)"
-              >
-                <Trash2 class="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Content Area: Table View -->
-    <div v-else class="pixel-card overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="pixel-table w-full text-left text-xs">
-          <thead class="bg-[#15100c] border-b-2 border-[#4a3624]">
-            <tr>
-              <th class="p-3">NAMA TIM</th>
-              <th class="p-3">KODE TIM</th>
-              <th class="p-3">RUTE POS</th>
-              <th class="p-3">BUDDY PENDAMPING</th>
-              <th class="p-3 text-center">ANGGOTA</th>
-              <th class="p-3 text-center">STATUS</th>
-              <th class="p-3 text-right">AKSI</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-[#3d2d1e]/60 font-mono">
-            <tr v-if="loading" class="text-center">
-              <td colspan="7" class="p-8 text-muted-foreground">
-                <div class="flex items-center justify-center gap-2">
-                  <RotateCw class="h-4 w-4 animate-spin text-[#f59e0b]" />
-                  <span>Memuat data tim...</span>
-                </div>
-              </td>
-            </tr>
-
-            <tr v-else-if="paginatedTeams.length === 0" class="text-center">
-              <td colspan="7" class="p-8 text-muted-foreground">
-                Tidak ada data tim ditemukan.
-              </td>
-            </tr>
-
-            <tr v-for="t in paginatedTeams" :key="t.id" class="hover:bg-[#271d15]/50 transition-colors">
-              <td class="p-3 font-semibold text-foreground">
-                <NuxtLink :to="'/teams/' + t.id" class="flex items-center gap-2 font-pixel text-xs text-[#f59e0b] hover:text-[#facc15] transition-colors cursor-pointer group">
-                  <Shield class="h-3.5 w-3.5 text-[#f59e0b] group-hover:scale-110 transition-transform" />
-                  <span>{{ t.name }}</span>
-                </NuxtLink>
-              </td>
-
-              <td class="p-3 text-[#facc15] font-bold text-[11px]">
-                {{ t.code }}
-              </td>
-
-              <td class="p-3">
-                <span v-if="t.routeName" class="text-[#38bdf8] font-pixel text-[10px]">
-                  {{ t.routeName }}
-                </span>
-                <span v-else class="text-muted-foreground/60 italic text-[11px]">-</span>
-              </td>
-
-              <td class="p-3">
-                <div v-if="t.buddies && t.buddies.length > 0" class="flex flex-wrap gap-1">
-                  <span
-                    v-for="b in t.buddies"
-                    :key="b.userId"
-                    class="border border-[#0284c7]/80 bg-[#16222f] text-[#38bdf8] text-[9px] px-1.5 py-0.5 font-pixel"
-                  >
-                    {{ b.fullName }} ({{ b.buddyRole }})
-                  </span>
-                </div>
-                <span v-else class="text-[#ca8a04] italic text-[10px]">Belum Ada</span>
-              </td>
-
-              <td class="p-3 text-center font-bold text-[#4ade80]">
-                {{ t.participantCount || 0 }}
-              </td>
-
-              <td class="p-3 text-center">
-                <span
-                  :class="[
-                    'px-2 py-0.5 text-[9px] font-pixel border',
-                    t.status === 'ACTIVE'
-                      ? 'border-[#16a34a]/60 bg-[#162518] text-[#4ade80]'
-                      : 'border-[#dc2626]/60 bg-[#2a1414] text-[#f87171]'
-                  ]"
-                >
-                  {{ t.status === 'ACTIVE' ? 'AKTIF' : 'NONAKTIF' }}
-                </span>
-              </td>
-
-              <td class="p-3 text-right">
-                <div class="flex items-center justify-end gap-1">
-                  <NuxtLink
-                    :to="'/teams/' + t.id"
-                    class="h-7 px-2 border border-[#0284c7] bg-[#16222f] text-[#38bdf8] hover:bg-[#0284c7]/20 flex items-center gap-1 text-[10px] font-pixel rounded"
-                  >
-                    <Users class="h-3 w-3" />
-                    <span>SQUAD</span>
-                  </NuxtLink>
-
+            <!-- Actions (Dropdown) -->
+            <td class="py-2.5 pr-4 md:pr-6 pl-3 text-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
                   <button
-                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#f59e0b] hover:border-[#f59e0b] flex items-center justify-center"
-                    title="Edit Tim"
-                    @click="openEditModal(t)"
+                    class="h-7 w-7 rounded border border-[#523e2b] bg-[#271d15] text-muted-foreground hover:text-[#facc15] hover:border-[#f59e0b] hover:bg-[#3d2d1e] inline-flex items-center justify-center transition-colors shadow-sm"
+                    title="Menu Aksi"
                   >
-                    <Edit class="h-3.5 w-3.5" />
+                    <MoreHorizontal class="h-4 w-4" />
                   </button>
-
-                  <button
-                    class="h-7 w-7 border border-[#523e2b] bg-[#271d15] text-[#f87171] hover:border-[#dc2626] flex items-center justify-center"
-                    title="Hapus Tim"
-                    @click="confirmDelete(t)"
-                  >
-                    <Trash2 class="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-44 bg-[#1e140d] border border-[#5a3a18] text-foreground text-xs font-mono shadow-2xl p-1 z-50">
+                  <DropdownMenuItem as-child class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <NuxtLink :to="'/teams/' + t.id" class="flex items-center w-full">
+                      <Users class="mr-2 h-3.5 w-3.5 text-[#38bdf8]" />
+                      <span>Inspect Squad</span>
+                    </NuxtLink>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="openRosterModal(t)" class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <UserCheck class="mr-2 h-3.5 w-3.5 text-[#4ade80]" />
+                    <span>Kelola Roster</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="openEditModal(t)" class="cursor-pointer hover:bg-[#2e1e12] focus:bg-[#2e1e12] text-foreground py-1.5 px-2">
+                    <Edit class="mr-2 h-3.5 w-3.5 text-[#f59e0b]" />
+                    <span>Edit Tim</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator class="bg-[#4a3624] my-1" />
+                  <DropdownMenuItem @click="confirmDelete(t)" class="cursor-pointer hover:bg-[#2a1414] focus:bg-[#2a1414] text-[#f87171] py-1.5 px-2">
+                    <Trash2 class="mr-2 h-3.5 w-3.5 text-[#f87171]" />
+                    <span>Hapus Tim</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Sticky Bottom Dashboard Footer: Pixel Pagination -->
-    <PixelPagination
-      :current-page="currentPage"
-      :total-items="filteredTeams.length"
-      :page-size="pageSize"
-      @update:current-page="currentPage = $event"
-      @update:page-size="pageSize = $event; currentPage = 1"
-    />
+    <div class="border-t border-[#4a3624] bg-[#1a130e] shrink-0">
+      <PixelPagination
+        :current-page="currentPage"
+        :total-items="filteredTeams.length"
+        :page-size="pageSize"
+        @update:current-page="currentPage = $event"
+        @update:page-size="pageSize = $event; currentPage = 1"
+      />
+    </div>
 
     <!-- Modal: Create / Edit Team -->
     <Dialog :open="showFormModal" @update:open="showFormModal = $event">
@@ -480,14 +450,21 @@ import {
   Plus,
   RotateCw,
   Search,
-  LayoutGrid,
-  Table as TableIcon,
   Route,
   UserCheck,
   Users,
   Edit,
   Trash2,
+  MoreHorizontal,
+  CheckSquare,
 } from "lucide-vue-next";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -510,8 +487,9 @@ const saving = ref(false);
 const teamsList = ref<any[]>([]);
 const routesList = ref<any[]>([]);
 const allUsers = ref<any[]>([]);
-const viewMode = ref<"grid" | "table">("grid");
 const searchQuery = ref("");
+const selectedRouteFilter = ref("");
+const selectedStatusFilter = ref("");
 
 // Pagination state
 const currentPage = ref(1);
@@ -534,20 +512,97 @@ const teamRoster = ref<any[]>([]);
 const selectedUserToAdd = ref("");
 
 const filteredTeams = computed(() => {
-  if (!searchQuery.value.trim()) return teamsList.value;
-  const q = searchQuery.value.toLowerCase().trim();
-  return teamsList.value.filter(
-    (t) =>
-      t.name.toLowerCase().includes(q) ||
-      t.code.toLowerCase().includes(q) ||
-      t.buddies?.some((b: any) => b.fullName.toLowerCase().includes(q))
-  );
+  let list = teamsList.value;
+
+  if (selectedRouteFilter.value) {
+    list = list.filter((t) => t.routeId === selectedRouteFilter.value);
+  }
+
+  if (selectedStatusFilter.value) {
+    list = list.filter((t) => t.status === selectedStatusFilter.value);
+  }
+
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase().trim();
+    list = list.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        t.code.toLowerCase().includes(q) ||
+        t.buddies?.some((b: any) => b.fullName.toLowerCase().includes(q))
+    );
+  }
+
+  return list;
 });
 
 const paginatedTeams = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value;
   return filteredTeams.value.slice(start, start + pageSize.value);
 });
+
+const selectedTeamIds = ref<string[]>([]);
+
+const isAllSelected = computed(() => {
+  if (paginatedTeams.value.length === 0) return false;
+  return paginatedTeams.value.every((t) => selectedTeamIds.value.includes(t.id));
+});
+
+function toggleSelectAll() {
+  const pageIds = new Set(paginatedTeams.value.map((t) => t.id));
+  if (isAllSelected.value) {
+    selectedTeamIds.value = selectedTeamIds.value.filter((id) => !pageIds.has(id));
+  } else {
+    selectedTeamIds.value = Array.from(new Set([...selectedTeamIds.value, ...pageIds]));
+  }
+}
+
+async function batchUpdateStatus(status: "ACTIVE" | "INACTIVE") {
+  if (selectedTeamIds.value.length === 0) return;
+  const count = selectedTeamIds.value.length;
+  const statusLabel = status === "ACTIVE" ? "Aktif" : "Nonaktif";
+  saving.value = true;
+  try {
+    await api.post("/api/teams/batch-status", {
+      teamIds: selectedTeamIds.value,
+      status,
+    });
+    toast.success("Status Diperbarui!", `Status ${count} tim berhasil diubah menjadi ${statusLabel}.`);
+    selectedTeamIds.value = [];
+    await fetchTeams();
+  } catch (err: any) {
+    toast.error("Gagal Memperbarui Status", err.message || "Terjadi kesalahan sistem.");
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function batchDeleteTeams() {
+  if (selectedTeamIds.value.length === 0) return;
+  const count = selectedTeamIds.value.length;
+  const confirmed = await confirmModal.show({
+    title: `Hapus ${count} Tim Petualang?`,
+    description: `Tindakan ini permanen! Seluruh anggota dari ${count} tim akan kembali menjadi petualang independen (Free Agent).`,
+    confirmText: "Ya, Hapus Semua",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "trash",
+  });
+  if (!confirmed) return;
+
+  saving.value = true;
+  try {
+    await api.post("/api/teams/batch-delete", {
+      teamIds: selectedTeamIds.value,
+    });
+    toast.success("Tim Dihapus!", `${count} tim petualang berhasil dihapus.`);
+    selectedTeamIds.value = [];
+    await fetchTeams();
+  } catch (err: any) {
+    toast.error("Gagal Menghapus Tim Massal", err.message || "Terjadi kesalahan sistem.");
+  } finally {
+    saving.value = false;
+  }
+}
 
 // Free agents
 const availableUsers = computed(() => {

@@ -14,7 +14,7 @@ import {
   ormawaBooths,
 } from "./db/schema";
 import { hashPassword } from "./lib/password";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { RAW_BUDDY_DATA } from "./data/officialBuddies";
 
 async function seed() {
@@ -231,32 +231,32 @@ async function seed() {
   console.log("Creating 18 Physical Pos Locations & QR Identifiers...");
   const sampleLocationData = [
     // Lantai 1
-    { code: "POS-L1-A", name: "Lantai 1: Lobby Utama (Zona Barat)", floorNum: 1, qrCode: "UNU-QR-L1-ZONA-A-2026", desc: "Pos Pendaftaran & Orientasi Awal Mahasiswa Baru" },
-    { code: "POS-L1-B", name: "Lantai 1: Student Center (Zona Timur)", floorNum: 1, qrCode: "UNU-QR-L1-ZONA-B-2026", desc: "Pos UKM & Informasi Komunitas Kampus" },
+    { code: "POS-L1-A", name: "Lobby Utama & Welcome Center", floorNum: 1, qrCode: "UNU-QR-L1-A-2026", desc: "Corner Nilai Dasar, Tradisi Aswaja & Karakter Kampus UNU" },
+    { code: "POS-L1-B", name: "Student Center & Layanan Kampus", floorNum: 1, qrCode: "UNU-QR-L1-B-2026", desc: "Etika Kampus, Tata Krama Mahasiswa & Komunitas Kampus" },
     // Lantai 2
-    { code: "POS-L2-A", name: "Lantai 2: Perpustakaan (Zona Barat)", floorNum: 2, qrCode: "UNU-QR-L2-ZONA-A-2026", desc: "Pos Literasi & Arsip Khazanah Ilmu" },
-    { code: "POS-L2-B", name: "Lantai 2: Digital Learning Lab (Zona Timur)", floorNum: 2, qrCode: "UNU-QR-L2-ZONA-B-2026", desc: "Pos E-Learning & Akses Jurnal Internasional" },
+    { code: "POS-L2-A", name: "Klinik & Posko Kesehatan Mahasiswa", floorNum: 2, qrCode: "UNU-QR-L2-A-2026", desc: "Layanan Kesehatan, P3K, Well-being & Ketahanan Fisik" },
+    { code: "POS-L2-B", name: "Kampus Bersinar & Konseling Sebaya", floorNum: 2, qrCode: "UNU-QR-L2-B-2026", desc: "Komitmen Kampus Bersih Narkoba, Edukasi Anti-Rokok & Mental Health" },
     // Lantai 3
-    { code: "POS-L3-A", name: "Lantai 3: Lab Komputer AI (Zona Barat)", floorNum: 3, qrCode: "UNU-QR-L3-ZONA-A-2026", desc: "Pos Algoritma & Pemrograman Cerdas" },
-    { code: "POS-L3-B", name: "Lantai 3: Smart FTI Hall (Zona Timur)", floorNum: 3, qrCode: "UNU-QR-L3-ZONA-B-2026", desc: "Pos Jaringan & Infrastruktur Siber Kampus" },
+    { code: "POS-L3-A", name: "Lab Komputer AI & Software Studio", floorNum: 3, qrCode: "UNU-QR-L3-A-2026", desc: "Algoritma Cerdas, Pemrograman Masa Depan & Literasi Digital" },
+    { code: "POS-L3-B", name: "Smart FTI Hall & Ruang Kolaborasi", floorNum: 3, qrCode: "UNU-QR-L3-B-2026", desc: "Komunikasi Efektif, Negosiasi & Kepemimpinan Inklusif" },
     // Lantai 4
-    { code: "POS-L4-A", name: "Lantai 4: Lab Riset Halal (Zona Barat)", floorNum: 4, qrCode: "UNU-QR-L4-ZONA-A-2026", desc: "Pos Standarisasi & Sains Industri Halal" },
-    { code: "POS-L4-B", name: "Lantai 4: Bioteknologi Terapan (Zona Timur)", floorNum: 4, qrCode: "UNU-QR-L4-ZONA-B-2026", desc: "Pos Eksperimen Hayati & Keberlanjutan" },
+    { code: "POS-L4-A", name: "Posko Layanan PPKS & Konseling Ramah", floorNum: 4, qrCode: "UNU-QR-L4-A-2026", desc: "Kanal Pengaduan Aman, Perlindungan Korban & Anti-Perundungan" },
+    { code: "POS-L4-B", name: "Lab Riset Halal & Bioteknologi Terapan", floorNum: 4, qrCode: "UNU-QR-L4-B-2026", desc: "Standarisasi Halal, Sains Industri & Keberlanjutan Hayati" },
     // Lantai 5
-    { code: "POS-L5-A", name: "Lantai 5: Smart Classroom FEB (Zona Barat)", floorNum: 5, qrCode: "UNU-QR-L5-ZONA-A-2026", desc: "Pos Manajemen & Simulasi Bisnis Modern" },
-    { code: "POS-L5-B", name: "Lantai 5: Inkubator Startup (Zona Timur)", floorNum: 5, qrCode: "UNU-QR-L5-ZONA-B-2026", desc: "Pos Inovasi Ekonomi Kreatif Digital" },
+    { code: "POS-L5-A", name: "Perpustakaan Pusat & Pustaka Digital", floorNum: 5, qrCode: "UNU-QR-L5-A-2026", desc: "Akses Repositori Ilmiah, Database Jurnal & Khazanah Pustaka" },
+    { code: "POS-L5-B", name: "Klinik Anti-Plagiarisme & Penulisan Ilmiah", floorNum: 5, qrCode: "UNU-QR-L5-B-2026", desc: "Kaidah Sitasi Orisinil, Etika Informasi & Kejujuran Akademik" },
     // Lantai 6
-    { code: "POS-L6-A", name: "Lantai 6: Pusat Studi Islam (Zona Barat)", floorNum: 6, qrCode: "UNU-QR-L6-ZONA-A-2026", desc: "Pos Khazanah Islam Nusantara & Kebangsaan" },
-    { code: "POS-L6-B", name: "Lantai 6: Lab Bahasa Global (Zona Timur)", floorNum: 6, qrCode: "UNU-QR-L6-ZONA-B-2026", desc: "Pos Diplomasi & Komunikasi Multibahasa" },
+    { code: "POS-L6-A", name: "Pusat Studi Islam Nusantara & Budaya", floorNum: 6, qrCode: "UNU-QR-L6-A-2026", desc: "Kajian Moderasi Beragama, Wawasan Kebangsaan & Nilai Aswaja" },
+    { code: "POS-L6-B", name: "Laboratorium Sains Terpadu & Energi Hijau", floorNum: 6, qrCode: "UNU-QR-L6-B-2026", desc: "Riset Multidisiplin Berkelanjutan, SDGs & Green Science" },
     // Lantai 7
-    { code: "POS-L7-A", name: "Lantai 7: Studio Multimedia (Zona Barat)", floorNum: 7, qrCode: "UNU-QR-L7-ZONA-A-2026", desc: "Pos Desain Kreatif & Visualisasi Digital" },
-    { code: "POS-L7-B", name: "Lantai 7: Microteaching Lab (Zona Timur)", floorNum: 7, qrCode: "UNU-QR-L7-ZONA-B-2026", desc: "Pos Karakter Pendidik & Metodologi Belajar" },
+    { code: "POS-L7-A", name: "Creative Co-Working Space & Multimedia", floorNum: 7, qrCode: "UNU-QR-L7-A-2026", desc: "Ideasi Bisnis, AI Beretika, Desain Kreatif & Visual Digital" },
+    { code: "POS-L7-B", name: "Microteaching Lab & Karakter Pendidik", floorNum: 7, qrCode: "UNU-QR-L7-B-2026", desc: "Simulasi Mengajar Inovatif & Metodologi Pembelajaran Abad 21" },
     // Lantai 8
-    { code: "POS-L8-A", name: "Lantai 8: Pusat Inovasi Riset (Zona Barat)", floorNum: 8, qrCode: "UNU-QR-L8-ZONA-A-2026", desc: "Pos Kolaborasi Strategis & Riset Terapan" },
-    { code: "POS-L8-B", name: "Lantai 8: Ruang Rapat Pimpinan (Zona Timur)", floorNum: 8, qrCode: "UNU-QR-L8-ZONA-B-2026", desc: "Pos Tata Kelola & Kepemimpinan Kampus" },
+    { code: "POS-L8-A", name: "Klinik Integritas & Anti-Korupsi", floorNum: 8, qrCode: "UNU-QR-L8-A-2026", desc: "Pendidikan Antikorupsi, Tolak Gratifikasi & Nilai Kejujuran" },
+    { code: "POS-L8-B", name: "Ruang Tata Kelola & Kepemimpinan Kampus", floorNum: 8, qrCode: "UNU-QR-L8-B-2026", desc: "Transparansi, Akuntabilitas & Tata Kelola Perguruan Tinggi" },
     // Lantai 9
-    { code: "POS-L9-A", name: "Lantai 9: Convention Hall (Zona Barat)", floorNum: 9, qrCode: "UNU-QR-L9-ZONA-A-2026", desc: "Pos Puncak Arena Grand Quest & Sidang Pleno" },
-    { code: "POS-L9-B", name: "Lantai 9: Rooftop Sky Garden (Zona Timur)", floorNum: 9, qrCode: "UNU-QR-L9-ZONA-B-2026", desc: "Pos Epilog & Titik Foto Kemenangan Tim" },
+    { code: "POS-L9-A", name: "Auditorium & Convention Hall Utama", floorNum: 9, qrCode: "UNU-QR-L9-A-2026", desc: "Arena Sidang Pleno, Grand Quest & Ikrar Mahasiswa Unggul" },
+    { code: "POS-L9-B", name: "Rooftop Sky Garden Panoramic Deck", floorNum: 9, qrCode: "UNU-QR-L9-B-2026", desc: "Visi Indonesia Emas 2045, Epilog & Selebrasi Puncak Transformasi" },
   ];
 
   const createdLocations = [];
@@ -709,6 +709,10 @@ async function seed() {
     // Assign sample participants to Genius 01
     if (b.num === 1 && teamObj) {
       for (const p of sampleParticipants) {
+        await db
+          .delete(teamMembers)
+          .where(and(eq(teamMembers.userId, p.id), ne(teamMembers.teamId, teamObj.id)));
+
         const [pLink] = await db
           .select()
           .from(teamMembers)
