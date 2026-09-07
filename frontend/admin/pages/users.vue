@@ -892,6 +892,34 @@
             </select>
           </div>
 
+          <!-- Fakultas & Prodi (khusus PARTICIPANT) -->
+          <div v-if="form.role === 'PARTICIPANT'" class="space-y-3">
+            <div class="space-y-1">
+              <Label class="text-xs text-foreground font-semibold">Fakultas:</Label>
+              <select
+                v-model="form.faculty"
+                class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
+                @change="onFacultyChange"
+              >
+                <option v-for="f in UNU_FACULTIES" :key="f.name" :value="f.name">
+                  {{ f.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="space-y-1">
+              <Label class="text-xs text-foreground font-semibold">Program Studi (Prodi):</Label>
+              <select
+                v-model="form.prodi"
+                class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
+              >
+                <option v-for="p in availableProdis" :key="p" :value="p">
+                  {{ p }}
+                </option>
+              </select>
+            </div>
+          </div>
+
           <div class="space-y-1">
             <Label class="text-xs text-foreground font-semibold">
               {{ isEditing ? 'Ganti Password (Kosongkan jika tetap):' : 'Password Awal:' }}
@@ -979,6 +1007,7 @@ import PixelPagination from "@/components/PixelPagination.vue";
 import { useApi } from "@/composables/useApi";
 import { useToast } from "@/composables/useToast";
 import { useConfirm } from "@/composables/useConfirm";
+import { UNU_FACULTIES } from "@genius/types";
 
 const api = useApi();
 const toast = useToast();
@@ -1009,9 +1038,23 @@ const form = ref({
   username: "",
   fullName: "",
   role: "PARTICIPANT",
+  faculty: UNU_FACULTIES[1]?.name || "Fakultas Teknologi Informasi",
+  prodi: UNU_FACULTIES[1]?.prodi[0] || "Informatika",
   password: "",
   status: "ACTIVE",
 });
+
+const availableProdis = computed(() => {
+  const fac = UNU_FACULTIES.find((f) => f.name === form.value.faculty);
+  return fac ? fac.prodi : [];
+});
+
+function onFacultyChange() {
+  const fac = UNU_FACULTIES.find((f) => f.name === form.value.faculty);
+  if (fac && fac.prodi.length > 0) {
+    form.value.prodi = fac.prodi[0];
+  }
+}
 
 const totalUsers = computed(() => users.value.length);
 
@@ -1179,6 +1222,8 @@ function openCreateModal() {
     username: "",
     fullName: "",
     role: selectedRole.value || "PARTICIPANT",
+    faculty: UNU_FACULTIES[1]?.name || "Fakultas Teknologi Informasi",
+    prodi: UNU_FACULTIES[1]?.prodi[0] || "Informatika",
     password: "",
     status: "ACTIVE",
   };
@@ -1192,6 +1237,8 @@ function openEditModal(u: any) {
     username: u.username,
     fullName: u.fullName,
     role: u.role,
+    faculty: u.faculty || UNU_FACULTIES[1]?.name || "Fakultas Teknologi Informasi",
+    prodi: u.prodi || UNU_FACULTIES[1]?.prodi[0] || "Informatika",
     password: "",
     status: u.status || "ACTIVE",
   };
@@ -1206,17 +1253,28 @@ async function submitForm() {
         fullName: form.value.fullName,
         status: form.value.status,
       };
+      if (form.value.role === "PARTICIPANT") {
+        payload.faculty = form.value.faculty;
+        payload.prodi = form.value.prodi;
+      }
       if (form.value.password) payload.password = form.value.password;
       await api.put(`/api/users/${form.value.id}`, payload);
       toast.success("Pengguna Diperbarui!", `Data @${form.value.username} berhasil disimpan.`);
     } else {
-      await api.post("/api/users", {
+      const payload: any = {
         username: form.value.username,
+        nim: form.value.username,
         fullName: form.value.fullName,
+        name: form.value.fullName,
         role: form.value.role,
         password: form.value.password || "genius2026",
         status: form.value.status,
-      });
+      };
+      if (form.value.role === "PARTICIPANT") {
+        payload.faculty = form.value.faculty;
+        payload.prodi = form.value.prodi;
+      }
+      await api.post("/api/users", payload);
       toast.success("Pengguna Dibuat!", `Akun @${form.value.username} berhasil didaftarkan.`);
     }
     showFormModal.value = false;

@@ -1926,6 +1926,8 @@ export interface LoginRequest {
 
 export interface UserProfileUpdatePayload {
   fullName?: string;
+  faculty?: string | null;
+  prodi?: string | null;
   avatarUrl?: string | null;
   gender?: Gender | string;
   characterClass?: CharacterClass | string;
@@ -1943,6 +1945,8 @@ export interface LoginResponse {
     role: UserRole;
     status: UserStatus;
     gender?: Gender | string;
+    faculty?: string | null;
+    prodi?: string | null;
     characterClass?: CharacterClass | string;
     characterTitle?: string;
     characterTier?: number;
@@ -1953,3 +1957,27 @@ export interface LoginResponse {
     teamCode?: string;
   };
 }
+
+export const UNU_FACULTIES = [
+  {
+    name: "Fakultas Industri Halal",
+    prodi: ["Agribisnis", "Teknologi Hasil Pertanian", "Farmasi"],
+  },
+  {
+    name: "Fakultas Teknologi Informasi",
+    prodi: ["Informatika", "Teknik Elektro"],
+  },
+  {
+    name: "Fakultas Ilmu Pendidikan",
+    prodi: ["PGSD", "Pendidikan Bahasa Inggris"],
+  },
+  {
+    name: "Fakultas Ekonomi",
+    prodi: ["Manajemen", "Akuntansi"],
+  },
+  {
+    name: "Fakultas Dirasah Islamiyah",
+    prodi: ["Studi Islam Interdisipliner"],
+  },
+] as const;
+

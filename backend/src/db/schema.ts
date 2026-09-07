@@ -59,6 +59,8 @@ export const users = pgTable("users", {
   role: userRoleEnum("role").notNull().default("PARTICIPANT"),
   status: userStatusEnum("status").notNull().default("ACTIVE"),
   gender: varchar("gender", { length: 20 }).default("MALE"),
+  faculty: varchar("faculty", { length: 255 }),
+  prodi: varchar("prodi", { length: 255 }),
   characterClass: varchar("character_class", { length: 100 }).default("CYBER_KNIGHT"),
   characterTitle: varchar("character_title", { length: 150 }).default("Novice Adventurer"),
   characterTier: integer("character_tier").default(1),

@@ -53,17 +53,18 @@
           />
         </div>
 
-        <!-- Filter Dropdowns (Gender, Status, Tim) -->
+        <!-- Filter Dropdowns (Fakultas, Status, Tim) -->
         <div class="flex flex-wrap items-center gap-2">
-          <!-- Filter Gender -->
+          <!-- Filter Fakultas -->
           <select
-            v-model="selectedGenderFilter"
+            v-model="selectedFacultyFilter"
             class="h-7 bg-[#1d1611] border border-[#523e2b] px-2 text-xs font-mono text-foreground focus:outline-none focus:border-[#f59e0b]"
             @change="currentPage = 1; fetchParticipants()"
           >
-            <option value="">Semua Gender</option>
-            <option value="MALE">♂ Laki-laki</option>
-            <option value="FEMALE">♀ Perempuan</option>
+            <option value="">Semua Fakultas</option>
+            <option v-for="f in UNU_FACULTIES" :key="f.name" :value="f.name">
+              {{ f.name }}
+            </option>
           </select>
 
           <!-- Filter Status -->
@@ -153,9 +154,9 @@
               />
             </th>
             <th class="px-3 py-2.5">MAHASISWA PESERTA</th>
-            <th class="px-3 py-2.5">TIER & KELAS</th>
-            <th class="px-3 py-2.5">GENDER & TITLE</th>
-            <th class="px-3 py-2.5">TIM PETUALANG</th>
+            <th class="px-3 py-2.5">FAKULTAS</th>
+            <th class="px-3 py-2.5">PROGRAM STUDI</th>
+            <th class="px-3 py-2.5">TIM / REGU</th>
             <th class="px-3 py-2.5 text-center">TOTAL SKOR</th>
             <th class="px-3 py-2.5 text-center">STATUS</th>
             <th class="pr-4 md:pr-6 pl-3 py-2.5 text-center w-16">AKSI</th>
@@ -166,7 +167,7 @@
             <td colspan="8" class="p-8 text-muted-foreground">
               <div class="flex items-center justify-center gap-2">
                 <RotateCw class="h-4 w-4 animate-spin text-[#f59e0b]" />
-                <span>Memuat data peserta & evolusi RPG...</span>
+                <span>Memuat data mahasiswa peserta...</span>
               </div>
             </td>
           </tr>
@@ -197,13 +198,10 @@
               <div
                 class="flex items-center gap-2.5 cursor-pointer group"
                 @click="openTacticalDetail(p)"
-                title="Klik untuk Inspect Loadout RPG"
+                title="Lihat Detail Mahasiswa"
               >
                 <div
                   class="h-8 w-8 rounded border border-[#523e2b] bg-[#1a140f] overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
-                  :style="{
-                    borderColor: getTierColor(p.characterTier),
-                  }"
                 >
                   <img
                     :src="p.avatarUrl || (p.gender === 'FEMALE' ? '/character-cewek-avatar.png' : '/character-cowok-avatar.png')"
@@ -224,44 +222,24 @@
               </div>
             </td>
 
-            <!-- Tier & Evolusi Kelas -->
+            <!-- Fakultas -->
             <td class="py-2.5 px-3">
-              <div class="flex flex-col gap-0.5 min-w-0">
-                <span
-                  class="px-1.5 py-0.2 text-[9px] font-mono font-bold rounded border inline-block w-fit"
-                  :style="{
-                    borderColor: `${getTierColor(p.characterTier)}70`,
-                    backgroundColor: `${getTierColor(p.characterTier)}15`,
-                    color: getTierColor(p.characterTier),
-                  }"
-                >
-                  {{ p.characterTier === 3 ? '👑 Tier 3' : (p.characterTier === 2 ? '⭐ Tier 2' : 'Tier 1') }}
-                </span>
-                <span
-                  class="font-mono text-[11px] font-semibold truncate max-w-[130px]"
-                  :style="{ color: getClassColor(p.characterClass) }"
-                >
-                  {{ getClassIcon(p.characterClass) }} {{ getEvolvedClassName(p.characterClass, p.characterTier) }}
-                </span>
-              </div>
+              <span class="text-xs font-semibold text-[#facc15] truncate max-w-[180px] block" :title="p.faculty || '-'">
+                {{ p.faculty || '-' }}
+              </span>
             </td>
 
-            <!-- Gender & Title -->
+            <!-- Program Studi -->
             <td class="py-2.5 px-3">
-              <div class="flex flex-col gap-0.5 min-w-0">
-                <span class="text-[10px] font-mono" :class="p.gender === 'FEMALE' ? 'text-pink-400' : 'text-sky-400'">
-                  {{ p.gender === 'FEMALE' ? '♀ Perempuan' : '♂ Laki-laki' }}
-                </span>
-                <span class="text-[11px] font-mono text-[#facc15] truncate max-w-[150px]" :title="p.characterTitle">
-                  {{ p.characterTitle || 'Novice Adventurer' }}
-                </span>
-              </div>
+              <span class="text-xs font-mono text-cyan-400 truncate max-w-[160px] block" :title="p.prodi || '-'">
+                {{ p.prodi || '-' }}
+              </span>
             </td>
 
             <!-- Team -->
             <td class="py-2.5 px-3">
               <div v-if="p.teamName" class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-[#facc15] truncate max-w-[140px]" :title="p.teamName">
+                <span class="text-xs font-semibold text-foreground truncate max-w-[140px]" :title="p.teamName">
                   {{ p.teamName }}
                 </span>
                 <span class="text-[10px] font-mono text-muted-foreground">({{ p.teamCode }})</span>
@@ -419,22 +397,22 @@
 
     <!-- Modal: Create / Edit Participant -->
     <Dialog :open="showFormModal" @update:open="showFormModal = $event">
-      <DialogContent class="sm:max-w-[480px] max-h-[90vh] overflow-y-auto pixel-card border-2 border-[#ca8a04] bg-[#1a140f] text-foreground">
+      <DialogContent class="sm:max-w-[460px] max-h-[90vh] overflow-y-auto pixel-card border-2 border-[#ca8a04] bg-[#1a140f] text-foreground">
         <DialogHeader>
           <DialogTitle class="font-pixel text-sm text-[#f59e0b] flex items-center gap-2">
             <GraduationCap class="h-4 w-4" />
-            <span>{{ isEditing ? 'EDIT DATA PESERTA & TIER' : 'TAMBAH PESERTA RPG BARU' }}</span>
+            <span>{{ isEditing ? 'EDIT DATA MAHASISWA PESERTA' : 'TAMBAH MAHASISWA PESERTA BARU' }}</span>
           </DialogTitle>
         </DialogHeader>
 
-        <form @submit.prevent="submitForm" class="space-y-3 py-1 font-mono text-xs">
+        <form @submit.prevent="submitForm" class="space-y-3.5 py-1 font-mono text-xs">
           <!-- Username / NIM -->
           <div class="space-y-1">
-            <Label class="text-xs text-foreground font-semibold">Username / NIM:</Label>
+            <Label class="text-xs text-foreground font-semibold">NIM (Nomor Induk Mahasiswa):</Label>
             <input
               v-model="form.username"
               placeholder="Contoh: 240101001"
-              class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b] disabled:opacity-50"
+              class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b] disabled:opacity-50 font-bold"
               :disabled="isEditing"
               required
             />
@@ -445,117 +423,45 @@
             <Label class="text-xs text-foreground font-semibold">Nama Lengkap Mahasiswa:</Label>
             <input
               v-model="form.fullName"
-              placeholder="Nama lengkap..."
+              placeholder="Contoh: Ahmad Dahlan"
               class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
               required
             />
           </div>
 
-          <!-- Gender & Character Class (Two Columns) -->
-          <div class="grid grid-cols-2 gap-2.5">
-            <!-- Gender -->
+          <!-- Fakultas & Program Studi -->
+          <div class="space-y-3">
+            <!-- Fakultas -->
             <div class="space-y-1">
-              <Label class="text-xs text-foreground font-semibold">Gender:</Label>
+              <Label class="text-xs text-foreground font-semibold">Fakultas:</Label>
               <select
-                v-model="form.gender"
+                v-model="form.faculty"
                 class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
+                @change="onFacultyChange"
+                required
               >
-                <option value="MALE">♂ Laki-laki</option>
-                <option value="FEMALE">♀ Perempuan</option>
+                <option v-for="f in UNU_FACULTIES" :key="f.name" :value="f.name">
+                  {{ f.name }}
+                </option>
               </select>
             </div>
 
-            <!-- RPG Character Class -->
+            <!-- Program Studi -->
             <div class="space-y-1">
-              <Label class="text-xs text-foreground font-semibold">Kelas Karakter RPG:</Label>
+              <Label class="text-xs text-foreground font-semibold">Program Studi (Prodi):</Label>
               <select
-                v-model="form.characterClass"
+                v-model="form.prodi"
                 class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
+                required
               >
-                <option v-for="cls in characterClassesList" :key="cls.id" :value="cls.id">
-                  {{ cls.icon }} {{ cls.nameId }}
+                <option v-for="p in availableProdis" :key="p" :value="p">
+                  {{ p }}
                 </option>
               </select>
             </div>
           </div>
 
-          <!-- Character Tier & Title (Two Columns) -->
-          <div class="grid grid-cols-2 gap-2.5">
-            <!-- Tier -->
-            <div class="space-y-1">
-              <Label class="text-xs text-foreground font-semibold">Tier Evolusi:</Label>
-              <select
-                v-model.number="form.characterTier"
-                class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
-              >
-                <option :value="1">⭐ Tier 1: Novice</option>
-                <option :value="2">⭐⭐ Tier 2: Advanced</option>
-                <option :value="3">👑 Tier 3: Ascended</option>
-              </select>
-            </div>
-
-            <!-- Title -->
-            <div class="space-y-1">
-              <Label class="text-xs text-foreground font-semibold">Gelar (Title):</Label>
-              <input
-                v-model="form.characterTitle"
-                placeholder="Novice Adventurer"
-                class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
-              />
-            </div>
-          </div>
-
-          <!-- Avatar / Profile Photo URL -->
-          <div class="space-y-1">
-            <Label class="text-xs text-foreground font-semibold">Foto Profil / Avatar URL:</Label>
-            <div class="flex items-center gap-2">
-              <div
-                class="h-8 w-8 rounded overflow-hidden border border-[#523e2b] bg-[#15100c] shrink-0 flex items-center justify-center"
-              >
-                <img
-                  v-if="form.avatarUrl"
-                  :src="form.avatarUrl"
-                  alt="Preview"
-                  class="h-full w-full object-cover"
-                />
-                <span v-else class="text-[9px] font-pixel text-[#f59e0b]">?</span>
-              </div>
-              <input
-                v-model="form.avatarUrl"
-                placeholder="https://... atau biarkan avatar evolusi default"
-                class="flex-1 h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
-              />
-            </div>
-          </div>
-
-          <!-- Password -->
-          <div class="space-y-1">
-            <Label class="text-xs text-foreground font-semibold">
-              {{ isEditing ? 'Ganti Password (Kosongkan jika tetap):' : 'Password Awal:' }}
-            </Label>
-            <input
-              type="password"
-              v-model="form.password"
-              :placeholder="isEditing ? '••••••••' : 'Default: genius2026'"
-              class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
-            />
-          </div>
-
-          <!-- Team Plotting -->
-          <div class="space-y-1">
-            <Label class="text-xs text-foreground font-semibold">Plotting Tim Petualang:</Label>
-            <select
-              v-model="form.teamId"
-              class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
-            >
-              <option :value="null">-- Free Agent (Belum Ada Tim) --</option>
-              <option v-for="team in teamsList" :key="team.id" :value="team.id">
-                {{ team.name }} ({{ team.code }})
-              </option>
-            </select>
-          </div>
-
-          <!-- Status -->
+          <!-- Status Akun -->
           <div class="space-y-1">
             <Label class="text-xs text-foreground font-semibold">Status Akun:</Label>
             <select
@@ -567,7 +473,11 @@
             </select>
           </div>
 
-          <DialogFooter class="pt-3 flex items-center justify-end gap-2">
+          <div class="p-2.5 rounded bg-[#271d15]/60 border border-[#523e2b] text-[11px] text-muted-foreground space-y-1">
+            <p><strong>Catatan:</strong> Avatar, gender, dan kelas RPG akan dipilih sendiri secara mandiri oleh mahasiswa baru di aplikasi user saat pertama kali login.</p>
+          </div>
+
+          <DialogFooter class="pt-2 flex items-center justify-end gap-2">
             <button
               type="button"
               class="h-8 px-3 text-xs border border-[#523e2b] bg-[#271d15] text-muted-foreground hover:text-foreground"
@@ -644,17 +554,18 @@
         <DialogHeader>
           <DialogTitle class="font-pixel text-sm text-[#4ade80] flex items-center gap-2">
             <Upload class="h-4 w-4" />
-            <span>IMPORT PESERTA RPG VIA CSV</span>
+            <span>IMPORT MAHASISWA PESERTA VIA CSV</span>
           </DialogTitle>
         </DialogHeader>
 
         <div class="space-y-3 py-1 font-mono text-xs">
           <div class="flex items-center justify-between border border-[#4a3624] bg-[#15100c] p-2.5">
             <div>
-              <p class="font-semibold text-foreground text-xs">Format: username,fullName,password,teamCode,gender,characterClass,characterTitle,characterTier</p>
+              <p class="font-semibold text-foreground text-xs">Format: nim,nama,fakultas,prodi</p>
+              <p class="text-[10px] text-muted-foreground">Avatar dan kelas RPG dipilih mandiri oleh mahasiswa saat login.</p>
             </div>
             <button
-              class="pixel-btn text-[10px] px-2 h-6 bg-[#271d15] text-[#4ade80] border-[#16a34a]"
+              class="pixel-btn text-[10px] px-2.5 h-6 bg-[#271d15] text-[#4ade80] border-[#16a34a]"
               @click="downloadCsvTemplate"
             >
               Download Template
@@ -667,7 +578,7 @@
             <textarea
               v-model="csvRawText"
               rows="4"
-              placeholder="240101001,Ahmad Dahlan,genius2026,GENIUS-01,MALE,CYBER_KNIGHT,Novice Adventurer,1&#10;240101002,Fatimah Zahra,genius2026,GENIUS-01,FEMALE,TECH_MAGE,Master Kuis Cepat,2"
+              placeholder="240101001,Ahmad Dahlan,Fakultas Teknologi Informasi,Informatika&#10;240101002,Fatimah Azzahra,Fakultas Industri Halal,Farmasi"
               class="w-full bg-[#15100c] border border-[#523e2b] p-2 text-[11px] font-mono focus:outline-none focus:border-[#4ade80]"
               @input="parseRawCsv"
             ></textarea>
@@ -683,23 +594,19 @@
                 <thead class="bg-[#271d15] text-[#f59e0b] border-b border-[#4a3624]">
                   <tr>
                     <th class="p-1.5">#</th>
-                    <th class="p-1.5">Username</th>
-                    <th class="p-1.5">Nama</th>
-                    <th class="p-1.5">Gender</th>
-                    <th class="p-1.5">Kelas</th>
-                    <th class="p-1.5">Tier</th>
-                    <th class="p-1.5">Title</th>
+                    <th class="p-1.5">NIM</th>
+                    <th class="p-1.5">Nama Lengkap</th>
+                    <th class="p-1.5">Fakultas</th>
+                    <th class="p-1.5">Program Studi</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[#3d2d1e]/60">
-                  <tr v-for="(item, idx) in parsedPreview.slice(0, 5)" :key="idx">
+                  <tr v-for="(item, idx) in parsedPreview.slice(0, 10)" :key="idx">
                     <td class="p-1.5 text-muted-foreground">{{ idx + 1 }}</td>
-                    <td class="p-1.5 font-bold text-foreground">{{ item.username }}</td>
-                    <td class="p-1.5">{{ item.fullName }}</td>
-                    <td class="p-1.5">{{ item.gender || 'MALE' }}</td>
-                    <td class="p-1.5">{{ item.characterClass || 'CYBER_KNIGHT' }}</td>
-                    <td class="p-1.5 text-[#38bdf8]">Tier {{ item.characterTier || 1 }}</td>
-                    <td class="p-1.5 text-[#facc15]">{{ item.characterTitle || '-' }}</td>
+                    <td class="p-1.5 font-bold text-[#facc15]">{{ item.username }}</td>
+                    <td class="p-1.5 text-foreground">{{ item.fullName }}</td>
+                    <td class="p-1.5 text-[#38bdf8]">{{ item.faculty || '-' }}</td>
+                    <td class="p-1.5 text-[#4ade80]">{{ item.prodi || '-' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -833,6 +740,7 @@ import {
   CharacterClass,
   CharacterTier,
   getEvolutionForClassAndTier,
+  UNU_FACULTIES,
 } from "@genius/types";
 
 const api = useApi();
@@ -845,6 +753,7 @@ const importing = ref(false);
 const participants = ref<any[]>([]);
 const teamsList = ref<any[]>([]);
 const searchQuery = ref("");
+const selectedFacultyFilter = ref("");
 const selectedTeamFilter = ref("");
 const selectedStatusFilter = ref("");
 const selectedGenderFilter = ref("");
@@ -876,15 +785,22 @@ const form = ref({
   id: "",
   username: "",
   fullName: "",
-  password: "",
-  gender: "MALE",
-  characterClass: "CYBER_KNIGHT",
-  characterTitle: "Novice Adventurer",
-  characterTier: 1,
-  avatarUrl: "",
-  teamId: null as string | null,
+  faculty: "Fakultas Teknologi Informasi",
+  prodi: "Informatika",
   status: "ACTIVE",
 });
+
+const availableProdis = computed(() => {
+  const fac = UNU_FACULTIES.find((f) => f.name === form.value.faculty);
+  return fac ? fac.prodi : [];
+});
+
+function onFacultyChange() {
+  const fac = UNU_FACULTIES.find((f) => f.name === form.value.faculty);
+  if (fac && fac.prodi.length > 0) {
+    form.value.prodi = fac.prodi[0];
+  }
+}
 
 const awardTitleForm = ref({
   title: "",
@@ -974,15 +890,15 @@ async function fetchParticipants() {
       pageSize: "1000",
     };
     if (searchQuery.value) params.search = searchQuery.value;
+    if (selectedFacultyFilter.value) {
+      params.faculty = selectedFacultyFilter.value;
+    }
     if (selectedTeamFilter.value === "assigned") {
       params.assignmentStatus = "assigned";
     } else if (selectedTeamFilter.value === "unassigned") {
       params.assignmentStatus = "unassigned";
     } else if (selectedTeamFilter.value) {
       params.teamId = selectedTeamFilter.value;
-    }
-    if (selectedGenderFilter.value) {
-      params.gender = selectedGenderFilter.value;
     }
 
     const res = await api.get<{ success: boolean; data: any[] }>("/api/users", params);
@@ -1011,13 +927,8 @@ function openCreateModal() {
     id: "",
     username: "",
     fullName: "",
-    password: "",
-    gender: "MALE",
-    characterClass: "CYBER_KNIGHT",
-    characterTitle: "Novice Adventurer",
-    characterTier: 1,
-    avatarUrl: "",
-    teamId: null,
+    faculty: UNU_FACULTIES[1]?.name || "Fakultas Teknologi Informasi",
+    prodi: UNU_FACULTIES[1]?.prodi[0] || "Informatika",
     status: "ACTIVE",
   };
   showFormModal.value = true;
@@ -1029,13 +940,8 @@ function openEditModal(p: any) {
     id: p.id,
     username: p.username,
     fullName: p.fullName,
-    password: "",
-    gender: p.gender || "MALE",
-    characterClass: p.characterClass || "CYBER_KNIGHT",
-    characterTitle: p.characterTitle || "Novice Adventurer",
-    characterTier: p.characterTier || 1,
-    avatarUrl: p.avatarUrl || "",
-    teamId: p.teamId || null,
+    faculty: p.faculty || UNU_FACULTIES[1]?.name || "Fakultas Teknologi Informasi",
+    prodi: p.prodi || UNU_FACULTIES[1]?.prodi[0] || "Informatika",
     status: p.status || "ACTIVE",
   };
   showFormModal.value = true;
@@ -1076,29 +982,22 @@ async function submitForm() {
     if (isEditing.value) {
       const payload: any = {
         fullName: form.value.fullName,
-        gender: form.value.gender,
-        characterClass: form.value.characterClass,
-        characterTitle: form.value.characterTitle,
-        characterTier: form.value.characterTier,
-        avatarUrl: form.value.avatarUrl || null,
-        teamId: form.value.teamId,
+        faculty: form.value.faculty,
+        prodi: form.value.prodi,
         status: form.value.status,
       };
-      if (form.value.password) payload.password = form.value.password;
       await api.put(`/api/users/${form.value.id}`, payload);
       toast.success("Peserta Diperbarui!", `Data peserta ${form.value.fullName} (@${form.value.username}) berhasil disimpan.`);
     } else {
       await api.post("/api/users", {
         username: form.value.username,
+        nim: form.value.username,
         fullName: form.value.fullName,
-        password: form.value.password || "genius2026",
+        name: form.value.fullName,
+        faculty: form.value.faculty,
+        prodi: form.value.prodi,
         role: "PARTICIPANT",
-        gender: form.value.gender,
-        characterClass: form.value.characterClass,
-        characterTitle: form.value.characterTitle,
-        characterTier: form.value.characterTier,
-        avatarUrl: form.value.avatarUrl || null,
-        teamId: form.value.teamId,
+        password: "genius2026",
         status: form.value.status,
       });
       toast.success("Peserta Didaftarkan!", `Mahasiswa baru ${form.value.fullName} (@${form.value.username}) berhasil ditambahkan.`);
@@ -1294,19 +1193,18 @@ function parseRawCsv() {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (i === 0 && line.toLowerCase().includes("username")) continue;
+    if (i === 0 && (line.toLowerCase().includes("username") || line.toLowerCase().includes("nim"))) continue;
 
     const parts = line.split(",").map((p) => p.trim());
     if (parts.length >= 1 && parts[0]) {
       results.push({
         username: parts[0],
+        nim: parts[0],
         fullName: parts[1] || parts[0],
-        password: parts[2] || "genius2026",
-        teamCode: parts[3] || undefined,
-        gender: parts[4] || "MALE",
-        characterClass: parts[5] || "CYBER_KNIGHT",
-        characterTitle: parts[6] || "Novice Adventurer",
-        characterTier: Number(parts[7]) || 1,
+        name: parts[1] || parts[0],
+        faculty: parts[2] || "",
+        prodi: parts[3] || "",
+        password: "genius2026",
         role: "PARTICIPANT",
       });
     }
@@ -1325,26 +1223,26 @@ async function executeImport() {
     });
 
     if (res.success) {
-      alert(`Berhasil mengimpor ${res.data.successCount} peserta RPG! (${res.data.skippedCount} dilewati)`);
+      toast.success("Impor Berhasil!", `Berhasil mengimpor ${res.data?.successCount ?? parsedPreview.value.length} mahasiswa peserta! (${res.data?.skippedCount ?? 0} dilewati)`);
       showImportModal.value = false;
       csvRawText.value = "";
       parsedPreview.value = [];
       await fetchParticipants();
     }
   } catch (err: any) {
-    alert("Gagal impor: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Impor", err.data?.error?.message || err.message || "Gagal mengimpor CSV.");
   } finally {
     importing.value = false;
   }
 }
 
 function downloadCsvTemplate() {
-  const csvContent = "username,fullName,password,teamCode,gender,characterClass,characterTitle,characterTier\n240101001,Ahmad Dahlan,genius2026,GENIUS-01,MALE,CYBER_KNIGHT,Novice Adventurer,1\n240101002,Fatimah Azzahra,genius2026,GENIUS-01,FEMALE,TECH_MAGE,Master Kuis Cepat,2";
+  const csvContent = "nim,nama,fakultas,prodi\n240101001,Ahmad Dahlan,Fakultas Teknologi Informasi,Informatika\n240101002,Fatimah Azzahra,Fakultas Industri Halal,Farmasi\n240101003,Budi Santoso,Fakultas Ekonomi,Manajemen";
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.setAttribute("href", url);
-  link.setAttribute("download", "template_peserta_rpg_evolution_2026.csv");
+  link.setAttribute("download", "template_peserta_maba_2026.csv");
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -1352,20 +1250,20 @@ function downloadCsvTemplate() {
 
 function exportCsv() {
   if (participants.value.length === 0) {
-    alert("Tidak ada data peserta");
+    toast.error("Ekspor Gagal", "Tidak ada data peserta");
     return;
   }
 
-  let csv = "ID,Username,Nama Lengkap,Gender,Kelas RPG,Tier Evolusi,Gelar Karakter,Tim,Kode Tim,Skor Total,Status,Tanggal Daftar\n";
+  let csv = "ID,NIM,Nama Lengkap,Fakultas,Program Studi,Tim,Kode Tim,Skor Total,Status,Tanggal Daftar\n";
   participants.value.forEach((p) => {
-    csv += `"${p.id}","${p.username}","${p.fullName}","${p.gender || 'MALE'}","${p.characterClass || 'CYBER_KNIGHT'}","Tier ${p.characterTier || 1}","${p.characterTitle || 'Novice Adventurer'}","${p.teamName || '-'}","${p.teamCode || '-'}","${p.totalScore || 0}","${p.status}","${p.createdAt}"\n`;
+    csv += `"${p.id}","${p.username}","${p.fullName}","${p.faculty || '-'}","${p.prodi || '-'}","${p.teamName || '-'}","${p.teamCode || '-'}","${p.totalScore || 0}","${p.status}","${p.createdAt}"\n`;
   });
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.setAttribute("href", url);
-  link.setAttribute("download", `peserta_rpg_evolution_2026_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute("download", `peserta_maba_2026_${new Date().toISOString().slice(0, 10)}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

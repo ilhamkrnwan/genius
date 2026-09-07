@@ -134,6 +134,8 @@ export const userRoutes = new Elysia({
     const gender = (query.gender || "").trim();
     const characterClass = (query.characterClass || "").trim();
     const tier = (query.tier || "").trim();
+    const faculty = (query.faculty || "").trim();
+    const prodi = (query.prodi || "").trim();
 
     // Subquery for total participant score
     const userScoreSubquery = db
@@ -177,6 +179,8 @@ export const userRoutes = new Elysia({
         role: users.role,
         status: users.status,
         gender: users.gender,
+        faculty: users.faculty,
+        prodi: users.prodi,
         characterClass: users.characterClass,
         characterTitle: users.characterTitle,
         characterTier: users.characterTier,
@@ -206,12 +210,20 @@ export const userRoutes = new Elysia({
         or(
           like(users.fullName, `%${search}%`),
           like(users.username, `%${search}%`),
+          like(users.faculty, `%${search}%`),
+          like(users.prodi, `%${search}%`),
           like(users.characterTitle, `%${search}%`)
         )
       );
     }
     if (role) {
       conditions.push(eq(users.role, role as any));
+    }
+    if (faculty) {
+      conditions.push(like(users.faculty, `%${faculty}%`));
+    }
+    if (prodi) {
+      conditions.push(like(users.prodi, `%${prodi}%`));
     }
     if (teamId) {
       conditions.push(eq(teams.id, teamId));
@@ -276,6 +288,8 @@ export const userRoutes = new Elysia({
         role: users.role,
         status: users.status,
         gender: users.gender,
+        faculty: users.faculty,
+        prodi: users.prodi,
         characterClass: users.characterClass,
         characterTitle: users.characterTitle,
         characterTier: users.characterTier,
@@ -374,54 +388,101 @@ export const userRoutes = new Elysia({
   .post(
     "/",
     async ({ body, set }: any) => {
-      const [existing] = await db
-        .select()
-        .from(users)
-        .where(eq(users.username, body.username))
-        .limit(1);
+      try {
+        const username = (body.username || body.nim || "").trim();
+        const fullName = (body.fullName || body.name || body.nama || "").trim();
 
-      if (existing.length > 0) {
-        set.status = 409;
-        return { success: false, error: { code: "USERNAME_EXISTS", message: "Username already exists" } };
+        if (!username) {
+          set.status = 400;
+          return { success: false, error: { code: "VALIDATION_ERROR", message: "NIM / Username wajib diisi" } };
+        }
+
+        if (!fullName) {
+          set.status = 400;
+          return { success: false, error: { code: "VALIDATION_ERROR", message: "Nama lengkap wajib diisi" } };
+        }
+
+        const [existing] = await db
+          .select()
+          .from(users)
+          .where(eq(users.username, username))
+          .limit(1);
+
+        if (existing) {
+          set.status = 409;
+          return { success: false, error: { code: "USERNAME_EXISTS", message: `Pengguna dengan NIM / Username '${username}' sudah terdaftar` } };
+        }
+
+        const rawPassword = body.password ? String(body.password).trim() : "";
+        const password = rawPassword.length >= 4 ? rawPassword : "genius2026";
+        const passwordHash = await hashPassword(password);
+
+        const [user] = await db
+          .insert(users)
+          .values({
+            username,
+            passwordHash,
+            fullName,
+            role: (body.role as any) || "PARTICIPANT",
+            status: (body.status as any) || "ACTIVE",
+            gender: body.gender || "MALE",
+            faculty: body.faculty ? String(body.faculty).trim() : (body.fakultas ? String(body.fakultas).trim() : null),
+            prodi: body.prodi ? String(body.prodi).trim() : null,
+            characterClass: body.characterClass || "CYBER_KNIGHT",
+            characterTitle: body.characterTitle || "Novice Adventurer",
+            characterTier: typeof body.characterTier === "number" ? body.characterTier : 1,
+            unlockedTitles: body.unlockedTitles || ["Novice Adventurer"],
+            avatarUrl: body.avatarUrl || null,
+          })
+          .returning();
+
+        // If teamId is supplied, assign to team safely
+        if (body.teamId && typeof body.teamId === "string" && body.teamId.trim() !== "") {
+          const trimmedTeamId = body.teamId.trim();
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmedTeamId);
+          if (isUuid) {
+            const [teamExists] = await db
+              .select({ id: teams.id })
+              .from(teams)
+              .where(eq(teams.id, trimmedTeamId))
+              .limit(1);
+            if (teamExists) {
+              await db.insert(teamMembers).values({
+                teamId: teamExists.id,
+                userId: user.id,
+                buddyRole: (body.buddyRole as any) || (body.role === "BUDDY" ? "PRIMARY" : null),
+              });
+            }
+          }
+        }
+
+        return { success: true, data: user };
+      } catch (err: any) {
+        console.error("[POST /api/users Error]:", err);
+        set.status = 500;
+        return {
+          success: false,
+          error: {
+            code: "CREATE_USER_ERROR",
+            message: err.message || "Gagal membuat pengguna",
+          },
+        };
       }
-
-      const passwordHash = await hashPassword(body.password || "genius2026");
-      const [user] = await db
-        .insert(users)
-        .values({
-          username: body.username,
-          passwordHash,
-          fullName: body.fullName,
-          role: (body.role as any) || "PARTICIPANT",
-          status: (body.status as any) || "ACTIVE",
-          gender: body.gender || "MALE",
-          characterClass: body.characterClass || "CYBER_KNIGHT",
-          characterTitle: body.characterTitle || "Novice Adventurer",
-          characterTier: body.characterTier || 1,
-          unlockedTitles: body.unlockedTitles || ["Novice Adventurer"],
-          avatarUrl: body.avatarUrl || null,
-        })
-        .returning();
-
-      // If teamId is supplied, assign to team
-      if (body.teamId) {
-        await db.insert(teamMembers).values({
-          teamId: body.teamId,
-          userId: user.id,
-          buddyRole: (body.buddyRole as any) || (body.role === "BUDDY" ? "PRIMARY" : null),
-        });
-      }
-
-      return { success: true, data: user };
     },
     {
       body: t.Object({
-        username: t.String({ minLength: 1 }),
-        password: t.Optional(t.String({ minLength: 4 })),
-        fullName: t.String({ minLength: 1 }),
+        username: t.Optional(t.String()),
+        nim: t.Optional(t.String()),
+        fullName: t.Optional(t.String()),
+        name: t.Optional(t.String()),
+        nama: t.Optional(t.String()),
+        password: t.Optional(t.String()),
         role: t.Optional(t.String()),
         status: t.Optional(t.String()),
         gender: t.Optional(t.String()),
+        faculty: t.Optional(t.Nullable(t.String())),
+        fakultas: t.Optional(t.Nullable(t.String())),
+        prodi: t.Optional(t.Nullable(t.String())),
         characterClass: t.Optional(t.String()),
         characterTitle: t.Optional(t.String()),
         characterTier: t.Optional(t.Number()),
@@ -450,11 +511,13 @@ export const userRoutes = new Elysia({
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const username = item.username?.trim();
-        const fullName = item.fullName?.trim() || username;
+        const username = (item.username || item.nim || "").trim();
+        const fullName = (item.fullName || item.name || item.nama || username).trim();
+        const faculty = item.faculty || item.fakultas || null;
+        const prodi = item.prodi || null;
 
         if (!username) {
-          errors.push({ row: i + 1, username: "", message: "Username cannot be empty" });
+          errors.push({ row: i + 1, username: "", message: "Username / NIM cannot be empty" });
           continue;
         }
 
@@ -468,7 +531,8 @@ export const userRoutes = new Elysia({
           let userId = existing?.id;
 
           if (!existing) {
-            const pwdHash = item.password ? await hashPassword(item.password) : defaultHash;
+            const pwd = item.password && String(item.password).trim().length >= 4 ? String(item.password).trim() : defaultPassword;
+            const pwdHash = item.password ? await hashPassword(pwd) : defaultHash;
             const [created] = await db
               .insert(users)
               .values({
@@ -478,6 +542,8 @@ export const userRoutes = new Elysia({
                 role: (item.role as any) || defaultRole,
                 status: "ACTIVE",
                 gender: item.gender || "MALE",
+                faculty,
+                prodi,
                 characterClass: item.characterClass || "CYBER_KNIGHT",
                 characterTitle: item.characterTitle || "Novice Adventurer",
                 characterTier: item.characterTier || 1,
@@ -488,8 +554,11 @@ export const userRoutes = new Elysia({
             userId = created.id;
             successCount++;
           } else {
-            // Update existing user's RPG metadata if provided
+            // Update existing user's metadata if provided
             const updates: Record<string, any> = {};
+            if (item.fullName && item.fullName !== existing.fullName) updates.fullName = item.fullName;
+            if (faculty) updates.faculty = faculty;
+            if (prodi) updates.prodi = prodi;
             if (item.gender) updates.gender = item.gender;
             if (item.characterClass) updates.characterClass = item.characterClass;
             if (item.characterTitle) updates.characterTitle = item.characterTitle;
@@ -537,11 +606,16 @@ export const userRoutes = new Elysia({
       body: t.Object({
         items: t.Array(
           t.Object({
-            username: t.String(),
+            username: t.Optional(t.String()),
+            nim: t.Optional(t.String()),
             fullName: t.Optional(t.String()),
+            name: t.Optional(t.String()),
             password: t.Optional(t.String()),
             role: t.Optional(t.String()),
             gender: t.Optional(t.String()),
+            faculty: t.Optional(t.Nullable(t.String())),
+            fakultas: t.Optional(t.Nullable(t.String())),
+            prodi: t.Optional(t.Nullable(t.String())),
             characterClass: t.Optional(t.String()),
             characterTitle: t.Optional(t.String()),
             characterTier: t.Optional(t.Number()),
@@ -750,56 +824,80 @@ export const userRoutes = new Elysia({
   .put(
     "/:id",
     async ({ params, body, set }: { params: any; body: any; set: any }) => {
-      const updates: Record<string, unknown> = {
-        updatedAt: new Date(),
-      };
-      if (body.fullName) updates.fullName = body.fullName;
-      if (body.role) updates.role = body.role;
-      if (body.status) updates.status = body.status;
-      if (body.gender !== undefined) updates.gender = body.gender;
-      if (body.characterClass !== undefined) updates.characterClass = body.characterClass;
-      if (body.characterTitle !== undefined) updates.characterTitle = body.characterTitle;
-      if (body.characterTier !== undefined) updates.characterTier = body.characterTier;
-      if (body.unlockedTitles !== undefined) updates.unlockedTitles = body.unlockedTitles;
-      if (body.avatarUrl !== undefined) updates.avatarUrl = body.avatarUrl;
-      if (body.password) updates.passwordHash = await hashPassword(body.password);
-
-      const [user] = await db
-        .update(users)
-        .set(updates)
-        .where(eq(users.id, params.id))
-        .returning({
-          id: users.id,
-          username: users.username,
-          fullName: users.fullName,
-          role: users.role,
-          status: users.status,
-          gender: users.gender,
-          characterClass: users.characterClass,
-          characterTitle: users.characterTitle,
-          characterTier: users.characterTier,
-          unlockedTitles: users.unlockedTitles,
-          avatarUrl: users.avatarUrl,
-        });
-
-      if (!user) {
-        set.status = 404;
-        return { success: false, error: { code: "NOT_FOUND", message: "User not found" } };
-      }
-
-      // Update team if provided
-      if (body.teamId !== undefined) {
-        await db.delete(teamMembers).where(eq(teamMembers.userId, params.id));
-        if (body.teamId) {
-          await db.insert(teamMembers).values({
-            teamId: body.teamId,
-            userId: params.id,
-            buddyRole: (body.buddyRole as any) || (user.role === "BUDDY" ? "PRIMARY" : null),
-          });
+      try {
+        const updates: Record<string, unknown> = {
+          updatedAt: new Date(),
+        };
+        if (body.fullName) updates.fullName = body.fullName;
+        if (body.role) updates.role = body.role;
+        if (body.status) updates.status = body.status;
+        if (body.gender !== undefined) updates.gender = body.gender;
+        if (body.faculty !== undefined) updates.faculty = body.faculty ? String(body.faculty).trim() : null;
+        if (body.fakultas !== undefined) updates.faculty = body.fakultas ? String(body.fakultas).trim() : null;
+        if (body.prodi !== undefined) updates.prodi = body.prodi ? String(body.prodi).trim() : null;
+        if (body.characterClass !== undefined) updates.characterClass = body.characterClass;
+        if (body.characterTitle !== undefined) updates.characterTitle = body.characterTitle;
+        if (body.characterTier !== undefined) updates.characterTier = body.characterTier;
+        if (body.unlockedTitles !== undefined) updates.unlockedTitles = body.unlockedTitles;
+        if (body.avatarUrl !== undefined) updates.avatarUrl = body.avatarUrl;
+        if (body.password && String(body.password).trim().length >= 4) {
+          updates.passwordHash = await hashPassword(String(body.password).trim());
         }
-      }
 
-      return { success: true, data: user };
+        const [user] = await db
+          .update(users)
+          .set(updates)
+          .where(eq(users.id, params.id))
+          .returning({
+            id: users.id,
+            username: users.username,
+            fullName: users.fullName,
+            role: users.role,
+            status: users.status,
+            gender: users.gender,
+            faculty: users.faculty,
+            prodi: users.prodi,
+            characterClass: users.characterClass,
+            characterTitle: users.characterTitle,
+            characterTier: users.characterTier,
+            unlockedTitles: users.unlockedTitles,
+            avatarUrl: users.avatarUrl,
+          });
+
+        if (!user) {
+          set.status = 404;
+          return { success: false, error: { code: "NOT_FOUND", message: "User not found" } };
+        }
+
+        // Update team if provided
+        if (body.teamId !== undefined) {
+          await db.delete(teamMembers).where(eq(teamMembers.userId, params.id));
+          if (body.teamId && typeof body.teamId === "string" && body.teamId.trim() !== "") {
+            const trimmedTeamId = body.teamId.trim();
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmedTeamId);
+            if (isUuid) {
+              const [teamExists] = await db
+                .select({ id: teams.id })
+                .from(teams)
+                .where(eq(teams.id, trimmedTeamId))
+                .limit(1);
+              if (teamExists) {
+                await db.insert(teamMembers).values({
+                  teamId: teamExists.id,
+                  userId: params.id,
+                  buddyRole: (body.buddyRole as any) || (user.role === "BUDDY" ? "PRIMARY" : null),
+                });
+              }
+            }
+          }
+        }
+
+        return { success: true, data: user };
+      } catch (err: any) {
+        console.error("[PUT /api/users/:id Error]:", err);
+        set.status = 500;
+        return { success: false, error: { code: "UPDATE_USER_ERROR", message: err.message || "Gagal memperbarui pengguna" } };
+      }
     },
     {
       body: t.Object({
@@ -808,6 +906,9 @@ export const userRoutes = new Elysia({
         status: t.Optional(t.String()),
         password: t.Optional(t.String()),
         gender: t.Optional(t.String()),
+        faculty: t.Optional(t.Nullable(t.String())),
+        fakultas: t.Optional(t.Nullable(t.String())),
+        prodi: t.Optional(t.Nullable(t.String())),
         characterClass: t.Optional(t.String()),
         characterTitle: t.Optional(t.String()),
         characterTier: t.Optional(t.Number()),

@@ -29,6 +29,8 @@ export const authRoutes = new Elysia({
           role: users.role,
           status: users.status,
           gender: users.gender,
+          faculty: users.faculty,
+          prodi: users.prodi,
           characterClass: users.characterClass,
           characterTitle: users.characterTitle,
           characterTier: users.characterTier,
@@ -90,6 +92,8 @@ export const authRoutes = new Elysia({
             role: user.role,
             status: user.status,
             gender: user.gender || "MALE",
+            faculty: user.faculty,
+            prodi: user.prodi,
             characterClass: user.characterClass || "CYBER_KNIGHT",
             characterTitle: user.characterTitle || "Novice Adventurer",
             characterTier: user.characterTier || 1,
@@ -143,6 +147,8 @@ export const authRoutes = new Elysia({
               nim: existing.username,
               username: existing.username,
               fullName: existing.fullName,
+              faculty: existing.faculty,
+              prodi: existing.prodi,
               characterClass: existing.characterClass,
               characterTitle: existing.characterTitle,
               characterTier: existing.characterTier,
@@ -156,6 +162,8 @@ export const authRoutes = new Elysia({
       const fullName = (body.name || body.fullName || `Mahasiswa ${nim}`).trim();
       const characterClass = body.characterClass || "CYBER_KNIGHT";
       const avatarUrl = body.avatar || body.avatarUrl || null;
+      const faculty = (body.faculty || body.fakultas || "").trim() || null;
+      const prodi = (body.prodi || "").trim() || null;
 
       const [newUser] = await db
         .insert(users)
@@ -166,6 +174,8 @@ export const authRoutes = new Elysia({
           role: "PARTICIPANT",
           status: "ACTIVE",
           gender: body.gender || "MALE",
+          faculty,
+          prodi,
           characterClass,
           characterTitle: "Novice Adventurer",
           characterTier: 1,
@@ -226,6 +236,8 @@ export const authRoutes = new Elysia({
             username: newUser.username,
             fullName: newUser.fullName,
             role: newUser.role,
+            faculty: newUser.faculty,
+            prodi: newUser.prodi,
             characterClass: newUser.characterClass,
             characterTitle: newUser.characterTitle,
             characterTier: newUser.characterTier,
@@ -248,6 +260,7 @@ export const authRoutes = new Elysia({
         email: t.Optional(t.String()),
         prodi: t.Optional(t.String()),
         faculty: t.Optional(t.String()),
+        fakultas: t.Optional(t.String()),
         password: t.Optional(t.String()),
         gender: t.Optional(t.String()),
         characterClass: t.Optional(t.String()),
@@ -275,6 +288,8 @@ export const authRoutes = new Elysia({
           role: users.role,
           status: users.status,
           gender: users.gender,
+          faculty: users.faculty,
+          prodi: users.prodi,
           characterClass: users.characterClass,
           characterTitle: users.characterTitle,
           characterTier: users.characterTier,
