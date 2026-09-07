@@ -61,6 +61,29 @@ export const api = {
     return res;
   },
 
+  async registerMaba(payload: {
+    nim: string;
+    name: string;
+    gender?: string;
+    faculty?: string;
+    prodi?: string;
+    characterClass?: string;
+    avatar?: string;
+    password?: string;
+  }) {
+    const res = await this.request('/auth/register-maba', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    if (res.success && res.data?.token) {
+      localStorage.setItem('genius_user_token', res.data.token);
+      localStorage.setItem('genius_user_profile', JSON.stringify(res.data.user));
+    }
+
+    return res;
+  },
+
   async loginMaba(nim: string, password = 'genius2026') {
     const res = await this.request('/auth/login-maba', {
       method: 'POST',
@@ -85,12 +108,61 @@ export const api = {
     return this.request('/floors');
   },
 
+  async getStages() {
+    return this.request('/stages');
+  },
+
+  async getLocations(floorId?: string) {
+    const query = floorId ? '?floorId=' + floorId : '';
+    return this.request('/locations' + query);
+  },
+
   async getAvailableMissions() {
     return this.request<PlayableMission[]>('/me/missions/available');
   },
 
   async getMissionForPlay(missionId: string) {
     return this.request<PlayableMission>('/missions/' + encodeURIComponent(missionId) + '/play');
+  },
+
+  async checkIn(day: number, qrToken: string, participantId?: string) {
+    return this.request('/attendance/check-in', {
+      method: 'POST',
+      body: JSON.stringify({ day, qrToken, participantId }),
+    });
+  },
+
+  async submitReflection(payload: {
+    day: number;
+    ratingFasilitas: number;
+    ratingMateri: number;
+    ratingBuddy: number;
+    essayInsight: string;
+    participantId?: string;
+  }) {
+    return this.request('/reflections', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async checkOut(day: number, qrToken: string, participantId?: string) {
+    return this.request('/attendance/check-out', {
+      method: 'POST',
+      body: JSON.stringify({ day, qrToken, participantId }),
+    });
+  },
+
+  async scanOrmawa(qrCode: string, participantId?: string) {
+    return this.request('/ormawa/scan', {
+      method: 'POST',
+      body: JSON.stringify({ qrCode, participantId }),
+    });
+  },
+
+  async getMyOrmawaBadges(participantId?: string) {
+    const query = participantId ? '?participantId=' + participantId : '';
+    return this.request('/ormawa/my-badges' + query);
   },
 
   async createGameSession(payload: { missionId: string; teamId: string; allowReplay?: boolean }) {
@@ -151,7 +223,7 @@ export const api = {
   // Health check
   async checkHealth() {
     try {
-      const res = await fetch('http://localhost:3001/api/health');
+      const res = await fetch(API_BASE + '/health');
       return await res.json();
     } catch {
       return null;
