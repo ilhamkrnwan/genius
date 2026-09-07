@@ -118,6 +118,15 @@ const handleMiniGameComplete = (score: number, totalQuestions: number) => {
 
   const result = gameStore.completeBooth(booth.value.id, score, totalQuestions);
 
+  // Sync complete server session if session is active
+  if (serverSessionId.value && gameSessionStore.status === 'active') {
+    gameSessionStore.completeSession().then((res) => {
+      if (res) console.log('[BoothDetailView] Server session completed:', res);
+    }).catch((err) => {
+      console.warn('[BoothDetailView] Error completing server session:', err);
+    });
+  }
+
   const stampRecord: StampRecord = {
     boothId: booth.value.id,
     boothName: booth.value.name,

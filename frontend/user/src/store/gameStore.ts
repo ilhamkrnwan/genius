@@ -520,6 +520,23 @@ export const useGameStore = defineStore('game', {
 
       this.saveToStorage();
 
+      // Sync game score to live PostgreSQL point ledger
+      if (!isAlreadyCompleted && xpEarned > 0) {
+        api.submitScore({
+          participantId: this.participant.id || this.participant.nim || 'MABA',
+          teamId: this.participant.teamId || this.participant.groupId || '',
+          amount: xpEarned,
+          sourceType: 'GAME',
+          reason: `Penyelesaian Pos ${booth.name} (Skor: ${score}/${totalQuestions})`,
+        }).then((res) => {
+          if (res.success && res.data) {
+            console.log('[Store] Live game score synced to PostgreSQL:', res.data);
+          }
+        }).catch((err) => {
+          console.warn('[Store] Live score submission note:', err);
+        });
+      }
+
       return {
         isNewStamp: !isAlreadyCompleted,
         isFloorCompleted: isFloorNowCompleted && !wasFloorPreviouslyCompleted,

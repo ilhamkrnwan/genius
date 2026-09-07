@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import {
   PhArrowLeft,
@@ -8,6 +8,8 @@ import {
 } from '@phosphor-icons/vue';
 import { BOOTHS_DATA, FLOORS_DATA, AVATAR_OPTIONS } from '@/data/mockData';
 import { useGameStore } from '@/store/gameStore';
+import { useGameSessionStore } from '@/store/gameSessionStore';
+import { normalizePlayableMission, normalizePlayableSessionMission } from '@/lib/game-adapter';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
 import CelebrationModal from '@/components/ui/CelebrationModal.vue';
 import StampIcon from '@/components/ui/StampIcon.vue';
@@ -20,17 +22,76 @@ import { PlayerLevel, StampRecord } from '@/types/game';
 const route = useRoute();
 const router = useRouter();
 const gameStore = useGameStore();
+const gameSessionStore = useGameSessionStore();
 
 const floorNumber = computed(() => parseInt((route.params.floorId as string) || '1', 10) || 1);
 const spotId = computed(() => (route.params.spotId as string) || '');
 
-const booth = computed(() => BOOTHS_DATA[spotId.value]);
+const backendBooth = ref<ReturnType<typeof normalizePlayableMission> | null>(null);
+const isBackendLoading = ref(false);
+const backendError = ref<string | null>(null);
+const hasBackendAuth = computed(() => typeof window !== 'undefined' && Boolean(localStorage.getItem('genius_user_token')));
+const booth = computed(() => hasBackendAuth.value ? (backendBooth.value || BOOTHS_DATA[spotId.value]) : (backendBooth.value || BOOTHS_DATA[spotId.value]));
+const serverSessionId = computed(() => gameSessionStore.session?.id);
+
 const floor = computed(() => FLOORS_DATA.find((f) => f.number === floorNumber.value) || FLOORS_DATA[0]);
 const boothA = computed(() => BOOTHS_DATA[floor.value.boothIds[0]]);
 const boothB = computed(() => BOOTHS_DATA[floor.value.boothIds[1]]);
 
 const isSpot1 = computed(() => booth.value ? booth.value.id === boothA.value.id : true);
 const isAlreadyCompleted = computed(() => gameStore.isBoothCompleted(spotId.value));
+
+const teamId = computed(() => {
+  const profile = typeof window !== 'undefined' ? localStorage.getItem('genius_user_profile') : null;
+  const parsed = profile ? JSON.parse(profile) : null;
+  return parsed?.teamId || parsed?.groupId || gameStore.participant.groupId || '';
+});
+
+async function initializeBackendMission() {
+  if (!spotId.value || !gameStore.isLoggedIn || !hasBackendAuth.value) return;
+
+  isBackendLoading.value = true;
+  backendError.value = null;
+  const missionResponse = await gameSessionStore.loadMissionForPlay(spotId.value);
+
+  if (!missionResponse || missionResponse.status !== 'ACTIVE' || !missionResponse.game) {
+    backendError.value = gameSessionStore.error?.message || 'Misi backend belum tersedia.';
+    isBackendLoading.value = false;
+    return;
+  }
+
+  backendBooth.value = normalizePlayableMission(missionResponse);
+
+  if (!teamId.value) {
+    backendError.value = 'Akun belum terhubung ke team. Gunakan mode lokal.';
+    isBackendLoading.value = false;
+    return;
+  }
+
+  const restored = await gameSessionStore.restoreSession(missionResponse.id);
+  const activeRestored = restored || await gameSessionStore.restoreActiveSessionForMission(missionResponse.id);
+  const created = activeRestored || await gameSessionStore.createSession(missionResponse.id, teamId.value);
+  if (!created) {
+    backendError.value = gameSessionStore.error?.message || 'Sesi game gagal dibuat.';
+    isBackendLoading.value = false;
+    return;
+  }
+
+  backendBooth.value = normalizePlayableSessionMission(missionResponse, created);
+
+  if (created.status === 'READY' && !restored) {
+    const started = await gameSessionStore.startSession();
+    if (!started) {
+      backendError.value = gameSessionStore.error?.message || 'Sesi game gagal dimulai.';
+    }
+  }
+
+  isBackendLoading.value = false;
+}
+
+onMounted(() => {
+  void initializeBackendMission();
+});
 
 const selectedAvatarObj = computed(
   () => AVATAR_OPTIONS.find((a) => a.id === gameStore.participant.avatar) || AVATAR_OPTIONS[0]
@@ -57,6 +118,15 @@ const handleMiniGameComplete = (score: number, totalQuestions: number) => {
   if (gameStore.soundEnabled) soundEngine.playCorrect();
 
   const result = gameStore.completeBooth(booth.value.id, score, totalQuestions);
+
+  // Sync complete server session if session is active
+  if (serverSessionId.value && gameSessionStore.status === 'active') {
+    gameSessionStore.completeSession().then((res) => {
+      if (res) console.log('[LinearSpotView] Server session completed:', res);
+    }).catch((err) => {
+      console.warn('[LinearSpotView] Error completing server session:', err);
+    });
+  }
 
   const stampRecord: StampRecord = {
     boothId: booth.value.id,
@@ -154,12 +224,37 @@ const handleNextStep = () => {
       </div>
 
       <!-- Dynamic Mini-Game Arena -->
-      <div class="flex-1 sdv-card p-2.5 sm:p-4 flex flex-col justify-between overflow-hidden shadow-lg">
+      <div class="flex-1 sdv-card p-2.5 sm:p-4 flex flex-col justify-between overflow-hidden shadow-lg relative">
         <MiniGameContainer
+          v-if="gameSessionStore.status !== 'expired' && gameSessionStore.status !== 'error'"
           :booth="booth"
           :isCompleted="isAlreadyCompleted"
+          :serverSessionId="serverSessionId"
           @complete="handleMiniGameComplete"
         />
+
+        <div v-if="gameSessionStore.status === 'expired'" class="flex-1 flex items-center justify-center text-center p-6">
+          <div class="max-w-sm space-y-3">
+            <h2 class="font-pixel text-sm text-[#ff8080]">WAKTU GAME HABIS</h2>
+            <p class="font-sans text-xs text-[#f0e0c0]">Sesi ini sudah kedaluwarsa dan tidak menerima jawaban lagi.</p>
+            <RouterLink to="/peta" class="inline-block rpg-btn-primary py-2 px-4 text-[10px] font-pixel">KEMBALI KE PETA</RouterLink>
+          </div>
+        </div>
+
+        <div v-else-if="gameSessionStore.status === 'error' && !isBackendLoading" class="flex-1 flex items-center justify-center text-center p-6">
+          <div class="max-w-sm space-y-3">
+            <h2 class="font-pixel text-sm text-[#ff8080]">SESI TIDAK TERSEDIA</h2>
+            <p class="font-sans text-xs text-[#f0e0c0]">{{ gameSessionStore.error?.message || backendError || 'Sesi game tidak dapat dimuat.' }}</p>
+            <RouterLink to="/peta" class="inline-block rpg-btn-primary py-2 px-4 text-[10px] font-pixel">KEMBALI KE PETA</RouterLink>
+          </div>
+        </div>
+
+        <div v-if="isBackendLoading" class="absolute inset-0 z-10 flex items-center justify-center bg-[#170f07]/85">
+          <span class="font-pixel text-xs text-[#f0d060] animate-pulse">MENYIAPKAN SESI GAME...</span>
+        </div>
+        <div v-else-if="backendError && backendBooth" class="mt-2 border border-[#d44040] bg-[#2d1210] p-2 text-[10px] text-[#ffd0d0] font-sans">
+          {{ backendError }}
+        </div>
       </div>
     </main>
 
