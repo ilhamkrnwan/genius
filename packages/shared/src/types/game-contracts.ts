@@ -5,7 +5,11 @@ export type CanonicalGameType =
   | 'PUZZLE'
   | 'REACTION'
   | 'TEAM_CHALLENGE'
-  | 'EXPLORATION';
+  | 'EXPLORATION'
+  | 'RAPID_ANSWER'
+  | 'WORD_GAME'
+  | 'LOGIC'
+  | 'FLAPPY_BIRD';
 
 export type GameLifecycleStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE';
 
@@ -14,6 +18,11 @@ export type RendererKey =
   | 'memory_match'
   | 'tebak_gambar'
   | 'tebak_kata'
+  | 'tts'
+  | 'tebak_posisi'
+  | 'kuis_balapan'
+  | 'benar_salah'
+  | 'flappy_bird'
   | 'not_implemented';
 
 export interface GameConfig {
@@ -132,21 +141,26 @@ const CANONICAL_TO_RENDERER: Record<CanonicalGameType, RendererKey> = {
   QUIZ: 'kuis_cepat',
   MEMORY: 'memory_match',
   IMAGE_GUESS: 'tebak_gambar',
-  PUZZLE: 'tebak_kata',
-  REACTION: 'not_implemented',
-  TEAM_CHALLENGE: 'not_implemented',
-  EXPLORATION: 'not_implemented',
+  PUZZLE: 'tts',
+  WORD_GAME: 'tebak_kata',
+  LOGIC: 'tebak_posisi',
+  RAPID_ANSWER: 'benar_salah',
+  TEAM_CHALLENGE: 'kuis_balapan',
+  FLAPPY_BIRD: 'flappy_bird',
+  REACTION: 'flappy_bird',
+  EXPLORATION: 'kuis_cepat',
 };
 
 const LEGACY_TO_RENDERER: Record<string, RendererKey> = {
-  tts: 'not_implemented',
+  tts: 'tts',
   tebak_kata: 'tebak_kata',
-  tebak_posisi: 'tebak_gambar',
+  tebak_posisi: 'tebak_posisi',
   tebak_gambar: 'tebak_gambar',
-  kuis_balapan: 'kuis_cepat',
+  kuis_balapan: 'kuis_balapan',
   memory_match: 'memory_match',
   kuis_cepat: 'kuis_cepat',
-  benar_salah: 'kuis_cepat',
+  benar_salah: 'benar_salah',
+  flappy_bird: 'flappy_bird',
   kuis: 'kuis_cepat',
 };
 

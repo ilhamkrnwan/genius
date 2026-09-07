@@ -6,10 +6,10 @@
         class="pixel-btn h-8 px-3 text-xs font-mono font-bold bg-[#ca8a04] text-[#16110d] border-[#eab308] flex items-center gap-1.5 hover:bg-[#eab308] shadow-md transition-transform active:scale-95"
         @click="syncDefaultGames"
         :disabled="syncing"
-        title="Sinkronkan 7 template mini game resmi ke database"
+        title="Sinkronkan seluruh template mini game resmi ke database"
       >
         <Sparkles :class="['h-3.5 w-3.5', syncing && 'animate-spin']" />
-        <span class="hidden sm:inline">{{ syncing ? 'MENYINKRONKAN...' : 'SINKRONKAN 7 GAME' }}</span>
+        <span class="hidden sm:inline">{{ syncing ? 'MENYINKRONKAN...' : 'SINKRONKAN DEFAULT GAME' }}</span>
       </button>
 
       <button
@@ -39,7 +39,7 @@
       <div class="flex items-center gap-2 shrink-0">
         <span class="border border-[#ca8a04]/60 bg-[#2b2014] px-2 py-0.5 text-[9px] font-pixel text-[#facc15] flex items-center gap-1">
           <Zap class="h-3 w-3 text-amber-400" />
-          7 CORE ENGINES
+          {{ games.length || 12 }} ENGINES TERSEDIA
         </span>
       </div>
     </div>
@@ -351,13 +351,17 @@
                   v-model="form.type"
                   class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
                 >
-                  <option value="QUIZ">🧠 QUIZ (Team Quiz / Trivia)</option>
-                  <option value="REACTION">⚡ REACTION (Speed Reflex Tap)</option>
+                  <option value="QUIZ">🧠 QUIZ (Team Quiz / Multiple Choice)</option>
+                  <option value="RAPID_ANSWER">⚡ RAPID_ANSWER (Benar / Salah)</option>
                   <option value="MEMORY">🃏 MEMORY (Matrix Card Recall)</option>
-                  <option value="IMAGE_GUESS">🎨 IMAGE_GUESS (AI Canvas Drawing)</option>
-                  <option value="PUZZLE">🔐 PUZZLE (Logic Cipher Keypad)</option>
+                  <option value="PUZZLE">🧩 PUZZLE (Teka-Teki Silang / TTS)</option>
+                  <option value="WORD_GAME">🔤 WORD_GAME (Tebak Kata / Anagram)</option>
+                  <option value="LOGIC">📍 LOGIC (Tebak Posisi Denah)</option>
+                  <option value="IMAGE_GUESS">🎨 IMAGE_GUESS (Tebak Gambar & Canvas)</option>
+                  <option value="TEAM_CHALLENGE">🏎️ TEAM_CHALLENGE (Balapan & Boss Raid)</option>
+                  <option value="FLAPPY_BIRD">🕊️ FLAPPY_BIRD (Flappy Genius)</option>
+                  <option value="REACTION">⚡ REACTION (Speed Reflex Tap)</option>
                   <option value="EXPLORATION">🌱 EXPLORATION (Day 1 Incubation)</option>
-                  <option value="TEAM_CHALLENGE">🐉 TEAM_CHALLENGE (Boss Raid Lantai 9)</option>
                 </select>
               </div>
             </div>
@@ -729,13 +733,17 @@ const isEditing = ref(false);
 
 const CATEGORY_TABS = [
   { type: "ALL", label: "Semua Game", icon: "🎮" },
-  { type: "QUIZ", label: "Kuis & Wawasan", icon: "🧠" },
-  { type: "REACTION", label: "Speed Reflex", icon: "⚡" },
+  { type: "QUIZ", label: "Kuis Wawasan", icon: "🧠" },
+  { type: "RAPID_ANSWER", label: "Benar/Salah", icon: "⚡" },
   { type: "MEMORY", label: "Memory Match", icon: "🃏" },
-  { type: "IMAGE_GUESS", label: "AI Canvas Drawing", icon: "🎨" },
-  { type: "PUZZLE", label: "Logic Cipher", icon: "🔐" },
+  { type: "PUZZLE", label: "Teka-Teki Silang", icon: "🧩" },
+  { type: "WORD_GAME", label: "Tebak Kata", icon: "🔤" },
+  { type: "LOGIC", label: "Tebak Posisi", icon: "📍" },
+  { type: "IMAGE_GUESS", label: "Tebak Gambar & Seni", icon: "🎨" },
+  { type: "TEAM_CHALLENGE", label: "Balapan & Boss Raid", icon: "🏎️" },
+  { type: "FLAPPY_BIRD", label: "Flappy Genius", icon: "🕊️" },
+  { type: "REACTION", label: "Speed Reflex", icon: "⚡" },
   { type: "EXPLORATION", label: "Day 1 Incubation", icon: "🌱" },
-  { type: "TEAM_CHALLENGE", label: "Boss Raid Lt.9", icon: "🐉" },
 ];
 
 const form = ref<any>({
@@ -773,6 +781,7 @@ function getGameIcon(type: string) {
   switch (type) {
     case "QUIZ":
       return HelpCircle;
+    case "RAPID_ANSWER":
     case "REACTION":
       return Zap;
     case "MEMORY":
@@ -780,10 +789,14 @@ function getGameIcon(type: string) {
     case "IMAGE_GUESS":
       return ImageIcon;
     case "PUZZLE":
-    case "LOGIC":
+    case "WORD_GAME":
       return Puzzle;
+    case "LOGIC":
+      return Compass;
     case "TEAM_CHALLENGE":
       return Flame;
+    case "FLAPPY_BIRD":
+      return Sparkles;
     case "EXPLORATION":
       return Compass;
     default:
@@ -795,6 +808,8 @@ function getGameThemeColor(type: string) {
   switch (type) {
     case "QUIZ":
       return "#38bdf8"; // Cyan
+    case "RAPID_ANSWER":
+      return "#f97316"; // Orange
     case "REACTION":
       return "#facc15"; // Yellow
     case "MEMORY":
@@ -802,10 +817,15 @@ function getGameThemeColor(type: string) {
     case "IMAGE_GUESS":
       return "#ec4899"; // Pink
     case "PUZZLE":
-    case "LOGIC":
       return "#34d399"; // Emerald
+    case "WORD_GAME":
+      return "#10b981"; // Green
+    case "LOGIC":
+      return "#06b6d4"; // Cyan
     case "TEAM_CHALLENGE":
       return "#f43f5e"; // Rose / Red
+    case "FLAPPY_BIRD":
+      return "#eab308"; // Gold
     case "EXPLORATION":
       return "#818cf8"; // Indigo
     default:
@@ -816,18 +836,25 @@ function getGameThemeColor(type: string) {
 function getGameTypeLabel(type: string) {
   switch (type) {
     case "QUIZ":
-      return "TEAM QUIZ HUB";
+      return "TEAM QUIZ";
+    case "RAPID_ANSWER":
+      return "BENAR / SALAH";
     case "REACTION":
       return "SPEED REACTION";
     case "MEMORY":
       return "MEMORY MATRIX";
     case "IMAGE_GUESS":
-      return "AI CANVAS DRAWING";
+      return "TEBAK GAMBAR & SENI";
     case "PUZZLE":
+      return "TEKA-TEKI SILANG";
+    case "WORD_GAME":
+      return "TEBAK KATA";
     case "LOGIC":
-      return "LOGIC CIPHER";
+      return "TEBAK POSISI";
     case "TEAM_CHALLENGE":
-      return "BOSS RAID ARENA";
+      return "BALAPAN & BOSS RAID";
+    case "FLAPPY_BIRD":
+      return "FLAPPY GENIUS";
     case "EXPLORATION":
       return "DAY 1 INCUBATION";
     default:
