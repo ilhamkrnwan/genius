@@ -596,110 +596,38 @@
 
     <!-- MODAL 2: MODAL VALID (showValidModal) -->
     <Dialog :open="showValidModal" @update:open="showValidModal = $event">
-      <DialogContent class="sm:max-w-[460px] pixel-card border-2 border-[#22c55e] bg-[#0d1e12] text-foreground p-5 shadow-2xl">
-        <div class="text-center space-y-3">
-          <!-- Animated Check Badge -->
-          <div class="mx-auto w-14 h-14 rounded-full bg-[#166534]/40 border-2 border-[#22c55e] flex items-center justify-center text-[#4ade80] shadow-[0_0_20px_rgba(34,197,94,0.3)]">
-            <CheckCircle2 class="h-8 w-8 text-[#4ade80]" />
+      <DialogContent class="sm:max-w-[380px] pixel-card border-2 border-[#22c55e] bg-[#0d1e12] text-foreground p-5 shadow-2xl">
+        <div class="text-center space-y-3 py-2">
+          <!-- Check Badge -->
+          <div class="mx-auto w-12 h-12 rounded-full bg-[#166534]/50 border-2 border-[#22c55e] flex items-center justify-center text-[#4ade80] shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+            <CheckCircle2 class="h-7 w-7 text-[#4ade80]" />
           </div>
 
           <div>
             <h2 class="font-pixel text-base text-[#4ade80] tracking-wide">
-              PRESENSI VALID & XP BERHASIL!
+              Presensi Berhasil!
             </h2>
-            <p class="text-xs text-muted-foreground font-mono mt-1">
-              Kode QR berhasil diverifikasi dan poin XP telah ditambahkan ke profil mahasiswa.
+            <p class="text-sm font-semibold text-foreground mt-1">
+              {{ validModalData.participantName || 'Mahasiswa' }}
             </p>
-          </div>
+            <span class="text-[11px] text-[#facc15] font-mono block">
+              @{{ validModalData.username || '-' }}
+            </span>
 
-          <!-- Student & Points Celebration Card -->
-          <div class="p-3.5 rounded border-2 border-[#ca8a04]/80 bg-[#1e160e] text-left space-y-2.5 font-mono text-xs">
-            <div class="flex items-center justify-between border-b border-[#4a3624] pb-2">
-              <div>
-                <span class="text-[10px] text-muted-foreground uppercase block">Mahasiswa:</span>
-                <span class="font-sans font-bold text-sm text-foreground">
-                  {{ validModalData.participantName || '-' }}
-                </span>
-                <span class="text-[11px] text-[#facc15] block">
-                  @{{ validModalData.username || '-' }}
-                </span>
-              </div>
-              <div class="text-right">
-                <span class="text-[10px] text-muted-foreground uppercase block">Status:</span>
-                <span
-                  :class="[
-                    'inline-block px-2 py-0.5 text-[10px] font-pixel border rounded',
-                    validModalData.checkInStatus === 'ON_TIME'
-                      ? 'border-[#22c55e] bg-[#142c18] text-[#86efac]'
-                      : 'border-[#f59e0b] bg-[#2e1f14] text-[#facc15]'
-                  ]"
-                >
-                  {{ validModalData.checkInStatus === 'ON_TIME' ? 'TEPAT WAKTU' : validModalData.checkInStatus === 'LATE' ? 'TERLAMBAT (1/2 XP)' : 'HADIR' }}
-                </span>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 border-b border-[#4a3624]/60 pb-2">
-              <div>
-                <span class="text-[10px] text-muted-foreground uppercase block">Sesi Presensi:</span>
-                <span class="font-semibold text-foreground text-xs leading-tight block">
-                  {{ validModalData.sessionTitle || 'Presensi Sesi' }}
-                </span>
-              </div>
-              <div class="text-right">
-                <span class="text-[10px] text-muted-foreground uppercase block">Tanggal & Jam:</span>
-                <span class="text-[#facc15] font-semibold text-xs block">
-                  {{ validModalData.date }}
-                </span>
-                <span class="text-muted-foreground text-[10px] font-mono">
-                  Pukul {{ validModalData.time }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Golden XP Award Highlight Box -->
-            <div class="p-2.5 rounded bg-gradient-to-r from-[#2b2014] to-[#3a2818] border border-[#ca8a04] flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <Award class="h-6 w-6 text-[#facc15] animate-bounce" />
-                <div>
-                  <span class="text-[10px] text-[#fde047] uppercase font-bold block">Poin Diperoleh:</span>
-                  <span class="font-pixel text-lg text-[#facc15] font-bold">
-                    +{{ validModalData.xpAwarded || 0 }} XP
-                  </span>
-                </div>
-              </div>
-
-              <div class="text-right">
-                <span class="text-[10px] text-muted-foreground uppercase block">Total XP Baru:</span>
-                <span class="font-pixel text-sm text-[#4ade80] font-bold">
-                  {{ validModalData.totalXp || 0 }} XP
-                </span>
-              </div>
+            <div class="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded bg-[#166534]/40 border border-[#22c55e] text-[#86efac] font-pixel text-sm font-bold">
+              <span>+{{ validModalData.xpAwarded || 0 }} XP</span>
+              <span class="text-xs text-[#a7f3d0] font-sans font-normal">• Total: {{ validModalData.totalXp || 0 }} XP</span>
             </div>
           </div>
         </div>
 
-        <DialogFooter class="border-t border-[#22c55e]/40 pt-3 mt-1 flex flex-col sm:flex-row gap-2">
+        <DialogFooter class="border-t border-[#22c55e]/30 pt-3 mt-1">
           <button
             type="button"
-            class="pixel-btn flex-1 h-8 px-3 text-xs font-pixel bg-[#166534] text-[#86efac] border-[#22c55e] font-bold hover:bg-[#22c55e] hover:text-[#0f172a]"
-            @click="scanNextFromValid"
-          >
-            Pindai Berikutnya &rarr;
-          </button>
-          <button
-            type="button"
-            class="h-8 px-3 text-xs border border-[#ca8a04] bg-[#271d15] text-[#facc15] hover:bg-[#3d2d1e] font-mono"
-            @click="openLogFromValid"
-          >
-            Lihat Log Poin
-          </button>
-          <button
-            type="button"
-            class="h-8 px-3 text-xs border border-[#523e2b] bg-[#1d1611] text-muted-foreground hover:text-foreground"
+            class="pixel-btn w-full h-9 text-xs font-pixel bg-[#166534] text-[#86efac] border-[#22c55e] font-bold hover:bg-[#22c55e] hover:text-[#0f172a] transition-colors"
             @click="showValidModal = false"
           >
-            Selesai
+            &larr; Kembali
           </button>
         </DialogFooter>
       </DialogContent>
@@ -707,90 +635,40 @@
 
     <!-- MODAL 3: MODAL TIDAK VALID (showInvalidModal) -->
     <Dialog :open="showInvalidModal" @update:open="showInvalidModal = $event">
-      <DialogContent class="sm:max-w-[460px] pixel-card border-2 border-[#dc2626] bg-[#241010] text-foreground p-5 shadow-2xl">
-        <div class="text-center space-y-3">
-          <!-- Animated Error Badge -->
-          <div class="mx-auto w-14 h-14 rounded-full bg-[#7f1d1d]/40 border-2 border-[#dc2626] flex items-center justify-center text-[#f87171] shadow-[0_0_20px_rgba(220,38,38,0.3)]">
-            <XCircle class="h-8 w-8 text-[#f87171]" />
+      <DialogContent class="sm:max-w-[400px] pixel-card border-2 border-[#dc2626] bg-[#241010] text-foreground p-5 shadow-2xl">
+        <div class="text-center space-y-3 py-2">
+          <!-- Error Badge -->
+          <div class="mx-auto w-12 h-12 rounded-full bg-[#7f1d1d]/50 border-2 border-[#dc2626] flex items-center justify-center text-[#f87171] shadow-[0_0_20px_rgba(220,38,38,0.3)]">
+            <XCircle class="h-7 w-7 text-[#f87171]" />
           </div>
 
           <div>
             <h2 class="font-pixel text-base text-[#f87171] tracking-wide">
-              KODE QR TIDAK VALID!
+              Kode QR Tidak Valid
             </h2>
-            <p class="text-xs text-muted-foreground font-mono mt-1">
-              Sistem menolak kode QR ini karena tidak memenuhi ketentuan presensi.
-            </p>
-          </div>
-
-          <!-- Error Details Card -->
-          <div class="p-3.5 rounded border-2 border-[#7f1d1d] bg-[#1a0a0a] text-left space-y-2.5 font-mono text-xs">
-            <div>
-              <span class="text-[10px] text-muted-foreground uppercase block">Alasan Penolakan:</span>
-              <p class="text-xs text-[#fca5a5] font-semibold mt-0.5 leading-snug">
-                {{ invalidModalData.message || 'Kode QR tidak dikenali atau kedaluwarsa.' }}
+            <div class="p-3 mt-3 rounded bg-[#1a0a0a] border border-[#7f1d1d] text-left">
+              <span class="text-[10px] text-muted-foreground uppercase font-mono block">Keterangan:</span>
+              <p class="text-xs text-[#fca5a5] font-sans font-medium mt-1 leading-relaxed">
+                {{ invalidModalData.message || 'Kode QR tidak dikenali atau sesi presensi telah berakhir.' }}
               </p>
-            </div>
-
-            <div class="flex items-center justify-between pt-1 border-t border-[#451212] text-[11px]">
-              <div v-if="invalidModalData.code" class="flex items-center gap-1.5">
-                <span class="text-[10px] text-muted-foreground uppercase">Kode:</span>
-                <span class="px-1.5 py-0.5 text-[10px] font-mono bg-[#351515] text-[#f87171] border border-[#7f1d1d] rounded">
-                  {{ invalidModalData.code }}
-                </span>
-              </div>
-              <div class="text-right">
-                <span class="text-[10px] text-muted-foreground uppercase block">Waktu Percobaan:</span>
-                <span class="text-[#fca5a5] font-mono text-[10px]">{{ invalidModalData.dateTime || 'Baru saja' }}</span>
-              </div>
-            </div>
-
-            <!-- Scanned Raw Token Display -->
-            <div v-if="invalidModalData.scannedToken" class="space-y-1">
-              <span class="text-[10px] text-muted-foreground uppercase block">Nilai yang Dipindai:</span>
-              <div class="p-2 rounded bg-[#130707] border border-[#5c1d1d] text-[#fca5a5] font-mono text-[11px] break-all">
-                {{ invalidModalData.scannedToken }}
-              </div>
-            </div>
-
-            <!-- Tips & Resolution -->
-            <div class="p-2 rounded bg-[#2e1212] border border-[#7f1d1d]/60 text-[11px] text-[#fed7aa] space-y-1">
-              <div class="flex items-center gap-1 font-bold text-[#facc15]">
-                <AlertTriangle class="h-3 w-3 text-[#f59e0b]" />
-                <span>Petunjuk Penyelesaian:</span>
-              </div>
-              <ul class="list-disc pl-4 space-y-0.5 text-[10px] text-muted-foreground">
-                <li v-if="invalidModalData.code === 'ALREADY_ATTENDED'">
-                  Mahasiswa sudah melakukan presensi pada sesi ini sebelumnya.
-                </li>
-                <li v-else-if="invalidModalData.code === 'NO_ACTIVE_SESSION'">
-                  Sesi presensi belum diaktifkan oleh panitia. Aktifkan di menu Presensi.
-                </li>
-                <li v-else-if="invalidModalData.code === 'USER_NOT_FOUND'">
-                  ID/NIM tidak terdaftar. Pastikan mahasiswa sudah memiliki akun aktif.
-                </li>
-                <li v-else>
-                  Pastikan memindai QR resmi dari aplikasi atau kartu identitas PKKMB.
-                </li>
-              </ul>
             </div>
           </div>
         </div>
 
-        <DialogFooter class="border-t border-[#dc2626]/40 pt-3 mt-1 flex flex-col sm:flex-row gap-2">
+        <DialogFooter class="border-t border-[#dc2626]/30 pt-3 mt-1 flex gap-2">
           <button
             type="button"
-            class="pixel-btn flex-1 h-8 px-3 text-xs font-pixel bg-[#7f1d1d] text-[#fca5a5] border-[#dc2626] font-bold hover:bg-[#dc2626] hover:text-white"
+            class="pixel-btn flex-1 h-9 text-xs font-pixel bg-[#7f1d1d] text-[#fca5a5] border-[#dc2626] font-bold hover:bg-[#dc2626] hover:text-white transition-colors"
             @click="retryScanFromInvalid"
           >
             Coba Pindai Ulang
           </button>
           <button
             type="button"
-            class="h-8 px-3 text-xs border border-[#523e2b] bg-[#1d1611] text-muted-foreground hover:text-foreground font-mono"
+            class="h-9 px-4 text-xs border border-[#523e2b] bg-[#1d1611] text-muted-foreground hover:text-foreground font-mono transition-colors"
             @click="showInvalidModal = false"
           >
-            Tutup
+            Kembali
           </button>
         </DialogFooter>
       </DialogContent>
