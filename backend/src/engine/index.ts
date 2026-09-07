@@ -45,13 +45,26 @@ export class GameEngine {
    */
   static async initializeGamePayload(gameType: string, config: Record<string, any>, category?: string | null) {
     switch (gameType) {
-      case "TEAM_QUIZ": {
-        const count = config.questionCount || 5;
+      case "TEAM_QUIZ":
+      case "QUIZ": {
+        // Support both the canonical field and older seeded game records.
+        const count = config.questionsCount ?? config.questionCount ?? 5;
         let q = db.select().from(questions).where(eq(questions.status, "ACTIVE")).$dynamic();
         if (category) {
           q = q.where(eq(questions.category, category));
         }
-        const available = await q.limit(50);
+        let available = await q.limit(50);
+
+        // A game may retain a legacy category label that is not present in the
+        // current question bank. Do not create an unplayable empty session;
+        // fall back to all active questions while keeping answers private.
+        if (available.length < count && category) {
+          available = await db
+            .select()
+            .from(questions)
+            .where(eq(questions.status, "ACTIVE"))
+            .limit(50);
+        }
         // Shuffle & pick N
         const shuffled = available.sort(() => Math.random() - 0.5).slice(0, count);
         return {
@@ -121,7 +134,8 @@ export class GameEngine {
     let isPerfect = true;
 
     switch (input.gameType) {
-      case "TEAM_QUIZ": {
+      case "TEAM_QUIZ":
+      case "QUIZ": {
         // Collect question IDs
         const questionIds: string[] = [];
         input.submissions.forEach((s) => {
@@ -148,7 +162,15 @@ export class GameEngine {
             totalCount = sub.answer.length;
             sub.answer.forEach((ans: any) => {
               const qRecord = qMap.get(ans.questionId);
-              if (qRecord && String(ans.selected).trim().toLowerCase() === String(qRecord.correctAnswer).trim().toLowerCase()) {
+              const selected = String(ans.selected).trim().toLowerCase();
+              const correct = String(qRecord?.correctAnswer ?? "").trim().toLowerCase();
+              const options = Array.isArray(qRecord?.options) ? qRecord.options : [];
+              const selectedOption = Number.isInteger(Number(ans.selected)) ? options[Number(ans.selected)] : undefined;
+              const isCorrect = Boolean(qRecord) && (
+                selected === correct ||
+                String(selectedOption ?? "").trim().toLowerCase() === correct
+              );
+              if (isCorrect) {
                 base += qRecord.baseScore || 10;
                 correctCount++;
               } else {

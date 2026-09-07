@@ -1,8 +1,44 @@
 import { Elysia, t } from "elysia";
 import { db } from "../db";
-import { games, missions } from "../db/schema";
-import { eq, sql, desc, or, ilike, inArray } from "drizzle-orm";
+import { games, missions, questions, locations, stages } from "../db/schema";
+import { eq, sql, desc, or, ilike, inArray, and } from "drizzle-orm";
 import { requireAdmin } from "../middleware/auth";
+
+async function getGamePlayability(gameId: string, ignoreStatus = false) {
+  const [game] = await db.select().from(games).where(eq(games.id, gameId)).limit(1);
+  if (!game) return null;
+  const config = (game.config && typeof game.config === "object" ? game.config : {}) as Record<string, any>;
+  const reasons: string[] = [];
+  const validStatus = game.status === "ACTIVE";
+  const validConfig = Object.keys(config).length > 0;
+  if (!validStatus && !ignoreStatus) reasons.push("Game belum berstatus ACTIVE.");
+  if (!validConfig) reasons.push("Konfigurasi game masih kosong.");
+
+  let hasContent = validConfig;
+  if (game.type === "QUIZ") {
+    const category = game.questionBankCategory?.trim();
+    const rows = category
+      ? await db.select({ id: questions.id }).from(questions).where(and(eq(questions.category, category), eq(questions.status, "ACTIVE"))).limit(1)
+      : [];
+    const activeQuestions = rows.length > 0
+      ? rows
+      : await db.select({ id: questions.id }).from(questions).where(eq(questions.status, "ACTIVE")).limit(1);
+    // Accept both the canonical field and legacy seeded records. Runtime
+    // question loading uses the same active-question fallback behavior.
+    const requestedQuestionCount = Number(config.questionsCount ?? config.questionCount ?? 0);
+    hasContent = activeQuestions.length > 0 || requestedQuestionCount > 0 || (Array.isArray(config.questions) && config.questions.length > 0);
+    if (!hasContent) reasons.push("Belum ada soal aktif atau konfigurasi jumlah soal.");
+  } else if (game.type === "MEMORY") {
+    hasContent = Array.isArray(config.pairs) && config.pairs.length > 0;
+    if (!hasContent) reasons.push("Belum ada pasangan kartu memory.");
+  }
+
+  const assignments = await db.select({ id: missions.id }).from(missions).where(and(eq(missions.gameId, game.id), eq(missions.status, "ACTIVE"))).limit(1);
+  const assignedToActiveMission = assignments.length > 0;
+  if (!assignedToActiveMission) reasons.push("Game belum ditempatkan pada mission aktif.");
+
+  return { playable: (validStatus || ignoreStatus) && validConfig && hasContent && assignedToActiveMission, reasons, checks: { validStatus, validConfig, hasContent, assignedToActiveMission } };
+}
 
 export const gameRoutes = new Elysia({
   prefix: "/api/games",
@@ -11,6 +47,15 @@ export const gameRoutes = new Elysia({
   },
 })
   .use(requireAdmin)
+
+  .get("/:id/preflight", async ({ params, set }) => {
+    const result = await getGamePlayability(params.id);
+    if (!result) {
+      set.status = 404;
+      return { success: false, error: { code: "NOT_FOUND", message: "Game definition not found" } };
+    }
+    return { success: true, data: result };
+  })
 
   // GET /api/games — List all game definitions with mission usage counts
   .get("/", async ({ query }) => {
@@ -189,7 +234,20 @@ export const gameRoutes = new Elysia({
         type: "MEMORY" as const,
         description: "Permainan mengingat dan mencocokkan pasangan kartu simbol sains, fakultas UNU, dan artefak AI.",
         instructions: "Balik 2 kartu secara berurutan. Cocokkan semua pasangan sebelum batas giliran dan waktu berakhir!",
-        config: { gridSize: "4x4", totalPairs: 8, timeLimitSeconds: 60, maxScore: 100, maxFlipsAllowed: 24 },
+        config: {
+          gridSize: "4x4",
+          totalPairs: 4,
+          timeLimitSeconds: 60,
+          maxScore: 100,
+          maxFlipsAllowed: 24,
+          themeDescription: "Cocokkan istilah dan fasilitas penting UNU Yogyakarta.",
+          pairs: [
+            { id: "unu", labelA: "UNU", labelB: "Universitas Nahdlatul Ulama", tag: "KAMPUS" },
+            { id: "fti", labelA: "FTI", labelB: "Fakultas Teknologi Informasi", tag: "FAKULTAS" },
+            { id: "ai", labelA: "AI", labelB: "Kecerdasan Buatan", tag: "TEKNOLOGI" },
+            { id: "sky-garden", labelA: "Sky Garden", labelB: "Rooftop Lantai 9", tag: "LOKASI" },
+          ],
+        },
         questionBankCategory: "Memori",
         minPlayers: 1,
         maxPlayers: 5,
@@ -306,6 +364,43 @@ export const gameRoutes = new Elysia({
     }
 
     const nextStatus = game.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    if (nextStatus === "ACTIVE") {
+      // Check content and mission assignment without rejecting the current
+      // INACTIVE status that this operation is about to change.
+      const readiness = await getGamePlayability(params.id, true);
+      if (!readiness?.playable) {
+        set.status = 422;
+        return { success: false, error: { code: "GAME_NOT_PLAYABLE", message: "Game belum siap diaktifkan.", reasons: readiness?.reasons || [] } };
+      }
+    }
+
+    // Ensure the default Memory engine is reachable from the user journey.
+    // Existing deployments may have games but no mission for newly added
+    // engines, so sync creates one on the first active location/stage.
+    const [memoryGame] = await db.select().from(games).where(eq(games.type, "MEMORY")).limit(1);
+    const [activeLocation] = await db.select().from(locations).where(eq(locations.status, "AVAILABLE")).limit(1);
+    const [activeStage] = await db.select().from(stages).where(eq(stages.status, "ACTIVE")).limit(1);
+    if (memoryGame && activeLocation && activeStage) {
+      const [memoryMission] = await db
+        .select({ id: missions.id })
+        .from(missions)
+        .where(eq(missions.gameId, memoryGame.id))
+        .limit(1);
+      if (!memoryMission) {
+        await db.insert(missions).values({
+          name: `Misi ${memoryGame.name}`,
+          description: "Cocokkan pasangan kartu bertema UNU Yogyakarta.",
+          type: "MAIN",
+          locationId: activeLocation.id,
+          stageId: activeStage.id,
+          gameId: memoryGame.id,
+          order: 90,
+          isRequired: false,
+          timeLimit: 120,
+          status: "ACTIVE",
+        });
+      }
+    }
     const [updated] = await db
       .update(games)
       .set({ status: nextStatus, updatedAt: new Date() })

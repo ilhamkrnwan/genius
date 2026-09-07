@@ -11,6 +11,7 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run src/seed.ts",
     "test": "bun test",
+    "test:integration": "bun test tests/api-integration.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

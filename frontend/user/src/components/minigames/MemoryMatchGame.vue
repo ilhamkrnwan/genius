@@ -10,11 +10,13 @@ import {
 import { MemoryMatchContent } from '@/types/game';
 import { soundEngine } from '@/lib/sound';
 import { useGameStore } from '@/store/gameStore';
+import { useGameSessionStore } from '@/store/gameSessionStore';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
 
 interface Props {
   content?: MemoryMatchContent;
   isCompleted?: boolean;
+  serverSessionId?: string;
 }
 
 interface CardItem {
@@ -34,6 +36,7 @@ const emit = defineEmits<{
 }>();
 
 const gameStore = useGameStore();
+const gameSessionStore = useGameSessionStore();
 const pairs = computed(() => props.content?.pairs || []);
 
 const cards = ref<CardItem[]>([]);
@@ -42,6 +45,7 @@ const matchedPairIds = ref<string[]>([]);
 const movesCount = ref<number>(0);
 const isProcessing = ref<boolean>(false);
 const isFinished = ref<boolean>(props.isCompleted);
+const isSubmitting = ref<boolean>(false);
 
 const initCards = () => {
   if (pairs.value.length === 0) return;
@@ -112,8 +116,7 @@ const handleCardClick = (index: number) => {
         isProcessing.value = false;
 
         if (matchedPairIds.value.length === pairs.value.length) {
-          isFinished.value = true;
-          emit('complete', pairs.value.length, pairs.value.length);
+          void finishGame();
         }
       }, 500);
     } else {
@@ -124,6 +127,26 @@ const handleCardClick = (index: number) => {
       }, 900);
     }
   }
+};
+
+const finishGame = async () => {
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
+  if (props.serverSessionId) {
+    const result = await gameSessionStore.completeSession([
+      { action: 'MEMORY_MATCH', answer: { moves: movesCount.value } },
+    ]);
+    if (!result) {
+      isSubmitting.value = false;
+      return;
+    }
+    const evaluation = result.evaluation as { totalTeamScore?: number };
+    isFinished.value = true;
+    emit('complete', evaluation.totalTeamScore || 0, pairs.value.length);
+    return;
+  }
+  isFinished.value = true;
+  emit('complete', pairs.value.length, pairs.value.length);
 };
 
 const handleResetGame = () => {

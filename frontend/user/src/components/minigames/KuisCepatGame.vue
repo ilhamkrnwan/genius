@@ -11,12 +11,14 @@ import {
 import { KuisCepatContent, Question } from '@/types/game';
 import { soundEngine } from '@/lib/sound';
 import { useGameStore } from '@/store/gameStore';
+import { useGameSessionStore } from '@/store/gameSessionStore';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
 
 interface Props {
   content?: KuisCepatContent;
   fallbackQuestions?: Question[];
   isCompleted?: boolean;
+  serverSessionId?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -28,6 +30,7 @@ const emit = defineEmits<{
 }>();
 
 const gameStore = useGameStore();
+const gameSessionStore = useGameSessionStore();
 const questions = computed(() => props.content?.questions || props.fallbackQuestions || []);
 const timeLimit = computed(() => props.content?.timeLimitSeconds || 18);
 
@@ -37,6 +40,7 @@ const selectedOptionIndex = ref<number | null>(null);
 const isQuestionSubmitted = ref<boolean>(false);
 const isTimeUp = ref<boolean>(false);
 const totalScore = ref<number>(0);
+const serverAnswerResult = ref<{ isCorrect?: boolean; scoreEarned?: number } | null>(null);
 
 let timerInterval: any = null;
 
@@ -89,11 +93,31 @@ const handleSelectOption = (index: number) => {
   selectedOptionIndex.value = index;
 };
 
-const handleCheckAnswer = () => {
+const handleCheckAnswer = async () => {
   if (selectedOptionIndex.value === null || isQuestionSubmitted.value || !currentQuestion.value) return;
 
   clearTimer();
   isQuestionSubmitted.value = true;
+
+  if (props.serverSessionId) {
+    const answerResult = await gameSessionStore.submitAnswer({
+      questionId: currentQuestion.value.id,
+      answer: selectedOptionIndex.value,
+      elapsedMs: Math.max(0, (timeLimit.value - timeLeft.value) * 1000),
+    });
+    if (!answerResult) {
+      isQuestionSubmitted.value = false;
+      startTimer();
+    } else {
+      serverAnswerResult.value = answerResult;
+      if (answerResult.isCorrect) {
+        if (gameStore.soundEnabled) soundEngine.playCorrect();
+      } else if (gameStore.soundEnabled) {
+        soundEngine.playWrong();
+      }
+    }
+    return;
+  }
 
   const isCorrect = selectedOptionIndex.value === currentQuestion.value.correctAnswerIndex;
   if (isCorrect) {
@@ -104,19 +128,28 @@ const handleCheckAnswer = () => {
   }
 };
 
-const handleNextQuestion = () => {
+const handleNextQuestion = async () => {
   if (currentIndex.value < questions.value.length - 1) {
     currentIndex.value += 1;
     selectedOptionIndex.value = null;
+    serverAnswerResult.value = null;
     isQuestionSubmitted.value = false;
     isTimeUp.value = false;
     if (gameStore.soundEnabled) soundEngine.playClick();
   } else {
+    if (props.serverSessionId) {
+      const result = await gameSessionStore.completeSession();
+      if (!result) return;
+      const evaluation = result.evaluation as { totalTeamScore?: number };
+      emit('complete', evaluation.totalTeamScore || 0, questions.value.length);
+      return;
+    }
     emit('complete', totalScore.value, questions.value.length);
   }
 };
 
 const isCurrentCorrect = computed(() => {
+  if (props.serverSessionId) return serverAnswerResult.value?.isCorrect === true;
   return currentQuestion.value && selectedOptionIndex.value === currentQuestion.value.correctAnswerIndex;
 });
 
@@ -194,12 +227,18 @@ const timerColorClass = computed(() => {
         :disabled="isQuestionSubmitted || isTimeUp"
         :class="[
           'w-full text-left p-2 sm:p-2.5 rounded-lg border transition-all flex items-center gap-2 cursor-pointer',
-          (isQuestionSubmitted || isTimeUp)
-            ? optIdx === currentQuestion.correctAnswerIndex
-              ? 'bg-[#1f3a2b] border-[#7ec850] text-[#e0f0d0] shadow-md font-medium'
-              : selectedOptionIndex === optIdx && !isCurrentCorrect
-              ? 'bg-[#3a1814] border-[#d44040] text-[#ffd0d0] shadow-md'
-              : 'bg-[#170f07] border-[#5a3a18] text-[#f0e0c0]'
+            (isQuestionSubmitted || isTimeUp)
+            ? props.serverSessionId
+              ? selectedOptionIndex === optIdx
+                ? isCurrentCorrect
+                  ? 'bg-[#1f3a2b] border-[#7ec850] text-[#e0f0d0] shadow-md font-medium'
+                  : 'bg-[#3a1814] border-[#d44040] text-[#ffd0d0] shadow-md'
+                : 'bg-[#170f07] border-[#5a3a18] text-[#f0e0c0]'
+              : optIdx === currentQuestion.correctAnswerIndex
+                ? 'bg-[#1f3a2b] border-[#7ec850] text-[#e0f0d0] shadow-md font-medium'
+                : selectedOptionIndex === optIdx && !isCurrentCorrect
+                ? 'bg-[#3a1814] border-[#d44040] text-[#ffd0d0] shadow-md'
+                : 'bg-[#170f07] border-[#5a3a18] text-[#f0e0c0]'
             : selectedOptionIndex === optIdx
             ? 'bg-[#2d1b0e] border-[#f0d060] text-white shadow-md font-medium'
             : 'bg-[#170f07] border-[#5a3a18] text-[#f0e0c0] hover:border-[#8b6f4e]'
@@ -212,7 +251,7 @@ const timerColorClass = computed(() => {
           {{ option }}
         </span>
         <PhCheckCircle
-          v-if="(isQuestionSubmitted || isTimeUp) && optIdx === currentQuestion.correctAnswerIndex"
+          v-if="(isQuestionSubmitted || isTimeUp) && ((props.serverSessionId && selectedOptionIndex === optIdx && isCurrentCorrect) || (!props.serverSessionId && optIdx === currentQuestion.correctAnswerIndex))"
           :size="16"
           weight="fill"
           class="text-[#7ec850] shrink-0"
@@ -251,7 +290,7 @@ const timerColorClass = computed(() => {
         </template>
       </div>
       <p class="font-sans text-[10px] sm:text-[11px] leading-relaxed mt-0.5 text-justify break-words">
-        {{ currentQuestion.explanation }}
+        {{ props.serverSessionId ? (isCurrentCorrect ? 'Jawabanmu diterima oleh server.' : 'Jawabanmu sudah dicatat oleh server. Lanjutkan ke soal berikutnya.') : currentQuestion.explanation }}
       </p>
     </div>
 

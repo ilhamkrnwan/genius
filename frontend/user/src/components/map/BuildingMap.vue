@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   PhTrophy,
@@ -8,21 +8,47 @@ import {
   PhPlay,
   PhGameController,
 } from '@phosphor-icons/vue';
-import { FLOORS_DATA, BOOTHS_DATA } from '@/data/mockData';
+import { FLOORS_DATA } from '@/data/mockData';
 import { useGameStore } from '@/store/gameStore';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
 import StampIcon from '@/components/ui/StampIcon.vue';
 import { soundEngine } from '@/lib/sound';
+import { api } from '@/lib/api';
+import { normalizePlayableMission } from '@/lib/game-adapter';
+import type { Booth } from '@/types/game';
+import type { PlayableMission } from '@genius-unu/shared';
 
 const gameStore = useGameStore();
 const selectedFloorNumber = ref<number>(1);
+const backendMissions = ref<PlayableMission[]>([]);
+const backendLoading = ref(false);
 
 const completedFloors = computed(() => gameStore.getCompletedFloorsCount());
 const selectedFloor = computed(
   () => FLOORS_DATA.find((f) => f.number === selectedFloorNumber.value) || FLOORS_DATA[0]
 );
-const selectedBoothA = computed(() => BOOTHS_DATA[selectedFloor.value.boothIds[0]]);
-const selectedBoothB = computed(() => BOOTHS_DATA[selectedFloor.value.boothIds[1]]);
+const backendBoothsForFloor = computed(() => backendMissions.value.filter((mission) => mission.floorNumber === selectedFloorNumber.value).map((mission) => normalizePlayableMission(mission as any)));
+const selectedBoothA = computed<Booth>(() => backendBoothsForFloor.value[0] as Booth);
+const selectedBoothB = computed<Booth>(() => backendBoothsForFloor.value[1] as Booth);
+const backendError = ref<string | null>(null);
+
+function boothPath(booth: Booth) {
+  return backendMissions.value.some((mission) => mission.id === booth.id)
+    ? `/booth/${booth.id}`
+    : `/play/floor/${booth.floorNumber}/spot/${booth.id}`;
+}
+
+onMounted(async () => {
+  if (!localStorage.getItem('genius_user_token')) {
+    backendError.value = 'Login participant backend diperlukan untuk memuat mission.';
+    return;
+  }
+  backendLoading.value = true;
+  const response = await api.getAvailableMissions();
+  if (response.success && response.data) backendMissions.value = response.data;
+  else backendError.value = response.error?.message || 'Mission backend gagal dimuat.';
+  backendLoading.value = false;
+});
 
 const handleSelectFloor = (floorNum: number) => {
   selectedFloorNumber.value = floorNum;
@@ -40,11 +66,11 @@ const getGameTypeLabel = (type: string) => {
     case 'tebak_gambar':
       return 'Tebak Gambar';
     case 'kuis_balapan':
-      return 'Kuis Balapan';
+      return 'Quiz';
     case 'memory_match':
       return 'Memory Match';
     case 'kuis_cepat':
-      return 'Kuis Cepat';
+      return 'Quiz';
     case 'benar_salah':
       return 'Benar / Salah';
     default:
@@ -150,12 +176,13 @@ const getGameTypeLabel = (type: string) => {
       <!-- 2 Spots Grid -->
       <div class="space-y-2 py-2 flex-1 flex flex-col justify-center">
         <div class="text-[9px] font-pixel text-[#a08060] uppercase px-0.5">
-          2 Spot Tantangan:
+          {{ backendLoading ? 'Memuat mission backend...' : backendBoothsForFloor.length + ' Spot Tantangan:' }}
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div v-if="backendBoothsForFloor.length" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <!-- Spot A Card -->
           <div
+            v-if="selectedBoothB"
             :class="[
               'p-2 sm:p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all',
               gameStore.participant.completedBooths.includes(selectedBoothA.id)
@@ -184,7 +211,7 @@ const getGameTypeLabel = (type: string) => {
             </div>
 
             <div class="shrink-0">
-              <RouterLink :to="`/play/floor/${selectedBoothA.floorNumber}/spot/${selectedBoothA.id}`">
+              <RouterLink :to="boothPath(selectedBoothA)">
                 <button
                   type="button"
                   @click="() => gameStore.soundEnabled && soundEngine.playClick()"
@@ -203,6 +230,7 @@ const getGameTypeLabel = (type: string) => {
 
           <!-- Spot B Card -->
           <div
+            v-if="selectedBoothB"
             :class="[
               'p-2 sm:p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all',
               gameStore.participant.completedBooths.includes(selectedBoothB.id)
@@ -231,7 +259,7 @@ const getGameTypeLabel = (type: string) => {
             </div>
 
             <div class="shrink-0">
-              <RouterLink :to="`/play/floor/${selectedBoothB.floorNumber}/spot/${selectedBoothB.id}`">
+              <RouterLink :to="boothPath(selectedBoothB)">
                 <button
                   type="button"
                   @click="() => gameStore.soundEnabled && soundEngine.playClick()"
@@ -247,6 +275,9 @@ const getGameTypeLabel = (type: string) => {
               </RouterLink>
             </div>
           </div>
+        </div>
+        <div v-else class="border border-[#d44040] bg-[#2d1210] p-4 text-center text-xs text-[#ffd0d0] font-sans">
+          {{ backendError || 'Belum ada mission backend aktif di lantai ini.' }}
         </div>
       </div>
 

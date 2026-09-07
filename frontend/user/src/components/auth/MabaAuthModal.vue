@@ -15,6 +15,7 @@ import {
 import { useGameStore } from '@/store/gameStore';
 import { AVATAR_OPTIONS, UNU_FACULTIES } from '@/data/mockData';
 import { soundEngine } from '@/lib/sound';
+import { api } from '@/lib/api';
 
 const props = withDefaults(
   defineProps<{
@@ -66,7 +67,7 @@ const handleFacultyChange = (event: Event) => {
   }
 };
 
-const handleLoginSubmit = (e: Event) => {
+const handleLoginSubmit = async (e: Event) => {
   e.preventDefault();
   if (!loginNim.value.trim()) {
     loginError.value = 'Mohon masukkan NIM Mahasiswa Baru';
@@ -75,8 +76,25 @@ const handleLoginSubmit = (e: Event) => {
   loginError.value = '';
   if (gameStore.soundEnabled) soundEngine.playClick();
 
+  const response = await api.loginMaba(loginNim.value.trim(), loginPassword.value || 'genius2026');
+  if (!response.success || !response.data?.user) {
+    loginError.value = response.error?.message || 'Login backend gagal.';
+    return;
+  }
+
+  const user = response.data.user as any;
+  gameStore.loginMaba({
+    name: user.fullName || loginNim.value.trim(),
+    nim: loginNim.value.trim(),
+    isRegistered: true,
+    teamId: user.teamId || undefined,
+    groupId: user.teamId || undefined,
+    avatar: user.avatarUrl || gameStore.participant.avatar,
+  });
+
   // Sinkronkan NIM ke profile form
   profileNim.value = loginNim.value.trim();
+  profileName.value = user.fullName || profileName.value;
 
   // Lanjut ke Langkah 2: Mengisi Profil
   currentStep.value = 'profile';

@@ -32,7 +32,7 @@ export function useToast() {
 
   function add(item: ToastOptions | Omit<AdminToast, "id">) {
     const id = "adm-t-" + Math.random().toString(36).substring(2, 9) + "-" + Date.now();
-    
+
     // Normalize type and message
     let toastType: ToastType = (item as any).type || "INFO";
     if ((item as ToastOptions).color) {
