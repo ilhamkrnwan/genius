@@ -3,8 +3,11 @@ WORKDIR /app
 
 # Copy root workspace configs
 COPY package.json bun.lock tsconfig.base.json ./
+# Bun validates the root lockfile against every declared workspace.
+# Copy the complete workspace tree so frozen installs are reproducible.
 COPY packages/ ./packages/
-COPY frontend/user/ ./frontend/user/
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
 
 # Install dependencies and build Vite app
 RUN bun install --frozen-lockfile

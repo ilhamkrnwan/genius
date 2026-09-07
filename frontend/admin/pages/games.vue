@@ -231,6 +231,12 @@
 
             <!-- Rules & Config Highlights Matrix -->
             <div class="border border-[#3d2d1e] bg-[#0c0a08] p-2.5 rounded-lg font-mono text-xs space-y-1.5">
+              <div class="flex items-center justify-between text-[10px] border-b border-[#231b14] pb-1.5">
+                <span class="text-gray-400">PLAYABILITY</span>
+                <span :class="getPlayability(g).playable ? 'text-emerald-400' : 'text-rose-400'" class="font-pixel">
+                  {{ getPlayability(g).playable ? 'PLAYABLE' : 'NEEDS SETUP' }}
+                </span>
+              </div>
               <div class="flex items-center justify-between text-[11px]">
                 <span class="text-gray-400 flex items-center gap-1.5">
                   <Clock class="h-3.5 w-3.5 text-amber-400" />
@@ -829,12 +835,38 @@ function getGameTypeLabel(type: string) {
   }
 }
 
+function isGamePlayable(game: any) {
+  const hasConfig = Boolean(game.config && typeof game.config === "object");
+  const hasContent = game.type === "MEMORY"
+    ? Array.isArray(game.config?.pairs) && game.config.pairs.length > 0
+    : game.type === "QUIZ"
+      ? Boolean(game.questionBankCategory || game.config?.questionsCount || game.config?.questions?.length)
+      : hasConfig;
+  return game.status === "ACTIVE" && hasConfig && hasContent;
+}
+
+const playabilityByGameId = ref<Record<string, { playable: boolean; reasons: string[] }>>({});
+
+function getPlayability(game: any) {
+  return playabilityByGameId.value[game.id] || { playable: isGamePlayable(game), reasons: [] };
+}
+
+async function fetchPlayability(game: any) {
+  try {
+    const result: any = await api.get('/api/games/' + game.id + '/preflight');
+    if (result.success && result.data) playabilityByGameId.value[game.id] = result.data;
+  } catch (error) {
+    console.warn('Failed to check game readiness:', error);
+  }
+}
+
 async function fetchGames() {
   loading.value = true;
   try {
     const res = await api.get<{ success: boolean; data: any[] }>("/api/games");
     if (res.success && res.data) {
       games.value = res.data;
+      await Promise.all(games.value.map((game) => fetchPlayability(game)));
     }
   } catch (err) {
     console.error("Failed to load games:", err);
@@ -888,7 +920,8 @@ async function toggleGameStatus(g: any) {
       g.status = res.data.status;
     }
   } catch (err: any) {
-    alert("Gagal mengubah status game: " + (err.message || "Error"));
+    const reasons = err?.data?.error?.reasons;
+    alert("Gagal mengubah status game: " + (reasons?.join(" ") || err.message || "Error"));
   }
 }
 

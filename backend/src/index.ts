@@ -12,6 +12,7 @@ import { routeRoutes } from "./routes/routes";
 import { missionRoutes } from "./routes/missions";
 import { gameRoutes } from "./routes/games";
 import { gameSessionRoutes } from "./routes/game-sessions";
+import { publicPlayRoutes } from "./routes/public-play";
 import { questionRoutes } from "./routes/questions";
 import { leaderboardRoutes } from "./routes/leaderboard";
 import { scoreRoutes } from "./routes/scores";
@@ -135,6 +136,7 @@ const app = new Elysia()
   .use(missionRoutes)
   .use(gameRoutes)
   .use(gameSessionRoutes)
+  .use(publicPlayRoutes)
   .use(questionRoutes)
   .use(leaderboardRoutes)
   .use(scoreRoutes)

@@ -70,12 +70,29 @@ export const requireAdmin = new Elysia({ name: "require-admin" })
  */
 export const requireBuddyOrAdmin = new Elysia({ name: "require-buddy-or-admin" })
   .use(authMiddleware)
-  .onBeforeHandle(({ user, set }) => {
+  .onBeforeHandle(({ user, set, request }) => {
     if (!user) {
       set.status = 401;
       return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } };
     }
-    if (user.role !== "ADMIN" && user.role !== "BUDDY") {
+    // Participants may initialize and start their own game session. Ownership
+    // is enforced by the individual route handlers as well.
+    const isParticipantCreate =
+      user.role === "PARTICIPANT" &&
+      request.method === "POST" &&
+      new URL(request.url).pathname.endsWith("/game-sessions/create");
+
+    const isParticipantComplete =
+      user.role === "PARTICIPANT" &&
+      request.method === "POST" &&
+      new URL(request.url).pathname.includes("/game-sessions/") && new URL(request.url).pathname.endsWith("/complete");
+
+    const isParticipantStart =
+      user.role === "PARTICIPANT" &&
+      request.method === "POST" &&
+      new URL(request.url).pathname.includes("/game-sessions/") && new URL(request.url).pathname.endsWith("/start");
+
+    if (user.role !== "ADMIN" && user.role !== "BUDDY" && !isParticipantCreate && !isParticipantStart && !isParticipantComplete) {
       set.status = 403;
       return { success: false, error: { code: "FORBIDDEN", message: "Buddy or Admin permission required" } };
     }

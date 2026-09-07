@@ -30,12 +30,22 @@
         Pantau sesi arena mini game yang sedang aktif di seluruh 9 lantai kampus UNU Yogyakarta secara realtime.
       </p>
       <div class="flex items-center gap-2 shrink-0">
+        <span v-if="lastSyncedAt" class="text-[9px] text-muted-foreground font-mono">Sync: {{ formatTime(lastSyncedAt) }}</span>
         <span class="border border-emerald-500/50 bg-emerald-950/60 px-2 py-0.5 text-[9px] font-pixel text-emerald-300 flex items-center gap-1">
           <Radio class="h-3 w-3 text-emerald-400 animate-pulse" />
           MATCH MONITOR
         </span>
       </div>
     </div>
+
+    <div v-if="monitoringStats" class="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+      <div class="pixel-card p-2 border-cyan-900/60"><p class="text-[9px] text-muted-foreground">TEAM AKTIF</p><p class="font-pixel text-cyan-300">{{ monitoringStats.activeTeams || 0 }}</p></div>
+      <div class="pixel-card p-2 border-emerald-900/60"><p class="text-[9px] text-muted-foreground">LOKASI TERISI</p><p class="font-pixel text-emerald-300">{{ monitoringStats.occupiedLocations || 0 }}/{{ monitoringStats.totalLocations || 0 }}</p></div>
+      <div class="pixel-card p-2 border-purple-900/60"><p class="text-[9px] text-muted-foreground">SESI SELESAI</p><p class="font-pixel text-purple-300">{{ monitoringStats.completedSessions || 0 }}</p></div>
+      <div class="pixel-card p-2 border-amber-900/60"><p class="text-[9px] text-muted-foreground">SKOR TERBAGI</p><p class="font-pixel text-amber-300">{{ monitoringStats.totalScoreDistributed || 0 }}</p></div>
+    </div>
+
+    <div v-if="loadError" class="border border-red-700/70 bg-red-950/30 p-2 text-[10px] text-red-200 font-mono">{{ loadError }}</div>
 
     <!-- Status Overview Counters -->
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 font-mono">
@@ -279,6 +289,14 @@
             <XCircle class="h-3 w-3" />
             <span>Reset Pos</span>
           </button>
+          <button
+            v-if="['READY', 'ACTIVE', 'PAUSED'].includes(s.status)"
+            @click="expireSession(s.id)"
+            class="pixel-btn h-7 px-2 bg-[#271d15] text-orange-300 border-orange-800 font-bold flex items-center gap-1 hover:bg-orange-950"
+            title="Tandai sesi kedaluwarsa"
+          >
+            EXPIRE
+          </button>
           <span v-else class="text-[10px] text-muted-foreground ml-auto">
             Sesi Arsip
           </span>
@@ -313,14 +331,19 @@ const statusFilter = ref("");
 const gameFilter = ref("");
 
 const sessions = ref<any[]>([]);
+const monitoringStats = ref<any | null>(null);
+const lastSyncedAt = ref<string | null>(null);
+const loadError = ref<string | null>(null);
 let refreshTimer: any = null;
 
 onMounted(async () => {
   await fetchSessions();
+  await fetchMonitoringStats();
   // Auto refresh interval every 3 seconds for active matches
   refreshTimer = setInterval(() => {
     if (autoRefresh.value) {
       fetchSessions(true);
+      fetchMonitoringStats();
     }
   }, 3000);
 });
@@ -335,11 +358,23 @@ async function fetchSessions(silent = false) {
     const res = await api.get("/game-sessions?limit=60");
     if (res?.success && Array.isArray(res.data)) {
       sessions.value = res.data;
+      lastSyncedAt.value = new Date().toISOString();
+      loadError.value = null;
     }
   } catch (err) {
+    loadError.value = "Backend monitoring tidak dapat dihubungi.";
     if (!silent) console.error("Failed to load sessions:", err);
   } finally {
     if (!silent) loading.value = false;
+  }
+}
+
+async function fetchMonitoringStats() {
+  try {
+    const res: any = await api.get("/monitoring/stats");
+    if (res?.success) monitoringStats.value = res.data?.counters || null;
+  } catch {
+    // Keep the session list usable if aggregate counters are unavailable.
   }
 }
 
@@ -410,6 +445,16 @@ async function cancelSession(id: string) {
     }
   } catch (err: any) {
     alert("Gagal membatalkan sesi: " + err.message);
+  }
+}
+
+async function expireSession(id: string) {
+  if (!confirm("Tandai sesi ini sebagai EXPIRED dan bebaskan pos?")) return;
+  try {
+    const res: any = await api.post('/game-sessions/' + id + '/expire');
+    if (res?.success) await fetchSessions(true);
+  } catch (err: any) {
+    alert('Gagal expire sesi: ' + (err?.data?.error?.message || err.message || 'Error'));
   }
 }
 </script>

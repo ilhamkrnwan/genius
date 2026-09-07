@@ -66,7 +66,7 @@
                 </div>
                 <div>
                   <div class="font-bold text-foreground text-xs leading-tight">
-                    {{ m.title }}
+                    {{ m.name || m.title }}
                   </div>
                   <div class="font-mono text-[10px] text-[#38bdf8]">
                     {{ m.locationName || 'Lokasi Kampus' }}
@@ -94,7 +94,7 @@
             <div class="flex items-center justify-between border border-[#4a3624] bg-[#15100c] px-2.5 py-1.5 font-mono text-xs">
               <span class="text-muted-foreground text-[10px]">REWARD MAKS:</span>
               <span class="text-[#4ade80] font-pixel text-[10px]">
-                {{ m.maxPoints || 100 }} PTS
+                {{ m.maxPoints || m.timeLimit || 100 }} PTS
               </span>
             </div>
           </div>
@@ -102,7 +102,7 @@
           <!-- Actions -->
           <div class="border-t border-[#3d2d1e] pt-2 flex items-center justify-between">
             <span class="text-[10px] font-mono text-[#facc15]">
-              Game: {{ m.gameType || 'Speed Reflex' }}
+              Game: {{ m.gameName || m.gameType || 'Belum terhubung' }}
             </span>
 
             <div class="flex items-center gap-1">
@@ -158,26 +158,27 @@
           </div>
 
           <div class="space-y-1">
-            <Label class="text-xs font-semibold">Tipe Mini Game:</Label>
-            <select
-              v-model="form.gameType"
-              class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
-            >
-              <option value="SPEED_REFLEX">Speed Reflex (Refleks Cepat)</option>
-              <option value="MEMORY_MATCH">Memory Match (Tebak Pola)</option>
-              <option value="TEAM_QUIZ">Team Quiz Hub (Kuis Wawasan)</option>
+            <Label class="text-xs font-semibold">Lokasi / Booth:</Label>
+            <select v-model="form.locationId" required class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]">
+              <option value="" disabled>Pilih lokasi</option>
+              <option v-for="location in locations" :key="location.id" :value="location.id">{{ location.name || location.code }}</option>
             </select>
           </div>
 
           <div class="space-y-1">
-            <Label class="text-xs font-semibold">Maksimal Skor Poin:</Label>
-            <input
-              type="number"
-              v-model.number="form.maxPoints"
-              placeholder="100"
-              class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
-              required
-            />
+            <Label class="text-xs font-semibold">Stage:</Label>
+            <select v-model="form.stageId" required class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]">
+              <option value="" disabled>Pilih stage</option>
+              <option v-for="stage in stages" :key="stage.id" :value="stage.id">{{ stage.name }}</option>
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <Label class="text-xs font-semibold">Game Definition:</Label>
+            <select v-model="form.gameId" class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]">
+              <option value="">Tanpa game</option>
+              <option v-for="game in games" :key="game.id" :value="game.id">{{ game.name }} ({{ game.type }})</option>
+            </select>
           </div>
 
           <div class="space-y-1">
@@ -251,6 +252,9 @@ const api = useApi();
 const loading = ref(false);
 const saving = ref(false);
 const missions = ref<any[]>([]);
+const locations = ref<any[]>([]);
+const stages = ref<any[]>([]);
+const games = ref<any[]>([]);
 const searchQuery = ref("");
 
 // Pagination
@@ -263,8 +267,9 @@ const isEditing = ref(false);
 const form = ref({
   id: "",
   title: "",
-  gameType: "SPEED_REFLEX",
-  maxPoints: 100,
+  locationId: "",
+  stageId: "",
+  gameId: "",
   description: "",
   status: "ACTIVE",
 });
@@ -294,13 +299,25 @@ async function fetchMissions() {
   }
 }
 
+async function fetchAssignmentOptions() {
+  const [locationsResponse, stagesResponse, gamesResponse] = await Promise.all([
+    api.get<{ success: boolean; data: any[] }>("/api/locations"),
+    api.get<{ success: boolean; data: any[] }>("/api/stages"),
+    api.get<{ success: boolean; data: any[] }>("/api/games"),
+  ]);
+  locations.value = locationsResponse.data || [];
+  stages.value = stagesResponse.data || [];
+  games.value = gamesResponse.data || [];
+}
+
 function openCreateModal() {
   isEditing.value = false;
   form.value = {
     id: "",
     title: "",
-    gameType: "SPEED_REFLEX",
-    maxPoints: 100,
+    locationId: locations.value[0]?.id || "",
+    stageId: stages.value[0]?.id || "",
+    gameId: "",
     description: "",
     status: "ACTIVE",
   };
@@ -311,9 +328,10 @@ function openEditModal(m: any) {
   isEditing.value = true;
   form.value = {
     id: m.id,
-    title: m.title,
-    gameType: m.gameType || "SPEED_REFLEX",
-    maxPoints: m.maxPoints || 100,
+    title: m.name || m.title || "",
+    locationId: m.locationId || "",
+    stageId: m.stageId || "",
+    gameId: m.gameId || "",
     description: m.description || "",
     status: m.status || "ACTIVE",
   };
@@ -325,18 +343,21 @@ async function submitMissionForm() {
   try {
     if (isEditing.value) {
       await api.put(`/api/missions/${form.value.id}`, {
-        title: form.value.title,
-        gameType: form.value.gameType,
-        maxPoints: form.value.maxPoints,
+        name: form.value.title,
+        locationId: form.value.locationId,
+        stageId: form.value.stageId,
+        gameId: form.value.gameId || null,
         description: form.value.description,
         status: form.value.status,
       });
     } else {
       await api.post("/api/missions", {
-        title: form.value.title,
-        gameType: form.value.gameType,
-        maxPoints: form.value.maxPoints,
+        name: form.value.title,
+        locationId: form.value.locationId,
+        stageId: form.value.stageId,
+        gameId: form.value.gameId || null,
         description: form.value.description,
+        status: form.value.status,
       });
     }
     showMissionModal.value = false;
@@ -360,6 +381,6 @@ async function confirmDelete(m: any) {
 }
 
 onMounted(() => {
-  fetchMissions();
+  Promise.all([fetchMissions(), fetchAssignmentOptions()]);
 });
 </script>

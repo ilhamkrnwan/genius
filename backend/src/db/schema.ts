@@ -11,6 +11,7 @@ import {
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // ============================================================
 // Enums
@@ -211,6 +212,9 @@ export const gameSessions = pgTable("game_sessions", {
   index("game_sessions_team_idx").on(table.teamId),
   index("game_sessions_game_idx").on(table.gameId),
   index("game_sessions_status_idx").on(table.status),
+  uniqueIndex("game_sessions_active_team_mission_unique")
+    .on(table.teamId, table.missionId)
+    .where(sql`status IN ('READY', 'ACTIVE', 'PAUSED')`),
 ]);
 
 // --- Questions (Question Bank) ---
@@ -251,6 +255,7 @@ export const scoreTransactions = pgTable("score_transactions", {
   index("score_tx_participant_idx").on(table.participantId),
   index("score_tx_team_idx").on(table.teamId),
   index("score_tx_stage_idx").on(table.stageId),
+  uniqueIndex("score_tx_game_session_participant_unique").on(table.gameSessionId, table.participantId),
 ]);
 
 // --- Achievements ---

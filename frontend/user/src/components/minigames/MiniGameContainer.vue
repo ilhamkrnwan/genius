@@ -13,10 +13,12 @@ import KuisBalapanGame from './KuisBalapanGame.vue';
 interface Props {
   booth: Booth;
   isCompleted?: boolean;
+  serverSessionId?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isCompleted: false,
+  serverSessionId: undefined,
 });
 
 const emit = defineEmits<{
@@ -35,42 +37,49 @@ const handleComplete = (score: number, totalQuestions: number) => {
     v-if="gameType === 'tts'"
     :content="props.booth.ttsContent"
     :isCompleted="props.isCompleted"
+    :serverSessionId="props.serverSessionId"
     @complete="handleComplete"
   />
   <TebakKataGame
     v-else-if="gameType === 'tebak_kata'"
     :content="props.booth.tebakKataContent"
     :isCompleted="props.isCompleted"
+    :serverSessionId="props.serverSessionId"
     @complete="handleComplete"
   />
   <TebakPosisiGame
     v-else-if="gameType === 'tebak_posisi'"
     :content="props.booth.tebakPosisiContent"
     :isCompleted="props.isCompleted"
+    :serverSessionId="props.serverSessionId"
     @complete="handleComplete"
   />
   <TebakGambarGame
     v-else-if="gameType === 'tebak_gambar'"
     :content="props.booth.tebakGambarContent"
     :isCompleted="props.isCompleted"
+    :serverSessionId="props.serverSessionId"
     @complete="handleComplete"
   />
   <KuisBalapanGame
     v-else-if="gameType === 'kuis_balapan'"
     :content="props.booth.kuisBalapanContent"
     :isCompleted="props.isCompleted"
+    :serverSessionId="props.serverSessionId"
     @complete="handleComplete"
   />
   <MemoryMatchGame
     v-else-if="gameType === 'memory_match'"
     :content="props.booth.memoryMatchContent"
     :isCompleted="props.isCompleted"
+    :serverSessionId="props.serverSessionId"
     @complete="handleComplete"
   />
   <BenarSalahGame
     v-else-if="gameType === 'benar_salah'"
     :content="props.booth.benarSalahContent"
     :isCompleted="props.isCompleted"
+    :serverSessionId="props.serverSessionId"
     @complete="handleComplete"
   />
   <KuisCepatGame
@@ -78,6 +87,7 @@ const handleComplete = (score: number, totalQuestions: number) => {
     :content="props.booth.kuisCepatContent"
     :fallbackQuestions="props.booth.questions"
     :isCompleted="props.isCompleted"
+    :serverSessionId="props.serverSessionId"
     @complete="handleComplete"
   />
 </template>

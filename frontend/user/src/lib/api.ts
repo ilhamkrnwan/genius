@@ -1,4 +1,8 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
+// Use the explicit IPv4 loopback in local development. On some Windows setups
+// localhost resolves to an unrelated IPv6 listener on port 3001.
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:3001/api';
+
+import type { AnswerSubmission, GameSession, PlayableMission } from '@genius-unu/shared';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -57,6 +61,20 @@ export const api = {
     return res;
   },
 
+  async loginMaba(nim: string, password = 'genius2026') {
+    const res = await this.request('/auth/login-maba', {
+      method: 'POST',
+      body: JSON.stringify({ nim, password }),
+    });
+
+    if (res.success && res.data?.token) {
+      localStorage.setItem('genius_user_token', res.data.token);
+      localStorage.setItem('genius_user_profile', JSON.stringify(res.data.user));
+    }
+
+    return res;
+  },
+
   logout() {
     localStorage.removeItem('genius_user_token');
     localStorage.removeItem('genius_user_profile');
@@ -65,6 +83,50 @@ export const api = {
   // Floors & Locations
   async getFloors() {
     return this.request('/floors');
+  },
+
+  async getAvailableMissions() {
+    return this.request<PlayableMission[]>('/me/missions/available');
+  },
+
+  async getMissionForPlay(missionId: string) {
+    return this.request<PlayableMission>('/missions/' + encodeURIComponent(missionId) + '/play');
+  },
+
+  async createGameSession(payload: { missionId: string; teamId: string; allowReplay?: boolean }) {
+    return this.request<GameSession>('/game-sessions/create', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getGameSession(sessionId: string) {
+    return this.request<GameSession>('/game-sessions/' + encodeURIComponent(sessionId));
+  },
+
+  async getActiveGameSession() {
+    return this.request<GameSession | null>('/game-sessions/active');
+  },
+
+  async startGameSession(sessionId: string) {
+    return this.request<GameSession>('/game-sessions/' + encodeURIComponent(sessionId) + '/start', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  },
+
+  async submitGameAnswer(sessionId: string, submission: AnswerSubmission) {
+    return this.request<{ accepted: boolean; isCorrect?: boolean; scoreEarned?: number; progress?: { answered: number; total: number }; duplicate?: boolean }>(
+      '/game-sessions/' + encodeURIComponent(sessionId) + '/answer',
+      { method: 'POST', body: JSON.stringify(submission) }
+    );
+  },
+
+  async completeGameSession(sessionId: string, submissions: Array<Record<string, unknown>> = []) {
+    return this.request<{ session: GameSession; evaluation: Record<string, unknown> }>(
+      '/game-sessions/' + encodeURIComponent(sessionId) + '/complete',
+      { method: 'POST', body: JSON.stringify({ submissions }) }
+    );
   },
 
   // Leaderboard

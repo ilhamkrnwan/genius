@@ -43,11 +43,11 @@ export function useApi() {
     }
 
     const body = options.body || {};
+    const config = useRuntimeConfig();
 
     // 0. Attempt live Backend API request if available
     try {
-      const config = useRuntimeConfig();
-      const baseUrl = config.public?.apiBase || "http://localhost:3001/api";
+      const baseUrl = config.public?.apiBase || "http://127.0.0.1:3001/api";
       const auth = useAuth();
       const headers: Record<string, string> = {};
       if (auth.token?.value && auth.token.value !== "mock-static-token") {
@@ -64,8 +64,11 @@ export function useApi() {
       if (liveResponse) {
         return liveResponse;
       }
-    } catch {
-      // Fallback seamlessly to in-memory mockDb when backend is offline
+    } catch (error) {
+      if (!config.public?.useMockApi) {
+        throw error;
+      }
+      // Development-only fallback to the in-memory mock database.
     }
 
     // Simulate minor asynchronous network latency for fallback

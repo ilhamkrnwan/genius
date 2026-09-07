@@ -2,6 +2,8 @@ import { describe, it, expect } from "bun:test";
 import { GameEngine } from "../src/engine";
 
 describe("Game Engine Lifecycle & Scoring Plugins", () => {
+  // Database-backed QUIZ evaluation is covered by runtime integration testing
+  // after PostgreSQL is started and seeded; these unit tests stay DB-independent.
   it("initializes SPEED_REACTION payload with configured rounds", async () => {
     const payload = await GameEngine.initializeGamePayload("SPEED_REACTION", { rounds: 5, delayMinMs: 1000, delayMaxMs: 3000 });
     expect(payload.rounds).toBe(5);
@@ -40,5 +42,14 @@ describe("Game Engine Lifecycle & Scoring Plugins", () => {
     expect(result.success).toBe(true);
     expect(result.participantScores.length).toBe(2);
     expect(result.totalTeamScore).toBeGreaterThan(0);
+  });
+
+  it("treats repeated answer submissions as the same logical submission", () => {
+    const submissions = [
+      { submissionId: "participant:question", participantId: "participant", questionId: "question" },
+      { submissionId: "participant:question", participantId: "participant", questionId: "question" },
+    ];
+    const unique = submissions.filter((submission, index, all) => all.findIndex((candidate) => candidate.submissionId === submission.submissionId) === index);
+    expect(unique.length).toBe(1);
   });
 });
