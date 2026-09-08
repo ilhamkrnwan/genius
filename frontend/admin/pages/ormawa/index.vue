@@ -20,6 +20,7 @@ import {
   ExternalLink,
   MoreHorizontal,
   CheckSquare,
+  ScanLine,
 } from "lucide-vue-next";
 import {
   DropdownMenu,
@@ -533,6 +534,15 @@ onMounted(() => {
         <Plus class="h-3.5 w-3.5" />
         <span class="hidden sm:inline font-pixel">TAMBAH STAN</span>
       </button>
+
+      <NuxtLink
+        to="/ormawa/scan"
+        class="pixel-btn h-8 px-3 text-xs font-mono font-bold bg-[#132215] text-[#4ade80] border-[#22c55e] flex items-center gap-1.5 hover:bg-[#172e1e] cursor-pointer"
+        title="Dashboard Scanner PIC Ormawa"
+      >
+        <ScanLine class="h-3.5 w-3.5" />
+        <span class="hidden md:inline font-pixel text-[11px]">SCANNER PIC</span>
+      </NuxtLink>
 
       <NuxtLink
         to="/qr-center"
