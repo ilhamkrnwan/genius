@@ -135,7 +135,7 @@
             </th>
             <th class="px-3 py-2.5">PENGGUNA</th>
             <th class="px-3 py-2.5 text-center">ROLE / PERAN</th>
-            <th class="px-3 py-2.5">TIM TERKAIT</th>
+            <th class="px-3 py-2.5">KELOMPOK GENIUS</th>
             <th class="px-3 py-2.5 text-center">TOTAL XP</th>
             <th class="px-3 py-2.5 text-center">STATUS</th>
             <th class="px-3 py-2.5">TERDAFTAR</th>
@@ -918,6 +918,19 @@
                 </option>
               </select>
             </div>
+
+            <div class="space-y-1">
+              <Label class="text-xs text-foreground font-semibold">Kelompok GENIUS (Opsional):</Label>
+              <select
+                v-model="form.teamId"
+                class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
+              >
+                <option :value="null">-- Belum Ditentukan (Free Agent) --</option>
+                <option v-for="team in teamsList" :key="team.id" :value="team.id">
+                  {{ team.code }} - {{ team.name }}
+                </option>
+              </select>
+            </div>
           </div>
 
           <div class="space-y-1">
@@ -1040,9 +1053,20 @@ const form = ref({
   role: "PARTICIPANT",
   faculty: UNU_FACULTIES[1]?.name || "Fakultas Teknologi Informasi",
   prodi: UNU_FACULTIES[1]?.prodi[0] || "Informatika",
+  teamId: null as string | null,
   password: "",
   status: "ACTIVE",
 });
+
+const teamsList = ref<any[]>([]);
+async function fetchTeams() {
+  try {
+    const res = await api.get<{ success: boolean; data: any[] }>("/api/teams?pageSize=100");
+    if (res.success && res.data) teamsList.value = res.data;
+  } catch (err) {
+    console.error("Failed to load teams:", err);
+  }
+}
 
 const availableProdis = computed(() => {
   const fac = UNU_FACULTIES.find((f) => f.name === form.value.faculty);
@@ -1224,6 +1248,7 @@ function openCreateModal() {
     role: selectedRole.value || "PARTICIPANT",
     faculty: UNU_FACULTIES[1]?.name || "Fakultas Teknologi Informasi",
     prodi: UNU_FACULTIES[1]?.prodi[0] || "Informatika",
+    teamId: null,
     password: "",
     status: "ACTIVE",
   };
@@ -1239,6 +1264,7 @@ function openEditModal(u: any) {
     role: u.role,
     faculty: u.faculty || UNU_FACULTIES[1]?.name || "Fakultas Teknologi Informasi",
     prodi: u.prodi || UNU_FACULTIES[1]?.prodi[0] || "Informatika",
+    teamId: u.teamId || null,
     password: "",
     status: u.status || "ACTIVE",
   };
@@ -1256,6 +1282,7 @@ async function submitForm() {
       if (form.value.role === "PARTICIPANT") {
         payload.faculty = form.value.faculty;
         payload.prodi = form.value.prodi;
+        payload.teamId = form.value.teamId;
       }
       if (form.value.password) payload.password = form.value.password;
       await api.put(`/api/users/${form.value.id}`, payload);
@@ -1273,6 +1300,7 @@ async function submitForm() {
       if (form.value.role === "PARTICIPANT") {
         payload.faculty = form.value.faculty;
         payload.prodi = form.value.prodi;
+        payload.teamId = form.value.teamId;
       }
       await api.post("/api/users", payload);
       toast.success("Pengguna Dibuat!", `Akun @${form.value.username} berhasil didaftarkan.`);
@@ -1790,6 +1818,7 @@ function formatDateTime(iso: string) {
 
 onMounted(() => {
   fetchUsers();
+  fetchTeams();
   fetchActiveSession();
 });
 

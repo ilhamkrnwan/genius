@@ -5,10 +5,10 @@
       <button
         class="pixel-btn h-8 px-3 text-xs font-mono font-bold bg-[#ca8a04] text-[#16110d] border-[#eab308] flex items-center gap-1.5 hover:bg-[#eab308]"
         @click="openCreateModal"
-        title="Buat Tim Baru"
+        title="Buat Kelompok Genius Baru"
       >
         <Plus class="h-3.5 w-3.5" />
-        <span class="hidden sm:inline">BUAT TIM BARU</span>
+        <span class="hidden sm:inline">BUAT KELOMPOK GENIUS</span>
       </button>
 
       <button
@@ -29,7 +29,7 @@
           <Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#f59e0b]" />
           <input
             v-model="searchQuery"
-            placeholder="Cari nama tim, kode, atau buddy..."
+            placeholder="Cari nama kelompok, kode (GENIUS-01), atau buddy..."
             class="w-full h-7 text-xs font-mono pl-8 pr-3 bg-[#1d1611] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
           />
         </div>
@@ -114,11 +114,11 @@
                 @change="toggleSelectAll"
               />
             </th>
-            <th class="px-3 py-2.5">TIM PETUALANG</th>
-            <th class="px-3 py-2.5">KODE TIM</th>
+            <th class="px-3 py-2.5">KELOMPOK GENIUS</th>
+            <th class="px-3 py-2.5">KODE KELOMPOK</th>
             <th class="px-3 py-2.5">RUTE POS</th>
             <th class="px-3 py-2.5">BUDDY PENDAMPING</th>
-            <th class="px-3 py-2.5 text-center">ANGGOTA</th>
+            <th class="px-3 py-2.5 text-center">ANGGOTA MABA</th>
             <th class="px-3 py-2.5 text-center">STATUS</th>
             <th class="pr-4 md:pr-6 pl-3 py-2.5 text-center w-16">AKSI</th>
           </tr>
@@ -128,14 +128,14 @@
             <td colspan="8" class="p-8 text-muted-foreground">
               <div class="flex items-center justify-center gap-2">
                 <RotateCw class="h-4 w-4 animate-spin text-[#f59e0b]" />
-                <span>Memuat data tim petualang...</span>
+                <span>Memuat data kelompok genius...</span>
               </div>
             </td>
           </tr>
 
           <tr v-else-if="paginatedTeams.length === 0" class="text-center">
             <td colspan="8" class="p-8 text-muted-foreground">
-              Tidak ada data tim yang sesuai dengan filter.
+              Tidak ada data kelompok genius yang sesuai dengan filter.
             </td>
           </tr>
 
@@ -278,13 +278,13 @@
         <DialogHeader>
           <DialogTitle class="font-pixel text-sm text-[#f59e0b] flex items-center gap-2">
             <Shield class="h-4 w-4" />
-            <span>{{ isEditing ? 'EDIT DATA TIM' : 'BUAT TIM PETUALANG BARU' }}</span>
+            <span>{{ isEditing ? 'EDIT DATA KELOMPOK GENIUS' : 'BUAT KELOMPOK GENIUS BARU' }}</span>
           </DialogTitle>
         </DialogHeader>
 
         <form @submit.prevent="submitForm" class="space-y-3 py-1 font-mono text-xs">
           <div class="space-y-1">
-            <Label class="text-xs text-foreground font-semibold">Nama Tim:</Label>
+            <Label class="text-xs text-foreground font-semibold">Nama Kelompok Genius:</Label>
             <input
               v-model="form.name"
               placeholder="Contoh: Genius 01"
@@ -294,7 +294,7 @@
           </div>
 
           <div class="space-y-1">
-            <Label class="text-xs text-foreground font-semibold">Kode Unik Tim:</Label>
+            <Label class="text-xs text-foreground font-semibold">Kode Kelompok Genius:</Label>
             <input
               v-model="form.code"
               placeholder="Contoh: GENIUS-01"
@@ -304,7 +304,7 @@
           </div>
 
           <div class="space-y-1">
-            <Label class="text-xs text-foreground font-semibold">Alokasi Rute Perjalanan:</Label>
+            <Label class="text-xs text-foreground font-semibold">Alokasi Rute Perjalanan 9 Lantai:</Label>
             <select
               v-model="form.routeId"
               class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
@@ -317,7 +317,7 @@
           </div>
 
           <div class="space-y-1">
-            <Label class="text-xs text-foreground font-semibold">Status Tim:</Label>
+            <Label class="text-xs text-foreground font-semibold">Status Kelompok:</Label>
             <select
               v-model="form.status"
               class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
@@ -769,9 +769,23 @@ async function removeMemberFromTeam(userId: string) {
   }
 }
 
+const { setPageHeader, clearPageHeader } = useLayoutState();
+
+watchEffect(() => {
+  setPageHeader({
+    title: "Kelompok GENIUS 2026",
+    badge: `${teamsList.value.length} Kelompok`,
+    icon: Users,
+  });
+});
+
 onMounted(() => {
   fetchTeams();
   fetchRoutes();
   fetchAllUsers();
+});
+
+onUnmounted(() => {
+  clearPageHeader();
 });
 </script>

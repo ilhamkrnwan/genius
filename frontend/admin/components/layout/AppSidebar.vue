@@ -248,7 +248,7 @@ const navGroups = [
       { label: "Presensi Harian", to: "/attendance", icon: CalendarCheck },
       { label: "Peserta", to: "/participants", icon: GraduationCap },
       { label: "Buddy", to: "/buddies", icon: UserCheck },
-      { label: "Team", to: "/teams", icon: Users },
+      { label: "Kelompok Genius", to: "/teams", icon: Users },
       { label: "Pengguna", to: "/users", icon: UserCog },
     ],
   },

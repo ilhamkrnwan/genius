@@ -14,7 +14,7 @@ import {
   questions,
   auditLogs,
 } from "../db/schema";
-import { eq, like, or, sql, desc, inArray, and } from "drizzle-orm";
+import { eq, like, ilike, or, sql, desc, inArray, and } from "drizzle-orm";
 import { hashPassword } from "../lib/password";
 import { requireAdmin, requireBuddyOrAdmin } from "../middleware/auth";
 import { RPG_CHARACTERS, TITLE_CATALOG, PRESET_AVATARS } from "@genius/types";
@@ -436,23 +436,33 @@ export const userRoutes = new Elysia({
           })
           .returning();
 
-        // If teamId is supplied, assign to team safely
-        if (body.teamId && typeof body.teamId === "string" && body.teamId.trim() !== "") {
-          const trimmedTeamId = body.teamId.trim();
-          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmedTeamId);
+        // If teamId / kelompok is supplied, assign to team safely
+        const rawTeam = (body.teamId || body.kelompok || body.teamCode || body.team || "").toString().trim();
+        if (rawTeam) {
+          let targetTeamId: string | null = null;
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawTeam);
           if (isUuid) {
             const [teamExists] = await db
               .select({ id: teams.id })
               .from(teams)
-              .where(eq(teams.id, trimmedTeamId))
+              .where(eq(teams.id, rawTeam))
               .limit(1);
-            if (teamExists) {
-              await db.insert(teamMembers).values({
-                teamId: teamExists.id,
-                userId: user.id,
-                buddyRole: (body.buddyRole as any) || (body.role === "BUDDY" ? "PRIMARY" : null),
-              });
-            }
+            if (teamExists) targetTeamId = teamExists.id;
+          } else {
+            const [teamExists] = await db
+              .select({ id: teams.id })
+              .from(teams)
+              .where(or(ilike(teams.code, rawTeam), ilike(teams.name, rawTeam)))
+              .limit(1);
+            if (teamExists) targetTeamId = teamExists.id;
+          }
+
+          if (targetTeamId) {
+            await db.insert(teamMembers).values({
+              teamId: targetTeamId,
+              userId: user.id,
+              buddyRole: (body.buddyRole as any) || (body.role === "BUDDY" ? "PRIMARY" : null),
+            });
           }
         }
 
@@ -489,6 +499,8 @@ export const userRoutes = new Elysia({
         unlockedTitles: t.Optional(t.Array(t.String())),
         avatarUrl: t.Optional(t.Nullable(t.String())),
         teamId: t.Optional(t.Nullable(t.String())),
+        teamCode: t.Optional(t.Nullable(t.String())),
+        kelompok: t.Optional(t.Nullable(t.String())),
         buddyRole: t.Optional(t.Nullable(t.String())),
       }),
     }
@@ -570,11 +582,11 @@ export const userRoutes = new Elysia({
             skippedCount++;
           }
 
-          // Handle Team Assignment if teamCode or teamName is specified
-          if (item.teamCode || item.teamName) {
-            const codeKey = item.teamCode?.toLowerCase().trim();
-            const nameKey = item.teamName?.toLowerCase().trim();
-            const matchedTeamId = (codeKey && teamCodeMap.get(codeKey)) || (nameKey && teamNameMap.get(nameKey));
+          // Handle Team Assignment if teamCode, teamName, or kelompok is specified
+          const rawTeam = (item.teamCode || item.teamName || item.kelompok || item.team || "").toString().trim();
+          if (rawTeam) {
+            const lowerKey = rawTeam.toLowerCase();
+            const matchedTeamId = teamCodeMap.get(lowerKey) || teamNameMap.get(lowerKey);
 
             if (matchedTeamId && userId) {
               // Remove old team membership if any
@@ -610,6 +622,7 @@ export const userRoutes = new Elysia({
             nim: t.Optional(t.String()),
             fullName: t.Optional(t.String()),
             name: t.Optional(t.String()),
+            nama: t.Optional(t.String()),
             password: t.Optional(t.String()),
             role: t.Optional(t.String()),
             gender: t.Optional(t.String()),
@@ -623,6 +636,9 @@ export const userRoutes = new Elysia({
             avatarUrl: t.Optional(t.Nullable(t.String())),
             teamCode: t.Optional(t.String()),
             teamName: t.Optional(t.String()),
+            teamId: t.Optional(t.String()),
+            kelompok: t.Optional(t.String()),
+            team: t.Optional(t.String()),
             buddyRole: t.Optional(t.String()),
           })
         ),
@@ -870,24 +886,30 @@ export const userRoutes = new Elysia({
         }
 
         // Update team if provided
-        if (body.teamId !== undefined) {
+        if (body.teamId !== undefined || body.kelompok !== undefined || body.teamCode !== undefined) {
           await db.delete(teamMembers).where(eq(teamMembers.userId, params.id));
-          if (body.teamId && typeof body.teamId === "string" && body.teamId.trim() !== "") {
-            const trimmedTeamId = body.teamId.trim();
-            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmedTeamId);
+          const rawTeam = (body.teamId || body.kelompok || body.teamCode || "").toString().trim();
+          if (rawTeam) {
+            let targetTeamId: string | null = null;
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawTeam);
             if (isUuid) {
-              const [teamExists] = await db
+              const [t] = await db.select({ id: teams.id }).from(teams).where(eq(teams.id, rawTeam)).limit(1);
+              if (t) targetTeamId = t.id;
+            } else {
+              const [t] = await db
                 .select({ id: teams.id })
                 .from(teams)
-                .where(eq(teams.id, trimmedTeamId))
+                .where(or(ilike(teams.code, rawTeam), ilike(teams.name, rawTeam)))
                 .limit(1);
-              if (teamExists) {
-                await db.insert(teamMembers).values({
-                  teamId: teamExists.id,
-                  userId: params.id,
-                  buddyRole: (body.buddyRole as any) || (user.role === "BUDDY" ? "PRIMARY" : null),
-                });
-              }
+              if (t) targetTeamId = t.id;
+            }
+
+            if (targetTeamId) {
+              await db.insert(teamMembers).values({
+                teamId: targetTeamId,
+                userId: params.id,
+                buddyRole: (body.buddyRole as any) || (user.role === "BUDDY" ? "PRIMARY" : null),
+              });
             }
           }
         }

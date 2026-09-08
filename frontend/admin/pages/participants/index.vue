@@ -156,7 +156,7 @@
             <th class="px-3 py-2.5">MAHASISWA PESERTA</th>
             <th class="px-3 py-2.5">FAKULTAS</th>
             <th class="px-3 py-2.5">PROGRAM STUDI</th>
-            <th class="px-3 py-2.5">TIM / REGU</th>
+            <th class="px-3 py-2.5">KELOMPOK GENIUS</th>
             <th class="px-3 py-2.5 text-center">TOTAL SKOR</th>
             <th class="px-3 py-2.5 text-center">STATUS</th>
             <th class="pr-4 md:pr-6 pl-3 py-2.5 text-center w-16">AKSI</th>
@@ -236,15 +236,16 @@
               </span>
             </td>
 
-            <!-- Team -->
+            <!-- Kelompok Genius -->
             <td class="py-2.5 px-3">
               <div v-if="p.teamName" class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-foreground truncate max-w-[140px]" :title="p.teamName">
-                  {{ p.teamName }}
-                </span>
-                <span class="text-[10px] font-mono text-muted-foreground">({{ p.teamCode }})</span>
+                <NuxtLink :to="'/teams/' + p.teamId" class="text-xs font-semibold text-[#38bdf8] hover:underline truncate max-w-[140px]" :title="p.teamName">
+                  {{ p.teamCode }} ({{ p.teamName }})
+                </NuxtLink>
               </div>
-              <span v-else class="text-[11px] text-muted-foreground/60 italic">Free Agent</span>
+              <span v-else class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-[#271d15] border border-[#523e2b] text-muted-foreground/70 italic">
+                Free Agent
+              </span>
             </td>
 
             <!-- Total Score -->
@@ -461,6 +462,20 @@
             </div>
           </div>
 
+          <!-- Kelompok Genius (Opsional) -->
+          <div class="space-y-1">
+            <Label class="text-xs text-foreground font-semibold">Kelompok GENIUS (Opsional):</Label>
+            <select
+              v-model="form.teamId"
+              class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
+            >
+              <option :value="null">-- Belum Ditentukan (Free Agent) --</option>
+              <option v-for="team in teamsList" :key="team.id" :value="team.id">
+                {{ team.code }} - {{ team.name }}
+              </option>
+            </select>
+          </div>
+
           <!-- Status Akun -->
           <div class="space-y-1">
             <Label class="text-xs text-foreground font-semibold">Status Akun:</Label>
@@ -561,8 +576,8 @@
         <div class="space-y-3 py-1 font-mono text-xs">
           <div class="flex items-center justify-between border border-[#4a3624] bg-[#15100c] p-2.5">
             <div>
-              <p class="font-semibold text-foreground text-xs">Format: nim,nama,fakultas,prodi</p>
-              <p class="text-[10px] text-muted-foreground">Avatar dan kelas RPG dipilih mandiri oleh mahasiswa saat login.</p>
+              <p class="font-semibold text-foreground text-xs">Format: nim,nama,fakultas,prodi,kelompok</p>
+              <p class="text-[10px] text-muted-foreground">Kolom 'kelompok' bersifat opsional (contoh: GENIUS-01). Avatar & RPG dipilih maba saat login.</p>
             </div>
             <button
               class="pixel-btn text-[10px] px-2.5 h-6 bg-[#271d15] text-[#4ade80] border-[#16a34a]"
@@ -578,7 +593,7 @@
             <textarea
               v-model="csvRawText"
               rows="4"
-              placeholder="240101001,Ahmad Dahlan,Fakultas Teknologi Informasi,Informatika&#10;240101002,Fatimah Azzahra,Fakultas Industri Halal,Farmasi"
+              placeholder="240101001,Ahmad Dahlan,Fakultas Teknologi Informasi,Informatika,GENIUS-01&#10;240101002,Fatimah Azzahra,Fakultas Industri Halal,Farmasi,GENIUS-02&#10;240101003,Budi Santoso,Fakultas Ekonomi,Manajemen,"
               class="w-full bg-[#15100c] border border-[#523e2b] p-2 text-[11px] font-mono focus:outline-none focus:border-[#4ade80]"
               @input="parseRawCsv"
             ></textarea>
@@ -598,6 +613,7 @@
                     <th class="p-1.5">Nama Lengkap</th>
                     <th class="p-1.5">Fakultas</th>
                     <th class="p-1.5">Program Studi</th>
+                    <th class="p-1.5">Kelompok Genius</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[#3d2d1e]/60">
@@ -607,6 +623,7 @@
                     <td class="p-1.5 text-foreground">{{ item.fullName }}</td>
                     <td class="p-1.5 text-[#38bdf8]">{{ item.faculty || '-' }}</td>
                     <td class="p-1.5 text-[#4ade80]">{{ item.prodi || '-' }}</td>
+                    <td class="p-1.5 text-[#ca8a04] font-semibold">{{ item.kelompok || item.teamCode || '-' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -787,6 +804,7 @@ const form = ref({
   fullName: "",
   faculty: "Fakultas Teknologi Informasi",
   prodi: "Informatika",
+  teamId: null as string | null,
   status: "ACTIVE",
 });
 
@@ -929,6 +947,7 @@ function openCreateModal() {
     fullName: "",
     faculty: UNU_FACULTIES[1]?.name || "Fakultas Teknologi Informasi",
     prodi: UNU_FACULTIES[1]?.prodi[0] || "Informatika",
+    teamId: null,
     status: "ACTIVE",
   };
   showFormModal.value = true;
@@ -942,6 +961,7 @@ function openEditModal(p: any) {
     fullName: p.fullName,
     faculty: p.faculty || UNU_FACULTIES[1]?.name || "Fakultas Teknologi Informasi",
     prodi: p.prodi || UNU_FACULTIES[1]?.prodi[0] || "Informatika",
+    teamId: p.teamId || null,
     status: p.status || "ACTIVE",
   };
   showFormModal.value = true;
@@ -984,6 +1004,7 @@ async function submitForm() {
         fullName: form.value.fullName,
         faculty: form.value.faculty,
         prodi: form.value.prodi,
+        teamId: form.value.teamId,
         status: form.value.status,
       };
       await api.put(`/api/users/${form.value.id}`, payload);
@@ -996,6 +1017,7 @@ async function submitForm() {
         name: form.value.fullName,
         faculty: form.value.faculty,
         prodi: form.value.prodi,
+        teamId: form.value.teamId,
         role: "PARTICIPANT",
         password: "genius2026",
         status: form.value.status,
@@ -1197,13 +1219,21 @@ function parseRawCsv() {
 
     const parts = line.split(",").map((p) => p.trim());
     if (parts.length >= 1 && parts[0]) {
+      const nim = parts[0];
+      const fullName = parts[1] || parts[0];
+      const faculty = parts[2] || "";
+      const prodi = parts[3] || "";
+      const kelompok = parts[4] || "";
+
       results.push({
-        username: parts[0],
-        nim: parts[0],
-        fullName: parts[1] || parts[0],
-        name: parts[1] || parts[0],
-        faculty: parts[2] || "",
-        prodi: parts[3] || "",
+        username: nim,
+        nim: nim,
+        fullName: fullName,
+        name: fullName,
+        faculty: faculty,
+        prodi: prodi,
+        kelompok: kelompok || undefined,
+        teamCode: kelompok || undefined,
         password: "genius2026",
         role: "PARTICIPANT",
       });
@@ -1237,12 +1267,12 @@ async function executeImport() {
 }
 
 function downloadCsvTemplate() {
-  const csvContent = "nim,nama,fakultas,prodi\n240101001,Ahmad Dahlan,Fakultas Teknologi Informasi,Informatika\n240101002,Fatimah Azzahra,Fakultas Industri Halal,Farmasi\n240101003,Budi Santoso,Fakultas Ekonomi,Manajemen";
+  const csvContent = "nim,nama,fakultas,prodi,kelompok\n240101001,Ahmad Dahlan,Fakultas Teknologi Informasi,Informatika,GENIUS-01\n240101002,Fatimah Azzahra,Fakultas Industri Halal,Farmasi,GENIUS-02\n240101003,Budi Santoso,Fakultas Ekonomi,Manajemen,";
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.setAttribute("href", url);
-  link.setAttribute("download", "template_peserta_maba_2026.csv");
+  link.setAttribute("download", "template_peserta_genius_2026.csv");
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -1254,7 +1284,7 @@ function exportCsv() {
     return;
   }
 
-  let csv = "ID,NIM,Nama Lengkap,Fakultas,Program Studi,Tim,Kode Tim,Skor Total,Status,Tanggal Daftar\n";
+  let csv = "ID,NIM,Nama Lengkap,Fakultas,Program Studi,Kelompok Genius,Kode Kelompok,Skor Total,Status,Tanggal Daftar\n";
   participants.value.forEach((p) => {
     csv += `"${p.id}","${p.username}","${p.fullName}","${p.faculty || '-'}","${p.prodi || '-'}","${p.teamName || '-'}","${p.teamCode || '-'}","${p.totalScore || 0}","${p.status}","${p.createdAt}"\n`;
   });
@@ -1263,7 +1293,7 @@ function exportCsv() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.setAttribute("href", url);
-  link.setAttribute("download", `peserta_maba_2026_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute("download", `peserta_genius_2026_${new Date().toISOString().slice(0, 10)}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
