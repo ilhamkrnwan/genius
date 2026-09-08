@@ -73,6 +73,13 @@
       </NuxtLink>
     </div>
 
+    <!-- Pos Gatekeeper & Server Timer Controller -->
+    <BuddyPosController
+      v-if="teamData?.id"
+      :teamId="teamData.id"
+      :teamName="currentTeamInfo.name"
+    />
+
     <!-- Loading / Empty State -->
     <div v-if="loading" class="sdv-card p-6 text-center text-[#c4956a] font-mono text-xs">
       <div class="inline-block w-5 h-5 border-2 border-[#f0d060] border-t-transparent rounded-full animate-spin mb-2"></div>
@@ -171,6 +178,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { FileEdit, Gift, Trophy } from "lucide-vue-next";
+import BuddyPosController from "@/components/buddy/BuddyPosController.vue";
 import { useAuth } from "@/composables/useAuth";
 import { useApi } from "@/composables/useApi";
 

@@ -87,14 +87,9 @@ export const requireBuddyOrAdmin = new Elysia({ name: "require-buddy-or-admin" }
       request.method === "POST" &&
       new URL(request.url).pathname.includes("/game-sessions/") && new URL(request.url).pathname.endsWith("/complete");
 
-    const isParticipantStart =
-      user.role === "PARTICIPANT" &&
-      request.method === "POST" &&
-      new URL(request.url).pathname.includes("/game-sessions/") && new URL(request.url).pathname.endsWith("/start");
-
-    if (user.role !== "ADMIN" && user.role !== "BUDDY" && !isParticipantCreate && !isParticipantStart && !isParticipantComplete) {
+    if (user.role !== "ADMIN" && user.role !== "BUDDY" && !isParticipantCreate && !isParticipantComplete) {
       set.status = 403;
-      return { success: false, error: { code: "FORBIDDEN", message: "Buddy or Admin permission required" } };
+      return { success: false, error: { code: "FORBIDDEN", message: "Sesi permainan hanya dapat diaktifkan oleh Kakak Pendamping (Buddy) atau Admin." } };
     }
   });
 

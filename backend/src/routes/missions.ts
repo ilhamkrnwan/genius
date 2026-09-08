@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { db } from "../db";
 import { missions, locations, games, floors, stages } from "../db/schema";
 import { eq, sql, asc, or, ilike } from "drizzle-orm";
-import { requireAdmin } from "../middleware/auth";
+import { requireAdmin, requireBuddyOrAdmin } from "../middleware/auth";
 
 export const missionRoutes = new Elysia({
   prefix: "/api/missions",
@@ -10,7 +10,7 @@ export const missionRoutes = new Elysia({
     tags: ["Missions & Tantangan Pos"],
   },
 })
-  .use(requireAdmin)
+  .use(requireBuddyOrAdmin)
 
   // GET /api/missions — List all missions with location and game details
   .get("/", async ({ query }) => {
@@ -101,6 +101,9 @@ export const missionRoutes = new Elysia({
     }
     return { success: true, data: mission };
   })
+
+  // Mutating endpoints require ADMIN
+  .use(requireAdmin)
 
   // POST /api/missions — Create mission
   .post(
