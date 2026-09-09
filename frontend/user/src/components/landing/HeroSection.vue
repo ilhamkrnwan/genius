@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import AmbientEffects from '@/components/ambient/AmbientEffects.vue';
 import {
   PhSparkle,
   PhGameController,
@@ -19,6 +20,7 @@ import {
   PhCalendarCheck,
   PhQrCode,
   PhStorefront,
+  PhTree,
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
 import { AVATAR_OPTIONS, UNU_FACULTIES } from '@/data/mockData';
@@ -92,6 +94,9 @@ onMounted(() => {
       <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(18,11,6,0.4)_100%)] pointer-events-none" />
     </div>
 
+    <!-- Ambient Nature Effects: Birds & Clouds -->
+    <AmbientEffects :active="gameStore.ambientEffects" />
+
     <!-- Top Bar: Institutional Logo & Audio Controls -->
     <div class="hero-topbar relative z-20 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-2 sm:pt-4 flex items-center justify-between gap-2 shrink-0">
       <!-- Partner / Institution Badge -->
@@ -164,6 +169,20 @@ onMounted(() => {
           class="p-1.5 sm:p-2 bg-[#2d1b0e]/90 border border-[#8b6f4e] hover:border-[#f0d060] rounded-lg text-[#f0d060] transition-all shadow-md active:scale-95 cursor-pointer"
         >
           <PhTelevision :size="16" weight="bold" />
+        </button>
+
+        <button
+          type="button"
+          @click="gameStore.toggleAmbient"
+          :title="gameStore.ambientEffects ? 'Matikan Efek Alam (Burung & Awan)' : 'Nyalakan Efek Alam (Burung & Awan)'"
+          :class="[
+            'p-1.5 sm:p-2 bg-[#2d1b0e]/90 border rounded-lg transition-all shadow-md active:scale-95 cursor-pointer',
+            gameStore.ambientEffects
+              ? 'border-[#7ec850] text-[#7ec850]'
+              : 'border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060]'
+          ]"
+        >
+          <PhTree :size="16" weight="bold" />
         </button>
 
         <RouterLink to="/bantuan" class="inline-block">
