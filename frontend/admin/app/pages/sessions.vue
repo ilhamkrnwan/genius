@@ -321,8 +321,12 @@ import {
   XCircle,
 } from "lucide-vue-next";
 import { useApi } from "~/composables/useApi";
+import { useToast } from "~/composables/useToast";
+import { useConfirm } from "~/composables/useConfirm";
 
 const api = useApi();
+const toast = useToast();
+const confirmModal = useConfirm();
 
 const loading = ref(false);
 const autoRefresh = ref(true);
@@ -405,56 +409,92 @@ function formatTime(iso: string) {
 async function startSession(id: string) {
   try {
     const res = await api.post(`/game-sessions/${id}/start`);
-    if (res?.success) await fetchSessions(true);
+    if (res?.success) {
+      toast.success("Sesi Dimulai", "Sesi game berhasil dimulai.");
+      await fetchSessions(true);
+    }
   } catch (err: any) {
-    alert("Gagal memulai sesi: " + err.message);
+    toast.error("Gagal Memulai Sesi", err.message || "Terjadi kesalahan.");
   }
 }
 
 async function pauseSession(id: string) {
   try {
     const res = await api.post(`/game-sessions/${id}/pause`);
-    if (res?.success) await fetchSessions(true);
+    if (res?.success) {
+      toast.info("Sesi Dijeda", "Sesi game berhasil dijeda.");
+      await fetchSessions(true);
+    }
   } catch (err: any) {
-    alert("Gagal menjeda sesi: " + err.message);
+    toast.error("Gagal Menjeda Sesi", err.message || "Terjadi kesalahan.");
   }
 }
 
 async function forceCompleteSession(id: string) {
-  if (!confirm("Selesaikan sesi secara paksa dan hitung skor otomatis?")) return;
+  const confirmed = await confirmModal.show({
+    title: "Selesaikan Sesi Paksa?",
+    description: "Apakah Anda yakin ingin menyelesaikan sesi ini secara paksa? Sistem akan menghitung skor otomatis dan membukukan ke ledger.",
+    confirmText: "Ya, Selesaikan",
+    cancelText: "Batal",
+    variant: "warning",
+    icon: "check",
+  });
+  if (!confirmed) return;
+
   try {
     const res = await api.post(`/game-sessions/${id}/complete`, {
       submissions: [],
     });
     if (res?.success) {
-      alert("Sesi berhasil diselesaikan dan skor tercatat ke Ledger!");
+      toast.success("Sesi Selesai", "Sesi berhasil diselesaikan dan skor tercatat ke Ledger!");
       await fetchSessions(true);
     }
   } catch (err: any) {
-    alert("Gagal menyelesaikan sesi: " + err.message);
+    toast.error("Gagal Menyelesaikan Sesi", err.message || "Terjadi kesalahan.");
   }
 }
 
 async function cancelSession(id: string) {
-  if (!confirm("Batalkan sesi ini dan bebaskan status lokasi menjadi AVAILABLE?")) return;
+  const confirmed = await confirmModal.show({
+    title: "Batalkan Sesi?",
+    description: "Apakah Anda yakin ingin membatalkan sesi ini? Pos ruangan akan dibebaskan kembali menjadi AVAILABLE.",
+    confirmText: "Ya, Batalkan Sesi",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "alert",
+  });
+  if (!confirmed) return;
+
   try {
     const res = await api.post(`/game-sessions/${id}/cancel`);
     if (res?.success) {
-      alert("Sesi dibatalkan dan pos ruangan telah dibebaskan.");
+      toast.success("Sesi Dibatalkan", "Sesi dibatalkan dan pos ruangan telah dibebaskan.");
       await fetchSessions(true);
     }
   } catch (err: any) {
-    alert("Gagal membatalkan sesi: " + err.message);
+    toast.error("Gagal Membatalkan Sesi", err.message || "Terjadi kesalahan.");
   }
 }
 
 async function expireSession(id: string) {
-  if (!confirm("Tandai sesi ini sebagai EXPIRED dan bebaskan pos?")) return;
+  const confirmed = await confirmModal.show({
+    title: "Tandai Sesi Expired?",
+    description: "Apakah Anda yakin ingin menandai sesi ini sebagai EXPIRED dan membebaskan pos lokasi?",
+    confirmText: "Ya, Tandai Expired",
+    cancelText: "Batal",
+    variant: "warning",
+    icon: "alert",
+  });
+  if (!confirmed) return;
+
   try {
     const res: any = await api.post('/game-sessions/' + id + '/expire');
-    if (res?.success) await fetchSessions(true);
+    if (res?.success) {
+      toast.success("Sesi Expired", "Status sesi berhasil diubah menjadi EXPIRED.");
+      await fetchSessions(true);
+    }
   } catch (err: any) {
-    alert('Gagal expire sesi: ' + (err?.data?.error?.message || err.message || 'Error'));
+    toast.error("Gagal Expire Sesi", err?.data?.error?.message || err.message || "Terjadi kesalahan.");
   }
 }
 </script>

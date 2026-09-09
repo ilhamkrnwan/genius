@@ -217,8 +217,12 @@ import {
   DialogFooter,
 } from "~/components/ui/dialog";
 import { useApi } from "~/composables/useApi";
+import { useToast } from "~/composables/useToast";
+import { useConfirm } from "~/composables/useConfirm";
 
 const api = useApi();
+const toast = useToast();
+const confirmModal = useConfirm();
 
 const loading = ref(false);
 const saving = ref(false);
@@ -286,29 +290,40 @@ async function submitRouteForm() {
         description: form.value.description,
         status: form.value.status,
       });
+      toast.success("Rute Diperbarui", `Rute '${form.value.name}' berhasil diperbarui.`);
     } else {
       await api.post("/api/routes", {
         name: form.value.name,
         description: form.value.description,
       });
+      toast.success("Rute Dibuat", `Rute '${form.value.name}' berhasil dibuat.`);
     }
     showRouteModal.value = false;
     await fetchRoutes();
   } catch (err: any) {
-    alert("Gagal menyimpan rute: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Menyimpan Rute", err.data?.error?.message || err.message || "Terjadi kesalahan.");
   } finally {
     saving.value = false;
   }
 }
 
 async function confirmDelete(r: any) {
-  if (confirm(`Hapus rute '${r.name}'?`)) {
-    try {
-      await api.del(`/api/routes/${r.id}`);
-      await fetchRoutes();
-    } catch (err: any) {
-      alert("Gagal menghapus rute: " + err.message);
-    }
+  const confirmed = await confirmModal.show({
+    title: "Hapus Rute Penjelajahan?",
+    description: `Apakah Anda yakin ingin menghapus rute '${r.name}'? Seluruh alur pos terkait rute ini akan terhapus.`,
+    confirmText: "Ya, Hapus Rute",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "trash",
+  });
+  if (!confirmed) return;
+
+  try {
+    await api.del(`/api/routes/${r.id}`);
+    toast.success("Rute Dihapus", `Rute '${r.name}' berhasil dihapus.`);
+    await fetchRoutes();
+  } catch (err: any) {
+    toast.error("Gagal Menghapus Rute", err.message || "Terjadi kesalahan.");
   }
 }
 

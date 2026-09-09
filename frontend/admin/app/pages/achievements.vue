@@ -338,8 +338,12 @@ import {
   DialogFooter,
 } from "~/components/ui/dialog";
 import { useApi } from "~/composables/useApi";
+import { useToast } from "~/composables/useToast";
+import { useConfirm } from "~/composables/useConfirm";
 
 const api = useApi();
+const toast = useToast();
+const confirmModal = useConfirm();
 
 const loading = ref(false);
 const saving = ref(false);
@@ -505,10 +509,10 @@ async function sync99Titles() {
     const res: any = await api.post("/api/achievements/sync-99-titles", {});
     if (res.success) {
       await fetchAchievements();
-      alert(res.message || "Berhasil menyinkronkan 99 Gelar Codex!");
+      toast.success("Sinkronisasi Selesai", res.message || "Berhasil menyinkronkan 99 Gelar Codex!");
     }
   } catch (err: any) {
-    alert("Gagal sinkronisasi: " + (err.message || "Error"));
+    toast.error("Gagal Sinkronisasi", err.message || "Terjadi kesalahan.");
   } finally {
     syncing.value = false;
   }
@@ -542,25 +546,34 @@ async function submitAwardForm() {
     });
 
     if (res.success) {
-      alert(res.message || "Gelar berhasil disematkan!");
+      toast.success("Gelar Disematkan", res.message || "Gelar berhasil disematkan kepada peserta!");
       showAwardModal.value = false;
       await fetchParticipants();
     }
   } catch (err: any) {
-    alert("Gagal menyematkan gelar: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Menyematkan Gelar", err.data?.error?.message || err.message || "Terjadi kesalahan.");
   } finally {
     saving.value = false;
   }
 }
 
 async function confirmDelete(ach: any) {
-  if (confirm(`Hapus gelar '${ach.title}'?`)) {
-    try {
-      await api.del(`/api/achievements/${ach.id}`);
-      await fetchAchievements();
-    } catch (err: any) {
-      alert("Gagal menghapus gelar: " + err.message);
-    }
+  const confirmed = await confirmModal.show({
+    title: "Hapus Gelar Prestasi?",
+    description: `Apakah Anda yakin ingin menghapus gelar '${ach.title}'? Gelar ini akan dihapus dari daftar master achievement.`,
+    confirmText: "Ya, Hapus Gelar",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "trash",
+  });
+  if (!confirmed) return;
+
+  try {
+    await api.del(`/api/achievements/${ach.id}`);
+    toast.success("Gelar Dihapus", `Gelar '${ach.title}' berhasil dihapus.`);
+    await fetchAchievements();
+  } catch (err: any) {
+    toast.error("Gagal Menghapus Gelar", err.message || "Terjadi kesalahan.");
   }
 }
 

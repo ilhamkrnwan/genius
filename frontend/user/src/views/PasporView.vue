@@ -14,6 +14,7 @@ import {
   PhMedal,
   PhQrCode,
   PhCheck,
+  PhWarning,
 } from '@phosphor-icons/vue';
 import { FLOORS_DATA, BOOTHS_DATA, LEVEL_CONFIG, AVATAR_OPTIONS } from '@/data/mockData';
 import { ORMAWA_STANDS } from '@/data/ormawaData';
@@ -69,6 +70,8 @@ const selectedAvatarObj = computed(
   () => AVATAR_OPTIONS.find((a) => a.id === gameStore.participant.avatar) || AVATAR_OPTIONS[0]
 );
 
+const showResetModal = ref(false);
+
 const handlePrint = () => {
   if (gameStore.soundEnabled) soundEngine.playClick();
   if (typeof window !== 'undefined') {
@@ -77,9 +80,14 @@ const handlePrint = () => {
 };
 
 const handleResetConfirm = () => {
-  if (window.confirm('Apakah kamu yakin ingin mereset semua progres stempel?')) {
-    gameStore.resetProgress();
-  }
+  if (gameStore.soundEnabled) soundEngine.playClick();
+  showResetModal.value = true;
+};
+
+const executeResetProgress = () => {
+  gameStore.resetProgress();
+  showResetModal.value = false;
+  if (gameStore.soundEnabled) soundEngine.playClick();
 };
 </script>
 
@@ -707,5 +715,45 @@ const handleResetConfirm = () => {
       @close="showOrmawaScanner = false"
       @scan-success="handleOrmawaScanSuccess"
     />
+
+    <!-- Reset Progress Confirmation Modal -->
+    <div
+      v-if="showResetModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200"
+    >
+      <div class="max-w-sm w-full p-5 space-y-4 border-2 border-red-500/80 bg-gradient-to-b from-[#221010] to-[#140a0a] text-[#fbf6e9] shadow-[0_0_35px_rgba(239,68,68,0.25)] rounded-xl">
+        <div class="flex items-start gap-3">
+          <div class="h-10 w-10 rounded-lg bg-red-950/90 border border-red-500/60 flex items-center justify-center text-red-400 shrink-0 shadow-md">
+            <PhWarning :size="22" weight="bold" />
+          </div>
+          <div>
+            <span class="font-pixel text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-950/80 border border-red-600/50 text-red-300 font-bold">
+              Reset Progres
+            </span>
+            <h3 class="font-sans font-bold text-base text-white mt-1">Reset Semua Stempel?</h3>
+          </div>
+        </div>
+        <p class="font-sans text-xs text-stone-300/90 leading-relaxed">
+          Apakah kamu yakin ingin mereset seluruh progres stempel dan perolehan kartu paspor? Tindakan ini permanen dan tidak dapat dibatalkan.
+        </p>
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-red-900/30">
+          <button
+            type="button"
+            @click="showResetModal = false"
+            class="rpg-btn-wood py-2 px-3 text-xs font-pixel cursor-pointer"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            @click="executeResetProgress"
+            class="rpg-btn-danger py-2 px-4 text-xs font-pixel font-bold flex items-center gap-1.5 cursor-pointer shadow-lg"
+          >
+            <PhArrowCounterClockwise :size="14" weight="bold" />
+            <span>Ya, Reset</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

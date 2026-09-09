@@ -1188,10 +1188,11 @@ async function updateActiveTitleDirect(title: string) {
     });
     if (res.success) {
       selectedTacticalParticipant.value.characterTitle = title;
+      toast.success("Gelar Diperbarui", `Gelar '${title}' berhasil diperbarui.`);
       await fetchParticipants();
     }
   } catch (err: any) {
-    alert("Gagal memperbarui gelar: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Memperbarui Gelar", err.data?.error?.message || err.message || "Terjadi kesalahan.");
   }
 }
 

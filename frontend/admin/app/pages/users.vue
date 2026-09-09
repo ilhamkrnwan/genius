@@ -507,7 +507,7 @@
               <input
                 ref="qrInputRef"
                 v-model="qrManualInput"
-                placeholder="Scan dengan Barcode Gun atau ketik (e.g. peserta_1)..."
+                placeholder="Scan dengan Barcode Gun atau ketik (e.g. 26111101)..."
                 class="w-full h-9 px-3 bg-[#271d15] border border-[#523e2b] text-foreground font-mono text-xs focus:outline-none focus:border-[#f59e0b]"
                 @keydown.enter.prevent="submitManualScan"
               />
@@ -1377,10 +1377,10 @@ let cameraScanInterval: any = null;
 const qrInputRef = ref<HTMLInputElement | null>(null);
 
 const samplePresets = [
-  { label: "Maba 1 (peserta_1)", value: "peserta_1" },
-  { label: "Maba 2 (peserta_2)", value: "peserta_2" },
-  { label: "Maba 3 (peserta_3)", value: "peserta_3" },
-  { label: "Maba 4 (peserta_4)", value: "peserta_4" },
+  { label: "Maba 1 (26111101)", value: "26111101" },
+  { label: "Maba 2 (26111102)", value: "26111102" },
+  { label: "Maba 3 (26111103)", value: "26111103" },
+  { label: "Maba 4 (26111104)", value: "26111104" },
 ];
 
 const validModalData = ref({

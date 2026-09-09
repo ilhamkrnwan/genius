@@ -27,15 +27,38 @@ let resolvePromise: ((value: boolean) => void) | null = null;
 
 export function useConfirm() {
   function show(opts: ConfirmOptions): Promise<boolean> {
+    // Intelligent auto-defaulting
+    const inferredVariant: "danger" | "warning" | "info" | "primary" =
+      opts.variant ||
+      (opts.icon === "logout" || opts.icon === "trash" ? "danger" : "primary");
+
+    const inferredIcon =
+      opts.icon ||
+      (inferredVariant === "danger"
+        ? "alert"
+        : inferredVariant === "info"
+        ? "info"
+        : "alert");
+
+    const inferredConfirmText =
+      opts.confirmText ||
+      (opts.icon === "logout"
+        ? "Ya, Keluar"
+        : inferredVariant === "danger"
+        ? "Ya, Lanjutkan"
+        : "Konfirmasi");
+
     options.value = {
-      confirmText: opts.variant === "danger" ? "Ya, Lanjutkan" : "Konfirmasi",
-      cancelText: "Batal",
-      variant: "primary",
-      icon: "alert",
+      variant: inferredVariant,
+      icon: inferredIcon,
+      confirmText: inferredConfirmText,
+      cancelText: opts.cancelText || "Batal",
       loading: false,
       ...opts,
-      description: opts.description || opts.message || "Apakah Anda yakin?",
+      title: opts.title || "Konfirmasi Tindakan",
+      description: opts.description || opts.message || "Apakah Anda yakin ingin melanjutkan?",
     };
+
     isOpen.value = true;
     isBusy.value = false;
 
@@ -45,6 +68,14 @@ export function useConfirm() {
   }
 
   const ask = show;
+
+  function danger(opts: Omit<ConfirmOptions, "variant">): Promise<boolean> {
+    return show({ ...opts, variant: "danger" });
+  }
+
+  function warning(opts: Omit<ConfirmOptions, "variant">): Promise<boolean> {
+    return show({ ...opts, variant: "warning" });
+  }
 
   function handleConfirm() {
     isOpen.value = false;
@@ -70,6 +101,8 @@ export function useConfirm() {
     options,
     show,
     ask,
+    danger,
+    warning,
     handleConfirm,
     handleCancel,
   };

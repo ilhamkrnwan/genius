@@ -645,8 +645,12 @@ import {
   DialogFooter,
 } from "~/components/ui/dialog";
 import { useApi } from "~/composables/useApi";
+import { useToast } from "~/composables/useToast";
+import { useConfirm } from "~/composables/useConfirm";
 
 const api = useApi();
+const toast = useToast();
+const confirmModal = useConfirm();
 
 const loading = ref(false);
 const isFrozen = ref(false);
@@ -812,12 +816,24 @@ async function fetchStats() {
 }
 
 async function handleFreezeToggle() {
-  isFrozen.value = !isFrozen.value;
+  const nextState = !isFrozen.value;
+  if (nextState) {
+    const confirmed = await confirmModal.show({
+      title: "Aktifkan Protokol Freeze?",
+      description: "PERINGATAN: Apakah Anda yakin ingin membekukan seluruh sesi event di server backend secara darurat?",
+      confirmText: "Ya, Aktifkan Freeze",
+      cancelText: "Batal",
+      variant: "danger",
+      icon: "shield",
+    });
+    if (!confirmed) return;
+  }
   try {
     await api.post("/api/monitoring/emergency-freeze");
-    alert("PERINGATAN: Sesi darurat telah diaktifkan di server backend!");
+    isFrozen.value = nextState;
+    toast.success("Status Freeze Diperbarui", isFrozen.value ? "Sesi darurat aktif di backend!" : "Sesi darurat dinonaktifkan.");
   } catch (err: any) {
-    console.error("Gagal trigger emergency freeze:", err);
+    toast.error("Gagal Mengubah Freeze", err.message || "Terjadi kesalahan.");
   }
 }
 
@@ -831,11 +847,11 @@ async function submitScoreCorrection() {
       reason: scoreForm.value.reason,
       sourceType: "CORRECTION",
     });
-    alert("Koreksi skor berhasil dicatat ke dalam ledger!");
+    toast.success("Koreksi Skor Berhasil", "Koreksi skor berhasil dicatat ke dalam ledger!");
     showScoreModal.value = false;
     await fetchStats();
   } catch (err: any) {
-    alert("Gagal koreksi skor: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Koreksi Skor", err.data?.error?.message || err.message || "Terjadi kesalahan.");
   } finally {
     savingScore.value = false;
   }
@@ -850,11 +866,11 @@ async function submitBroadcast() {
       severity: broadcastForm.value.type,
       title: "SIARAN PUSAT GAME MASTER",
     });
-    alert(`Broadcast berhasil disiarkan secara realtime ke seluruh perangkat!`);
+    toast.success("Broadcast Berhasil", "Broadcast berhasil disiarkan secara realtime ke seluruh perangkat!");
     showBroadcastModal.value = false;
     broadcastForm.value.message = "";
   } catch (err: any) {
-    alert("Gagal broadcast: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Broadcast", err.data?.error?.message || err.message || "Terjadi kesalahan.");
   } finally {
     broadcasting.value = false;
   }

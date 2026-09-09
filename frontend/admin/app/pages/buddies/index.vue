@@ -1024,7 +1024,7 @@ async function confirmDelete(b: any) {
 
 function exportCsv() {
   if (buddies.value.length === 0) {
-    alert("Tidak ada data buddy");
+    toast.error("Ekspor Gagal", "Tidak ada data buddy untuk diekspor.");
     return;
   }
 

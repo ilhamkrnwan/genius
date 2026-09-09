@@ -246,8 +246,12 @@ import {
 } from "~/components/ui/dialog";
 import PixelPagination from "@/components/PixelPagination.vue";
 import { useApi } from "~/composables/useApi";
+import { useToast } from "~/composables/useToast";
+import { useConfirm } from "~/composables/useConfirm";
 
 const api = useApi();
+const toast = useToast();
+const confirmModal = useConfirm();
 
 const loading = ref(false);
 const saving = ref(false);
@@ -361,22 +365,33 @@ async function submitMissionForm() {
       });
     }
     showMissionModal.value = false;
+    toast.success("Misi Berhasil Disimpan", `Misi '${form.value.title}' berhasil ${isEditing.value ? 'diperbarui' : 'dibuat'}.`);
     await fetchMissions();
   } catch (err: any) {
-    alert("Gagal menyimpan misi: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Menyimpan Misi", err.data?.error?.message || err.message || "Terjadi kesalahan.");
   } finally {
     saving.value = false;
   }
 }
 
 async function confirmDelete(m: any) {
-  if (confirm(`Hapus misi '${m.title}'?`)) {
-    try {
-      await api.del(`/api/missions/${m.id}`);
-      await fetchMissions();
-    } catch (err: any) {
-      alert("Gagal menghapus misi: " + err.message);
-    }
+  const missionName = m.title || m.name || "Misi";
+  const confirmed = await confirmModal.show({
+    title: "Hapus Misi Penjelajahan?",
+    description: `Apakah Anda yakin ingin menghapus misi '${missionName}'? Seluruh progres misi terkait akan terhapus.`,
+    confirmText: "Ya, Hapus Misi",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "trash",
+  });
+  if (!confirmed) return;
+
+  try {
+    await api.del(`/api/missions/${m.id}`);
+    toast.success("Misi Dihapus", `Misi '${missionName}' berhasil dihapus.`);
+    await fetchMissions();
+  } catch (err: any) {
+    toast.error("Gagal Menghapus Misi", err.message || "Terjadi kesalahan.");
   }
 }
 

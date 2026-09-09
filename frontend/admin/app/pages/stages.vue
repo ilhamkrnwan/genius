@@ -532,8 +532,12 @@ import {
   DialogFooter,
 } from "~/components/ui/dialog";
 import { useApi } from "~/composables/useApi";
+import { useToast } from "~/composables/useToast";
+import { useConfirm } from "~/composables/useConfirm";
 
 const api = useApi();
+const toast = useToast();
+const confirmModal = useConfirm();
 
 const loading = ref(false);
 const saving = ref(false);
@@ -632,10 +636,10 @@ async function syncOfficialRoadmap() {
     const res: any = await api.post("/api/stages/sync-roadmap", {});
     if (res.success) {
       await fetchStages();
-      alert(res.message || "Berhasil menyinkronkan 3-Day Event Roadmap!");
+      toast.success("Roadmap Tersinkronisasi", res.message || "Berhasil menyinkronkan 3-Day Event Roadmap!");
     }
   } catch (err: any) {
-    alert("Gagal sinkronisasi roadmap: " + (err.message || "Error"));
+    toast.error("Gagal Sinkronisasi Roadmap", err.message || "Terjadi kesalahan sistem.");
   } finally {
     syncing.value = false;
   }
@@ -649,15 +653,24 @@ async function activateStageByOrder(order: number) {
     return;
   }
 
-  if (confirm(`Aktifkan '${target.name}' sebagai babak aktif saat ini?`)) {
-    try {
-      const res: any = await api.put(`/api/stages/${target.id}/activate`, {});
-      if (res.success) {
-        await fetchStages();
-      }
-    } catch (err: any) {
-      alert("Gagal mengaktifkan stage: " + (err.message || "Error"));
+  const confirmed = await confirmModal.show({
+    title: "Aktifkan Babak Kegiatan?",
+    description: `Apakah Anda yakin ingin mengaktifkan '${target.name}' sebagai babak aktif saat ini? Seluruh aktivitas pos dan misi akan disesuaikan dengan babak ini.`,
+    confirmText: "Ya, Aktifkan",
+    cancelText: "Batal",
+    variant: "warning",
+    icon: "shield",
+  });
+  if (!confirmed) return;
+
+  try {
+    const res: any = await api.put(`/api/stages/${target.id}/activate`, {});
+    if (res.success) {
+      toast.success("Babak Diaktifkan", `'${target.name}' kini berstatus aktif.`);
+      await fetchStages();
     }
+  } catch (err: any) {
+    toast.error("Gagal Mengaktifkan Babak", err.message || "Terjadi kesalahan.");
   }
 }
 
@@ -696,17 +709,19 @@ async function submitStageForm() {
         description: form.value.description,
         status: form.value.status,
       });
+      toast.success("Babak Diperbarui", `Babak '${form.value.name}' berhasil diperbarui.`);
     } else {
       await api.post("/api/stages", {
         order: form.value.order,
         name: form.value.name,
         description: form.value.description,
       });
+      toast.success("Babak Ditambahkan", `Babak '${form.value.name}' berhasil dibuat.`);
     }
     showStageModal.value = false;
     await fetchStages();
   } catch (err: any) {
-    alert("Gagal menyimpan stage: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Menyimpan Babak", err.data?.error?.message || err.message || "Terjadi kesalahan sistem.");
   } finally {
     saving.value = false;
   }
@@ -726,10 +741,11 @@ async function confirmStageTransition() {
     const res: any = await api.put(`/api/stages/${targetTransitionStageId.value}/activate`, {});
     if (res.success) {
       showTransitionModal.value = false;
+      toast.success("Transisi Selesai", "Babak aktif telah berhasil dialihkan.");
       await fetchStages();
     }
   } catch (err: any) {
-    alert("Gagal transisi stage: " + (err.message || "Error"));
+    toast.error("Gagal Melakukan Transisi", err.message || "Terjadi kesalahan.");
   } finally {
     saving.value = false;
   }

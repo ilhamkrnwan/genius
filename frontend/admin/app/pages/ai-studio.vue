@@ -609,8 +609,10 @@ import {
   MapPin,
 } from "lucide-vue-next";
 import { useApi } from "~/composables/useApi";
+import { useToast } from "~/composables/useToast";
 
 const api = useApi();
+const toast = useToast();
 
 const activeTab = ref("quiz");
 const checkingModels = ref(false);
@@ -679,10 +681,10 @@ async function fetchSupportedModels() {
   try {
     const res = await api.get("/ai/models");
     if (res?.success) {
-      alert(`Model AI Aktif: ${res.models?.length || 0} model terdeteksi via Gemini & FreeTokenFaucet.`);
+      toast.info("Model AI Aktif", `${res.models?.length || 0} model terdeteksi via Gemini & FreeTokenFaucet.`);
     }
   } catch (err: any) {
-    alert("Gagal mengecek model AI: " + (err.message || err));
+    toast.error("Gagal Cek Model AI", err.message || "Terjadi kesalahan.");
   } finally {
     checkingModels.value = false;
   }
@@ -719,12 +721,13 @@ async function generateQuestions() {
         saving: false,
       }));
       lastUsedModel.value = res.data?.modelUsed || quizForm.value.preferredModel;
+      toast.success("Soal Berhasil Dibuat", `${generatedQuestions.value.length} butir soal baru berhasil di-generate AI.`);
       await fetchExistingQuestions();
     } else {
-      alert("AI Error: " + (res?.error?.message || "Gagal membuat soal"));
+      toast.error("AI Error", res?.error?.message || "Gagal membuat soal.");
     }
   } catch (err: any) {
-    alert("Gagal menghubungi server AI: " + (err.message || err));
+    toast.error("Gagal Kontak Server AI", err.message || "Terjadi kesalahan.");
   } finally {
     generatingQuestions.value = false;
   }
@@ -745,10 +748,11 @@ async function saveSingleQuestion(q: any, idx: number) {
     });
     if (res?.success) {
       q.isSaved = true;
+      toast.success("Soal Tersimpan", "Soal kuis berhasil disimpan ke bank soal.");
       await fetchExistingQuestions();
     }
   } catch (err: any) {
-    alert("Gagal menyimpan soal: " + err.message);
+    toast.error("Gagal Menyimpan Soal", err.message || "Terjadi kesalahan.");
   } finally {
     q.saving = false;
   }
@@ -765,12 +769,13 @@ async function generateVariations() {
     });
     if (res?.success) {
       generatedVariations.value = res.data?.variations || [];
+      toast.success("Variasi Dibuat", `${generatedVariations.value.length} variasi soal berhasil dibuat.`);
       await fetchExistingQuestions();
     } else {
-      alert("Error: " + (res?.error?.message || "Gagal membuat variasi"));
+      toast.error("AI Error", res?.error?.message || "Gagal membuat variasi.");
     }
   } catch (err: any) {
-    alert("Gagal membuat variasi soal: " + (err.message || err));
+    toast.error("Gagal Membuat Variasi", err.message || "Terjadi kesalahan.");
   } finally {
     generatingVariations.value = false;
   }
@@ -787,11 +792,12 @@ async function generateNarrative() {
     });
     if (res?.success) {
       generatedNarrative.value = res.data?.narrative || "";
+      toast.success("Narasi RPG Siap", "Naskah narasi berhasil dibuat!");
     } else {
-      alert("Error: " + (res?.error?.message || "Gagal membuat narasi"));
+      toast.error("AI Error", res?.error?.message || "Gagal membuat narasi.");
     }
   } catch (err: any) {
-    alert("Gagal membuat narasi RPG: " + (err.message || err));
+    toast.error("Gagal Membuat Narasi", err.message || "Terjadi kesalahan.");
   } finally {
     generatingNarrative.value = false;
   }
@@ -807,9 +813,10 @@ async function generateHint() {
     });
     if (res?.success) {
       generatedHint.value = res.data?.hint || "";
+      toast.success("Petunjuk Siap", "Smart clue berhasil dibuat!");
     }
   } catch (err: any) {
-    alert("Gagal membuat hint: " + (err.message || err));
+    toast.error("Gagal Membuat Hint", err.message || "Terjadi kesalahan.");
   } finally {
     generatingHint.value = false;
   }
@@ -817,6 +824,6 @@ async function generateHint() {
 
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text);
-  alert("Teks narasi berhasil disalin ke clipboard!");
+  toast.success("Tersalin", "Teks narasi berhasil disalin ke clipboard!");
 }
 </script>

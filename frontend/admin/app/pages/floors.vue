@@ -429,9 +429,11 @@ import {
 import PixelPagination from "@/components/PixelPagination.vue";
 import { useApi } from "~/composables/useApi";
 import { useToast } from "~/composables/useToast";
+import { useConfirm } from "~/composables/useConfirm";
 
 const api = useApi();
 const toast = useToast();
+const confirmModal = useConfirm();
 
 const loading = ref(false);
 const saving = ref(false);
@@ -576,14 +578,22 @@ function openFloorDetailModal(fl: any) {
 }
 
 async function confirmDeleteFloor(fl: any) {
-  if (confirm(`Hapus ${fl.name}? Semua checkpoint pos di lantai ini akan ikut terhapus.`)) {
-    try {
-      await api.del(`/api/floors/${fl.id}`);
-      toast.success(`Lantai ${fl.number} berhasil dihapus.`);
-      await fetchFloors();
-    } catch (err: any) {
-      toast.error("Gagal menghapus lantai: " + err.message);
-    }
+  const confirmed = await confirmModal.show({
+    title: "Hapus Lantai Gedung?",
+    description: `Apakah Anda yakin ingin menghapus '${fl.name}'? Semua checkpoint pos di lantai ini akan ikut terhapus secara permanen.`,
+    confirmText: "Ya, Hapus Lantai",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "trash",
+  });
+  if (!confirmed) return;
+
+  try {
+    await api.del(`/api/floors/${fl.id}`);
+    toast.success("Lantai Dihapus", `Lantai ${fl.number} berhasil dihapus.`);
+    await fetchFloors();
+  } catch (err: any) {
+    toast.error("Gagal Menghapus Lantai", err.message || "Terjadi kesalahan.");
   }
 }
 

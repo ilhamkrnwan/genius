@@ -614,6 +614,7 @@ import {
   DialogFooter,
 } from "~/components/ui/dialog";
 import { useApi } from "~/composables/useApi";
+import { useToast } from "~/composables/useToast";
 import {
   RPG_CHARACTERS,
   TITLE_CATALOG,
@@ -627,6 +628,7 @@ import {
 
 const route = useRoute();
 const api = useApi();
+const toast = useToast();
 
 const participantId = computed(() => String(route.params.id || ""));
 
@@ -909,10 +911,11 @@ async function submitAwardTitle() {
     });
     if (res?.success || res?.data?.success || res?.id) {
       showAwardModal.value = false;
+      toast.success("Gelar Disematkan", `Gelar '${titleToAward}' berhasil disematkan!`);
       await fetchParticipantDetail();
     }
   } catch (err: any) {
-    alert("Gagal menyematkan gelar: " + (err.message || "Error server"));
+    toast.error("Gagal Menyematkan Gelar", err.message || "Terjadi kesalahan server.");
   } finally {
     saving.value = false;
   }

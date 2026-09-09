@@ -1,19 +1,26 @@
 <template>
   <Dialog :open="modelOpen" @update:open="onOpenChange">
     <DialogContent
-      class="!fixed !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 !z-[99999] w-[calc(100%-2rem)] max-w-md border-2 border-[#ca8a04] bg-[#1a120c] p-5 shadow-[0_0_30px_rgba(0,0,0,0.8)] text-[#f0e0c0] pixel-card-gold"
+      class="!fixed !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 !z-[99999] w-[calc(100%-2rem)] max-w-md p-6 rounded-xl border-2 backdrop-blur-xl duration-200 shadow-2xl overflow-hidden"
+      :class="containerClasses"
     >
+      <!-- Top Decorative Ambient Glow -->
+      <div
+        class="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-20 rounded-full blur-2xl pointer-events-none opacity-40"
+        :class="ambientGlowClasses"
+      />
+
       <!-- Modal Inner Container -->
-      <div class="space-y-4">
+      <div class="relative z-10 space-y-4">
         <!-- Top Visual Badge + Title -->
         <div class="flex items-start gap-3.5">
           <!-- Icon Badge -->
           <div
-            class="h-11 w-11 shrink-0 rounded-lg flex items-center justify-center border-2 text-base shadow-lg transition-transform"
+            class="h-11 w-11 shrink-0 rounded-xl flex items-center justify-center border text-base shadow-lg transition-transform"
             :class="badgeClasses"
           >
             <!-- Logout Icon -->
-            <LogOut v-if="activeIcon === 'logout'" class="h-5 w-5 animate-pulse" />
+            <LogOut v-if="activeIcon === 'logout'" class="h-5 w-5" />
             <!-- Trash Icon -->
             <Trash2 v-else-if="activeIcon === 'trash'" class="h-5 w-5" />
             <!-- Shield Icon -->
@@ -28,31 +35,31 @@
 
           <!-- Title & Sub-badge -->
           <div class="min-w-0 flex-1 space-y-1">
-            <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex items-center gap-2">
               <span
-                class="px-1.5 py-0.2 font-pixel text-[9px] border uppercase rounded"
+                class="px-2 py-0.5 font-pixel text-[10px] tracking-wider uppercase rounded border font-bold"
                 :class="tagClasses"
               >
                 {{ tagLabel }}
               </span>
             </div>
-            <DialogTitle class="font-pixel text-xs sm:text-sm text-[#facc15] uppercase tracking-wider leading-snug">
+            <DialogTitle class="font-sans font-bold text-base sm:text-lg text-white leading-snug tracking-tight">
               {{ activeTitle }}
             </DialogTitle>
           </div>
         </div>
 
         <!-- Description -->
-        <DialogDescription class="font-mono text-xs text-gray-300 leading-relaxed bg-[#120d08] border border-[#4a3624] p-3 rounded">
+        <DialogDescription class="font-sans text-sm text-stone-300/90 leading-relaxed">
           {{ activeDescription }}
         </DialogDescription>
 
         <!-- Footer Buttons -->
-        <DialogFooter class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 pt-2 border-t border-[#4a3624]">
+        <DialogFooter class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 pt-3 border-t border-white/10">
           <button
             type="button"
             @click="onCancel"
-            class="pixel-btn h-8.5 px-4 text-xs font-pixel bg-[#271d15] text-gray-300 border-[#523e2b] hover:bg-[#3d2d1e] hover:text-white cursor-pointer transition-all flex items-center justify-center"
+            class="h-10 px-4 rounded-lg font-sans text-xs sm:text-sm font-medium text-stone-300 bg-[#281c13] hover:bg-[#3b2b1d] border border-[#523d2b] hover:text-white transition-all cursor-pointer flex items-center justify-center active:scale-[0.98]"
           >
             {{ activeCancelText }}
           </button>
@@ -61,10 +68,13 @@
             type="button"
             :disabled="activeLoading"
             @click="onConfirm"
-            class="pixel-btn h-8.5 px-5 text-xs font-pixel font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            class="h-10 px-5 rounded-lg font-sans text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
             :class="confirmBtnClasses"
           >
-            <RotateCw v-if="activeLoading" class="h-3.5 w-3.5 animate-spin" />
+            <RotateCw v-if="activeLoading" class="h-4 w-4 animate-spin" />
+            <LogOut v-else-if="activeIcon === 'logout'" class="h-4 w-4" />
+            <Trash2 v-else-if="activeIcon === 'trash'" class="h-4 w-4" />
+            <CheckCircle2 v-else-if="activeIcon === 'check'" class="h-4 w-4" />
             <span>{{ activeConfirmText }}</span>
           </button>
         </DialogFooter>
@@ -156,37 +166,67 @@ const activeLoading = computed(() => {
   return props.loading ?? globalConfirm.options.value.loading ?? false;
 });
 
+// Container theme classes based on activeVariant
+const containerClasses = computed(() => {
+  switch (activeVariant.value) {
+    case "danger":
+      return "border-red-500/70 bg-gradient-to-b from-[#221010] via-[#1a0c0c] to-[#120707] shadow-[0_0_40px_rgba(239,68,68,0.25)] text-stone-100";
+    case "warning":
+      return "border-amber-500/70 bg-gradient-to-b from-[#24170c] via-[#1a1008] to-[#120b05] shadow-[0_0_40px_rgba(245,158,11,0.25)] text-stone-100";
+    case "info":
+      return "border-sky-500/70 bg-gradient-to-b from-[#0e1822] via-[#091119] to-[#050b10] shadow-[0_0_40px_rgba(14,165,233,0.25)] text-stone-100";
+    case "primary":
+    default:
+      return "border-[#ca8a04]/70 bg-gradient-to-b from-[#1f160e] via-[#160f0a] to-[#0f0a06] shadow-[0_0_40px_rgba(202,138,4,0.25)] text-stone-100";
+  }
+});
+
+const ambientGlowClasses = computed(() => {
+  switch (activeVariant.value) {
+    case "danger":
+      return "bg-red-500";
+    case "warning":
+      return "bg-amber-500";
+    case "info":
+      return "bg-sky-500";
+    case "primary":
+    default:
+      return "bg-amber-500";
+  }
+});
+
 // UI helpers
 const badgeClasses = computed(() => {
   switch (activeVariant.value) {
     case "danger":
-      return "border-red-500 bg-gradient-to-br from-red-950/80 to-[#1e0708] text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.35)]";
+      return "border-red-500/60 bg-gradient-to-br from-red-950/90 to-red-900/30 text-red-400 shadow-[0_0_16px_rgba(239,68,68,0.35)]";
     case "warning":
-      return "border-amber-500 bg-gradient-to-br from-amber-950/80 to-[#1e1305] text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.35)]";
+      return "border-amber-500/60 bg-gradient-to-br from-amber-950/90 to-amber-900/30 text-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.35)]";
     case "info":
-      return "border-cyan-500 bg-gradient-to-br from-cyan-950/80 to-[#071822] text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.35)]";
+      return "border-sky-500/60 bg-gradient-to-br from-sky-950/90 to-sky-900/30 text-sky-400 shadow-[0_0_16px_rgba(14,165,233,0.35)]";
     case "primary":
     default:
-      return "border-emerald-500 bg-gradient-to-br from-emerald-950/80 to-[#081f12] text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.35)]";
+      return "border-emerald-500/60 bg-gradient-to-br from-emerald-950/90 to-emerald-900/30 text-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.35)]";
   }
 });
 
 const tagClasses = computed(() => {
   switch (activeVariant.value) {
     case "danger":
-      return "border-red-600 bg-[#351616] text-red-300";
+      return "border-red-500/50 bg-red-950/70 text-red-300";
     case "warning":
-      return "border-amber-600 bg-[#352514] text-amber-300";
+      return "border-amber-500/50 bg-amber-950/70 text-amber-300";
     case "info":
-      return "border-cyan-600 bg-[#122835] text-cyan-300";
+      return "border-sky-500/50 bg-sky-950/70 text-sky-300";
     case "primary":
     default:
-      return "border-emerald-600 bg-[#16351b] text-emerald-300";
+      return "border-emerald-500/50 bg-emerald-950/70 text-emerald-300";
   }
 });
 
 const tagLabel = computed(() => {
   if (activeIcon.value === "logout") return "Sesi Keluar";
+  if (activeIcon.value === "trash") return "Hapus Data";
   switch (activeVariant.value) {
     case "danger":
       return "Peringatan";
@@ -203,14 +243,14 @@ const tagLabel = computed(() => {
 const confirmBtnClasses = computed(() => {
   switch (activeVariant.value) {
     case "danger":
-      return "bg-[#dc2626] text-white border-[#f87171] hover:bg-[#b91c1c] shadow-[0_0_12px_rgba(239,68,68,0.4)]";
+      return "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-red-400/50 shadow-red-950/60 hover:shadow-red-900/70";
     case "warning":
-      return "bg-[#d97706] text-white border-[#fbbf24] hover:bg-[#b45309] shadow-[0_0_12px_rgba(217,119,6,0.4)]";
+      return "bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white border border-amber-400/50 shadow-amber-950/60 hover:shadow-amber-900/70";
     case "info":
-      return "bg-[#0284c7] text-white border-[#38bdf8] hover:bg-[#0369a1] shadow-[0_0_12px_rgba(2,132,199,0.4)]";
+      return "bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-500 hover:to-sky-600 text-white border border-sky-400/50 shadow-sky-950/60 hover:shadow-sky-900/70";
     case "primary":
     default:
-      return "bg-[#16a34a] text-white border-[#4ade80] hover:bg-[#15803d] shadow-[0_0_12px_rgba(22,163,74,0.4)]";
+      return "bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white border border-emerald-400/50 shadow-emerald-950/60 hover:shadow-emerald-900/70";
   }
 });
 

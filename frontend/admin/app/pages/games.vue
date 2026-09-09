@@ -716,8 +716,12 @@ import {
   DialogFooter,
 } from "~/components/ui/dialog";
 import { useApi } from "~/composables/useApi";
+import { useToast } from "~/composables/useToast";
+import { useConfirm } from "~/composables/useConfirm";
 
 const api = useApi();
+const toast = useToast();
+const confirmModal = useConfirm();
 
 const loading = ref(false);
 const saving = ref(false);
@@ -919,9 +923,10 @@ async function toggleIncubationMaster() {
     const res: any = await api.post("/api/incubation/admin/toggle-status", { status: next });
     if (res?.success) {
       incubationStatus.value = next;
+      toast.success("Status Diperbarui", `Game 1 Incubation kini ${next === "OPEN" ? "DIBUKA" : "DIKUNCI"}.`);
     }
   } catch (err: any) {
-    alert("Gagal mengubah status Game 1 Incubation: " + (err.message || "Error"));
+    toast.error("Gagal Mengubah Status", err.message || "Terjadi kesalahan sistem.");
   }
 }
 
@@ -931,10 +936,10 @@ async function syncDefaultGames() {
     const res: any = await api.post("/api/games/sync-defaults", {});
     if (res.success) {
       await fetchGames();
-      alert(res.message || "Berhasil menyinkronkan 7 template mini game!");
+      toast.success("Game Disinkronkan", res.message || "Berhasil menyinkronkan 7 template mini game!");
     }
   } catch (err: any) {
-    alert("Gagal sinkronisasi: " + (err.message || "Error"));
+    toast.error("Gagal Sinkronisasi Game", err.message || "Terjadi kesalahan.");
   } finally {
     syncing.value = false;
   }
@@ -945,10 +950,11 @@ async function toggleGameStatus(g: any) {
     const res: any = await api.put(`/api/games/${g.id}/toggle-status`, {});
     if (res.success) {
       g.status = res.data.status;
+      toast.success("Status Game Berubah", `Game '${g.name}' kini berstatus ${g.status}.`);
     }
   } catch (err: any) {
     const reasons = err?.data?.error?.reasons;
-    alert("Gagal mengubah status game: " + (reasons?.join(" ") || err.message || "Error"));
+    toast.error("Gagal Mengubah Status Game", reasons?.join(" ") || err.message || "Terjadi kesalahan.");
   }
 }
 
@@ -960,13 +966,8 @@ function openCreateModal() {
     type: "QUIZ",
     description: "",
     instructions: "",
-    config: {
-      questionsCount: 5,
-      timeLimitPerQuestion: 15,
-      streakMultiplier: 1.5,
-      maxScore: 100,
-    },
-    questionBankCategory: "Kampus UNU",
+    config: "{}",
+    questionBankCategory: "",
     minPlayers: 1,
     maxPlayers: 10,
     status: "ACTIVE",
@@ -979,10 +980,10 @@ function openEditModal(g: any) {
   form.value = {
     id: g.id,
     name: g.name,
-    type: g.type || "QUIZ",
+    type: g.type,
     description: g.description || "",
     instructions: g.instructions || "",
-    config: { ...(g.config || {}) },
+    config: typeof g.config === "string" ? g.config : JSON.stringify(g.config || {}, null, 2),
     questionBankCategory: g.questionBankCategory || "",
     minPlayers: g.minPlayers || 1,
     maxPlayers: g.maxPlayers || 10,
@@ -1006,6 +1007,7 @@ async function submitGameForm() {
         maxPlayers: form.value.maxPlayers,
         status: form.value.status,
       });
+      toast.success("Game Diperbarui", `Template game '${form.value.name}' berhasil diperbarui.`);
     } else {
       await api.post("/api/games", {
         name: form.value.name,
@@ -1018,24 +1020,34 @@ async function submitGameForm() {
         maxPlayers: form.value.maxPlayers,
         status: form.value.status,
       });
+      toast.success("Game Dibuat", `Template game '${form.value.name}' berhasil dibuat.`);
     }
     showGameModal.value = false;
     await fetchGames();
   } catch (err: any) {
-    alert("Gagal menyimpan game: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Menyimpan Game", err.data?.error?.message || err.message || "Terjadi kesalahan sistem.");
   } finally {
     saving.value = false;
   }
 }
 
 async function confirmDelete(g: any) {
-  if (confirm(`Hapus template game '${g.name}'?`)) {
-    try {
-      await api.del(`/api/games/${g.id}`);
-      await fetchGames();
-    } catch (err: any) {
-      alert("Gagal menghapus game: " + err.message);
-    }
+  const confirmed = await confirmModal.show({
+    title: "Hapus Template Game?",
+    description: `Apakah Anda yakin ingin menghapus template game '${g.name}'? Engine game ini tidak akan dapat dimainkan pada pos penjelajahan.`,
+    confirmText: "Ya, Hapus Game",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "trash",
+  });
+  if (!confirmed) return;
+
+  try {
+    await api.del(`/api/games/${g.id}`);
+    toast.success("Game Dihapus", `Template game '${g.name}' berhasil dihapus.`);
+    await fetchGames();
+  } catch (err: any) {
+    toast.error("Gagal Menghapus Game", err.message || "Terjadi kesalahan.");
   }
 }
 

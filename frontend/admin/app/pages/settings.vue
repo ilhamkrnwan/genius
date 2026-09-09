@@ -253,8 +253,12 @@ import {
   RotateCw,
 } from "lucide-vue-next";
 import { useApi } from "~/composables/useApi";
+import { useToast } from "~/composables/useToast";
+import { useConfirm } from "~/composables/useConfirm";
 
 const api = useApi();
+const toast = useToast();
+const confirmModal = useConfirm();
 
 const loading = ref(false);
 const freezing = ref(false);
@@ -287,25 +291,28 @@ async function loadAllData() {
 }
 
 async function triggerEmergencyFreeze() {
-  const confirmMsg = prompt('Ketik "FREEZE" untuk mengonfirmasi pembekuan darurat seluruh sesi event:');
-  if (confirmMsg !== "FREEZE") return;
+  const confirmed = await confirmModal.show({
+    title: "Aktifkan Protokol Darurat Freeze?",
+    description: "PERINGATAN KRITIS: Seluruh aktivitas pos, pengumpulan stempel, dan sesi aktif di seluruh lantai akan segera dibekukan secara darurat.",
+    confirmText: "Ya, Bekukan Seluruh Sesi",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "shield",
+  });
+  if (!confirmed) return;
 
   freezing.value = true;
   try {
     const res = await api.post("/monitoring/emergency-freeze");
     if (res?.success) {
-      alert(res.message || "Protokol darurat berhasil diaktifkan!");
+      toast.success("Protokol Darurat Aktif", res.message || "Protokol darurat berhasil diaktifkan!");
     }
   } catch (err: any) {
-    alert("Gagal memicu emergency freeze: " + err.message);
+    toast.error("Gagal Memicu Freeze", err.message || "Terjadi kesalahan.");
   } finally {
     freezing.value = false;
   }
 }
-
-import { useToast } from "~/composables/useToast";
-
-const toast = useToast();
 
 async function sendGlobalBroadcast() {
   if (!broadcastForm.value.message.trim()) return;
@@ -335,10 +342,11 @@ async function updateStageStatus(stageId: string, status: string) {
   try {
     const res = await api.put(`/stages/${stageId}`, { status });
     if (res?.success) {
+      toast.success("Status Babak Berubah", "Status tahapan babak berhasil diperbarui.");
       await loadAllData();
     }
   } catch (err: any) {
-    alert("Gagal mengubah status stage: " + err.message);
+    toast.error("Gagal Mengubah Status", err.message || "Terjadi kesalahan.");
   }
 }
 </script>

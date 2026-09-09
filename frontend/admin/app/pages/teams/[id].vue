@@ -863,6 +863,8 @@ import {
   DialogFooter,
 } from "~/components/ui/dialog";
 import { useApi } from "~/composables/useApi";
+import { useToast } from "~/composables/useToast";
+import { useConfirm } from "~/composables/useConfirm";
 import {
   RPG_CHARACTERS,
   CharacterClass,
@@ -870,6 +872,8 @@ import {
 
 const route = useRoute();
 const api = useApi();
+const toast = useToast();
+const confirmModal = useConfirm();
 
 const teamId = computed(() => String(route.params.id || ""));
 
@@ -1108,10 +1112,11 @@ async function addMemberToTeam() {
     });
     if (res?.success || res?.data?.success || res?.id) {
       showAddMemberModal.value = false;
+      toast.success("Anggota Ditambahkan", "Anggota baru berhasil dimasukkan ke dalam tim.");
       await Promise.all([fetchTeamDetail(), fetchAllUsers()]);
     }
   } catch (err: any) {
-    alert("Gagal menambahkan anggota: " + (err.message || "Error server"));
+    toast.error("Gagal Menambahkan Anggota", err.message || "Terjadi kesalahan sistem.");
   } finally {
     saving.value = false;
   }
@@ -1128,10 +1133,11 @@ async function submitAssignBuddy() {
     });
     if (res?.success || res?.data?.success || res?.id) {
       showAssignBuddyModal.value = false;
+      toast.success("Buddy Ditugaskan", "Penugasan buddy pendamping berhasil diperbarui.");
       await Promise.all([fetchTeamDetail(), fetchAllUsers()]);
     }
   } catch (err: any) {
-    alert("Gagal menugaskan buddy: " + (err.data?.error?.message || err.message));
+    toast.error("Gagal Menugaskan Buddy", err.data?.error?.message || err.message || "Terjadi kesalahan sistem.");
   } finally {
     saving.value = false;
   }
@@ -1139,15 +1145,24 @@ async function submitAssignBuddy() {
 
 // Remove member from team
 async function removeMemberFromTeam(member: any) {
-  if (confirm(`Keluarkan ${member.fullName} (@${member.username}) dari tim ${team.value.name}?`)) {
-    try {
-      await api.put(`/api/users/${member.userId}`, {
-        teamId: null,
-      });
-      await Promise.all([fetchTeamDetail(), fetchAllUsers()]);
-    } catch (err: any) {
-      alert("Gagal mengeluarkan anggota: " + err.message);
-    }
+  const confirmed = await confirmModal.show({
+    title: "Keluarkan Anggota Tim?",
+    description: `Apakah Anda yakin ingin mengeluarkan ${member.fullName} (@${member.username}) dari tim ${team.value.name}?`,
+    confirmText: "Ya, Keluarkan",
+    cancelText: "Batal",
+    variant: "danger",
+    icon: "trash",
+  });
+  if (!confirmed) return;
+
+  try {
+    await api.put(`/api/users/${member.userId}`, {
+      teamId: null,
+    });
+    toast.success("Anggota Dikeluarkan", `${member.fullName} telah dikeluarkan dari tim.`);
+    await Promise.all([fetchTeamDetail(), fetchAllUsers()]);
+  } catch (err: any) {
+    toast.error("Gagal Mengeluarkan Anggota", err.message || "Terjadi kesalahan sistem.");
   }
 }
 
@@ -1166,10 +1181,11 @@ async function setCaptain(captainUserId: string | null) {
       captainId: captainUserId || null,
     });
     if (res?.success || res?.data?.success || res?.id) {
+      toast.success("Ketua Tim Diperbarui", "Perubahan status ketua tim berhasil disimpan.");
       await fetchTeamDetail();
     }
   } catch (err: any) {
-    alert("Gagal memperbarui ketua tim: " + (err.message || "Error server"));
+    toast.error("Gagal Memperbarui Ketua Tim", err.message || "Terjadi kesalahan server.");
   } finally {
     saving.value = false;
   }
