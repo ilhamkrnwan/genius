@@ -53,7 +53,7 @@ export const LEVEL_CONFIG: LevelInfo[] = [
     minFloors: 9,
     maxFloors: 9,
     title: 'Upgraded You',
-    description: 'Selamat! Seluruh 9 lantai telah tuntas. Kamu adalah generasi unggul siap berkontribusi!',
+    description: 'Selamat! Seluruh lantai telah tuntas. Kamu adalah generasi unggul siap berkontribusi!',
     badgeIcon: 'MAX',
     iconName: 'Crown',
     color: '#8B5CF6',
@@ -233,7 +233,7 @@ export const FLOORS_DATA: Floor[] = [
     number: 9,
     name: 'Lantai 9 - Auditorium Cakrawala & Puncak GENIUS',
     theme: 'Visi 2045 & The Upgraded You',
-    description: 'Puncak gedung 9 lantai dengan pemandangan cakrawala, tempat pengukuhan komitmen masa depanmu!',
+    description: 'Puncak gedung kampus dengan pemandangan cakrawala, tempat pengukuhan komitmen masa depanmu!',
     icon: 'Trophy',
     accentColor: '#F59E0B',
     boothIds: ['booth-9a', 'booth-9b'],
@@ -1395,7 +1395,7 @@ export const BOOTHS_DATA: Record<string, Booth> = {
     stampColor: '#EAB308',
     badgeTag: 'Puncak GENIUS',
     story:
-      'Luar biasa! Kamu telah melangkah melalui 9 lantai dan mengumpulkan stempel karakter. Sekarang saatnya mengukuhkan komitmenmu: menjadi mahasiswa aktif yang berani bermimpi besar, berakhlak mulia, dan siap mengubah dunia melalui karya nyata!',
+      'Luar biasa! Kamu telah melangkah melalui seluruh lantai kampus dan mengumpulkan stempel karakter. Sekarang saatnya mengukuhkan komitmenmu: menjadi mahasiswa aktif yang berani bermimpi besar, berakhlak mulia, dan siap mengubah dunia melalui karya nyata!',
     questions: [
       {
         id: 'q-9b-1',

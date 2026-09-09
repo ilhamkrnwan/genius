@@ -336,7 +336,7 @@
               ROLE: <span class="text-[#facc15] font-bold">GAME MASTER & SQUAD COMMANDER</span>
             </div>
             <p class="text-[10px] text-gray-400 italic max-w-sm">
-              "Bertanggung jawab mendampingi navigasi 9 lantai, menjaga ketahanan mental tim, dan mengalokasikan bonus apresiasi."
+              "Bertanggung jawab mendampingi navigasi kampus, menjaga ketahanan mental tim, dan mengalokasikan bonus apresiasi."
             </p>
           </div>
         </div>

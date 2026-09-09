@@ -232,7 +232,7 @@
                   </span>
                 </div>
                 <p class="text-xs font-mono text-gray-300 mt-1 leading-relaxed">
-                  Regu menjelajahi 9 lantai kampus UNU, scan QR pos waypoint, dan berlaga di 6 mini game interaktif.
+                  Regu menjelajahi gedung kampus UNU, scan QR pos waypoint, dan berlaga di 6 mini game interaktif.
                 </p>
               </div>
             </div>
@@ -604,7 +604,7 @@ function getActiveStageFeatures(order: number) {
   } else if (order === 2) {
     return {
       primaryGame: "6 Mini-Game Arena (Quiz, Reflex, Memory, Cipher, AI Canvas, Boss)",
-      activity: "Eksplorasi 9 Lantai Kampus & Scan QR Pos Waypoint",
+      activity: "Eksplorasi Gedung Kampus & Scan QR Pos Waypoint",
       targetOutput: "Akumulasi Poin Regu & Perebutan Peringkat Leaderboard",
     };
   } else {

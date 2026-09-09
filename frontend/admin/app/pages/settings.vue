@@ -37,7 +37,7 @@
               EMERGENCY FREEZE / LOCKDOWN PROTOCOL
             </h2>
             <p class="font-mono text-[11px] text-red-200/70">
-              Jeda serentak seluruh game session di 9 lantai kampus saat terjadi force majeure atau insiden teknis.
+              Jeda serentak seluruh game session di seluruh kampus saat terjadi force majeure atau insiden teknis.
             </p>
           </div>
         </div>

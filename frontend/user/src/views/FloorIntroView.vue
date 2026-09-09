@@ -94,7 +94,7 @@ onMounted(() => {
 
         <div class="flex items-center gap-1.5">
           <PixelBadge variant="gold" size="sm">
-            Lantai {{ floor.number }} dari 9
+            Lantai {{ floor.number }}
           </PixelBadge>
           <PixelBadge v-if="floorStatus === 'completed'" variant="emerald" size="sm">
             Tuntas

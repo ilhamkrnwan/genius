@@ -848,7 +848,7 @@ const currentSlots = computed(() => {
     return [
       { label: "Torso Suit", icon: "🦺", item: "Tactical Kevlar UNU", desc: "Rompi taktis tahan cuaca dengan serat kevlar grade militer." },
       { label: "Cloak", icon: "🧣", item: "Digital Camo Poncho", desc: "Mantel pelindung debu dan kamuflase sensor termal." },
-      { label: "Exosuit", icon: "🦾", item: "Ksatria Core Gen-2", desc: "Rangka exoskeleton penguat daya jelajah 9 lantai kampus." },
+      { label: "Exosuit", icon: "🦾", item: "Ksatria Core Gen-2", desc: "Rangka exoskeleton penguat daya jelajah gedung kampus." },
     ];
   } else {
     return [

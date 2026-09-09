@@ -71,7 +71,7 @@
             </label>
             <input
               v-model="quizForm.topic"
-              placeholder="Contoh: Sejarah berdirinya UNU Yogyakarta & 9 Lantai Kampus..."
+              placeholder="Contoh: Sejarah berdirinya UNU Yogyakarta & Gedung Kampus..."
               class="w-full h-8 text-xs font-mono px-3 bg-[#1d1611] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
             />
             <!-- Quick Preset Topics -->
@@ -627,7 +627,7 @@ const tabs = [
 
 const presetTopics = [
   "Sejarah & Visi Misi UNU Yogyakarta",
-  "9 Lantai Gedung Kampus UNU Jogja",
+  "Gedung Kampus Terpadu UNU Jogja",
   "Kecerdasan Buatan & Pemrograman Dasar",
   "Etika Digital & Aswaja An-Nahdliyah",
   "Logika Matematika & Algoritma",

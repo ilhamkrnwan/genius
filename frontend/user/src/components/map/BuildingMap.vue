@@ -100,10 +100,10 @@ const getGameTypeLabel = (type: string) => {
         </div>
         <div class="min-w-0 flex-1">
           <div class="font-pixel text-[11px] sm:text-xs font-bold text-white leading-tight">
-            PETA 9 LANTAI KAMPUS
+            PETA EKSPLORASI KAMPUS
           </div>
           <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-sans text-[#c4956a] flex-wrap">
-            <span>{{ completedFloors }}/9 Tuntas</span>
+            <span>{{ completedFloors }} Lantai Tuntas</span>
             <span>•</span>
             <span class="text-[#7ec850]">{{ gameStore.participant.completedBooths.length }}/18 Stempel</span>
             <span>•</span>

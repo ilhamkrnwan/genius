@@ -149,7 +149,7 @@ export async function generateAiQuestions(options: GenerateQuestionsOptions): Pr
   cached?: boolean;
 }> {
   const count = options.count || 3;
-  const topic = options.topic || "Profil Universitas Nahdlatul Ulama Yogyakarta, 9 Lantai Kampus, dan Teknologi AI";
+  const topic = options.topic || "Profil Universitas Nahdlatul Ulama Yogyakarta, Gedung Kampus, dan Teknologi AI";
   const difficulty = options.difficulty || "MIXED";
   const category = options.category || "Kampus UNU";
 

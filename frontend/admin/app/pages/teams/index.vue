@@ -304,7 +304,7 @@
           </div>
 
           <div class="space-y-1">
-            <Label class="text-xs text-foreground font-semibold">Alokasi Rute Perjalanan 9 Lantai:</Label>
+            <Label class="text-xs text-foreground font-semibold">Alokasi Rute Perjalanan Kampus:</Label>
             <select
               v-model="form.routeId"
               class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"

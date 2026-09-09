@@ -62,7 +62,7 @@ const app = new Elysia()
           { name: "Attendance", description: "Presensi Digital Gerbang Masuk & Pulang" },
           { name: "FGD Evaluation", description: "Rubrik Penilaian Buddy 3 Pilar" },
           { name: "Scores", description: "Pencatatan Transaksi Skor & XP" },
-          { name: "Floors", description: "Denah 9 Lantai & Pos Kampus" },
+          { name: "Floors", description: "Denah Gedung & Pos Kampus" },
           { name: "Leaderboard", description: "Papan Peringkat Realtime" },
           { name: "Teams", description: "Regu & Kelompok Mahasiswa" },
           { name: "Games", description: "Katalog Mini-Game & Sesi Permainan" },

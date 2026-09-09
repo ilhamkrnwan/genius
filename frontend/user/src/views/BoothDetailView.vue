@@ -448,7 +448,7 @@ const handleNextStep = () => {
           BOOTH TIDAK DITEMUKAN
         </h2>
         <p class="font-sans text-sm text-[#d0c0a0]">
-          Maaf, ID booth &quot;{{ boothId }}&quot; tidak terdaftar dalam gedung 9 lantai ini.
+          Maaf, ID booth &quot;{{ boothId }}&quot; tidak terdaftar dalam gedung kampus ini.
         </p>
         <RouterLink to="/peta">
           <button class="rpg-btn-primary py-3 px-6 text-xs font-pixel font-bold">

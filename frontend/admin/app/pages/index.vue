@@ -54,7 +54,7 @@
     <!-- Page Header Info Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 font-mono text-xs text-muted-foreground border-b border-[#4a3624]/60 pb-2">
       <p>
-        Surveillance & pemantauan gamifikasi 9 lantai kampus UNU Yogyakarta secara realtime.
+        Surveillance & pemantauan gamifikasi kampus UNU Yogyakarta secara realtime.
       </p>
       <div class="flex items-center gap-2 shrink-0">
         <span class="border border-[#16a34a]/60 bg-[#162518] px-2 py-0.5 text-[9px] font-pixel text-[#4ade80] flex items-center gap-1">
@@ -83,7 +83,7 @@
           </div>
 
           <h2 class="font-pixel text-base sm:text-lg font-bold text-foreground">
-            {{ stats?.activeStage?.name || 'Stage 1: The Induction — Eksplorasi 9 Lantai & Mini Games' }}
+            {{ stats?.activeStage?.name || 'Stage 1: The Induction — Eksplorasi Kampus & Mini Games' }}
           </h2>
 
           <p class="max-w-3xl text-xs font-mono text-muted-foreground leading-relaxed">
@@ -222,7 +222,7 @@
             <span class="text-xs font-normal text-muted-foreground">Scan</span>
           </div>
           <div class="text-[10px] text-[#f59e0b] font-mono mt-0.5">
-            9 Lantai Aktif
+            Lantai Kampus Aktif
           </div>
         </div>
       </div>
@@ -234,7 +234,7 @@
         <div>
           <div class="font-pixel text-xs sm:text-sm font-bold text-[#f59e0b] flex items-center gap-2">
             <Building2 class="h-4 w-4" />
-            <span>MATRIKS DISTRIBUSI & KEPADATAN 9 LANTAI KAMPUS UNU</span>
+            <span>MATRIKS DISTRIBUSI & KEPADATAN GEDUNG KAMPUS UNU</span>
           </div>
           <p class="text-[11px] font-mono text-muted-foreground mt-0.5">
             Monitoring persebaran tim, kapasitas ruangan, dan deteksi potensi penumpukan (*bottleneck*) rute.

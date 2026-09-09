@@ -305,7 +305,7 @@ watch(showCertificate, (val) => {
       <div class="space-y-3 pt-2">
         <div class="flex items-center justify-between px-1">
           <h3 class="font-pixel text-xs sm:text-sm font-bold text-[#f0d060]">
-            DAFTAR 18 STEMPEL (9 LANTAI)
+            DAFTAR 18 STEMPEL PETUALANG
           </h3>
           <span class="text-[10px] font-pixel text-[#a08060]">
             KLIK UNTUK DETAIL
@@ -702,7 +702,7 @@ watch(showCertificate, (val) => {
           </div>
 
           <p class="font-sans text-xs sm:text-sm text-[#f0e6d2] max-w-lg mx-auto leading-relaxed">
-            Telah berhasil menyelesaikan eksplorasi 9 lantai dan mengumpulkan seluruh 18 stempel orientasi.
+            Telah berhasil menyelesaikan seluruh rangkaian eksplorasi kampus dan mengumpulkan seluruh 18 stempel orientasi.
           </p>
 
           <div class="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">

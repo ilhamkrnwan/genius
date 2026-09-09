@@ -374,7 +374,7 @@
             <Label class="text-xs font-semibold">Topik / Tema Soal:</Label>
             <input
               v-model="aiForm.topic"
-              placeholder="Contoh: Gedung 9 Lantai UNU Yogyakarta, Profil Rektor, Keilmuan AI & Data..."
+              placeholder="Contoh: Gedung Kampus UNU Yogyakarta, Profil Rektor, Keilmuan AI & Data..."
               class="w-full h-8 px-2.5 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#818cf8]"
               required
             />
@@ -521,7 +521,7 @@ const aiGeneratedPreview = ref<any[]>([]);
 const lastModelUsed = ref("");
 
 const aiForm = ref({
-  topic: "Sejarah UNU Yogyakarta, Gedung Kampus 9 Lantai, dan Teknologi AI Modern",
+  topic: "Sejarah UNU Yogyakarta, Gedung Kampus Terpadu, dan Teknologi AI Modern",
   preferredModel: "gemini-3.5-flash",
   count: 3,
   difficulty: "MIXED",

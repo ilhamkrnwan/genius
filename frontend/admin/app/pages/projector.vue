@@ -115,7 +115,7 @@
             REKAPITULASI JUARA UMUM GENIUS 2026
           </h2>
           <p class="text-xs text-gray-300 font-sans max-w-lg mx-auto">
-            Berdasarkan akumulasi skor ekspedisi 9 lantai, 18 pos mini-games, evaluasi 3 pilar FGD Aswaja, &amp; stan ormawa expo.
+            Berdasarkan akumulasi skor ekspedisi kampus, 18 pos mini-games, evaluasi 3 pilar FGD Aswaja, &amp; stan ormawa expo.
           </p>
         </div>
 

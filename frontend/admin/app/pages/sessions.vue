@@ -27,7 +27,7 @@
     <!-- Subtitle / Info Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 font-mono text-xs text-muted-foreground border-b border-[#4a3624]/60 pb-2">
       <p>
-        Pantau sesi arena mini game yang sedang aktif di seluruh 9 lantai kampus UNU Yogyakarta secara realtime.
+        Pantau sesi arena mini game yang sedang aktif di seluruh kampus UNU Yogyakarta secara realtime.
       </p>
       <div class="flex items-center gap-2 shrink-0">
         <span v-if="lastSyncedAt" class="text-[9px] text-muted-foreground font-mono">Sync: {{ formatTime(lastSyncedAt) }}</span>

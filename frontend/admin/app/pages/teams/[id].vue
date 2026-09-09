@@ -136,7 +136,7 @@
                   <span>{{ team.routeName }}</span>
                 </span>
                 <span v-else class="text-amber-500/80 italic text-[11px]">
-                  [Belum Ditugaskan Rute Pos 9 Lantai]
+                  [Belum Ditugaskan Rute Pos Kampus]
                 </span>
               </div>
             </div>
