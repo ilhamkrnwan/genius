@@ -60,6 +60,29 @@ export const routeRoutes = new Elysia({
       .where(inArray(teams.routeId, routeIds))
       .groupBy(teams.routeId);
 
+    // Query stops for visual sequence
+    const allStops = await db
+      .select({
+        routeId: routeStops.routeId,
+        order: routeStops.order,
+        locationName: locations.name,
+        locationCode: locations.code,
+        floorNumber: floors.number,
+      })
+      .from(routeStops)
+      .leftJoin(locations, eq(routeStops.locationId, locations.id))
+      .leftJoin(floors, eq(locations.floorId, floors.id))
+      .where(inArray(routeStops.routeId, routeIds))
+      .orderBy(asc(routeStops.order));
+
+    const stopsMap = new Map<string, any[]>();
+    for (const stop of allStops) {
+      if (!stopsMap.has(stop.routeId)) {
+        stopsMap.set(stop.routeId, []);
+      }
+      stopsMap.get(stop.routeId)!.push(stop);
+    }
+
     const stopMap = new Map(stopCounts.map((s) => [s.routeId, Number(s.count)]));
     const teamMap = new Map(teamCounts.map((t) => [t.routeId, Number(t.count)]));
 
@@ -67,6 +90,7 @@ export const routeRoutes = new Elysia({
       ...r,
       stopCount: stopMap.get(r.id) || 0,
       assignedTeamCount: teamMap.get(r.id) || 0,
+      stops: stopsMap.get(r.id) || [],
     }));
 
     return { success: true, data };

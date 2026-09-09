@@ -46,7 +46,7 @@
         ]"
       >
         <CalendarCheck class="h-3.5 w-3.5" />
-        <span>GERBANG PRESENSI (H1 - H3)</span>
+        <span>GERBANG PRESENSI ({{ gateList.length }})</span>
       </button>
 
       <button
@@ -59,7 +59,7 @@
         ]"
       >
         <Building2 class="h-3.5 w-3.5" />
-        <span>18 POS KAMPUS (9 LANTAI)</span>
+        <span>POS KAMPUS ({{ locations.length }})</span>
       </button>
 
       <button
@@ -72,7 +72,7 @@
         ]"
       >
         <Store class="h-3.5 w-3.5" />
-        <span>STAND ORMAWA EXPO (HARI 3)</span>
+        <span>STAND ORMAWA ({{ ormawaList.length }})</span>
       </button>
     </div>
 
@@ -176,8 +176,8 @@
           v-model.number="selectedFloor"
           class="h-7 bg-[#1d1611] border border-[#523e2b] px-2 text-foreground focus:outline-none focus:border-[#f59e0b]"
         >
-          <option :value="0">Semua Lantai (1 - 9)</option>
-          <option v-for="f in 9" :key="f" :value="f">Lantai {{ f }}</option>
+          <option :value="0">Semua Lantai ({{ availableFloors.length ? `${availableFloors[0]} - ${availableFloors[availableFloors.length - 1]}` : 'Semua' }})</option>
+          <option v-for="f in availableFloors" :key="f" :value="f">Lantai {{ f }}</option>
         </select>
       </div>
 
@@ -191,6 +191,11 @@
       v-if="activeCategory === 'gate'"
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:grid-cols-2 print:gap-4 print:m-0"
     >
+      <div v-if="gateList.length === 0" class="col-span-full py-16 text-center border border-dashed border-[#523e2b] bg-[#1a140f] p-8 text-muted-foreground font-mono space-y-2">
+        <CalendarCheck class="h-8 w-8 mx-auto text-[#523e2b]" />
+        <p class="text-xs">Belum ada sesi presensi resmi terdaftar di database.</p>
+      </div>
+
       <div
         v-for="gate in gateList"
         :key="gate.code"
@@ -275,6 +280,11 @@
       v-else-if="activeCategory === 'pos'"
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:grid-cols-2 print:gap-4 print:m-0"
     >
+      <div v-if="filteredLocations.length === 0" class="col-span-full py-16 text-center border border-dashed border-[#523e2b] bg-[#1a140f] p-8 text-muted-foreground font-mono space-y-2">
+        <Building2 class="h-8 w-8 mx-auto text-[#523e2b]" />
+        <p class="text-xs">Belum ada checkpoint pos kampus terdaftar untuk filter ini.</p>
+      </div>
+
       <div
         v-for="pos in filteredLocations"
         :key="pos.code"
@@ -507,96 +517,37 @@ const projectorTargetCard = ref<any | null>(null);
 const locations = ref<any[]>([]);
 const ormawaList = ref<any[]>([]);
 
-// Daftar Kartu Gerbang Presensi Resmi 3 Hari
-const gateList = [
-  {
-    code: "UNU-PRESENSI-H1-GATE-2026",
-    title: "PRESENSI MASUK HARI 1",
-    subtitle: "Pintu Utama Hall Lantai 1 (Selasa, 22 Sep 2026)",
-    type: "MASUK",
-    timeLabel: "PAGI: 07:00 - 07:30",
-    rewardXp: "+100 XP Presensi Masuk",
-  },
-  {
-    code: "UNU-PRESENSI-H1-CHECKOUT-2026",
-    title: "PRESENSI PULANG HARI 1",
-    subtitle: "Gerbang Keluar Hall Utama (Selasa, 22 Sep 2026)",
-    type: "PULANG",
-    timeLabel: "SORE: 16:00 WIB",
-    rewardXp: "+50 XP Presensi Pulang",
-  },
-  {
-    code: "UNU-PRESENSI-H2-GATE-2026",
-    title: "PRESENSI MASUK HARI 2",
-    subtitle: "Pintu Utama Hall Lantai 1 (Rabu, 23 Sep 2026)",
-    type: "MASUK",
-    timeLabel: "PAGI: 07:00 - 07:30",
-    rewardXp: "+100 XP Presensi Masuk",
-  },
-  {
-    code: "UNU-PRESENSI-H2-CHECKOUT-2026",
-    title: "PRESENSI PULANG HARI 2",
-    subtitle: "Gerbang Keluar Hall Utama (Rabu, 23 Sep 2026)",
-    type: "PULANG",
-    timeLabel: "SORE: 16:00 WIB",
-    rewardXp: "+50 XP Presensi Pulang",
-  },
-  {
-    code: "UNU-PRESENSI-H3-GATE-2026",
-    title: "PRESENSI MASUK HARI 3",
-    subtitle: "Pintu Utama Hall Lantai 1 (Kamis, 24 Sep 2026)",
-    type: "MASUK",
-    timeLabel: "PAGI: 07:00 - 07:30",
-    rewardXp: "+100 XP Presensi Masuk",
-  },
-  {
-    code: "UNU-PRESENSI-H3-CHECKOUT-2026",
-    title: "PRESENSI PULANG HARI 3",
-    subtitle: "Gerbang Keluar Hall Utama (Kamis, 24 Sep 2026)",
-    type: "PULANG",
-    timeLabel: "SORE: 16:00 WIB",
-    rewardXp: "+50 XP Presensi Pulang",
-  },
-];
-
-// 18 Pos Fisik 9 Lantai Fallback
-const defaultCampusLocations = [
-  { floorNumber: 1, name: "Lobby Utama & Welcome Center", code: "POS-L1-A" },
-  { floorNumber: 1, name: "Student Center & Layanan Kampus", code: "POS-L1-B" },
-  { floorNumber: 2, name: "Klinik & Posko Kesehatan Mahasiswa", code: "POS-L2-A" },
-  { floorNumber: 2, name: "Kampus Bersinar & Konseling Sebaya", code: "POS-L2-B" },
-  { floorNumber: 3, name: "Lab Komputer AI & Software Studio", code: "POS-L3-A" },
-  { floorNumber: 3, name: "Smart FTI Hall & Ruang Kolaborasi", code: "POS-L3-B" },
-  { floorNumber: 4, name: "Posko Layanan PPKS & Konseling Ramah", code: "POS-L4-A" },
-  { floorNumber: 4, name: "Lab Riset Halal & Bioteknologi Terapan", code: "POS-L4-B" },
-  { floorNumber: 5, name: "Perpustakaan Pusat & Pustaka Digital", code: "POS-L5-A" },
-  { floorNumber: 5, name: "Klinik Anti-Plagiarisme & Penulisan Ilmiah", code: "POS-L5-B" },
-  { floorNumber: 6, name: "Pusat Studi Islam Nusantara & Budaya", code: "POS-L6-A" },
-  { floorNumber: 6, name: "Laboratorium Sains Terpadu & Energi Hijau", code: "POS-L6-B" },
-  { floorNumber: 7, name: "Creative Co-Working Space & Multimedia", code: "POS-L7-A" },
-  { floorNumber: 7, name: "Microteaching Lab & Karakter Pendidik", code: "POS-L7-B" },
-  { floorNumber: 8, name: "Klinik Integritas & Anti-Korupsi", code: "POS-L8-A" },
-  { floorNumber: 8, name: "Ruang Tata Kelola & Kepemimpinan Kampus", code: "POS-L8-B" },
-  { floorNumber: 9, name: "Auditorium & Convention Hall Utama", code: "POS-L9-A" },
-  { floorNumber: 9, name: "Rooftop Sky Garden Panoramic Deck", code: "POS-L9-B" },
-];
+const gateList = ref<any[]>([]);
 
 async function fetchLocations() {
   loading.value = true;
   try {
-    // 1. Fetch Campus Pos Locations from API
+    // 1. Fetch Dynamic Presensi Gate Sessions from DB
+    const sessionsRes = await api.get<{ success: boolean; data: any[] }>("/api/attendance/sessions");
+    if (sessionsRes?.success && Array.isArray(sessionsRes.data)) {
+      gateList.value = sessionsRes.data.map((s) => ({
+        code: s.qrToken || s.code || s.id,
+        title: s.title,
+        subtitle: s.description || (s.type === 'PULANG' ? 'Gerbang Keluar Hall Utama' : 'Pintu Utama Hall Kampus'),
+        type: s.type || "MASUK",
+        timeLabel: s.timeLabel || (s.type === 'PULANG' ? 'SORE' : 'PAGI'),
+        rewardXp: `+${s.xpReward || (s.type === 'PULANG' ? 50 : 100)} XP Presensi ${s.type === 'PULANG' ? 'Pulang' : 'Masuk'}`,
+      }));
+    }
+
+    // 2. Fetch Campus Pos Locations from API dynamically (tanpa fallback mock static)
     const locRes = await api.get<{ success: boolean; data: any[] }>("/api/floors/locations");
-    if (locRes?.success && Array.isArray(locRes.data) && locRes.data.length > 0) {
+    if (locRes?.success && Array.isArray(locRes.data)) {
       locations.value = locRes.data.map((l) => ({
         floorNumber: l.floorNumber || 1,
         name: l.name,
         code: l.qrCode || l.code,
       }));
     } else {
-      locations.value = defaultCampusLocations;
+      locations.value = [];
     }
 
-    // 2. Fetch Ormawa Booths dynamically
+    // 3. Fetch Ormawa Booths dynamically
     const ormawaRes = await api.get<{ success: boolean; data: any[] }>("/api/ormawa/booths?includeInactive=false");
     if (ormawaRes?.success && Array.isArray(ormawaRes.data)) {
       ormawaList.value = ormawaRes.data.map((b) => ({
@@ -610,7 +561,6 @@ async function fetchLocations() {
     }
   } catch (err) {
     console.error("Gagal memuat data QR:", err);
-    if (locations.value.length === 0) locations.value = defaultCampusLocations;
   } finally {
     loading.value = false;
   }
@@ -631,6 +581,14 @@ function openProjectorLive(card: any | null) {
 
 onMounted(() => {
   fetchLocations();
+});
+
+const availableFloors = computed(() => {
+  const floorSet = new Set<number>();
+  for (const loc of locations.value) {
+    if (loc.floorNumber) floorSet.add(Number(loc.floorNumber));
+  }
+  return Array.from(floorSet).sort((a, b) => a - b);
 });
 
 const filteredLocations = computed(() => {

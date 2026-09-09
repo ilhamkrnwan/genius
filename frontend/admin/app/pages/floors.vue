@@ -460,17 +460,11 @@ const floorForm = ref({
   description: "",
 });
 
-const floorTabs = [
-  { number: 1 },
-  { number: 2 },
-  { number: 3 },
-  { number: 4 },
-  { number: 5 },
-  { number: 6 },
-  { number: 7 },
-  { number: 8 },
-  { number: 9 },
-];
+const floorTabs = computed(() => {
+  return [...floors.value]
+    .map((f) => ({ number: Number(f.number), name: f.name }))
+    .sort((a, b) => a.number - b.number);
+});
 
 const totalCheckpoints = computed(() => {
   return floors.value.reduce((acc, f) => acc + (f.locations?.length || f.locationCount || 0), 0);
@@ -523,7 +517,7 @@ function openCreateFloorModal() {
   isEditing.value = false;
   floorForm.value = {
     id: "",
-    number: floors.value.length ? Math.min(Math.max(...floors.value.map((f) => f.number)) + 1, 9) : 1,
+    number: floors.value.length ? Math.max(...floors.value.map((f) => Number(f.number) || 0)) + 1 : 1,
     name: "",
     description: "",
   };

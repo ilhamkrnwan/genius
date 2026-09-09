@@ -1376,12 +1376,12 @@ const cameraError = ref<string | null>(null);
 let cameraScanInterval: any = null;
 const qrInputRef = ref<HTMLInputElement | null>(null);
 
-const samplePresets = [
-  { label: "Maba 1 (26111101)", value: "26111101" },
-  { label: "Maba 2 (26111102)", value: "26111102" },
-  { label: "Maba 3 (26111103)", value: "26111103" },
-  { label: "Maba 4 (26111104)", value: "26111104" },
-];
+const samplePresets = computed(() => {
+  return participantUsers.value.slice(0, 5).map((u: any) => ({
+    label: `${u.fullName?.split(" ")[0] || u.name?.split(" ")[0] || "Peserta"} (${u.username || u.nim})`,
+    value: u.username || u.nim,
+  }));
+});
 
 const validModalData = ref({
   participantName: "",

@@ -34,7 +34,7 @@
     <!-- Subtitle / Info Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 font-mono text-xs text-muted-foreground border-b border-[#4a3624]/60 pb-2">
       <p>
-        Pustaka 99 gelar kehormatan petualang, sistem rarity (Rare, Epic, SR, SSR), syarat pembukaan, dan penganugerahan manual.
+        Pustaka gelar kehormatan petualang, sistem rarity (Rare, Epic, SR, SSR), syarat pembukaan, dan penganugerahan manual.
       </p>
       <div class="flex items-center gap-2 shrink-0">
         <span class="border border-[#ca8a04]/60 bg-[#2b2014] px-2 py-0.5 text-[9px] font-pixel text-[#facc15] flex items-center gap-1">
@@ -53,7 +53,7 @@
       </div>
 
       <div class="pixel-card p-3 border-l-4 border-l-blue-500 bg-[#120f0c]">
-        <div class="font-pixel text-[10px] text-blue-400 uppercase">🟦 RARE (36)</div>
+        <div class="font-pixel text-[10px] text-blue-400 uppercase">🟦 TIER RARE</div>
         <div class="font-pixel text-xl sm:text-2xl font-bold text-blue-400 mt-1">
           {{ countByRarity('RARE') }}
         </div>
@@ -61,7 +61,7 @@
       </div>
 
       <div class="pixel-card p-3 border-l-4 border-l-purple-500 bg-[#120f0c]">
-        <div class="font-pixel text-[10px] text-purple-400 uppercase">🟪 EPIC (33)</div>
+        <div class="font-pixel text-[10px] text-purple-400 uppercase">🟪 TIER EPIC</div>
         <div class="font-pixel text-xl sm:text-2xl font-bold text-purple-400 mt-1">
           {{ countByRarity('EPIC') }}
         </div>
@@ -69,7 +69,7 @@
       </div>
 
       <div class="pixel-card p-3 border-l-4 border-l-amber-500 bg-[#120f0c]">
-        <div class="font-pixel text-[10px] text-amber-400 uppercase">🟨 SR (20)</div>
+        <div class="font-pixel text-[10px] text-amber-400 uppercase">🟨 TIER SR</div>
         <div class="font-pixel text-xl sm:text-2xl font-bold text-amber-400 mt-1">
           {{ countByRarity('SR') }}
         </div>
@@ -77,7 +77,7 @@
       </div>
 
       <div class="pixel-card p-3 border-l-4 border-l-pink-500 bg-[#120f0c]">
-        <div class="font-pixel text-[10px] text-pink-400 uppercase">🌈 SSR (10)</div>
+        <div class="font-pixel text-[10px] text-pink-400 uppercase">🌈 TIER SSR</div>
         <div class="font-pixel text-xl sm:text-2xl font-bold text-pink-400 mt-1">
           {{ countByRarity('SSR') }}
         </div>
@@ -355,13 +355,13 @@ const selectedRarity = ref("ALL");
 
 const showAwardModal = ref(false);
 
-const RARITY_TABS = [
-  { value: "ALL", label: "Semua Gelar", icon: "🏆" },
-  { value: "RARE", label: "🟦 Rare (36)", icon: "🟦" },
-  { value: "EPIC", label: "🟪 Epic (33)", icon: "🟪" },
-  { value: "SR", label: "🟨 SR (20)", icon: "🟨" },
-  { value: "SSR", label: "🌈 SSR (10)", icon: "🌈" },
-];
+const RARITY_TABS = computed(() => [
+  { value: "ALL", label: `Semua Gelar (${achievementsList.value.length})`, icon: "🏆" },
+  { value: "RARE", label: `🟦 Rare (${countByRarity('RARE')})`, icon: "🟦" },
+  { value: "EPIC", label: `🟪 Epic (${countByRarity('EPIC')})`, icon: "🟪" },
+  { value: "SR", label: `🟨 SR (${countByRarity('SR')})`, icon: "🟨" },
+  { value: "SSR", label: `🌈 SSR (${countByRarity('SSR')})`, icon: "🌈" },
+]);
 
 const awardForm = ref({
   participantId: "",

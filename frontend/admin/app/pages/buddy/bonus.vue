@@ -230,7 +230,7 @@ interface Member {
 const activeMembers = ref<Member[]>([]);
 
 const currentTeamName = computed(() => {
-  const name = teamName.value || user.value?.teamName || "Genius 01";
+  const name = teamName.value || user.value?.teamName || "Kelompok Belum Terdaftar";
   return name.replace(/^Team\s+/i, "").trim();
 });
 
@@ -247,9 +247,9 @@ const synergyPresets = [
 ];
 
 const synergyCriteria = ref([
-  { text: "Kehadiran 100% lengkap 3 hari", checked: true },
+  { text: "Kehadiran 100% lengkap seluruh rangkaian acara", checked: true },
   { text: "Yel-yel kelompok kompak & tertib", checked: true },
-  { text: "Menyelesaikan 18 pos eksplorasi", checked: true },
+  { text: "Menyelesaikan seluruh pos eksplorasi kampus", checked: true },
   { text: "Saling tolong & menjaga kebersihan", checked: true },
 ]);
 

@@ -62,7 +62,7 @@
             <div class="flex items-start justify-between gap-2">
               <div>
                 <span class="px-1.5 py-0.5 text-[8px] font-pixel border border-[#ca8a04]/80 bg-[#2b2014] text-[#facc15] inline-block mb-1">
-                  STAGE 1
+                  {{ r.stageName || 'SEMUA STAGE' }}
                 </span>
                 <h3 class="font-pixel text-xs sm:text-sm font-bold text-foreground">{{ r.name }}</h3>
                 <p class="text-[10px] font-mono text-muted-foreground mt-0.5">
@@ -86,21 +86,19 @@
             <div class="border border-[#4a3624] bg-[#15100c] p-2.5 font-mono text-xs space-y-1.5">
               <div class="text-[10px] text-muted-foreground flex items-center justify-between">
                 <span>SEKUENS WAYPOINT:</span>
-                <span class="text-[#facc15] font-bold">3 Checkpoint</span>
+                <span class="text-[#facc15] font-bold">{{ r.stops?.length || r.stopCount || 0 }} Checkpoint</span>
               </div>
 
-              <div class="flex items-center gap-1.5 overflow-x-auto py-1">
-                <span class="px-2 py-0.5 bg-[#271d15] border border-[#ca8a04] text-[#facc15] font-pixel text-[9px]">
-                  POS 1 (L2)
-                </span>
-                <span class="text-[#f59e0b]">▶</span>
-                <span class="px-2 py-0.5 bg-[#271d15] border border-[#38bdf8] text-[#38bdf8] font-pixel text-[9px]">
-                  POS 2 (L5)
-                </span>
-                <span class="text-[#f59e0b]">▶</span>
-                <span class="px-2 py-0.5 bg-[#271d15] border border-[#4ade80] text-[#4ade80] font-pixel text-[9px]">
-                  POS 3 (L8)
-                </span>
+              <div v-if="r.stops && r.stops.length > 0" class="flex items-center gap-1.5 overflow-x-auto py-1">
+                <template v-for="(stop, sIdx) in r.stops" :key="sIdx">
+                  <span class="px-2 py-0.5 bg-[#271d15] border border-[#ca8a04] text-[#facc15] font-pixel text-[9px] shrink-0">
+                    {{ stop.locationName || `POS ${stop.order}` }} (L{{ stop.floorNumber || '?' }})
+                  </span>
+                  <span v-if="sIdx < r.stops.length - 1" class="text-[#f59e0b] shrink-0">▶</span>
+                </template>
+              </div>
+              <div v-else class="text-[10px] text-gray-400 italic py-0.5">
+                Belum ada sekuens pos waypoint yang ditautkan ke rute ini.
               </div>
             </div>
           </div>
@@ -108,7 +106,7 @@
           <!-- Actions -->
           <div class="border-t border-[#3d2d1e] pt-2 flex items-center justify-between">
             <span class="text-[10px] font-mono text-muted-foreground">
-              Alokasi: <strong class="text-foreground">~16 Tim</strong>
+              Alokasi: <strong class="text-foreground">{{ r.assignedTeamCount || 0 }} Tim</strong>
             </span>
 
             <div class="flex items-center gap-1">
