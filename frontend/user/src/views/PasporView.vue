@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { RouterLink } from 'vue-router';
+import { animatePageEnter, staggerFadeUp, stampSlamEffect, bouncePop } from '@/lib/gsap';
 import {
   PhIdentificationBadge,
   PhTrophy,
@@ -89,6 +90,29 @@ const executeResetProgress = () => {
   showResetModal.value = false;
   if (gameStore.soundEnabled) soundEngine.playClick();
 };
+
+onMounted(() => {
+  animatePageEnter('.paspor-header', { y: 20, duration: 0.45 });
+  animatePageEnter('.paspor-id-card', { y: 25, duration: 0.5, delay: 0.1 });
+  animatePageEnter('.paspor-stats-card', { y: 25, duration: 0.5, delay: 0.15 });
+  staggerFadeUp('.paspor-floor-card', 0.05, { delay: 0.2 });
+});
+
+watch(selectedStampPreview, (val) => {
+  if (val) {
+    nextTick(() => {
+      stampSlamEffect('.paspor-modal-stamp');
+    });
+  }
+});
+
+watch(showCertificate, (val) => {
+  if (val) {
+    nextTick(() => {
+      bouncePop('.paspor-certificate-card');
+    });
+  }
+});
 </script>
 
 <template>
@@ -98,7 +122,7 @@ const executeResetProgress = () => {
 
     <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 space-y-6">
       <!-- Header Title & Actions -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="paspor-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 class="font-pixel text-xl sm:text-2xl font-bold text-[#f0d060] flex items-center gap-2.5">
             <PhIdentificationBadge :size="28" weight="fill" class="text-[#f0d060]" />
@@ -133,7 +157,7 @@ const executeResetProgress = () => {
       <!-- Player ID Card & Level HUD -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         <!-- Identity Card -->
-        <div class="lg:col-span-5">
+        <div class="paspor-id-card lg:col-span-5">
           <div class="h-full sdv-card-gold p-5 sm:p-6 flex flex-col justify-between">
             <div>
               <div class="flex items-center justify-between border-b-2 border-[#5a3a18] pb-3 mb-4">
@@ -224,7 +248,7 @@ const executeResetProgress = () => {
         </div>
 
         <!-- Stats Overview -->
-        <div class="lg:col-span-7">
+        <div class="paspor-stats-card lg:col-span-7">
           <div class="h-full sdv-card p-5 sm:p-6 flex flex-col justify-between space-y-4">
             <div class="space-y-4">
               <div class="flex items-center justify-between border-b-2 border-[#5a3a18] pb-3">
@@ -293,7 +317,7 @@ const executeResetProgress = () => {
             v-for="floor in FLOORS_DATA"
             :key="floor.number"
             :class="[
-              'sdv-card p-3.5 sm:p-4',
+              'paspor-floor-card sdv-card p-3.5 sm:p-4',
               Boolean(gameStore.participant.stamps[BOOTHS_DATA[floor.boothIds[0]].id] && gameStore.participant.stamps[BOOTHS_DATA[floor.boothIds[1]].id])
                 ? 'border-[#7ec850] bg-[#1e3321]'
                 : ''
@@ -571,7 +595,7 @@ const executeResetProgress = () => {
         <div class="my-3 flex justify-center">
           <div
             :class="[
-              'w-24 h-24 border-3 rounded-xl flex flex-col items-center justify-center p-2 rotate-[-2deg]',
+              'paspor-modal-stamp w-24 h-24 border-3 rounded-xl flex flex-col items-center justify-center p-2 rotate-[-2deg]',
               gameStore.participant.stamps[selectedStampPreview]
                 ? 'border-[#f0d060] bg-gradient-to-b from-[#3d7828] to-[#255018] shadow'
                 : 'border-[#5a3a18] bg-[#170f07] opacity-40'
@@ -645,7 +669,7 @@ const executeResetProgress = () => {
       v-if="showCertificate"
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a0604]/90 backdrop-blur-md animate-in fade-in duration-200"
     >
-      <div class="w-full max-w-2xl bg-gradient-to-b from-[#2d1b0e] to-[#170f07] border-[4px] border-[#f0d060] rounded-2xl p-6 sm:p-8 text-center relative shadow-2xl">
+      <div class="paspor-certificate-card w-full max-w-2xl bg-gradient-to-b from-[#2d1b0e] to-[#170f07] border-[4px] border-[#f0d060] rounded-2xl p-6 sm:p-8 text-center relative shadow-2xl">
         <div class="border-2 border-[#8b6f4e] rounded-xl p-6 sm:p-8 bg-[#170f07]/90 space-y-4 shadow-inner">
           <div class="flex items-center justify-center gap-3">
             <img

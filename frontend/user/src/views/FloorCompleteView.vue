@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import confetti from 'canvas-confetti';
+import { animatePageEnter, stampSlamEffect, bouncePop, floatElement } from '@/lib/gsap';
 import {
   PhTrophy,
   PhSparkle,
@@ -48,6 +49,11 @@ onMounted(() => {
   if (gameStore.soundEnabled) {
     soundEngine.playLevelUp();
   }
+
+  bouncePop('.complete-victory-badge', { delay: 0.1 });
+  animatePageEnter('.complete-card', { y: 20, duration: 0.45, delay: 0.15 });
+  stampSlamEffect('.complete-stamp-item', { delay: 0.35, stagger: 0.15 });
+  floatElement('.complete-victory-badge', 3, 2.2);
 });
 
 const handleNextAction = () => {
@@ -67,7 +73,7 @@ const handleNextAction = () => {
 
     <main class="max-w-2xl mx-auto px-2.5 sm:px-6 py-2 sm:py-3 flex-1 flex flex-col justify-between items-center text-center overflow-hidden w-full gap-2">
       <!-- Victory Badge -->
-      <div class="inline-flex items-center gap-1.5 bg-[#14230f] border-2 border-[#7ec850] rounded-full px-3 py-1 shadow-md shrink-0">
+      <div class="complete-victory-badge inline-flex items-center gap-1.5 bg-[#14230f] border-2 border-[#7ec850] rounded-full px-3 py-1 shadow-md shrink-0">
         <PhSparkle :size="14" weight="fill" class="text-[#f0d060]" />
         <span class="font-pixel text-[9px] text-[#7ec850] font-bold uppercase tracking-wider">
           Lantai {{ floor.number }} Selesai!
@@ -75,7 +81,7 @@ const handleNextAction = () => {
       </div>
 
       <!-- Grand Card -->
-      <div class="w-full flex-1 sdv-card-gold p-3 sm:p-5 flex flex-col justify-between text-center overflow-hidden shadow-2xl">
+      <div class="complete-card w-full flex-1 sdv-card-gold p-3 sm:p-5 flex flex-col justify-between text-center overflow-hidden shadow-2xl">
         <!-- Header Title -->
         <div class="space-y-1 shrink-0">
           <h1 class="font-pixel text-sm sm:text-xl font-bold text-[#f0d060] tracking-wide leading-snug break-words">
@@ -89,7 +95,7 @@ const handleNextAction = () => {
         <!-- 2 Collected Stamps Showcase -->
         <div class="grid grid-cols-2 gap-2 my-1">
           <!-- Stamp 1 -->
-          <div class="bg-[#170f07] p-2 rounded-xl border-2 border-[#7ec850] flex items-center gap-2 shadow-inner">
+          <div class="complete-stamp-item bg-[#170f07] p-2 rounded-xl border-2 border-[#7ec850] flex items-center gap-2 shadow-inner">
             <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-b from-[#3d7828] to-[#255018] border border-[#f0d060] flex items-center justify-center shrink-0 shadow">
               <StampIcon :name="boothA.stampIcon" :size="16" class="text-[#f0d060]" />
             </div>
@@ -107,7 +113,7 @@ const handleNextAction = () => {
           </div>
 
           <!-- Stamp 2 -->
-          <div class="bg-[#170f07] p-2 rounded-xl border-2 border-[#7ec850] flex items-center gap-2 shadow-inner">
+          <div class="complete-stamp-item bg-[#170f07] p-2 rounded-xl border-2 border-[#7ec850] flex items-center gap-2 shadow-inner">
             <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-b from-[#3d7828] to-[#255018] border border-[#f0d060] flex items-center justify-center shrink-0 shadow">
               <StampIcon :name="boothB.stampIcon" :size="16" class="text-[#f0d060]" />
             </div>

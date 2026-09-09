@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   PhSparkle,
@@ -23,6 +23,7 @@ import {
 import { useGameStore } from '@/store/gameStore';
 import { AVATAR_OPTIONS, UNU_FACULTIES } from '@/data/mockData';
 import { soundEngine } from '@/lib/sound';
+import { gsap, floatElement } from '@/lib/gsap';
 
 const gameStore = useGameStore();
 
@@ -61,6 +62,20 @@ const handleSelectQuickAvatar = (avatarId: string) => {
   gameStore.setParticipantInfo({ avatar: avatarId });
   if (gameStore.soundEnabled) soundEngine.playSelect();
 };
+
+onMounted(() => {
+  const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+
+  tl.from('.hero-topbar', { y: -25, opacity: 0, duration: 0.55 })
+    .from('.hero-badge', { scale: 0.7, opacity: 0, duration: 0.4, ease: 'back.out(2)' }, '-=0.25')
+    .from('.hero-title-wrap', { y: 25, opacity: 0, duration: 0.55, ease: 'back.out(1.4)' }, '-=0.2')
+    .from('.hero-char-box', { y: 20, opacity: 0, duration: 0.45 }, '-=0.25')
+    .from('.hero-cta-main', { scale: 0.92, y: 15, opacity: 0, duration: 0.4, ease: 'back.out(1.8)' }, '-=0.2')
+    .from('.hero-btn-grid > *', { y: 15, opacity: 0, duration: 0.35, stagger: 0.05, ease: 'back.out(1.5)' }, '-=0.2')
+    .from('.hero-bottom-stats', { y: 20, opacity: 0, duration: 0.45 }, '-=0.2');
+
+  floatElement('.hero-badge', 4, 2.4);
+});
 </script>
 
 <template>
@@ -78,7 +93,7 @@ const handleSelectQuickAvatar = (avatarId: string) => {
     </div>
 
     <!-- Top Bar: Institutional Logo & Audio Controls -->
-    <div class="relative z-20 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-2 sm:pt-4 flex items-center justify-between gap-2 shrink-0">
+    <div class="hero-topbar relative z-20 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-2 sm:pt-4 flex items-center justify-between gap-2 shrink-0">
       <!-- Partner / Institution Badge -->
       <div class="backdrop-blur-md bg-[#140e0a]/85 border border-[#f0d060]/50 rounded-full px-3 sm:px-5 py-1 sm:py-1.5 flex items-center gap-2 sm:gap-3 shadow-lg">
         <img
@@ -167,7 +182,7 @@ const handleSelectQuickAvatar = (avatarId: string) => {
     <!-- Main Menu Center Content -->
     <div class="relative z-10 w-full max-w-lg mx-auto px-3 sm:px-6 my-auto flex flex-col items-center justify-center text-center">
       <!-- Top Announcement Badge -->
-      <div class="mb-1.5 sm:mb-2 inline-block">
+      <div class="hero-badge mb-1.5 sm:mb-2 inline-block">
         <div class="backdrop-blur-md bg-[#14230f]/90 border border-[#7ec850] text-[#7ec850] font-pixel text-[8px] sm:text-[10px] px-3 py-1 rounded-full tracking-widest uppercase shadow-md flex items-center gap-1.5">
           <PhSparkle :size="12" weight="fill" class="text-[#f0d060] animate-spin" />
           <span>ORIENTASI MAHASISWA BARU 2026</span>
@@ -175,7 +190,7 @@ const handleSelectQuickAvatar = (avatarId: string) => {
       </div>
 
       <!-- Grand Title -->
-      <div class="space-y-0.5 sm:space-y-1 mb-2.5 sm:mb-4">
+      <div class="hero-title-wrap space-y-0.5 sm:space-y-1 mb-2.5 sm:mb-4">
         <h1
           class="font-pixel text-3xl sm:text-5xl md:text-6xl font-extrabold text-[#f0d060] tracking-[4px] sm:tracking-[10px] animate-title-pulse drop-shadow-[0_6px_16px_rgba(0,0,0,0.9)]"
           style="text-shadow: 2px 2px 0 #6b4f2e, 4px 4px 0 #1b120a, 0 0 20px rgba(240, 208, 96, 0.4);"
@@ -197,7 +212,7 @@ const handleSelectQuickAvatar = (avatarId: string) => {
       </div>
 
       <!-- Character Quick-Select Bar -->
-      <div class="backdrop-blur-md bg-[#19120c]/90 border border-[#8b6f4e] rounded-xl p-2 mb-2.5 sm:mb-3 max-w-sm w-full shadow-md">
+      <div class="hero-char-box backdrop-blur-md bg-[#19120c]/90 border border-[#8b6f4e] rounded-xl p-2 mb-2.5 sm:mb-3 max-w-sm w-full shadow-md">
         <div class="flex items-center justify-between gap-2 px-1 mb-1.5">
           <div class="min-w-0 text-left">
             <span class="font-pixel text-[8px] text-[#f0d060] uppercase block">
@@ -253,7 +268,7 @@ const handleSelectQuickAvatar = (avatarId: string) => {
       <!-- Main Action Buttons Stack -->
       <div class="w-full max-w-sm flex flex-col items-center gap-2">
         <!-- Primary Action Button -->
-        <RouterLink to="/play" class="w-full">
+        <RouterLink to="/play" class="hero-cta-main w-full">
           <button
             type="button"
             @click="() => gameStore.soundEnabled && soundEngine.playClick()"
@@ -265,7 +280,7 @@ const handleSelectQuickAvatar = (avatarId: string) => {
         </RouterLink>
 
         <!-- Secondary Buttons Grid: Presensi, Ormawa, Paspor & Leaderboard -->
-        <div class="grid grid-cols-4 gap-1.5 w-full">
+        <div class="hero-btn-grid grid grid-cols-4 gap-1.5 w-full">
           <!-- Presensi Button -->
           <RouterLink to="/presensi" class="w-full">
             <button
@@ -323,7 +338,7 @@ const handleSelectQuickAvatar = (avatarId: string) => {
     </div>
 
     <!-- Bottom Footer & Campus Stats Card -->
-    <div class="relative z-20 w-full max-w-4xl mx-auto px-3 sm:px-6 pb-2 sm:pb-3 shrink-0">
+    <div class="hero-bottom-stats relative z-20 w-full max-w-4xl mx-auto px-3 sm:px-6 pb-2 sm:pb-3 shrink-0">
       <div class="backdrop-blur-md bg-[#19120c]/90 border border-[#8b6f4e] rounded-xl p-2 sm:p-2.5 text-center shadow-lg space-y-1">
         <!-- Badges Row -->
         <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 font-sans text-[10px] sm:text-xs">
