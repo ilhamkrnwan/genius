@@ -60,7 +60,6 @@
         <div class="space-y-1">
           <label for="username" class="text-[10px] font-semibold text-[#f0e0c0] flex items-center justify-between">
             <span class="font-pixel text-[8.5px]">USERNAME:</span>
-            <span class="text-[8.5px] text-[#c4956a]">admin / buddy01 / buddy03</span>
           </label>
           <div class="relative">
             <User class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#f0d060]" />
@@ -68,7 +67,7 @@
               id="username"
               v-model="username"
               type="text"
-              placeholder="admin atau buddy01"
+              placeholder="Masukkan username akun"
               required
               autocomplete="username"
               :disabled="auth.loading.value"
@@ -80,20 +79,29 @@
         <div class="space-y-1">
           <label for="password" class="text-[10px] font-semibold text-[#f0e0c0] flex items-center justify-between">
             <span class="font-pixel text-[8.5px]">KATA SANDI:</span>
-            <span class="text-[8.5px] text-[#c4956a]">admin2026 / buddy2026</span>
           </label>
           <div class="relative">
             <Key class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#f0d060]" />
             <input
               id="password"
               v-model="password"
-              type="password"
+              :type="showPassword ? 'text' : 'password'"
               placeholder="••••••••"
               required
               autocomplete="current-password"
               :disabled="auth.loading.value"
-              class="w-full h-9 pl-9 pr-3 bg-[#170f07] border-2 border-[#5a3a18] focus:border-[#f0d060] rounded-lg text-white text-xs font-mono outline-none"
+              class="w-full h-9 pl-9 pr-9 bg-[#170f07] border-2 border-[#5a3a18] focus:border-[#f0d060] rounded-lg text-white text-xs font-mono outline-none"
             />
+            <button
+              type="button"
+              @click="showPassword = !showPassword"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#f0d060] cursor-pointer"
+              tabindex="-1"
+              :title="showPassword ? 'Sembunyikan Kata Sandi' : 'Tampilkan Kata Sandi'"
+            >
+              <EyeOff v-if="showPassword" class="h-4 w-4" />
+              <Eye v-else class="h-4 w-4" />
+            </button>
           </div>
         </div>
 
@@ -114,7 +122,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { User, Key, RotateCw, AlertTriangle, Crown } from "lucide-vue-next";
+import { User, Key, RotateCw, AlertTriangle, Crown, Eye, EyeOff } from "lucide-vue-next";
 import { useAuth } from "~/composables/useAuth";
 
 definePageMeta({
@@ -125,6 +133,7 @@ const auth = useAuth();
 
 const username = ref("");
 const password = ref("");
+const showPassword = ref(false);
 const errorMsg = ref("");
 
 async function handleLogin() {
