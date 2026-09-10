@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue';
 import {
   PhScroll,
   PhScales,
@@ -8,6 +9,10 @@ import {
   PhSparkle,
   PhQuotes,
 } from '@phosphor-icons/vue';
+import { gsap } from '@/lib/gsap';
+
+const storyRootRef = ref<HTMLElement | null>(null);
+let storyCtx: gsap.Context | null = null;
 
 const pillars = [
   {
@@ -43,18 +48,74 @@ const pillars = [
     badge: 'Pilar IV',
   },
 ];
+
+onMounted(() => {
+  storyCtx = gsap.context(() => {
+    // Header reveal
+    gsap.from('.story-header', {
+      scrollTrigger: {
+        trigger: '.story-header',
+        start: 'top 85%',
+        toggleActions: 'play none none none',
+        once: true,
+      },
+      y: 35,
+      opacity: 0,
+      duration: 0.7,
+      ease: 'power2.out',
+    });
+
+    // Stagger 4 Pillars Cards
+    gsap.from('.story-pillar-card', {
+      scrollTrigger: {
+        trigger: '.story-pillars-grid',
+        start: 'top 82%',
+        toggleActions: 'play none none none',
+        once: true,
+      },
+      y: 45,
+      opacity: 0,
+      scale: 0.94,
+      duration: 0.65,
+      stagger: 0.12,
+      ease: 'back.out(1.4)',
+    });
+
+    // Quote banner reveal
+    gsap.from('.story-quote-banner', {
+      scrollTrigger: {
+        trigger: '.story-quote-banner',
+        start: 'top 85%',
+        toggleActions: 'play none none none',
+        once: true,
+      },
+      y: 30,
+      opacity: 0,
+      duration: 0.75,
+      ease: 'power2.out',
+    });
+  }, storyRootRef.value || undefined);
+});
+
+onUnmounted(() => {
+  storyCtx?.revert();
+});
 </script>
 
 <template>
-  <section id="story-section" class="relative py-16 sm:py-24 px-4 sm:px-6 bg-[#24150a] border-t-4 border-[#5a3a18] text-[#f0e0c0] overflow-hidden">
+  <section
+    id="story-section"
+    ref="storyRootRef"
+    class="relative py-16 sm:py-24 px-4 sm:px-6 bg-[#24150a] border-t-4 border-[#5a3a18] text-[#f0e0c0] overflow-hidden"
+  >
     <!-- Background Ambient Grid Glow -->
     <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(126,200,80,0.12)_0%,_transparent_65%)] pointer-events-none" />
     <div class="absolute -left-20 top-1/2 w-64 h-64 bg-[#f0d060]/5 rounded-full blur-3xl pointer-events-none" />
     <div class="absolute -right-20 bottom-10 w-64 h-64 bg-[#7ec850]/5 rounded-full blur-3xl pointer-events-none" />
 
     <div class="relative z-10 max-w-5xl mx-auto flex flex-col items-center">
-      <!-- Section Header -->
-      <div class="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
+      <!-- Section Header with GSAP Reveal -->
+      <div class="story-header text-center max-w-2xl mx-auto mb-12 sm:mb-16 will-change-transform">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1b1007] border border-[#f0d060]/50 shadow-md mb-3">
           <PhScroll :size="16" weight="fill" class="text-[#f0d060]" />
           <span class="font-pixel text-[9px] sm:text-[10px] text-[#f0d060] uppercase tracking-wider">
@@ -71,12 +132,12 @@ const pillars = [
         </p>
       </div>
 
-      <!-- 4 Pillars Cards Grid (Stardew Wood RPG Style) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full mb-12">
+      <!-- 4 Pillars Cards Grid with GSAP Stagger -->
+      <div class="story-pillars-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full mb-12">
         <div
           v-for="(pillar, idx) in pillars"
           :key="idx"
-          class="sdv-card p-5 sm:p-6 flex flex-col justify-between hover:-translate-y-1 hover:border-[#f0d060] transition-all duration-200 group"
+          class="story-pillar-card sdv-card p-5 sm:p-6 flex flex-col justify-between hover:-translate-y-1 hover:border-[#f0d060] transition-all duration-200 group will-change-transform"
         >
           <div>
             <div class="flex items-center justify-between gap-2 mb-4">
@@ -109,8 +170,8 @@ const pillars = [
         </div>
       </div>
 
-      <!-- Inspiring Quote Banner (Parchment Style) -->
-      <div class="w-full bg-[#342214] border-2 border-[#8b6f4e] rounded-xl p-6 sm:p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+      <!-- Inspiring Quote Banner with GSAP Reveal -->
+      <div class="story-quote-banner w-full bg-[#342214] border-2 border-[#8b6f4e] rounded-xl p-6 sm:p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center gap-6 will-change-transform">
         <div class="absolute -right-6 -bottom-6 text-[#f0d060]/10 pointer-events-none">
           <PhQuotes :size="120" weight="fill" />
         </div>

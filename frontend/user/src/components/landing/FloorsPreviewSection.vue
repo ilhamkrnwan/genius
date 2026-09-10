@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   PhBuildings,
@@ -14,9 +14,13 @@ import {
 import { FLOORS_DATA } from '@/data/mockData';
 import { useGameStore } from '@/store/gameStore';
 import { soundEngine } from '@/lib/sound';
+import { gsap } from '@/lib/gsap';
 
 const router = useRouter();
 const gameStore = useGameStore();
+
+const floorsRootRef = ref<HTMLElement | null>(null);
+let floorsCtx: gsap.Context | null = null;
 
 const selectedFloorNumber = ref<number>(1);
 
@@ -31,6 +35,11 @@ const isFloorUnlocked = (floorNum: number) => {
 const handleSelectFloor = (floorNum: number) => {
   selectedFloorNumber.value = floorNum;
   if (gameStore.soundEnabled) soundEngine.playSelect();
+  gsap.fromTo(
+    '.floors-detail-card',
+    { opacity: 0.85, scale: 0.99 },
+    { opacity: 1, scale: 1, duration: 0.25, ease: 'power2.out' }
+  );
 };
 
 const handleExplore = () => {
@@ -41,13 +50,68 @@ const handleExplore = () => {
     router.push(`/play/floor/${selectedFloorNumber.value}/intro`);
   }
 };
+
+onMounted(() => {
+  floorsCtx = gsap.context(() => {
+    // Header reveal
+    gsap.from('.floors-header', {
+      scrollTrigger: {
+        trigger: '.floors-header',
+        start: 'top 85%',
+        toggleActions: 'play none none none',
+        once: true,
+      },
+      y: 35,
+      opacity: 0,
+      duration: 0.7,
+      ease: 'power2.out',
+    });
+
+    // Floor Selector Pills
+    gsap.from('.floor-pill-btn', {
+      scrollTrigger: {
+        trigger: '.floors-pills-bar',
+        start: 'top 85%',
+        toggleActions: 'play none none none',
+        once: true,
+      },
+      y: 20,
+      opacity: 0,
+      stagger: 0.04,
+      duration: 0.45,
+      ease: 'power1.out',
+    });
+
+    // Showcase Card
+    gsap.from('.floors-detail-card', {
+      scrollTrigger: {
+        trigger: '.floors-detail-card',
+        start: 'top 82%',
+        toggleActions: 'play none none none',
+        once: true,
+      },
+      scale: 0.95,
+      opacity: 0,
+      duration: 0.65,
+      ease: 'back.out(1.3)',
+    });
+  }, floorsRootRef.value || undefined);
+});
+
+onUnmounted(() => {
+  floorsCtx?.revert();
+});
 </script>
 
 <template>
-  <section id="floors-preview" class="relative py-16 sm:py-24 px-4 sm:px-6 bg-[#24150a] border-t-4 border-[#5a3a18] text-[#f0e0c0]">
+  <section
+    id="floors-preview"
+    ref="floorsRootRef"
+    class="relative py-16 sm:py-24 px-4 sm:px-6 bg-[#24150a] border-t-4 border-[#5a3a18] text-[#f0e0c0]"
+  >
     <div class="relative z-10 max-w-5xl mx-auto">
-      <!-- Section Header -->
-      <div class="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
+      <!-- Section Header with GSAP Reveal -->
+      <div class="floors-header text-center max-w-2xl mx-auto mb-10 sm:mb-14 will-change-transform">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1c1107] border border-[#f0d060]/50 shadow-md mb-3">
           <PhBuildings :size="16" weight="fill" class="text-[#f0d060]" />
           <span class="font-pixel text-[9px] sm:text-[10px] text-[#f0d060] uppercase tracking-wider">
@@ -64,15 +128,15 @@ const handleExplore = () => {
         </p>
       </div>
 
-      <!-- Floor Selector Pills (Tower Floor 9 down to Floor 1) -->
-      <div class="flex items-center justify-center gap-1.5 sm:gap-2 overflow-x-auto pb-4 mb-8 no-scrollbar max-w-full">
+      <!-- Floor Selector Pills with GSAP Stagger -->
+      <div class="floors-pills-bar flex items-center justify-center gap-1.5 sm:gap-2 overflow-x-auto pb-4 mb-8 no-scrollbar max-w-full">
         <button
           v-for="floor in FLOORS_DATA"
           :key="floor.number"
           type="button"
           @click="handleSelectFloor(floor.number)"
           :class="[
-            'px-3 sm:px-4 py-2 rounded-lg font-pixel text-[10px] sm:text-xs font-bold transition-all shrink-0 cursor-pointer border-2 shadow-md flex items-center gap-1.5',
+            'floor-pill-btn px-3 sm:px-4 py-2 rounded-lg font-pixel text-[10px] sm:text-xs font-bold transition-all shrink-0 cursor-pointer border-2 shadow-md flex items-center gap-1.5 will-change-transform',
             selectedFloorNumber === floor.number
               ? 'bg-[#f0d060] text-[#1b120a] border-[#d4af37] scale-105 shadow-[0_0_12px_rgba(240,208,96,0.5)]'
               : 'bg-[#2d1b0e] text-[#a89078] border-[#5a3a18] hover:border-[#8b6f4e] hover:text-[#f0e0c0]'
@@ -88,8 +152,8 @@ const handleExplore = () => {
         </button>
       </div>
 
-      <!-- Selected Floor Detail Showcase (Stardew Valley Card) -->
-      <div class="sdv-card-gold p-6 sm:p-8 relative overflow-hidden transition-all duration-300">
+      <!-- Selected Floor Detail Showcase (Stardew Valley Card) with GSAP Reveal -->
+      <div class="floors-detail-card sdv-card-gold p-6 sm:p-8 relative overflow-hidden transition-all duration-300 will-change-transform">
         <div class="flex flex-col lg:flex-row gap-8 items-start justify-between">
           <!-- Floor Basic Info & Theme -->
           <div class="flex-1">

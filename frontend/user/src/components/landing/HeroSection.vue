@@ -75,16 +75,10 @@ const scrollToStory = () => {
 };
 
 // ==========================================
-// 🌌 SILKY-SMOOTH PARALLAX SYSTEM (RAF Lerp)
+// 🌌 NATIVE GSAP SCROLLTRIGGER & MOUSE PARALLAX
 // ==========================================
-const bgScrollRef = ref<HTMLElement | null>(null);
-const bgMouseRef = ref<HTMLElement | null>(null);
-const ambientScrollRef = ref<HTMLElement | null>(null);
-const ambientMouseRef = ref<HTMLElement | null>(null);
-const particlesMouseRef = ref<HTMLElement | null>(null);
-const contentScrollRef = ref<HTMLElement | null>(null);
-const contentMouseRef = ref<HTMLElement | null>(null);
-const dockScrollRef = ref<HTMLElement | null>(null);
+const heroRootRef = ref<HTMLElement | null>(null);
+let heroCtx: gsap.Context | null = null;
 
 const particleStyles = [
   'top-[18%] left-[10%] w-2 h-2',
@@ -97,116 +91,102 @@ const particleStyles = [
   'top-[62%] right-[24%] w-2 h-2',
 ];
 
-let targetMouseX = 0;
-let targetMouseY = 0;
-let currentMouseX = 0;
-let currentMouseY = 0;
-
-let targetScrollY = 0;
-let currentScrollY = 0;
-
-let rafId: number | null = null;
-
+// Gentle, stable mouse parallax on ambient background only (no jitter on buttons)
 const handleMouseMove = (e: MouseEvent) => {
   const nx = (e.clientX / window.innerWidth - 0.5) * 2;
   const ny = (e.clientY / window.innerHeight - 0.5) * 2;
-  targetMouseX = Math.max(-1, Math.min(1, nx));
-  targetMouseY = Math.max(-1, Math.min(1, ny));
+
+  gsap.to('.hero-mouse-bg', {
+    x: -nx * 14,
+    y: -ny * 10,
+    duration: 1.2,
+    ease: 'power2.out',
+    overwrite: 'auto',
+  });
+
+  gsap.to('.hero-mouse-particles', {
+    x: nx * 18,
+    y: ny * 12,
+    duration: 0.9,
+    ease: 'power1.out',
+    overwrite: 'auto',
+  });
 };
 
 const handleMouseLeave = () => {
-  targetMouseX = 0;
-  targetMouseY = 0;
-};
-
-const handleScroll = () => {
-  targetScrollY = window.scrollY;
-};
-
-const renderLoop = () => {
-  // Ultra-smooth lerp damping (0.05)
-  currentMouseX += (targetMouseX - currentMouseX) * 0.05;
-  currentMouseY += (targetMouseY - currentMouseY) * 0.05;
-  currentScrollY += (targetScrollY - currentScrollY) * 0.07;
-
-  // 1. Background (Separated Scroll & Mouse Layers)
-  if (bgScrollRef.value) {
-    bgScrollRef.value.style.transform = `translate3d(0, ${(currentScrollY * 0.35).toFixed(2)}px, 0)`;
-  }
-  if (bgMouseRef.value) {
-    bgMouseRef.value.style.transform = `translate3d(${(currentMouseX * -18).toFixed(2)}px, ${(currentMouseY * -12).toFixed(2)}px, 0)`;
-  }
-
-  // 2. Ambient (Birds & Clouds)
-  if (ambientScrollRef.value) {
-    ambientScrollRef.value.style.transform = `translate3d(0, ${(currentScrollY * 0.18).toFixed(2)}px, 0)`;
-  }
-  if (ambientMouseRef.value) {
-    ambientMouseRef.value.style.transform = `translate3d(${(currentMouseX * 12).toFixed(2)}px, ${(currentMouseY * 8).toFixed(2)}px, 0)`;
-  }
-
-  // 3. Floating Particles
-  if (particlesMouseRef.value) {
-    particlesMouseRef.value.style.transform = `translate3d(${(currentMouseX * 22).toFixed(2)}px, ${(currentMouseY * 16).toFixed(2)}px, 0)`;
-  }
-
-  // 4. Content Scroll & Mouse 3D Tilt
-  if (contentScrollRef.value) {
-    const fade = Math.max(0, 1 - currentScrollY / 420);
-    contentScrollRef.value.style.transform = `translate3d(0, ${(-currentScrollY * 0.22).toFixed(2)}px, 0)`;
-    contentScrollRef.value.style.opacity = fade.toFixed(3);
-  }
-  if (contentMouseRef.value) {
-    contentMouseRef.value.style.transform = `translate3d(${(currentMouseX * 5).toFixed(2)}px, ${(currentMouseY * 3.5).toFixed(2)}px, 0) rotateY(${(currentMouseX * 2.2).toFixed(2)}deg) rotateX(${(-currentMouseY * 2.2).toFixed(2)}deg)`;
-  }
-
-  // 5. Dock
-  if (dockScrollRef.value) {
-    const dockFade = Math.max(0, 1 - currentScrollY / 260);
-    dockScrollRef.value.style.transform = `translate3d(0, ${(currentScrollY * 0.1).toFixed(2)}px, 0)`;
-    dockScrollRef.value.style.opacity = dockFade.toFixed(3);
-  }
-
-  rafId = requestAnimationFrame(renderLoop);
+  gsap.to(['.hero-mouse-bg', '.hero-mouse-particles'], {
+    x: 0,
+    y: 0,
+    duration: 1.2,
+    ease: 'power2.out',
+    overwrite: 'auto',
+  });
 };
 
 onMounted(() => {
-  const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+  heroCtx = gsap.context(() => {
+    // 1. Initial entrance animation
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+    tl.from('.hero-topbar', { y: -25, opacity: 0, duration: 0.55 })
+      .from('.hero-title-wrap', { y: 25, opacity: 0, duration: 0.55, ease: 'back.out(1.4)' }, '-=0.2')
+      .from('.hero-char-box', { y: 20, opacity: 0, duration: 0.45 }, '-=0.25')
+      .from('.hero-cta-main', { scale: 0.92, y: 15, opacity: 0, duration: 0.4, ease: 'back.out(1.8)' }, '-=0.2')
+      .from('.hero-awwwards-dock', { y: 25, opacity: 0, duration: 0.5, ease: 'back.out(1.2)' }, '-=0.2');
 
-  tl.from('.hero-topbar', { y: -25, opacity: 0, duration: 0.55 })
-    .from('.hero-title-wrap', { y: 25, opacity: 0, duration: 0.55, ease: 'back.out(1.4)' }, '-=0.2')
-    .from('.hero-char-box', { y: 20, opacity: 0, duration: 0.45 }, '-=0.25')
-    .from('.hero-cta-main', { scale: 0.92, y: 15, opacity: 0, duration: 0.4, ease: 'back.out(1.8)' }, '-=0.2')
-    .from('.hero-awwwards-dock', { y: 25, opacity: 0, duration: 0.5, ease: 'back.out(1.2)' }, '-=0.2');
+    // 2. Native, buttery smooth GSAP ScrollTrigger Scrub Parallax
+    gsap.to('.hero-scroll-bg', {
+      scrollTrigger: {
+        trigger: heroRootRef.value,
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 0.6,
+      },
+      yPercent: 18,
+      ease: 'none',
+    });
 
-  window.addEventListener('scroll', handleScroll, { passive: true });
-  rafId = requestAnimationFrame(renderLoop);
+    gsap.to('.hero-scroll-content', {
+      scrollTrigger: {
+        trigger: heroRootRef.value,
+        start: 'top top',
+        end: 'bottom 45%',
+        scrub: 0.6,
+      },
+      yPercent: -12,
+      opacity: 0,
+      ease: 'none',
+    });
+
+    gsap.to('.hero-scroll-dock', {
+      scrollTrigger: {
+        trigger: heroRootRef.value,
+        start: 'top top',
+        end: 'bottom 65%',
+        scrub: 0.6,
+      },
+      yPercent: 12,
+      opacity: 0,
+      ease: 'none',
+    });
+  }, heroRootRef.value || undefined);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll);
-  if (rafId !== null) {
-    cancelAnimationFrame(rafId);
-  }
+  heroCtx?.revert();
 });
 </script>
 
 <template>
   <div
+    ref="heroRootRef"
     @mousemove="handleMouseMove"
     @mouseleave="handleMouseLeave"
-    class="relative w-full h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-hidden select-none"
+    class="hero-root-container relative w-full h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-hidden select-none"
   >
-    <!-- Background: Scroll Parallax Wrapper -->
-    <div
-      ref="bgScrollRef"
-      class="absolute -inset-[8%] z-0 pointer-events-none will-change-transform"
-    >
-      <!-- Background: Mouse Parallax Inner -->
-      <div
-        ref="bgMouseRef"
-        class="w-full h-full will-change-transform scale-105"
-      >
+    <!-- Background: GSAP Scroll Parallax Layer -->
+    <div class="hero-scroll-bg absolute -inset-[10%] z-0 pointer-events-none will-change-transform">
+      <!-- Background: Gentle Mouse Parallax Layer -->
+      <div class="hero-mouse-bg w-full h-full will-change-transform scale-105">
         <img
           src="/unu-hero.jpeg"
           alt="Gedung Kampus Terpadu UNU Yogyakarta"
@@ -218,24 +198,13 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Ambient Layer: Scroll & Mouse Separated -->
-    <div
-      ref="ambientScrollRef"
-      class="absolute inset-0 z-5 pointer-events-none will-change-transform"
-    >
-      <div
-        ref="ambientMouseRef"
-        class="w-full h-full will-change-transform"
-      >
-        <AmbientEffects :active="Boolean(gameStore.ambientEffects)" />
-      </div>
+    <!-- Ambient Nature Effects -->
+    <div class="absolute inset-0 z-5 pointer-events-none">
+      <AmbientEffects :active="Boolean(gameStore.ambientEffects)" />
     </div>
 
     <!-- Floating RPG Gold Dust Particles -->
-    <div
-      ref="particlesMouseRef"
-      class="absolute inset-0 z-10 pointer-events-none overflow-hidden will-change-transform"
-    >
+    <div class="hero-mouse-particles absolute inset-0 z-10 pointer-events-none overflow-hidden will-change-transform">
       <div
         v-for="(pos, pIdx) in particleStyles"
         :key="pIdx"
@@ -333,16 +302,9 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Main Content: Scroll Parallax Wrapper -->
-    <div
-      ref="contentScrollRef"
-      class="relative z-10 w-full my-auto will-change-transform"
-    >
-      <!-- Main Content: Mouse 3D Tilt Inner -->
-      <div
-        ref="contentMouseRef"
-        class="w-full max-w-lg mx-auto px-3 sm:px-6 flex flex-col items-center justify-center text-center will-change-transform"
-      >
+    <!-- Main Content: GSAP Scroll Parallax Wrapper -->
+    <div class="hero-scroll-content relative z-10 w-full my-auto will-change-transform">
+      <div class="w-full max-w-lg mx-auto px-3 sm:px-6 flex flex-col items-center justify-center text-center">
       <!-- Grand Title -->
       <div class="hero-title-wrap space-y-0.5 sm:space-y-1 mb-2.5 sm:mb-4">
         <h1
@@ -440,11 +402,8 @@ onUnmounted(() => {
     </div>
     </div>
 
-    <!-- Bottom Awwwards-style Floating Menu Dock -->
-    <div
-      ref="dockScrollRef"
-      class="hero-awwwards-dock relative z-20 w-full mx-auto px-2 sm:px-4 pb-3 sm:pb-5 shrink-0 flex flex-col items-center will-change-transform"
-    >
+    <!-- Bottom Awwwards-style Floating Menu Dock with GSAP Scroll Parallax -->
+    <div class="hero-scroll-dock hero-awwwards-dock relative z-20 w-full mx-auto px-2 sm:px-4 pb-3 sm:pb-5 shrink-0 flex flex-col items-center will-change-transform">
       <!-- Floating Dock Container (Snug w-fit, compact gap, NO pills, pure Awwwards layout) -->
       <nav
         class="w-fit max-w-full backdrop-blur-xl bg-[#140e09]/95 border border-[#8b6f4e]/80 rounded-2xl p-1.5 sm:p-2 shadow-[0_16px_40px_rgba(0,0,0,0.85)] flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar"

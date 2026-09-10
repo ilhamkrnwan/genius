@@ -1,6 +1,11 @@
 import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-export { gsap };
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
+export { gsap, ScrollTrigger };
 
 /**
  * Animasi transisi masuk halaman (RPG Scene Entrance)
@@ -101,5 +106,52 @@ export function floatElement(target: HTMLElement | string, distance = 6, duratio
     ease: 'sine.inOut',
     yoyo: true,
     repeat: -1,
+  });
+}
+
+/**
+ * ScrollTrigger reveal untuk heading / card tunggal
+ */
+export function scrollReveal(target: HTMLElement | string, options: gsap.TweenVars = {}) {
+  return gsap.from(target, {
+    scrollTrigger: {
+      trigger: target,
+      start: 'top 85%',
+      toggleActions: 'play none none none',
+      once: true,
+    },
+    opacity: 0,
+    y: 35,
+    duration: 0.7,
+    ease: 'power2.out',
+    clearProps: 'all',
+    ...options,
+  });
+}
+
+/**
+ * ScrollTrigger stagger untuk kumpulan kartu / grid
+ */
+export function scrollStagger(
+  targets: HTMLElement[] | string,
+  trigger?: HTMLElement | string,
+  stagger = 0.12,
+  options: gsap.TweenVars = {}
+) {
+  const trig = trigger || targets;
+  return gsap.from(targets, {
+    scrollTrigger: {
+      trigger: trig,
+      start: 'top 82%',
+      toggleActions: 'play none none none',
+      once: true,
+    },
+    opacity: 0,
+    y: 40,
+    duration: 0.65,
+    stagger,
+    ease: 'power2.out',
+    clearProps: 'all',
+    ...options,
   });
 }

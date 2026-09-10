@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   PhCaretUp,
@@ -8,6 +9,10 @@ import {
   PhGlobe,
   PhMapPin,
 } from '@phosphor-icons/vue';
+import { gsap } from '@/lib/gsap';
+
+const footerRootRef = ref<HTMLElement | null>(null);
+let footerCtx: gsap.Context | null = null;
 
 const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -23,11 +28,35 @@ const navigationLinks = [
   { label: 'Presensi Harian', to: '/presensi' },
   { label: 'Pusat Bantuan', to: '/bantuan' },
 ];
+
+onMounted(() => {
+  footerCtx = gsap.context(() => {
+    gsap.from('.footer-inner-content', {
+      scrollTrigger: {
+        trigger: '.footer-inner-content',
+        start: 'top 92%',
+        toggleActions: 'play none none none',
+        once: true,
+      },
+      y: 25,
+      opacity: 0,
+      duration: 0.7,
+      ease: 'power2.out',
+    });
+  }, footerRootRef.value || undefined);
+});
+
+onUnmounted(() => {
+  footerCtx?.revert();
+});
 </script>
 
 <template>
-  <footer class="relative bg-[#170f08] border-t-4 border-[#5a3a18] text-[#c4b5a2] pt-14 pb-10 px-4 sm:px-6">
-    <div class="max-w-5xl mx-auto">
+  <footer
+    ref="footerRootRef"
+    class="relative bg-[#170f08] border-t-4 border-[#5a3a18] text-[#c4b5a2] pt-14 pb-10 px-4 sm:px-6"
+  >
+    <div class="footer-inner-content max-w-5xl mx-auto will-change-transform">
       <div class="grid grid-cols-1 md:grid-cols-12 gap-8 pb-10 border-b border-[#3a2818]">
         <!-- Brand & Campus Info -->
         <div class="md:col-span-6 space-y-4">

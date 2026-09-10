@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   PhGameController,
@@ -11,8 +12,12 @@ import {
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
 import { soundEngine } from '@/lib/sound';
+import { gsap } from '@/lib/gsap';
 
 const gameStore = useGameStore();
+
+const htpRootRef = ref<HTMLElement | null>(null);
+let htpCtx: gsap.Context | null = null;
 
 const steps = [
   {
@@ -52,13 +57,69 @@ const steps = [
     accent: '#f472b6',
   },
 ];
+
+onMounted(() => {
+  htpCtx = gsap.context(() => {
+    // Header reveal
+    gsap.from('.htp-header', {
+      scrollTrigger: {
+        trigger: '.htp-header',
+        start: 'top 85%',
+        toggleActions: 'play none none none',
+        once: true,
+      },
+      y: 35,
+      opacity: 0,
+      duration: 0.7,
+      ease: 'power2.out',
+    });
+
+    // 4 Steps Cards Stagger
+    gsap.from('.htp-card', {
+      scrollTrigger: {
+        trigger: '.htp-grid',
+        start: 'top 82%',
+        toggleActions: 'play none none none',
+        once: true,
+      },
+      y: 45,
+      opacity: 0,
+      scale: 0.95,
+      duration: 0.65,
+      stagger: 0.12,
+      ease: 'power2.out',
+    });
+
+    // CTA buttons
+    gsap.from('.htp-cta', {
+      scrollTrigger: {
+        trigger: '.htp-cta',
+        start: 'top 88%',
+        toggleActions: 'play none none none',
+        once: true,
+      },
+      y: 25,
+      opacity: 0,
+      duration: 0.6,
+      ease: 'back.out(1.5)',
+    });
+  }, htpRootRef.value || undefined);
+});
+
+onUnmounted(() => {
+  htpCtx?.revert();
+});
 </script>
 
 <template>
-  <section id="how-to-play" class="relative py-16 sm:py-24 px-4 sm:px-6 bg-[#2d1b0e] text-[#f0e0c0]">
+  <section
+    id="how-to-play"
+    ref="htpRootRef"
+    class="relative py-16 sm:py-24 px-4 sm:px-6 bg-[#2d1b0e] text-[#f0e0c0]"
+  >
     <div class="relative z-10 max-w-5xl mx-auto">
-      <!-- Section Header -->
-      <div class="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
+      <!-- Section Header with GSAP Reveal -->
+      <div class="htp-header text-center max-w-2xl mx-auto mb-12 sm:mb-16 will-change-transform">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1e130a] border border-[#7ec850]/50 shadow-md mb-3">
           <PhGameController :size="16" weight="fill" class="text-[#7ec850]" />
           <span class="font-pixel text-[9px] sm:text-[10px] text-[#7ec850] uppercase tracking-wider">
@@ -75,12 +136,12 @@ const steps = [
         </p>
       </div>
 
-      <!-- 4 Steps Cards Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+      <!-- 4 Steps Cards Grid with GSAP Stagger -->
+      <div class="htp-grid grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
         <div
           v-for="step in steps"
           :key="step.num"
-          class="sdv-card-elevated p-6 flex flex-col justify-between relative overflow-hidden group hover:border-[#f0d060] transition-all duration-200"
+          class="htp-card sdv-card-elevated p-6 flex flex-col justify-between relative overflow-hidden group hover:border-[#f0d060] transition-all duration-200 will-change-transform"
         >
           <!-- Background Step Number Watermark -->
           <div class="absolute -right-2 -bottom-4 font-pixel text-7xl font-black text-white/5 select-none pointer-events-none group-hover:text-[#f0d060]/10 transition-colors">
@@ -122,8 +183,8 @@ const steps = [
         </div>
       </div>
 
-      <!-- Quick Action CTA -->
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <!-- Quick Action CTA with GSAP Reveal -->
+      <div class="htp-cta flex flex-col sm:flex-row items-center justify-center gap-4 will-change-transform">
         <RouterLink to="/peta">
           <button
             type="button"
