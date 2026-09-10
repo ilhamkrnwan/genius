@@ -21,6 +21,7 @@ import {
   PhQrCode,
   PhStorefront,
   PhTree,
+  PhCaretDown,
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
 import { AVATAR_OPTIONS, UNU_FACULTIES } from '@/data/mockData';
@@ -63,6 +64,14 @@ const handleAuthComplete = () => {
 const handleSelectQuickAvatar = (avatarId: string) => {
   gameStore.setParticipantInfo({ avatar: avatarId });
   if (gameStore.soundEnabled) soundEngine.playSelect();
+};
+
+const scrollToStory = () => {
+  if (gameStore.soundEnabled) soundEngine.playClick();
+  const el = document.getElementById('story-section');
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth' });
+  }
 };
 
 onMounted(() => {
@@ -264,6 +273,17 @@ onMounted(() => {
             <span>{{ totalStamps > 0 ? 'LANJUTKAN PENJELAJAHAN' : 'MULAI PERJALANAN' }}</span>
           </button>
         </RouterLink>
+
+        <!-- Smooth Scroll to Story/Guide Section Button -->
+        <button
+          type="button"
+          @click="scrollToStory"
+          class="mt-2 text-[9px] sm:text-[10px] font-pixel text-[#f0d060]/90 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer py-1 px-2.5 rounded bg-black/40 border border-[#8b6f4e]/60 hover:border-[#f0d060] shadow-sm active:scale-95"
+          title="Scroll ke panduan petualangan lengkap"
+        >
+          <span>📜 JELAJAHI MISI & PANDUAN</span>
+          <PhCaretDown :size="12" weight="bold" class="animate-bounce text-[#7ec850]" />
+        </button>
       </div>
     </div>
 
