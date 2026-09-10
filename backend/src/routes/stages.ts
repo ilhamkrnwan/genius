@@ -3,6 +3,7 @@ import { db } from "../db";
 import { stages } from "../db/schema";
 import { eq, asc } from "drizzle-orm";
 import { requireAdmin } from "../middleware/auth";
+import { OFFICIAL_RUNDOWN_LIST } from "../data/officialRundown";
 
 export const stageRoutes = new Elysia({
   prefix: "/api/stages",
@@ -79,26 +80,88 @@ export const stageRoutes = new Elysia({
     }
   )
 
+  // GET /api/stages/rundown — Ambil 34 Agenda Resmi Rundown 3 Hari GENIUS 2026
+  .get(
+    "/rundown",
+    async ({ query }) => {
+      let list = OFFICIAL_RUNDOWN_LIST;
+
+      if (query.day) {
+        const d = Number(query.day);
+        list = list.filter((item) => item.day === d);
+      }
+
+      if (query.useApp !== undefined && query.useApp !== "") {
+        const isApp = query.useApp === "true";
+        list = list.filter((item) => item.useApp === isApp);
+      }
+
+      if (query.pilar) {
+        const p = query.pilar.toLowerCase();
+        list = list.filter((item) => item.pilar.toLowerCase().includes(p));
+      }
+
+      if (query.search) {
+        const q = query.search.toLowerCase().trim();
+        list = list.filter(
+          (item) =>
+            item.name.toLowerCase().includes(q) ||
+            item.description.toLowerCase().includes(q) ||
+            item.location.toLowerCase().includes(q) ||
+            item.pic.toLowerCase().includes(q) ||
+            (item.speaker && item.speaker.toLowerCase().includes(q))
+        );
+      }
+
+      return {
+        success: true,
+        data: list,
+        total: list.length,
+        stats: {
+          totalAgenda: OFFICIAL_RUNDOWN_LIST.length,
+          day1Count: OFFICIAL_RUNDOWN_LIST.filter((r) => r.day === 1).length,
+          day2Count: OFFICIAL_RUNDOWN_LIST.filter((r) => r.day === 2).length,
+          day3Count: OFFICIAL_RUNDOWN_LIST.filter((r) => r.day === 3).length,
+          appIntegratedCount: OFFICIAL_RUNDOWN_LIST.filter((r) => r.useApp).length,
+        },
+      };
+    },
+    {
+      query: t.Object({
+        day: t.Optional(t.String()),
+        useApp: t.Optional(t.String()),
+        pilar: t.Optional(t.String()),
+        search: t.Optional(t.String()),
+      }),
+    }
+  )
+
   // POST /api/stages/sync-roadmap — Seed/Sync Official 3-Day Event Roadmap
   .post("/sync-roadmap", async () => {
     const officialStages = [
       {
         order: 1,
-        name: "DAY 1: THE INCUBATION — Fondasi Karakter & Visi 4 Tahun",
-        description: "Orientasi mahasiswa baru, aktivasi profil RPG, penyelesaian 16 skenario karakter, pemetaan radar 5 traits, dan ulasan kepribadian AI Senior Mentor.",
+        name: "DAY 1: THE INCUBATION & ONBOARDING (22 Sept 2026)",
+        description: "Check-In QR presensi, Opening Ceremony akbar, FGD Intention & Agent of Change, Sesi Hubbul Wathan, Literasi Keuangan, Prodi Connect & HMP, serta Daily Check-Out kuesioner.",
         status: "ACTIVE" as const,
+        startTime: new Date("2026-09-22T07:00:00+07:00"),
+        endTime: new Date("2026-09-22T16:30:00+07:00"),
       },
       {
         order: 2,
-        name: "DAY 2: 9-FLOOR EXPLORATION & MULTI-GAME ARENA",
-        description: "Eksplorasi tim di seluruh 9 lantai kampus UNU Yogyakarta. Scan QR pos ruangan untuk membuka 6 mini-game arena: Team Quiz, Speed Reflex, Memory Match, AI Canvas Drawing, Logic Cipher, dan Floor 9 Boss Raid.",
+        name: "DAY 2: 9-FLOOR CAMPUS QUEST & EXPLORATION (23 Sept 2026)",
+        description: "Check-In pagi, Literasi AI & Etika Siber, Simulasi Industri 5.0, Campus Quest 1 & 2 di Lt.1-9 kampus, Sesi Kepesantrenan & Aswaja, serta Check-Out & Leaderboard skor sementara.",
         status: "UPCOMING" as const,
+        startTime: new Date("2026-09-23T07:00:00+07:00"),
+        endTime: new Date("2026-09-23T16:30:00+07:00"),
       },
       {
         order: 3,
-        name: "DAY 3: GRAND FINALE & CORONATION (Coming Soon ⏳)",
-        description: "Rekapitulasi akumulasi poin akhir, penobatan Juara Umum GENIUS 2026, penganugerahan 99 Gelar Codex Tertinggi, dan inisiasi resmi sivitas akademika.",
+        name: "DAY 3: GRAND QUEST, EXPO ORMAWA & CLOSING (24 Sept 2026)",
+        description: "Panduan SIAKAD & Akademik, UNU Berdampak (SDGs), Refleksi Impact, UKM/Ormawa Expo 19 Stan di Lt.3-5, Game Kolosal Angkatan, serta Awarding & Closing Ceremony akbar.",
         status: "UPCOMING" as const,
+        startTime: new Date("2026-09-24T07:00:00+07:00"),
+        endTime: new Date("2026-09-24T16:30:00+07:00"),
       },
     ];
 
@@ -112,6 +175,8 @@ export const stageRoutes = new Elysia({
             name: def.name,
             description: def.description,
             status: existing.status || def.status,
+            startTime: def.startTime,
+            endTime: def.endTime,
             updatedAt: new Date(),
           })
           .where(eq(stages.id, existing.id))
@@ -125,7 +190,7 @@ export const stageRoutes = new Elysia({
 
     return {
       success: true,
-      message: "Berhasil menyinkronkan 3-Day Event Roadmap resmi GENIUS 2026!",
+      message: "Berhasil menyinkronkan 3-Day Event Roadmap & Timeline resmi GENIUS 2026!",
       data: results,
     };
   })
