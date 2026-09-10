@@ -75,14 +75,16 @@ const scrollToStory = () => {
 };
 
 // ==========================================
-// 🌌 PARALLAX DEPTH SYSTEM (Mouse & Scroll)
+// 🌌 SILKY-SMOOTH PARALLAX SYSTEM (RAF Lerp)
 // ==========================================
-const heroContainerRef = ref<HTMLElement | null>(null);
-const bgLayerRef = ref<HTMLElement | null>(null);
-const ambientLayerRef = ref<HTMLElement | null>(null);
-const particlesLayerRef = ref<HTMLElement | null>(null);
-const contentLayerRef = ref<HTMLElement | null>(null);
-const dockLayerRef = ref<HTMLElement | null>(null);
+const bgScrollRef = ref<HTMLElement | null>(null);
+const bgMouseRef = ref<HTMLElement | null>(null);
+const ambientScrollRef = ref<HTMLElement | null>(null);
+const ambientMouseRef = ref<HTMLElement | null>(null);
+const particlesMouseRef = ref<HTMLElement | null>(null);
+const contentScrollRef = ref<HTMLElement | null>(null);
+const contentMouseRef = ref<HTMLElement | null>(null);
+const dockScrollRef = ref<HTMLElement | null>(null);
 
 const particleStyles = [
   'top-[18%] left-[10%] w-2 h-2',
@@ -95,104 +97,77 @@ const particleStyles = [
   'top-[62%] right-[24%] w-2 h-2',
 ];
 
-let quickBgX: ((val: number) => void) | null = null;
-let quickBgY: ((val: number) => void) | null = null;
-let quickAmbientX: ((val: number) => void) | null = null;
-let quickAmbientY: ((val: number) => void) | null = null;
-let quickParticlesX: ((val: number) => void) | null = null;
-let quickParticlesY: ((val: number) => void) | null = null;
-let quickContentX: ((val: number) => void) | null = null;
-let quickContentY: ((val: number) => void) | null = null;
-let quickContentRotX: ((val: number) => void) | null = null;
-let quickContentRotY: ((val: number) => void) | null = null;
+let targetMouseX = 0;
+let targetMouseY = 0;
+let currentMouseX = 0;
+let currentMouseY = 0;
 
-const setupParallax = () => {
-  if (bgLayerRef.value) {
-    quickBgX = gsap.quickTo(bgLayerRef.value, 'x', { duration: 0.85, ease: 'power2.out' });
-    quickBgY = gsap.quickTo(bgLayerRef.value, 'y', { duration: 0.85, ease: 'power2.out' });
-  }
-  if (ambientLayerRef.value) {
-    quickAmbientX = gsap.quickTo(ambientLayerRef.value, 'x', { duration: 0.65, ease: 'power2.out' });
-    quickAmbientY = gsap.quickTo(ambientLayerRef.value, 'y', { duration: 0.65, ease: 'power2.out' });
-  }
-  if (particlesLayerRef.value) {
-    quickParticlesX = gsap.quickTo(particlesLayerRef.value, 'x', { duration: 0.5, ease: 'power1.out' });
-    quickParticlesY = gsap.quickTo(particlesLayerRef.value, 'y', { duration: 0.5, ease: 'power1.out' });
-  }
-  if (contentLayerRef.value) {
-    quickContentX = gsap.quickTo(contentLayerRef.value, 'x', { duration: 0.55, ease: 'power2.out' });
-    quickContentY = gsap.quickTo(contentLayerRef.value, 'y', { duration: 0.55, ease: 'power2.out' });
-    quickContentRotX = gsap.quickTo(contentLayerRef.value, 'rotationX', { duration: 0.65, ease: 'power2.out' });
-    quickContentRotY = gsap.quickTo(contentLayerRef.value, 'rotationY', { duration: 0.65, ease: 'power2.out' });
-  }
-};
+let targetScrollY = 0;
+let currentScrollY = 0;
+
+let rafId: number | null = null;
 
 const handleMouseMove = (e: MouseEvent) => {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  const nx = (e.clientX / width - 0.5) * 2; // -1 to 1
-  const ny = (e.clientY / height - 0.5) * 2; // -1 to 1
-
-  // Background moves gently opposite to cursor for deep perspective
-  quickBgX?.(-nx * 22);
-  quickBgY?.(-ny * 16);
-
-  // Ambient effects (birds/clouds) move slightly with cursor
-  quickAmbientX?.(nx * 14);
-  quickAmbientY?.(ny * 10);
-
-  // Sparkle particles move with higher responsiveness
-  quickParticlesX?.(nx * 28);
-  quickParticlesY?.(ny * 22);
-
-  // Main hero content gently tilts in 3D perspective
-  quickContentX?.(nx * 7);
-  quickContentY?.(ny * 5);
-  quickContentRotY?.(nx * 3.5);
-  quickContentRotX?.(-ny * 3.5);
+  const nx = (e.clientX / window.innerWidth - 0.5) * 2;
+  const ny = (e.clientY / window.innerHeight - 0.5) * 2;
+  targetMouseX = Math.max(-1, Math.min(1, nx));
+  targetMouseY = Math.max(-1, Math.min(1, ny));
 };
 
 const handleMouseLeave = () => {
-  quickBgX?.(0);
-  quickBgY?.(0);
-  quickAmbientX?.(0);
-  quickAmbientY?.(0);
-  quickParticlesX?.(0);
-  quickParticlesY?.(0);
-  quickContentX?.(0);
-  quickContentY?.(0);
-  quickContentRotX?.(0);
-  quickContentRotY?.(0);
+  targetMouseX = 0;
+  targetMouseY = 0;
 };
 
 const handleScroll = () => {
-  const scrollY = window.scrollY;
-  if (scrollY > window.innerHeight * 1.5) return;
+  targetScrollY = window.scrollY;
+};
 
-  // Background shifts gently downwards (depth parallax)
-  if (bgLayerRef.value) {
-    gsap.set(bgLayerRef.value, {
-      y: scrollY * 0.38,
-    });
+const renderLoop = () => {
+  // Ultra-smooth lerp damping (0.05)
+  currentMouseX += (targetMouseX - currentMouseX) * 0.05;
+  currentMouseY += (targetMouseY - currentMouseY) * 0.05;
+  currentScrollY += (targetScrollY - currentScrollY) * 0.07;
+
+  // 1. Background (Separated Scroll & Mouse Layers)
+  if (bgScrollRef.value) {
+    bgScrollRef.value.style.transform = `translate3d(0, ${(currentScrollY * 0.35).toFixed(2)}px, 0)`;
+  }
+  if (bgMouseRef.value) {
+    bgMouseRef.value.style.transform = `translate3d(${(currentMouseX * -18).toFixed(2)}px, ${(currentMouseY * -12).toFixed(2)}px, 0)`;
   }
 
-  // Hero main content lifts up and fades smoothly
-  if (contentLayerRef.value) {
-    const opacity = Math.max(0, 1 - scrollY / 420);
-    gsap.set(contentLayerRef.value, {
-      y: -scrollY * 0.22,
-      opacity,
-    });
+  // 2. Ambient (Birds & Clouds)
+  if (ambientScrollRef.value) {
+    ambientScrollRef.value.style.transform = `translate3d(0, ${(currentScrollY * 0.18).toFixed(2)}px, 0)`;
+  }
+  if (ambientMouseRef.value) {
+    ambientMouseRef.value.style.transform = `translate3d(${(currentMouseX * 12).toFixed(2)}px, ${(currentMouseY * 8).toFixed(2)}px, 0)`;
   }
 
-  // Floating dock fades as user scrolls past
-  if (dockLayerRef.value) {
-    const opacity = Math.max(0, 1 - scrollY / 260);
-    gsap.set(dockLayerRef.value, {
-      y: scrollY * 0.12,
-      opacity,
-    });
+  // 3. Floating Particles
+  if (particlesMouseRef.value) {
+    particlesMouseRef.value.style.transform = `translate3d(${(currentMouseX * 22).toFixed(2)}px, ${(currentMouseY * 16).toFixed(2)}px, 0)`;
   }
+
+  // 4. Content Scroll & Mouse 3D Tilt
+  if (contentScrollRef.value) {
+    const fade = Math.max(0, 1 - currentScrollY / 420);
+    contentScrollRef.value.style.transform = `translate3d(0, ${(-currentScrollY * 0.22).toFixed(2)}px, 0)`;
+    contentScrollRef.value.style.opacity = fade.toFixed(3);
+  }
+  if (contentMouseRef.value) {
+    contentMouseRef.value.style.transform = `translate3d(${(currentMouseX * 5).toFixed(2)}px, ${(currentMouseY * 3.5).toFixed(2)}px, 0) rotateY(${(currentMouseX * 2.2).toFixed(2)}deg) rotateX(${(-currentMouseY * 2.2).toFixed(2)}deg)`;
+  }
+
+  // 5. Dock
+  if (dockScrollRef.value) {
+    const dockFade = Math.max(0, 1 - currentScrollY / 260);
+    dockScrollRef.value.style.transform = `translate3d(0, ${(currentScrollY * 0.1).toFixed(2)}px, 0)`;
+    dockScrollRef.value.style.opacity = dockFade.toFixed(3);
+  }
+
+  rafId = requestAnimationFrame(renderLoop);
 };
 
 onMounted(() => {
@@ -204,49 +179,68 @@ onMounted(() => {
     .from('.hero-cta-main', { scale: 0.92, y: 15, opacity: 0, duration: 0.4, ease: 'back.out(1.8)' }, '-=0.2')
     .from('.hero-awwwards-dock', { y: 25, opacity: 0, duration: 0.5, ease: 'back.out(1.2)' }, '-=0.2');
 
-  setupParallax();
   window.addEventListener('scroll', handleScroll, { passive: true });
+  rafId = requestAnimationFrame(renderLoop);
 });
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+  }
 });
 </script>
 
 <template>
   <div
-    ref="heroContainerRef"
     @mousemove="handleMouseMove"
     @mouseleave="handleMouseLeave"
     class="relative w-full h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-hidden select-none"
   >
-    <!-- Background Layer: Bright & Clearly Visible UNU Campus 9 Floors Building with Parallax -->
+    <!-- Background: Scroll Parallax Wrapper -->
     <div
-      ref="bgLayerRef"
-      class="absolute -inset-[6%] z-0 pointer-events-none will-change-transform scale-105"
+      ref="bgScrollRef"
+      class="absolute -inset-[8%] z-0 pointer-events-none will-change-transform"
     >
-      <img
-        src="/unu-hero.jpeg"
-        alt="Gedung Kampus Terpadu UNU Yogyakarta"
-        class="w-full h-full object-cover object-center filter brightness-[0.88] contrast-[1.05] saturate-[1.05]"
-      />
-      <!-- Soft, translucent warm gradient overlay so building stays clearly visible -->
-      <div class="absolute inset-0 bg-gradient-to-b from-[#120b06]/75 via-transparent to-[#160d07]/90 pointer-events-none" />
-      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(18,11,6,0.4)_100%)] pointer-events-none" />
+      <!-- Background: Mouse Parallax Inner -->
+      <div
+        ref="bgMouseRef"
+        class="w-full h-full will-change-transform scale-105"
+      >
+        <img
+          src="/unu-hero.jpeg"
+          alt="Gedung Kampus Terpadu UNU Yogyakarta"
+          class="w-full h-full object-cover object-center filter brightness-[0.88] contrast-[1.05] saturate-[1.05]"
+        />
+        <!-- Soft, translucent warm gradient overlay so building stays clearly visible -->
+        <div class="absolute inset-0 bg-gradient-to-b from-[#120b06]/75 via-transparent to-[#160d07]/90 pointer-events-none" />
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(18,11,6,0.4)_100%)] pointer-events-none" />
+      </div>
     </div>
 
-    <!-- Ambient Nature Effects: Birds & Clouds with Parallax Depth -->
-    <div ref="ambientLayerRef" class="absolute inset-0 z-5 pointer-events-none will-change-transform">
-      <AmbientEffects :active="Boolean(gameStore.ambientEffects)" />
+    <!-- Ambient Layer: Scroll & Mouse Separated -->
+    <div
+      ref="ambientScrollRef"
+      class="absolute inset-0 z-5 pointer-events-none will-change-transform"
+    >
+      <div
+        ref="ambientMouseRef"
+        class="w-full h-full will-change-transform"
+      >
+        <AmbientEffects :active="Boolean(gameStore.ambientEffects)" />
+      </div>
     </div>
 
-    <!-- Floating RPG Gold Dust Particles Parallax Layer -->
-    <div ref="particlesLayerRef" class="absolute inset-0 z-10 pointer-events-none overflow-hidden will-change-transform">
+    <!-- Floating RPG Gold Dust Particles -->
+    <div
+      ref="particlesMouseRef"
+      class="absolute inset-0 z-10 pointer-events-none overflow-hidden will-change-transform"
+    >
       <div
         v-for="(pos, pIdx) in particleStyles"
         :key="pIdx"
         :class="[
-          'absolute rounded-full bg-[#f0d060]/35 shadow-[0_0_8px_rgba(240,208,96,0.7)] animate-pulse',
+          'absolute rounded-full bg-[#f0d060]/35 shadow-[0_0_8px_rgba(240,208,96,0.7)]',
           pos
         ]"
       />
@@ -339,11 +333,16 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Main Menu Center Content with 3D Tilt Parallax -->
+    <!-- Main Content: Scroll Parallax Wrapper -->
     <div
-      ref="contentLayerRef"
-      class="relative z-10 w-full max-w-lg mx-auto px-3 sm:px-6 my-auto flex flex-col items-center justify-center text-center will-change-transform"
+      ref="contentScrollRef"
+      class="relative z-10 w-full my-auto will-change-transform"
     >
+      <!-- Main Content: Mouse 3D Tilt Inner -->
+      <div
+        ref="contentMouseRef"
+        class="w-full max-w-lg mx-auto px-3 sm:px-6 flex flex-col items-center justify-center text-center will-change-transform"
+      >
       <!-- Grand Title -->
       <div class="hero-title-wrap space-y-0.5 sm:space-y-1 mb-2.5 sm:mb-4">
         <h1
@@ -439,10 +438,11 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
+    </div>
 
     <!-- Bottom Awwwards-style Floating Menu Dock -->
     <div
-      ref="dockLayerRef"
+      ref="dockScrollRef"
       class="hero-awwwards-dock relative z-20 w-full mx-auto px-2 sm:px-4 pb-3 sm:pb-5 shrink-0 flex flex-col items-center will-change-transform"
     >
       <!-- Floating Dock Container (Snug w-fit, compact gap, NO pills, pure Awwwards layout) -->
