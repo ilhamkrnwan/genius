@@ -131,7 +131,7 @@ onMounted(() => {
       .from('.hero-title-wrap', { y: 25, opacity: 0, duration: 0.55, ease: 'back.out(1.4)' }, '-=0.2')
       .from('.hero-char-box', { y: 20, opacity: 0, duration: 0.45 }, '-=0.25')
       .from('.hero-cta-main', { scale: 0.92, y: 15, opacity: 0, duration: 0.4, ease: 'back.out(1.8)' }, '-=0.2')
-      .from('.hero-awwwards-dock', { y: 25, opacity: 0, duration: 0.5, ease: 'back.out(1.2)' }, '-=0.2');
+      .from('.hero-awwwards-dock', { y: 25, opacity: 0, duration: 0.5, ease: 'back.out(1.2)', clearProps: 'all' }, '-=0.2');
 
     // 2. Native, buttery smooth GSAP ScrollTrigger Scrub Parallax
     gsap.to('.hero-scroll-bg', {
@@ -157,6 +157,7 @@ onMounted(() => {
       ease: 'none',
     });
 
+    // Dock slides gently down but stays visible (NO opacity fade to avoid conflict with entrance anim)
     gsap.to('.hero-scroll-dock', {
       scrollTrigger: {
         trigger: heroRootRef.value,
@@ -164,8 +165,7 @@ onMounted(() => {
         end: 'bottom 65%',
         scrub: 0.6,
       },
-      yPercent: 12,
-      opacity: 0,
+      yPercent: 10,
       ease: 'none',
     });
   }, heroRootRef.value || undefined);
