@@ -21,8 +21,9 @@ import {
 } from '@/data/mockData';
 import { soundEngine } from '@/lib/sound';
 import { LeaderboardUser, LeaderboardGroup } from '@/types/game';
-import { onMounted } from 'vue';
+import { onMounted, watch, nextTick } from 'vue';
 import { api } from '@/lib/api';
+import { animatePageEnter, staggerFadeUp, bouncePop } from '@/lib/gsap';
 
 const gameStore = useGameStore();
 
@@ -32,14 +33,27 @@ const expandedGroupId = ref<string | null>('group-03');
 const liveLeaderboard = ref<any>(null);
 
 onMounted(async () => {
+  animatePageEnter('.lb-header', { y: 20, duration: 0.4 });
+  bouncePop('.lb-user-banner', { delay: 0.1 });
+  staggerFadeUp('.lb-item-card', 0.03, { delay: 0.2 });
+
   try {
     const res = await api.getLeaderboard(50);
     if (res.success && res.data) {
       liveLeaderboard.value = res.data;
+      nextTick(() => {
+        staggerFadeUp('.lb-item-card', 0.03);
+      });
     }
   } catch (err) {
     console.warn('[LeaderboardView] live backend fetch fallback:', err);
   }
+});
+
+watch(activeTab, () => {
+  nextTick(() => {
+    staggerFadeUp('.lb-item-card', 0.03);
+  });
 });
 
 const getAvatarImage = (avatarId: string) => {
@@ -168,7 +182,7 @@ const currentUserRankInfo = computed(() => {
 
     <main class="w-full max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-6 flex-1 space-y-4 overflow-x-hidden">
       <!-- Simple Header -->
-      <div class="flex items-center justify-between gap-3">
+      <div class="lb-header flex items-center justify-between gap-3">
         <div>
           <h1 class="font-pixel text-lg sm:text-2xl font-bold text-[#f0d060] flex items-center gap-2">
             <PhTrophy :size="24" weight="fill" class="text-[#f0d060] shrink-0" />
@@ -194,7 +208,7 @@ const currentUserRankInfo = computed(() => {
       <!-- Current User Highlight Card -->
       <div
         v-if="currentUserRankInfo"
-        class="sdv-card-gold p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        class="lb-user-banner sdv-card-gold p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
       >
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-12 h-12 rounded-lg overflow-hidden bg-[#170f07] border-2 border-[#f0d060] shrink-0 relative">
@@ -299,7 +313,7 @@ const currentUserRankInfo = computed(() => {
             v-for="user in filteredIndividuals"
             :key="user.id"
             :class="[
-              'p-3 rounded-xl border flex items-center justify-between gap-2.5 transition-all w-full',
+              'lb-item-card p-3 rounded-xl border flex items-center justify-between gap-2.5 transition-all w-full',
               user.isCurrentUser
                 ? 'bg-[#1f3a2b] border-[#f0d060] shadow'
                 : 'bg-[#170f07] border-[#3d2b1e] hover:border-[#5a3a18]'
@@ -386,7 +400,7 @@ const currentUserRankInfo = computed(() => {
           v-for="group in groupList"
           :key="group.id"
           :class="[
-            'sdv-card transition-all overflow-hidden w-full',
+            'lb-item-card sdv-card transition-all overflow-hidden w-full',
             group.members.some((m) => m.isCurrentUser) ? 'border-[#f0d060]' : ''
           ]"
         >

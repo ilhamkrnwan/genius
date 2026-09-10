@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import AmbientEffects from '@/components/ambient/AmbientEffects.vue';
 import {
   PhSparkle,
   PhGameController,
@@ -19,10 +20,12 @@ import {
   PhCalendarCheck,
   PhQrCode,
   PhStorefront,
+  PhTree,
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
 import { AVATAR_OPTIONS, UNU_FACULTIES } from '@/data/mockData';
 import { soundEngine } from '@/lib/sound';
+import { gsap, floatElement } from '@/lib/gsap';
 
 const gameStore = useGameStore();
 
@@ -61,6 +64,16 @@ const handleSelectQuickAvatar = (avatarId: string) => {
   gameStore.setParticipantInfo({ avatar: avatarId });
   if (gameStore.soundEnabled) soundEngine.playSelect();
 };
+
+onMounted(() => {
+  const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+
+  tl.from('.hero-topbar', { y: -25, opacity: 0, duration: 0.55 })
+    .from('.hero-title-wrap', { y: 25, opacity: 0, duration: 0.55, ease: 'back.out(1.4)' }, '-=0.2')
+    .from('.hero-char-box', { y: 20, opacity: 0, duration: 0.45 }, '-=0.25')
+    .from('.hero-cta-main', { scale: 0.92, y: 15, opacity: 0, duration: 0.4, ease: 'back.out(1.8)' }, '-=0.2')
+    .from('.hero-awwwards-dock', { y: 25, opacity: 0, duration: 0.5, ease: 'back.out(1.2)' }, '-=0.2');
+});
 </script>
 
 <template>
@@ -69,7 +82,7 @@ const handleSelectQuickAvatar = (avatarId: string) => {
     <div class="absolute inset-0 z-0 pointer-events-none">
       <img
         src="/unu-hero.jpeg"
-        alt="Gedung Kampus UNU Yogyakarta 9 Lantai"
+        alt="Gedung Kampus Terpadu UNU Yogyakarta"
         class="w-full h-full object-cover object-center filter brightness-[0.88] contrast-[1.05] saturate-[1.05] animate-ken-burns"
       />
       <!-- Soft, translucent warm gradient overlay so building stays clearly visible -->
@@ -77,19 +90,23 @@ const handleSelectQuickAvatar = (avatarId: string) => {
       <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_50%,_rgba(18,11,6,0.4)_100%)] pointer-events-none" />
     </div>
 
+    <!-- Ambient Nature Effects: Birds & Clouds -->
+    <AmbientEffects :active="Boolean(gameStore.ambientEffects)" />
+
     <!-- Top Bar: Institutional Logo & Audio Controls -->
-    <div class="relative z-20 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-2 sm:pt-4 flex items-center justify-between gap-2 shrink-0">
-      <!-- Partner / Institution Badge -->
-      <div class="backdrop-blur-md bg-[#140e0a]/85 border border-[#f0d060]/50 rounded-full px-3 sm:px-5 py-1 sm:py-1.5 flex items-center gap-2 sm:gap-3 shadow-lg">
+    <div class="hero-topbar relative z-20 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-2 sm:pt-4 flex items-center justify-between gap-2 shrink-0">
+      <!-- Partner / Institution Badge (Logo only on mobile, expands with text on desktop) -->
+      <div
+        class="backdrop-blur-md bg-[#140e0a]/85 border border-[#f0d060]/50 rounded-full p-1 sm:px-4 sm:py-1.5 flex items-center gap-2 sm:gap-3 shadow-lg shrink-0"
+        title="UNU Yogyakarta — Orientasi Mahasiswa Baru 2026"
+      >
         <img
           src="/unu.png"
           alt="Logo UNU Yogyakarta"
-          width="90"
-          height="32"
-          class="h-6 sm:h-8 w-auto object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+          class="h-6 sm:h-8 w-6 sm:w-auto object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
         />
-        <div class="w-[1px] h-4 sm:h-6 bg-[#f0d060]/40" />
-        <div class="flex flex-col text-left leading-none">
+        <div class="hidden sm:block w-[1px] h-4 sm:h-6 bg-[#f0d060]/40" />
+        <div class="hidden sm:flex flex-col text-left leading-none">
           <span class="font-pixel text-[8px] sm:text-[10px] text-[#f0d060] font-bold tracking-wider">
             UNU YOGYAKARTA
           </span>
@@ -101,35 +118,20 @@ const handleSelectQuickAvatar = (avatarId: string) => {
 
       <!-- Top Right Quick Controls & Student Profile -->
       <div class="flex items-center gap-1.5 sm:gap-2">
-        <!-- Student Identity Pill (Click to edit profile) -->
+        <!-- Student Profile Button (Square box matching buttons beside it) -->
         <button
           type="button"
           @click="openProfileModal"
-          class="backdrop-blur-md bg-[#140e0a]/85 border border-[#8b6f4e] hover:border-[#f0d060] rounded-full px-2 sm:px-3 py-1 flex items-center gap-1.5 shadow-md cursor-pointer active:scale-95 transition-all"
-          title="Lihat & Ubah Profil Mahasiswa"
+          class="p-1 sm:p-1.5 bg-[#2d1b0e]/90 border border-[#8b6f4e] hover:border-[#f0d060] rounded-lg text-[#f0d060] transition-all shadow-md active:scale-95 cursor-pointer flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 shrink-0"
+          :title="`Profil: ${gameStore.participant.name || 'Mahasiswa Baru'} (Klik untuk ubah)`"
         >
-          <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-[#f0d060] overflow-hidden bg-black/40 shrink-0">
+          <div class="w-full h-full rounded border border-[#f0d060]/70 overflow-hidden bg-black/40">
             <img
               :src="gameStore.participant.avatar === 'character_cewek' ? '/character-cewek-avatar.png' : '/character-cowok-avatar.png'"
               alt="Avatar"
               class="w-full h-full object-cover"
             />
           </div>
-          <div class="text-left leading-tight hidden xs:block">
-            <span class="font-pixel text-[7.5px] sm:text-[8.5px] text-[#fef08a] block truncate max-w-[100px]">
-              {{ gameStore.participant.name || 'Mahasiswa' }}
-            </span>
-          </div>
-        </button>
-
-        <!-- Switch Account / Re-login Button -->
-        <button
-          type="button"
-          @click="openLoginModal"
-          class="px-2 py-1.5 bg-[#2d1b0e]/90 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] rounded-lg text-[8px] sm:text-[8.5px] font-pixel transition-all shadow-md active:scale-95 cursor-pointer"
-          title="Ganti Akun Maba / Masuk Kembali"
-        >
-          GANTI
         </button>
 
         <button
@@ -151,6 +153,20 @@ const handleSelectQuickAvatar = (avatarId: string) => {
           <PhTelevision :size="16" weight="bold" />
         </button>
 
+        <button
+          type="button"
+          @click="gameStore.toggleAmbient"
+          :title="gameStore.ambientEffects ? 'Matikan Efek Alam (Burung & Awan)' : 'Nyalakan Efek Alam (Burung & Awan)'"
+          :class="[
+            'p-1.5 sm:p-2 bg-[#2d1b0e]/90 border rounded-lg transition-all shadow-md active:scale-95 cursor-pointer',
+            gameStore.ambientEffects
+              ? 'border-[#7ec850] text-[#7ec850]'
+              : 'border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060]'
+          ]"
+        >
+          <PhTree :size="16" weight="bold" />
+        </button>
+
         <RouterLink to="/bantuan" class="inline-block">
           <button
             type="button"
@@ -166,16 +182,8 @@ const handleSelectQuickAvatar = (avatarId: string) => {
 
     <!-- Main Menu Center Content -->
     <div class="relative z-10 w-full max-w-lg mx-auto px-3 sm:px-6 my-auto flex flex-col items-center justify-center text-center">
-      <!-- Top Announcement Badge -->
-      <div class="mb-1.5 sm:mb-2 inline-block">
-        <div class="backdrop-blur-md bg-[#14230f]/90 border border-[#7ec850] text-[#7ec850] font-pixel text-[8px] sm:text-[10px] px-3 py-1 rounded-full tracking-widest uppercase shadow-md flex items-center gap-1.5">
-          <PhSparkle :size="12" weight="fill" class="text-[#f0d060] animate-spin" />
-          <span>ORIENTASI MAHASISWA BARU 2026</span>
-        </div>
-      </div>
-
       <!-- Grand Title -->
-      <div class="space-y-0.5 sm:space-y-1 mb-2.5 sm:mb-4">
+      <div class="hero-title-wrap space-y-0.5 sm:space-y-1 mb-2.5 sm:mb-4">
         <h1
           class="font-pixel text-3xl sm:text-5xl md:text-6xl font-extrabold text-[#f0d060] tracking-[4px] sm:tracking-[10px] animate-title-pulse drop-shadow-[0_6px_16px_rgba(0,0,0,0.9)]"
           style="text-shadow: 2px 2px 0 #6b4f2e, 4px 4px 0 #1b120a, 0 0 20px rgba(240, 208, 96, 0.4);"
@@ -189,15 +197,15 @@ const handleSelectQuickAvatar = (avatarId: string) => {
           UPGRADE NEW YOU
         </div>
         <p
-          class="font-pixel text-[8px] sm:text-[10px] text-[#a0d870] tracking-[1px] pt-0.5"
+          class="font-pixel text-[8px] sm:text-[10px] text-[#a0d870] tracking-[1px] pt-0.5 uppercase"
           style="text-shadow: 1px 1px 3px rgba(0,0,0,0.9);"
         >
-          EKSPLORASI GEDUNG 9 LANTAI • 18 CORNER KARAKTER
+          ORIENTASI MAHASISWA BARU 2026
         </p>
       </div>
 
       <!-- Character Quick-Select Bar -->
-      <div class="backdrop-blur-md bg-[#19120c]/90 border border-[#8b6f4e] rounded-xl p-2 mb-2.5 sm:mb-3 max-w-sm w-full shadow-md">
+      <div class="hero-char-box backdrop-blur-md bg-[#19120c]/90 border border-[#8b6f4e] rounded-xl p-2 mb-2.5 sm:mb-3 max-w-sm w-full shadow-md">
         <div class="flex items-center justify-between gap-2 px-1 mb-1.5">
           <div class="min-w-0 text-left">
             <span class="font-pixel text-[8px] text-[#f0d060] uppercase block">
@@ -207,13 +215,6 @@ const handleSelectQuickAvatar = (avatarId: string) => {
               {{ gameStore.participant.name || 'Mahasiswa Baru' }}
             </span>
           </div>
-          <button
-            type="button"
-            @click="openProfileModal"
-            class="text-[8.5px] font-pixel text-[#f0d060] hover:text-white bg-[#3d2b1e] border border-[#8b6f4e] hover:border-[#f0d060] px-2 py-0.5 rounded cursor-pointer transition-colors shrink-0"
-          >
-            UBAH PROFIL
-          </button>
         </div>
 
         <div class="grid grid-cols-2 gap-1.5">
@@ -250,108 +251,100 @@ const handleSelectQuickAvatar = (avatarId: string) => {
         </div>
       </div>
 
-      <!-- Main Action Buttons Stack -->
-      <div class="w-full max-w-sm flex flex-col items-center gap-2">
+      <!-- Main Action Button -->
+      <div class="w-full max-w-sm flex flex-col items-center">
         <!-- Primary Action Button -->
-        <RouterLink to="/play" class="w-full">
+        <RouterLink to="/play" class="hero-cta-main w-full">
           <button
             type="button"
             @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-            class="w-full py-2.5 sm:py-3.5 px-4 text-xs sm:text-sm font-pixel font-bold uppercase tracking-wider rpg-btn-primary flex items-center justify-center gap-2 shadow-lg"
+            class="w-full py-2.5 sm:py-3.5 px-4 text-xs sm:text-sm font-pixel font-bold uppercase tracking-wider rpg-btn-primary flex items-center justify-center gap-2 shadow-lg cursor-pointer"
           >
             <PhGameController :size="18" weight="bold" />
             <span>{{ totalStamps > 0 ? 'LANJUTKAN PENJELAJAHAN' : 'MULAI PERJALANAN' }}</span>
           </button>
         </RouterLink>
-
-        <!-- Secondary Buttons Grid: Presensi, Ormawa, Paspor & Leaderboard -->
-        <div class="grid grid-cols-4 gap-1.5 w-full">
-          <!-- Presensi Button -->
-          <RouterLink to="/presensi" class="w-full">
-            <button
-              type="button"
-              @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-              :class="[
-                'w-full py-2 px-1 text-[8px] sm:text-[9px] font-pixel font-bold uppercase tracking-wider rounded-lg border-2 flex flex-col items-center justify-center gap-1 shadow transition-all active:scale-95 cursor-pointer',
-                isCheckedInToday
-                  ? 'bg-[#183915] border-[#22c55e] text-[#86efac]'
-                  : 'bg-[#b45309] border-[#f59e0b] text-white hover:bg-[#d97706]'
-              ]"
-            >
-              <PhCalendarCheck :size="15" weight="fill" :class="isCheckedInToday ? 'text-[#86efac]' : 'text-[#fef08a]'" />
-              <span>{{ isCheckedInToday ? 'HADIR' : 'PRESENSI' }}</span>
-            </button>
-          </RouterLink>
-
-          <!-- Ormawa Expo Button -->
-          <RouterLink to="/ormawa" class="w-full">
-            <button
-              type="button"
-              @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-              class="w-full py-2 px-1 text-[8px] sm:text-[9px] font-pixel font-bold uppercase tracking-wider bg-[#1f1629] border-2 border-[#a855f7] hover:border-[#c084fc] rounded-lg text-[#e9d5ff] flex flex-col items-center justify-center gap-1 shadow transition-all active:scale-95 cursor-pointer"
-            >
-              <PhStorefront :size="15" weight="fill" class="text-[#c084fc]" />
-              <span>ORMAWA</span>
-            </button>
-          </RouterLink>
-
-          <!-- Paspor Digital Button -->
-          <RouterLink to="/paspor" class="w-full">
-            <button
-              type="button"
-              @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-              class="w-full py-2 px-1 text-[8px] sm:text-[9px] font-pixel font-bold uppercase tracking-wider rpg-btn-wood flex flex-col items-center justify-center gap-1 shadow active:scale-95 cursor-pointer"
-            >
-              <PhIdentificationBadge :size="15" weight="bold" class="text-[#facc15]" />
-              <span>PASPOR</span>
-            </button>
-          </RouterLink>
-
-          <!-- Leaderboard Button -->
-          <RouterLink to="/leaderboard" class="w-full">
-            <button
-              type="button"
-              @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-              class="w-full py-2 px-1 text-[8px] sm:text-[9px] font-pixel font-bold uppercase tracking-wider bg-[#2d1b0e]/90 border-2 border-[#5a3a18] rounded-lg text-[#f0d060] hover:border-[#f0d060] flex flex-col items-center justify-center gap-1 shadow active:scale-95 cursor-pointer"
-            >
-              <PhTrophy :size="15" weight="fill" class="text-[#facc15]" />
-              <span>PERINGKAT</span>
-            </button>
-          </RouterLink>
-        </div>
       </div>
     </div>
 
-    <!-- Bottom Footer & Campus Stats Card -->
-    <div class="relative z-20 w-full max-w-4xl mx-auto px-3 sm:px-6 pb-2 sm:pb-3 shrink-0">
-      <div class="backdrop-blur-md bg-[#19120c]/90 border border-[#8b6f4e] rounded-xl p-2 sm:p-2.5 text-center shadow-lg space-y-1">
-        <!-- Badges Row -->
-        <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 font-sans text-[10px] sm:text-xs">
-          <div class="bg-[#281e14] border border-[#d4a57a] rounded-full px-2.5 py-0.5 text-white flex items-center gap-1">
-            <PhBuildings :size="12" weight="fill" class="text-[#7ec850]" />
-            <span><strong>9 Lantai</strong></span>
-          </div>
+    <!-- Bottom Awwwards-style Floating Menu Dock -->
+    <div class="hero-awwwards-dock relative z-20 w-full mx-auto px-2 sm:px-4 pb-3 sm:pb-5 shrink-0 flex flex-col items-center">
+      <!-- Floating Dock Container (Snug w-fit, compact gap, NO pills, pure Awwwards layout) -->
+      <nav
+        class="w-fit max-w-full backdrop-blur-xl bg-[#140e09]/95 border border-[#8b6f4e]/80 rounded-2xl p-1.5 sm:p-2 shadow-[0_16px_40px_rgba(0,0,0,0.85)] flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar"
+        aria-label="Navigasi Utama"
+      >
+        <!-- 1. Presensi Box -->
+        <RouterLink
+          to="/presensi"
+          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+          class="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-[#22160d] border border-[#5c3e23] hover:border-[#f0d060] hover:bg-[#322013] transition-all flex items-center justify-center shrink-0 group cursor-pointer shadow-sm relative active:scale-95"
+          :class="isCheckedInToday ? 'border-[#22c55e]/70 bg-[#162713]/80' : ''"
+          :title="isCheckedInToday ? 'Presensi Harian (Sudah Hadir)' : 'Presensi Kehadiran Harian'"
+        >
+          <PhCalendarCheck
+            :size="19"
+            weight="fill"
+            :class="isCheckedInToday ? 'text-[#86efac]' : 'text-[#f59e0b] group-hover:scale-110 transition-transform'"
+          />
+          <span v-if="isCheckedInToday" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#22c55e] ring-1 ring-[#162713] animate-pulse" />
+        </RouterLink>
 
-          <div class="bg-[#281e14] border border-[#d4a57a] rounded-full px-2.5 py-0.5 text-white flex items-center gap-1">
-            <PhSparkle :size="12" weight="fill" class="text-[#f0d060]" />
-            <span><strong>18 Corner</strong></span>
-          </div>
+        <!-- 3. Ormawa Expo Box -->
+        <RouterLink
+          to="/ormawa"
+          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+          class="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-[#22160d] border border-[#5c3e23] hover:border-[#c084fc] hover:bg-[#322013] transition-all flex items-center justify-center shrink-0 group cursor-pointer shadow-sm active:scale-95"
+          title="Ormawa Expo & Stand UKM"
+        >
+          <PhStorefront :size="19" weight="fill" class="text-[#c084fc] group-hover:scale-110 transition-transform" />
+        </RouterLink>
 
-          <div class="bg-[#281e14] border border-[#d4a57a] rounded-full px-2.5 py-0.5 text-white flex items-center gap-1">
-            <PhCrown :size="12" weight="fill" class="text-[#f0d060]" />
-            <span>Level: <strong class="text-[#f0d060]">{{ currentLevel }}</strong></span>
-          </div>
+        <!-- 4. Paspor Digital Box -->
+        <RouterLink
+          to="/paspor"
+          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+          class="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-[#22160d] border border-[#5c3e23] hover:border-[#facc15] hover:bg-[#322013] transition-all flex items-center justify-center shrink-0 group cursor-pointer shadow-sm active:scale-95"
+          title="Paspor Petualang & Stempel Corner"
+        >
+          <PhIdentificationBadge :size="19" weight="bold" class="text-[#facc15] group-hover:scale-110 transition-transform" />
+        </RouterLink>
 
-          <div class="bg-[#281e14] border border-[#d4a57a] rounded-full px-2.5 py-0.5 text-white flex items-center gap-1">
-            <PhCheckCircle :size="12" weight="fill" class="text-[#7ec850]" />
-            <span>{{ completedFloors }}/9 Tuntas</span>
-          </div>
-        </div>
+        <!-- 5. Peringkat / Leaderboard Box -->
+        <RouterLink
+          to="/leaderboard"
+          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+          class="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-[#22160d] border border-[#5c3e23] hover:border-[#facc15] hover:bg-[#322013] transition-all flex items-center justify-center shrink-0 group cursor-pointer shadow-sm active:scale-95"
+          title="Papan Peringkat / Leaderboard XP"
+        >
+          <PhTrophy :size="19" weight="fill" class="text-[#facc15] group-hover:scale-110 transition-transform" />
+        </RouterLink>
 
-        <div class="font-pixel text-[7px] sm:text-[8px] text-[#8b6f4e] uppercase tracking-wider">
-          UNU YOGYAKARTA © 2026 • GENIUS PROTOTYPE
-        </div>
-      </div>
+        <!-- 6. Panduan Box -->
+        <RouterLink
+          to="/bantuan"
+          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+          class="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-[#22160d] border border-[#5c3e23] hover:border-[#86efac] hover:bg-[#322013] transition-all flex items-center justify-center shrink-0 group cursor-pointer shadow-sm active:scale-95"
+          title="Panduan Petualangan & Aturan Main"
+        >
+          <PhInfo :size="19" weight="bold" class="text-[#86efac] group-hover:scale-110 transition-transform" />
+        </RouterLink>
+
+        <!-- 7. Right Highlighted CTA Box -->
+        <RouterLink
+          to="/play"
+          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+          class="shrink-0"
+          :title="totalStamps > 0 ? 'Lanjutkan Penjelajahan Kampus' : 'Mulai Eksplorasi Kampus'"
+        >
+          <button
+            type="button"
+            class="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-[#fbf6e9] hover:bg-[#fef08a] border-2 border-[#d4af37] text-[#1b120a] flex items-center justify-center shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer group"
+          >
+            <PhGameController :size="21" weight="bold" class="text-[#1b120a] group-hover:scale-110 transition-transform" />
+          </button>
+        </RouterLink>
+      </nav>
     </div>
 
     <!-- Modal Login & Profile Setup Mahasiswa Baru (Onboarding Flow) -->

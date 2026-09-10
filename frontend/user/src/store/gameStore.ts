@@ -101,6 +101,7 @@ export const useGameStore = defineStore('game', {
     isLoggedIn: saved.isLoggedIn,
     soundEnabled: true,
     crtEffect: false,
+    ambientEffects: true,
     activeDay: 1 as 1 | 2 | 3,
     isLeaderboardFrozen: false,
   }),
@@ -263,6 +264,11 @@ export const useGameStore = defineStore('game', {
     toggleCrt() {
       if (this.soundEnabled) soundEngine.playClick();
       this.crtEffect = !this.crtEffect;
+    },
+
+    toggleAmbient() {
+      if (this.soundEnabled) soundEngine.playClick();
+      this.ambientEffects = !Boolean(this.ambientEffects);
     },
 
     setActiveDay(day: 1 | 2 | 3) {

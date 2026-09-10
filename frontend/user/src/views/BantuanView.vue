@@ -35,7 +35,7 @@ const gameStore = useGameStore();
           CARA BERMAIN GENIUS
         </h1>
         <p class="font-sans text-[11px] sm:text-xs text-[#c4956a] leading-snug break-words">
-          Jelajahi 9 lantai gedung kampus UNU dan kumpulkan 18 stempel digital.
+          Jelajahi seluruh gedung kampus UNU dan kumpulkan 18 stempel digital.
         </p>
       </div>
 

@@ -272,12 +272,12 @@ class AiGatewayManager {
 
     // 1. Try Google Gemini with key rotation
     const geminiModels = [
-      options.preferredModel || "gemini-2.0-flash",
-      "gemini-1.5-flash",
-      "gemini-1.5-flash-8b",
-      "gemini-2.0-flash-lite",
+      options.preferredModel || "gemini-3.1-flash-lite",
+      "gemini-3.1-flash-lite",
+      "gemini-flash-lite-latest",
       "gemini-3.5-flash",
-      "gemini-3.6-flash",
+      "gemini-flash-latest",
+      "gemini-3.7-flash",
     ];
 
     for (const model of geminiModels) {
@@ -388,7 +388,7 @@ class AiGatewayManager {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(25000),
         });
 
         if (response.ok) {

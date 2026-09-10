@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { RouterLink } from 'vue-router';
+import { animatePageEnter, staggerFadeUp, stampSlamEffect, bouncePop } from '@/lib/gsap';
 import {
   PhIdentificationBadge,
   PhTrophy,
@@ -14,6 +15,7 @@ import {
   PhMedal,
   PhQrCode,
   PhCheck,
+  PhWarning,
 } from '@phosphor-icons/vue';
 import { FLOORS_DATA, BOOTHS_DATA, LEVEL_CONFIG, AVATAR_OPTIONS } from '@/data/mockData';
 import { ORMAWA_STANDS } from '@/data/ormawaData';
@@ -69,6 +71,8 @@ const selectedAvatarObj = computed(
   () => AVATAR_OPTIONS.find((a) => a.id === gameStore.participant.avatar) || AVATAR_OPTIONS[0]
 );
 
+const showResetModal = ref(false);
+
 const handlePrint = () => {
   if (gameStore.soundEnabled) soundEngine.playClick();
   if (typeof window !== 'undefined') {
@@ -77,10 +81,38 @@ const handlePrint = () => {
 };
 
 const handleResetConfirm = () => {
-  if (window.confirm('Apakah kamu yakin ingin mereset semua progres stempel?')) {
-    gameStore.resetProgress();
-  }
+  if (gameStore.soundEnabled) soundEngine.playClick();
+  showResetModal.value = true;
 };
+
+const executeResetProgress = () => {
+  gameStore.resetProgress();
+  showResetModal.value = false;
+  if (gameStore.soundEnabled) soundEngine.playClick();
+};
+
+onMounted(() => {
+  animatePageEnter('.paspor-header', { y: 20, duration: 0.45 });
+  animatePageEnter('.paspor-id-card', { y: 25, duration: 0.5, delay: 0.1 });
+  animatePageEnter('.paspor-stats-card', { y: 25, duration: 0.5, delay: 0.15 });
+  staggerFadeUp('.paspor-floor-card', 0.05, { delay: 0.2 });
+});
+
+watch(selectedStampPreview, (val) => {
+  if (val) {
+    nextTick(() => {
+      stampSlamEffect('.paspor-modal-stamp');
+    });
+  }
+});
+
+watch(showCertificate, (val) => {
+  if (val) {
+    nextTick(() => {
+      bouncePop('.paspor-certificate-card');
+    });
+  }
+});
 </script>
 
 <template>
@@ -90,7 +122,7 @@ const handleResetConfirm = () => {
 
     <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 space-y-6">
       <!-- Header Title & Actions -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="paspor-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 class="font-pixel text-xl sm:text-2xl font-bold text-[#f0d060] flex items-center gap-2.5">
             <PhIdentificationBadge :size="28" weight="fill" class="text-[#f0d060]" />
@@ -125,7 +157,7 @@ const handleResetConfirm = () => {
       <!-- Player ID Card & Level HUD -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         <!-- Identity Card -->
-        <div class="lg:col-span-5">
+        <div class="paspor-id-card lg:col-span-5">
           <div class="h-full sdv-card-gold p-5 sm:p-6 flex flex-col justify-between">
             <div>
               <div class="flex items-center justify-between border-b-2 border-[#5a3a18] pb-3 mb-4">
@@ -216,7 +248,7 @@ const handleResetConfirm = () => {
         </div>
 
         <!-- Stats Overview -->
-        <div class="lg:col-span-7">
+        <div class="paspor-stats-card lg:col-span-7">
           <div class="h-full sdv-card p-5 sm:p-6 flex flex-col justify-between space-y-4">
             <div class="space-y-4">
               <div class="flex items-center justify-between border-b-2 border-[#5a3a18] pb-3">
@@ -273,7 +305,7 @@ const handleResetConfirm = () => {
       <div class="space-y-3 pt-2">
         <div class="flex items-center justify-between px-1">
           <h3 class="font-pixel text-xs sm:text-sm font-bold text-[#f0d060]">
-            DAFTAR 18 STEMPEL (9 LANTAI)
+            DAFTAR 18 STEMPEL PETUALANG
           </h3>
           <span class="text-[10px] font-pixel text-[#a08060]">
             KLIK UNTUK DETAIL
@@ -285,7 +317,7 @@ const handleResetConfirm = () => {
             v-for="floor in FLOORS_DATA"
             :key="floor.number"
             :class="[
-              'sdv-card p-3.5 sm:p-4',
+              'paspor-floor-card sdv-card p-3.5 sm:p-4',
               Boolean(gameStore.participant.stamps[BOOTHS_DATA[floor.boothIds[0]].id] && gameStore.participant.stamps[BOOTHS_DATA[floor.boothIds[1]].id])
                 ? 'border-[#7ec850] bg-[#1e3321]'
                 : ''
@@ -563,7 +595,7 @@ const handleResetConfirm = () => {
         <div class="my-3 flex justify-center">
           <div
             :class="[
-              'w-24 h-24 border-3 rounded-xl flex flex-col items-center justify-center p-2 rotate-[-2deg]',
+              'paspor-modal-stamp w-24 h-24 border-3 rounded-xl flex flex-col items-center justify-center p-2 rotate-[-2deg]',
               gameStore.participant.stamps[selectedStampPreview]
                 ? 'border-[#f0d060] bg-gradient-to-b from-[#3d7828] to-[#255018] shadow'
                 : 'border-[#5a3a18] bg-[#170f07] opacity-40'
@@ -637,7 +669,7 @@ const handleResetConfirm = () => {
       v-if="showCertificate"
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a0604]/90 backdrop-blur-md animate-in fade-in duration-200"
     >
-      <div class="w-full max-w-2xl bg-gradient-to-b from-[#2d1b0e] to-[#170f07] border-[4px] border-[#f0d060] rounded-2xl p-6 sm:p-8 text-center relative shadow-2xl">
+      <div class="paspor-certificate-card w-full max-w-2xl bg-gradient-to-b from-[#2d1b0e] to-[#170f07] border-[4px] border-[#f0d060] rounded-2xl p-6 sm:p-8 text-center relative shadow-2xl">
         <div class="border-2 border-[#8b6f4e] rounded-xl p-6 sm:p-8 bg-[#170f07]/90 space-y-4 shadow-inner">
           <div class="flex items-center justify-center gap-3">
             <img
@@ -670,7 +702,7 @@ const handleResetConfirm = () => {
           </div>
 
           <p class="font-sans text-xs sm:text-sm text-[#f0e6d2] max-w-lg mx-auto leading-relaxed">
-            Telah berhasil menyelesaikan eksplorasi 9 lantai dan mengumpulkan seluruh 18 stempel orientasi.
+            Telah berhasil menyelesaikan seluruh rangkaian eksplorasi kampus dan mengumpulkan seluruh 18 stempel orientasi.
           </p>
 
           <div class="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -707,5 +739,45 @@ const handleResetConfirm = () => {
       @close="showOrmawaScanner = false"
       @scan-success="handleOrmawaScanSuccess"
     />
+
+    <!-- Reset Progress Confirmation Modal -->
+    <div
+      v-if="showResetModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200"
+    >
+      <div class="max-w-sm w-full p-5 space-y-4 border-2 border-red-500/80 bg-gradient-to-b from-[#221010] to-[#140a0a] text-[#fbf6e9] shadow-[0_0_35px_rgba(239,68,68,0.25)] rounded-xl">
+        <div class="flex items-start gap-3">
+          <div class="h-10 w-10 rounded-lg bg-red-950/90 border border-red-500/60 flex items-center justify-center text-red-400 shrink-0 shadow-md">
+            <PhWarning :size="22" weight="bold" />
+          </div>
+          <div>
+            <span class="font-pixel text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-950/80 border border-red-600/50 text-red-300 font-bold">
+              Reset Progres
+            </span>
+            <h3 class="font-sans font-bold text-base text-white mt-1">Reset Semua Stempel?</h3>
+          </div>
+        </div>
+        <p class="font-sans text-xs text-stone-300/90 leading-relaxed">
+          Apakah kamu yakin ingin mereset seluruh progres stempel dan perolehan kartu paspor? Tindakan ini permanen dan tidak dapat dibatalkan.
+        </p>
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-red-900/30">
+          <button
+            type="button"
+            @click="showResetModal = false"
+            class="rpg-btn-wood py-2 px-3 text-xs font-pixel cursor-pointer"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            @click="executeResetProgress"
+            class="rpg-btn-danger py-2 px-4 text-xs font-pixel font-bold flex items-center gap-1.5 cursor-pointer shadow-lg"
+          >
+            <PhArrowCounterClockwise :size="14" weight="bold" />
+            <span>Ya, Reset</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

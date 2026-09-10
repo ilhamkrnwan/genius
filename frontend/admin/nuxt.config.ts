@@ -1,5 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import tailwindcss from "@tailwindcss/vite";
+
 export default defineNuxtConfig({
+  future: {
+    compatibilityVersion: 4,
+  },
   compatibilityDate: "2024-11-01",
   devtools: { enabled: false },
   telemetry: false,
@@ -13,6 +18,10 @@ export default defineNuxtConfig({
 
   css: ["~/assets/css/tailwind.css", "~/assets/css/main.css"],
 
+  vite: {
+    plugins: [tailwindcss()],
+  },
+
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
@@ -20,7 +29,17 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: ["@nuxtjs/tailwindcss", "shadcn-nuxt"],
+  modules: ["shadcn-nuxt"],
+
+  components: {
+    dirs: [
+      {
+        path: "~/components",
+        pathPrefix: false,
+        extensions: [".vue"],
+      },
+    ],
+  },
 
   shadcn: {
     /**
@@ -31,7 +50,7 @@ export default defineNuxtConfig({
      * Directory that the component lives in.
      * @default "./components/ui"
      */
-    componentDir: "./components/ui",
+    componentDir: "./app/components/ui",
   },
 
   app: {

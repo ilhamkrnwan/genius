@@ -10,6 +10,7 @@ import BenarSalahGame from './BenarSalahGame.vue';
 import TebakGambarGame from './TebakGambarGame.vue';
 import KuisBalapanGame from './KuisBalapanGame.vue';
 import FlappyBirdGame from './FlappyBirdGame.vue';
+import AiDrawingGame from './AiDrawingGame.vue';
 
 interface Props {
   booth: Booth;
@@ -87,6 +88,13 @@ const handleComplete = (score: number, totalQuestions: number) => {
     v-else-if="gameType === 'flappy_bird'"
     :content="props.booth.flappyBirdContent"
     :isCompleted="props.isCompleted"
+    @complete="handleComplete"
+  />
+  <AiDrawingGame
+    v-else-if="gameType === 'ai_drawing' || gameType === 'ai_canvas' || gameType === 'image_guess' || gameType === 'drawing'"
+    :content="props.booth.aiDrawingContent || (props.booth as any).config"
+    :isCompleted="props.isCompleted"
+    :serverSessionId="props.serverSessionId"
     @complete="handleComplete"
   />
   <KuisCepatGame
