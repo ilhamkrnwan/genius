@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import {
   PhQuestion,
   PhCaretDown,
@@ -14,7 +14,9 @@ import { gsap } from '@/lib/gsap';
 const gameStore = useGameStore();
 
 const faqRootRef = ref<HTMLElement | null>(null);
-let faqCtx: gsap.Context | null = null;
+const faqHeaderRef = ref<HTMLElement | null>(null);
+const faqListRef = ref<HTMLElement | null>(null);
+const faqHelpdeskRef = ref<HTMLElement | null>(null);
 
 const faqs = [
   {
@@ -46,55 +48,61 @@ const toggleFaq = (idx: number) => {
   openFaqIndex.value = openFaqIndex.value === idx ? null : idx;
 };
 
-onMounted(() => {
-  faqCtx = gsap.context(() => {
-    // Header reveal
-    gsap.from('.faq-header', {
-      scrollTrigger: {
-        trigger: '.faq-header',
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 35,
-      opacity: 0,
-      duration: 0.7,
-      ease: 'power2.out',
-    });
+onMounted(async () => {
+  await nextTick();
+  if (!faqRootRef.value) return;
 
-    // Accordion List Stagger
-    gsap.from('.faq-accordion-item', {
-      scrollTrigger: {
-        trigger: '.faq-list-wrap',
-        start: 'top 82%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 30,
-      opacity: 0,
-      stagger: 0.08,
-      duration: 0.6,
-      ease: 'power1.out',
-    });
+  // Header reveal
+  if (faqHeaderRef.value) {
+    gsap.fromTo(faqHeaderRef.value,
+      { y: 35, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        scrollTrigger: {
+          trigger: faqHeaderRef.value,
+          start: 'top 88%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+  }
 
-    // Helpdesk Banner reveal
-    gsap.from('.faq-helpdesk-banner', {
-      scrollTrigger: {
-        trigger: '.faq-helpdesk-banner',
-        start: 'top 88%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 25,
-      opacity: 0,
-      duration: 0.7,
-      ease: 'power2.out',
-    });
-  }, faqRootRef.value || undefined);
+  // Accordion List Stagger
+  if (faqListRef.value) {
+    const items = faqListRef.value.querySelectorAll<HTMLElement>('.faq-accordion-item');
+    if (items.length > 0) {
+      gsap.fromTo(items,
+        { y: 30, opacity: 0 },
+        {
+          y: 0, opacity: 1, stagger: 0.08, duration: 0.6, ease: 'power1.out', clearProps: 'all',
+          scrollTrigger: {
+            trigger: faqListRef.value,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    }
+  }
+
+  // Helpdesk Banner reveal
+  if (faqHelpdeskRef.value) {
+    gsap.fromTo(faqHelpdeskRef.value,
+      { y: 25, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        scrollTrigger: {
+          trigger: faqHelpdeskRef.value,
+          start: 'top 90%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+  }
 });
 
 onUnmounted(() => {
-  faqCtx?.revert();
+  gsap.killTweensOf([faqHeaderRef.value, faqListRef.value, faqHelpdeskRef.value]);
 });
 </script>
 
@@ -106,7 +114,7 @@ onUnmounted(() => {
   >
     <div class="relative z-10 max-w-4xl mx-auto">
       <!-- Section Header with GSAP Reveal -->
-      <div class="faq-header text-center max-w-2xl mx-auto mb-12 sm:mb-16 will-change-transform">
+      <div ref="faqHeaderRef" class="faq-header text-center max-w-2xl mx-auto mb-12 sm:mb-16">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1b1107] border border-[#7ec850]/50 shadow-md mb-3">
           <PhQuestion :size="16" weight="fill" class="text-[#7ec850]" />
           <span class="font-pixel text-[9px] sm:text-[10px] text-[#7ec850] uppercase tracking-wider">
@@ -124,7 +132,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Accordion List with GSAP Stagger -->
-      <div class="faq-list-wrap space-y-4 mb-12">
+      <div ref="faqListRef" class="faq-list-wrap space-y-4 mb-12">
         <div
           v-for="(faq, idx) in faqs"
           :key="idx"
@@ -157,7 +165,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Emergency Helpdesk Contact Banner with GSAP Reveal -->
-      <div class="faq-helpdesk-banner p-6 rounded-xl bg-[#1b1107] border-2 border-[#8b6f4e] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-lg will-change-transform">
+      <div ref="faqHelpdeskRef" class="faq-helpdesk-banner p-6 rounded-xl bg-[#1b1107] border-2 border-[#8b6f4e] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-lg">
         <div class="flex items-center gap-3">
           <div class="w-12 h-12 rounded-xl bg-[#22c55e]/20 border border-[#22c55e] flex items-center justify-center shrink-0">
             <PhChatsTeardrop :size="24" weight="fill" class="text-[#86efac]" />

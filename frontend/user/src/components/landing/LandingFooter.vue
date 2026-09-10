@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   PhCaretUp,
@@ -12,7 +12,7 @@ import {
 import { gsap } from '@/lib/gsap';
 
 const footerRootRef = ref<HTMLElement | null>(null);
-let footerCtx: gsap.Context | null = null;
+const footerContentRef = ref<HTMLElement | null>(null);
 
 const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -29,25 +29,24 @@ const navigationLinks = [
   { label: 'Pusat Bantuan', to: '/bantuan' },
 ];
 
-onMounted(() => {
-  footerCtx = gsap.context(() => {
-    gsap.from('.footer-inner-content', {
+onMounted(async () => {
+  await nextTick();
+  if (!footerContentRef.value) return;
+  gsap.fromTo(footerContentRef.value,
+    { y: 25, opacity: 0 },
+    {
+      y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
       scrollTrigger: {
-        trigger: '.footer-inner-content',
-        start: 'top 92%',
+        trigger: footerContentRef.value,
+        start: 'top 95%',
         toggleActions: 'play none none none',
-        once: true,
       },
-      y: 25,
-      opacity: 0,
-      duration: 0.7,
-      ease: 'power2.out',
-    });
-  }, footerRootRef.value || undefined);
+    }
+  );
 });
 
 onUnmounted(() => {
-  footerCtx?.revert();
+  gsap.killTweensOf(footerContentRef.value);
 });
 </script>
 
@@ -56,7 +55,7 @@ onUnmounted(() => {
     ref="footerRootRef"
     class="relative bg-[#170f08] border-t-4 border-[#5a3a18] text-[#c4b5a2] pt-14 pb-10 px-4 sm:px-6"
   >
-    <div class="footer-inner-content max-w-5xl mx-auto will-change-transform">
+    <div ref="footerContentRef" class="footer-inner-content max-w-5xl mx-auto">
       <div class="grid grid-cols-1 md:grid-cols-12 gap-8 pb-10 border-b border-[#3a2818]">
         <!-- Brand & Campus Info -->
         <div class="md:col-span-6 space-y-4">

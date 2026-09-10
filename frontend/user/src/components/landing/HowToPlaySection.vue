@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   PhGameController,
@@ -17,7 +17,9 @@ import { gsap } from '@/lib/gsap';
 const gameStore = useGameStore();
 
 const htpRootRef = ref<HTMLElement | null>(null);
-let htpCtx: gsap.Context | null = null;
+const htpHeaderRef = ref<HTMLElement | null>(null);
+const htpGridRef = ref<HTMLElement | null>(null);
+const htpCtaRef = ref<HTMLElement | null>(null);
 
 const steps = [
   {
@@ -58,56 +60,62 @@ const steps = [
   },
 ];
 
-onMounted(() => {
-  htpCtx = gsap.context(() => {
-    // Header reveal
-    gsap.from('.htp-header', {
-      scrollTrigger: {
-        trigger: '.htp-header',
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 35,
-      opacity: 0,
-      duration: 0.7,
-      ease: 'power2.out',
-    });
+onMounted(async () => {
+  await nextTick();
+  if (!htpRootRef.value) return;
 
-    // 4 Steps Cards Stagger
-    gsap.from('.htp-card', {
-      scrollTrigger: {
-        trigger: '.htp-grid',
-        start: 'top 82%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 45,
-      opacity: 0,
-      scale: 0.95,
-      duration: 0.65,
-      stagger: 0.12,
-      ease: 'power2.out',
-    });
+  // Header reveal
+  if (htpHeaderRef.value) {
+    gsap.fromTo(htpHeaderRef.value,
+      { y: 35, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        scrollTrigger: {
+          trigger: htpHeaderRef.value,
+          start: 'top 88%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+  }
 
-    // CTA buttons
-    gsap.from('.htp-cta', {
-      scrollTrigger: {
-        trigger: '.htp-cta',
-        start: 'top 88%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 25,
-      opacity: 0,
-      duration: 0.6,
-      ease: 'back.out(1.5)',
-    });
-  }, htpRootRef.value || undefined);
+  // 4 Steps Cards Stagger
+  if (htpGridRef.value) {
+    const cards = htpGridRef.value.querySelectorAll<HTMLElement>('.htp-card');
+    if (cards.length > 0) {
+      gsap.fromTo(cards,
+        { y: 45, opacity: 0, scale: 0.95 },
+        {
+          y: 0, opacity: 1, scale: 1, duration: 0.65, stagger: 0.12,
+          ease: 'power2.out', clearProps: 'all',
+          scrollTrigger: {
+            trigger: htpGridRef.value,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    }
+  }
+
+  // CTA buttons
+  if (htpCtaRef.value) {
+    gsap.fromTo(htpCtaRef.value,
+      { y: 25, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.6, ease: 'back.out(1.5)', clearProps: 'all',
+        scrollTrigger: {
+          trigger: htpCtaRef.value,
+          start: 'top 90%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+  }
 });
 
 onUnmounted(() => {
-  htpCtx?.revert();
+  gsap.killTweensOf([htpHeaderRef.value, htpGridRef.value, htpCtaRef.value]);
 });
 </script>
 
@@ -119,7 +127,7 @@ onUnmounted(() => {
   >
     <div class="relative z-10 max-w-5xl mx-auto">
       <!-- Section Header with GSAP Reveal -->
-      <div class="htp-header text-center max-w-2xl mx-auto mb-12 sm:mb-16 will-change-transform">
+      <div ref="htpHeaderRef" class="htp-header text-center max-w-2xl mx-auto mb-12 sm:mb-16">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1e130a] border border-[#7ec850]/50 shadow-md mb-3">
           <PhGameController :size="16" weight="fill" class="text-[#7ec850]" />
           <span class="font-pixel text-[9px] sm:text-[10px] text-[#7ec850] uppercase tracking-wider">
@@ -137,7 +145,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 4 Steps Cards Grid with GSAP Stagger -->
-      <div class="htp-grid grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+      <div ref="htpGridRef" class="htp-grid grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
         <div
           v-for="step in steps"
           :key="step.num"
@@ -184,7 +192,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Quick Action CTA with GSAP Reveal -->
-      <div class="htp-cta flex flex-col sm:flex-row items-center justify-center gap-4 will-change-transform">
+      <div ref="htpCtaRef" class="htp-cta flex flex-col sm:flex-row items-center justify-center gap-4">
         <RouterLink to="/peta">
           <button
             type="button"

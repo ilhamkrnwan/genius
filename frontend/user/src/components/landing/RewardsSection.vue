@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   PhTrophy,
@@ -19,7 +19,9 @@ import { gsap } from '@/lib/gsap';
 const gameStore = useGameStore();
 
 const rewardsRootRef = ref<HTMLElement | null>(null);
-let rewardsCtx: gsap.Context | null = null;
+const rewardsHeaderRef = ref<HTMLElement | null>(null);
+const rewardsCardsRef = ref<HTMLElement | null>(null);
+const rewardsLbRef = ref<HTMLElement | null>(null);
 
 const topGroups = ref(INITIAL_LEADERBOARD_GROUPS.slice(0, 3));
 
@@ -57,55 +59,61 @@ onMounted(async () => {
     // Graceful fallback to mock data
   }
 
-  rewardsCtx = gsap.context(() => {
-    // Header reveal
-    gsap.from('.rewards-header', {
-      scrollTrigger: {
-        trigger: '.rewards-header',
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 35,
-      opacity: 0,
-      duration: 0.7,
-      ease: 'power2.out',
-    });
+  await nextTick();
+  if (!rewardsRootRef.value) return;
 
-    // 3 Rewards Cards
-    gsap.from('.reward-item-card', {
-      scrollTrigger: {
-        trigger: '.rewards-cards-grid',
-        start: 'top 82%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 40,
-      opacity: 0,
-      scale: 0.94,
-      duration: 0.65,
-      stagger: 0.12,
-      ease: 'back.out(1.4)',
-    });
+  // Header reveal
+  if (rewardsHeaderRef.value) {
+    gsap.fromTo(rewardsHeaderRef.value,
+      { y: 35, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        scrollTrigger: {
+          trigger: rewardsHeaderRef.value,
+          start: 'top 88%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+  }
 
-    // Leaderboard Teaser Card
-    gsap.from('.rewards-lb-box', {
-      scrollTrigger: {
-        trigger: '.rewards-lb-box',
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 35,
-      opacity: 0,
-      duration: 0.7,
-      ease: 'power2.out',
-    });
-  }, rewardsRootRef.value || undefined);
+  // 3 Rewards Cards
+  if (rewardsCardsRef.value) {
+    const cards = rewardsCardsRef.value.querySelectorAll<HTMLElement>('.reward-item-card');
+    if (cards.length > 0) {
+      gsap.fromTo(cards,
+        { y: 40, opacity: 0, scale: 0.94 },
+        {
+          y: 0, opacity: 1, scale: 1, duration: 0.65, stagger: 0.12,
+          ease: 'back.out(1.4)', clearProps: 'all',
+          scrollTrigger: {
+            trigger: rewardsCardsRef.value,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    }
+  }
+
+  // Leaderboard Teaser Card
+  if (rewardsLbRef.value) {
+    gsap.fromTo(rewardsLbRef.value,
+      { y: 35, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        scrollTrigger: {
+          trigger: rewardsLbRef.value,
+          start: 'top 88%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+  }
 });
 
 onUnmounted(() => {
-  rewardsCtx?.revert();
+  gsap.killTweensOf([rewardsHeaderRef.value, rewardsCardsRef.value, rewardsLbRef.value]);
 });
 </script>
 
@@ -117,7 +125,7 @@ onUnmounted(() => {
   >
     <div class="relative z-10 max-w-5xl mx-auto">
       <!-- Section Header with GSAP Reveal -->
-      <div class="rewards-header text-center max-w-2xl mx-auto mb-12 sm:mb-16 will-change-transform">
+      <div ref="rewardsHeaderRef" class="rewards-header text-center max-w-2xl mx-auto mb-12 sm:mb-16">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1b120a] border border-[#f0d060]/50 shadow-md mb-3">
           <PhTrophy :size="16" weight="fill" class="text-[#f0d060]" />
           <span class="font-pixel text-[9px] sm:text-[10px] text-[#f0d060] uppercase tracking-wider">
@@ -135,7 +143,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 3 Highlighted Rewards Cards with GSAP Stagger -->
-      <div class="rewards-cards-grid grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
+      <div ref="rewardsCardsRef" class="rewards-cards-grid grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
         <div
           v-for="(reward, idx) in rewards"
           :key="idx"
@@ -171,7 +179,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Mini Top 3 Kelompok Leaderboard Teaser with GSAP Reveal -->
-      <div class="rewards-lb-box sdv-card-elevated p-6 sm:p-8 max-w-3xl mx-auto shadow-xl will-change-transform">
+      <div ref="rewardsLbRef" class="rewards-lb-box sdv-card-elevated p-6 sm:p-8 max-w-3xl mx-auto shadow-xl">
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 border-b border-[#5a3a18] pb-4">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg bg-[#f0d060]/20 border border-[#f0d060] flex items-center justify-center">

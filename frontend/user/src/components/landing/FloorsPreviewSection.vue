@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   PhBuildings,
@@ -20,7 +20,9 @@ const router = useRouter();
 const gameStore = useGameStore();
 
 const floorsRootRef = ref<HTMLElement | null>(null);
-let floorsCtx: gsap.Context | null = null;
+const floorsHeaderRef = ref<HTMLElement | null>(null);
+const floorsPillsRef = ref<HTMLElement | null>(null);
+const floorsDetailRef = ref<HTMLElement | null>(null);
 
 const selectedFloorNumber = ref<number>(1);
 
@@ -35,11 +37,13 @@ const isFloorUnlocked = (floorNum: number) => {
 const handleSelectFloor = (floorNum: number) => {
   selectedFloorNumber.value = floorNum;
   if (gameStore.soundEnabled) soundEngine.playSelect();
-  gsap.fromTo(
-    '.floors-detail-card',
-    { opacity: 0.85, scale: 0.99 },
-    { opacity: 1, scale: 1, duration: 0.25, ease: 'power2.out' }
-  );
+  if (floorsDetailRef.value) {
+    gsap.fromTo(
+      floorsDetailRef.value,
+      { opacity: 0.85, scale: 0.99 },
+      { opacity: 1, scale: 1, duration: 0.25, ease: 'power2.out' }
+    );
+  }
 };
 
 const handleExplore = () => {
@@ -51,55 +55,61 @@ const handleExplore = () => {
   }
 };
 
-onMounted(() => {
-  floorsCtx = gsap.context(() => {
-    // Header reveal
-    gsap.from('.floors-header', {
-      scrollTrigger: {
-        trigger: '.floors-header',
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 35,
-      opacity: 0,
-      duration: 0.7,
-      ease: 'power2.out',
-    });
+onMounted(async () => {
+  await nextTick();
+  if (!floorsRootRef.value) return;
 
-    // Floor Selector Pills
-    gsap.from('.floor-pill-btn', {
-      scrollTrigger: {
-        trigger: '.floors-pills-bar',
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 20,
-      opacity: 0,
-      stagger: 0.04,
-      duration: 0.45,
-      ease: 'power1.out',
-    });
+  // Header reveal
+  if (floorsHeaderRef.value) {
+    gsap.fromTo(floorsHeaderRef.value,
+      { y: 35, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        scrollTrigger: {
+          trigger: floorsHeaderRef.value,
+          start: 'top 88%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+  }
 
-    // Showcase Card
-    gsap.from('.floors-detail-card', {
-      scrollTrigger: {
-        trigger: '.floors-detail-card',
-        start: 'top 82%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      scale: 0.95,
-      opacity: 0,
-      duration: 0.65,
-      ease: 'back.out(1.3)',
-    });
-  }, floorsRootRef.value || undefined);
+  // Floor Selector Pills
+  if (floorsPillsRef.value) {
+    const pills = floorsPillsRef.value.querySelectorAll<HTMLElement>('.floor-pill-btn');
+    if (pills.length > 0) {
+      gsap.fromTo(pills,
+        { y: 20, opacity: 0 },
+        {
+          y: 0, opacity: 1, stagger: 0.04, duration: 0.45, ease: 'power1.out', clearProps: 'all',
+          scrollTrigger: {
+            trigger: floorsPillsRef.value,
+            start: 'top 87%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    }
+  }
+
+  // Showcase Card
+  if (floorsDetailRef.value) {
+    gsap.fromTo(floorsDetailRef.value,
+      { scale: 0.95, opacity: 0 },
+      {
+        scale: 1, opacity: 1, duration: 0.65, ease: 'back.out(1.3)', clearProps: 'all',
+        scrollTrigger: {
+          trigger: floorsDetailRef.value,
+          start: 'top 85%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+  }
 });
 
 onUnmounted(() => {
-  floorsCtx?.revert();
+  gsap.killTweensOf([floorsHeaderRef.value, floorsPillsRef.value, floorsDetailRef.value]);
 });
 </script>
 
@@ -111,7 +121,7 @@ onUnmounted(() => {
   >
     <div class="relative z-10 max-w-5xl mx-auto">
       <!-- Section Header with GSAP Reveal -->
-      <div class="floors-header text-center max-w-2xl mx-auto mb-10 sm:mb-14 will-change-transform">
+      <div ref="floorsHeaderRef" class="floors-header text-center max-w-2xl mx-auto mb-10 sm:mb-14">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1c1107] border border-[#f0d060]/50 shadow-md mb-3">
           <PhBuildings :size="16" weight="fill" class="text-[#f0d060]" />
           <span class="font-pixel text-[9px] sm:text-[10px] text-[#f0d060] uppercase tracking-wider">
@@ -129,7 +139,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Floor Selector Pills with GSAP Stagger -->
-      <div class="floors-pills-bar flex items-center justify-center gap-1.5 sm:gap-2 overflow-x-auto pb-4 mb-8 no-scrollbar max-w-full">
+      <div ref="floorsPillsRef" class="floors-pills-bar flex items-center justify-center gap-1.5 sm:gap-2 overflow-x-auto pb-4 mb-8 no-scrollbar max-w-full">
         <button
           v-for="floor in FLOORS_DATA"
           :key="floor.number"
@@ -153,7 +163,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Selected Floor Detail Showcase (Stardew Valley Card) with GSAP Reveal -->
-      <div class="floors-detail-card sdv-card-gold p-6 sm:p-8 relative overflow-hidden transition-all duration-300 will-change-transform">
+      <div ref="floorsDetailRef" class="floors-detail-card sdv-card-gold p-6 sm:p-8 relative overflow-hidden transition-all duration-300">
         <div class="flex flex-col lg:flex-row gap-8 items-start justify-between">
           <!-- Floor Basic Info & Theme -->
           <div class="flex-1">

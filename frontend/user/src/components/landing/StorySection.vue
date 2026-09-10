@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import {
   PhScroll,
   PhScales,
@@ -9,10 +9,13 @@ import {
   PhSparkle,
   PhQuotes,
 } from '@phosphor-icons/vue';
-import { gsap } from '@/lib/gsap';
+import { gsap, ScrollTrigger } from '@/lib/gsap';
 
 const storyRootRef = ref<HTMLElement | null>(null);
-let storyCtx: gsap.Context | null = null;
+const storyHeaderRef = ref<HTMLElement | null>(null);
+const storyGridRef = ref<HTMLElement | null>(null);
+const storyQuoteRef = ref<HTMLElement | null>(null);
+let triggers: ScrollTrigger[] = [];
 
 const pillars = [
   {
@@ -49,56 +52,67 @@ const pillars = [
   },
 ];
 
-onMounted(() => {
-  storyCtx = gsap.context(() => {
-    // Header reveal
-    gsap.from('.story-header', {
-      scrollTrigger: {
-        trigger: '.story-header',
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 35,
-      opacity: 0,
-      duration: 0.7,
-      ease: 'power2.out',
-    });
+onMounted(async () => {
+  await nextTick();
+  const root = storyRootRef.value;
+  if (!root) return;
 
-    // Stagger 4 Pillars Cards
-    gsap.from('.story-pillar-card', {
-      scrollTrigger: {
-        trigger: '.story-pillars-grid',
-        start: 'top 82%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 45,
-      opacity: 0,
-      scale: 0.94,
-      duration: 0.65,
-      stagger: 0.12,
-      ease: 'back.out(1.4)',
-    });
+  // --- Header reveal ---
+  const header = storyHeaderRef.value;
+  if (header) {
+    gsap.fromTo(header,
+      { y: 35, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        scrollTrigger: {
+          trigger: header,
+          start: 'top 88%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+  }
 
-    // Quote banner reveal
-    gsap.from('.story-quote-banner', {
-      scrollTrigger: {
-        trigger: '.story-quote-banner',
-        start: 'top 85%',
-        toggleActions: 'play none none none',
-        once: true,
-      },
-      y: 30,
-      opacity: 0,
-      duration: 0.75,
-      ease: 'power2.out',
-    });
-  }, storyRootRef.value || undefined);
+  // --- Stagger 4 Pillars Cards ---
+  const grid = storyGridRef.value;
+  if (grid) {
+    const cards = grid.querySelectorAll<HTMLElement>('.story-pillar-card');
+    if (cards.length > 0) {
+      gsap.fromTo(cards,
+        { y: 45, opacity: 0, scale: 0.94 },
+        {
+          y: 0, opacity: 1, scale: 1, duration: 0.65, stagger: 0.12,
+          ease: 'back.out(1.4)', clearProps: 'all',
+          scrollTrigger: {
+            trigger: grid,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+        }
+      );
+    }
+  }
+
+  // --- Quote banner reveal ---
+  const quote = storyQuoteRef.value;
+  if (quote) {
+    gsap.fromTo(quote,
+      { y: 30, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.75, ease: 'power2.out', clearProps: 'all',
+        scrollTrigger: {
+          trigger: quote,
+          start: 'top 88%',
+          toggleActions: 'play none none none',
+        },
+      }
+    );
+  }
 });
 
 onUnmounted(() => {
-  storyCtx?.revert();
+  triggers.forEach(t => t.kill());
+  triggers = [];
 });
 </script>
 
@@ -115,7 +129,7 @@ onUnmounted(() => {
 
     <div class="relative z-10 max-w-5xl mx-auto flex flex-col items-center">
       <!-- Section Header with GSAP Reveal -->
-      <div class="story-header text-center max-w-2xl mx-auto mb-12 sm:mb-16 will-change-transform">
+      <div ref="storyHeaderRef" class="story-header text-center max-w-2xl mx-auto mb-12 sm:mb-16">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1b1007] border border-[#f0d060]/50 shadow-md mb-3">
           <PhScroll :size="16" weight="fill" class="text-[#f0d060]" />
           <span class="font-pixel text-[9px] sm:text-[10px] text-[#f0d060] uppercase tracking-wider">
@@ -133,7 +147,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 4 Pillars Cards Grid with GSAP Stagger -->
-      <div class="story-pillars-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full mb-12">
+      <div ref="storyGridRef" class="story-pillars-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full mb-12">
         <div
           v-for="(pillar, idx) in pillars"
           :key="idx"
@@ -171,7 +185,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Inspiring Quote Banner with GSAP Reveal -->
-      <div class="story-quote-banner w-full bg-[#342214] border-2 border-[#8b6f4e] rounded-xl p-6 sm:p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center gap-6 will-change-transform">
+      <div ref="storyQuoteRef" class="story-quote-banner w-full bg-[#342214] border-2 border-[#8b6f4e] rounded-xl p-6 sm:p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
         <div class="absolute -right-6 -bottom-6 text-[#f0d060]/10 pointer-events-none">
           <PhQuotes :size="120" weight="fill" />
         </div>
