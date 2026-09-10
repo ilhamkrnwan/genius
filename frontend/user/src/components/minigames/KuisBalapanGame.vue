@@ -161,7 +161,7 @@ const handleNextRound = () => {
     </div>
 
     <!-- Race Track Container -->
-    <div class="sdv-card-elevated p-2 sm:p-2.5 space-y-1.5 shrink-0">
+    <div class="sdv-card-elevated p-2 sm:p-2.5 space-y-1.5 shrink-0 transition-all" :class="{ 'animate-shake': rivalTimerPct <= 0 && !isRoundSubmitted }">
       <div class="relative w-full h-20 sm:h-24 rounded-lg overflow-hidden border border-[#8b6f4e] bg-[#140d07] shadow-inner">
         <!-- Asphalt track lines -->
         <div class="absolute inset-0 opacity-25 bg-[repeating-linear-gradient(90deg,transparent_0px,transparent_20px,#5a3a18_20px,#5a3a18_32px)]" />
@@ -176,6 +176,7 @@ const handleNextRound = () => {
         <!-- Player Lane (Top Lane) -->
         <div
           class="absolute top-1 -translate-x-1/2 transition-all duration-500 ease-out flex items-center gap-1 z-10"
+          :class="{ 'animate-pop': isRoundSubmitted && isSelectedCorrect }"
           :style="{ left: `${playerPct}%` }"
         >
           <div class="px-1 py-0.5 rounded bg-[#1f3a2b] border border-[#7ec850] text-[#7ec850] font-pixel text-[7px] font-bold shadow">
@@ -202,7 +203,7 @@ const handleNextRound = () => {
 
       <!-- Rival Countdown Bar -->
       <div class="flex items-center gap-1.5 px-0.5">
-        <PhTimer :size="12" weight="bold" class="text-[#f0d060] shrink-0" />
+        <PhTimer :size="12" weight="bold" class="text-[#f0d060] shrink-0" :class="{ 'animate-pulse text-[#d44040]': rivalTimerPct <= 20 }" />
         <div class="flex-1 h-2 bg-[#170f07] border border-[#5a3a18] rounded-full overflow-hidden">
           <div
             :class="[
@@ -211,90 +212,96 @@ const handleNextRound = () => {
                 ? 'bg-[#7ec850]'
                 : rivalTimerPct > 20
                   ? 'bg-[#f0d060]'
-                  : 'bg-[#d44040] animate-pulse'
+                  : 'bg-[#d44040] animate-flash-red'
             ]"
             :style="{ width: `${rivalTimerPct}%` }"
           />
         </div>
-        <span class="font-pixel text-[8px] text-[#c4956a] shrink-0 w-14 text-right">
+        <span class="font-pixel text-[8px] text-[#c4956a] shrink-0 w-14 text-right" :class="{ 'text-[#d44040]': rivalTimerPct <= 20 }">
           {{ rivalSecondsLeft }} dtk
         </span>
       </div>
     </div>
 
-    <!-- Question Card -->
-    <div class="sdv-card-elevated p-2 sm:p-2.5 shrink-0">
-      <h4 class="font-sans text-[11px] sm:text-xs font-bold text-white leading-relaxed text-justify break-words">
-        {{ currentQuestion.text }}
-      </h4>
-    </div>
+    <Transition name="slide-fade" mode="out-in">
+      <div :key="currentIndex" class="flex flex-col flex-1 gap-1.5 sm:gap-2 overflow-hidden">
+        <!-- Question Card -->
+        <div class="sdv-card-elevated p-2 sm:p-2.5 shrink-0 transition-transform">
+          <h4 class="font-sans text-[11px] sm:text-xs font-bold text-white leading-relaxed text-justify break-words">
+            {{ currentQuestion.text }}
+          </h4>
+        </div>
 
-    <!-- Multiple Choice Options (2x2 Grid) -->
-    <div class="grid grid-cols-2 gap-1.5 flex-1 overflow-y-auto py-0.5 custom-scrollbar">
-      <button
-        v-for="(option, optIdx) in currentQuestion.options"
-        :key="optIdx"
-        type="button"
-        @click="handleSelectOption(optIdx)"
-        :disabled="isRoundSubmitted"
-        :class="[
-          'p-2 sm:p-2.5 rounded-lg border text-left transition-all flex items-center gap-1.5 cursor-pointer active:scale-98',
-          isRoundSubmitted
-            ? optIdx === currentQuestion.correctAnswerIndex
-              ? 'bg-[#1f3a2b] border-[#7ec850] text-[#e0f0d0] shadow-md font-medium'
-              : selectedOptionIndex === optIdx
-                ? 'bg-[#3a1814] border-[#d44040] text-[#ffd0d0] shadow-md'
-                : 'bg-[#170f07] border-[#5a3a18] text-[#8b6f4e] opacity-60'
-            : selectedOptionIndex === optIdx
-              ? 'bg-[#2d1b0e] border-[#f0d060] text-white shadow-md font-medium'
-              : 'bg-[#170f07] border-[#5a3a18] text-[#f0e0c0] hover:border-[#8b6f4e]'
-        ]"
-      >
-        <span class="font-pixel text-[9px] w-5 h-5 flex items-center justify-center rounded bg-[#281c12] text-[#f0d060] border border-[#5a3a18] shrink-0 font-bold">
-          {{ String.fromCharCode(65 + optIdx) }}
-        </span>
-        <span class="font-sans text-[11px] sm:text-xs leading-tight flex-1 break-words">
-          {{ option }}
-        </span>
-        <PhCheckCircle
-          v-if="isRoundSubmitted && optIdx === currentQuestion.correctAnswerIndex"
-          :size="16"
-          weight="fill"
-          class="text-[#7ec850] shrink-0"
-        />
-        <PhXCircle
-          v-else-if="isRoundSubmitted && selectedOptionIndex === optIdx && !isSelectedCorrect"
-          :size="16"
-          weight="fill"
-          class="text-[#ff8080] shrink-0"
-        />
-      </button>
-    </div>
+        <!-- Multiple Choice Options (2x2 Grid) -->
+        <div class="grid grid-cols-2 gap-1.5 flex-1 overflow-y-auto py-0.5 custom-scrollbar">
+          <button
+            v-for="(option, optIdx) in currentQuestion.options"
+            :key="optIdx"
+            type="button"
+            @click="handleSelectOption(optIdx)"
+            :disabled="isRoundSubmitted"
+            :class="[
+              'p-2 sm:p-2.5 rounded-lg border text-left transition-all flex items-center gap-1.5 cursor-pointer active:scale-98',
+              isRoundSubmitted
+                ? optIdx === currentQuestion.correctAnswerIndex
+                  ? 'bg-[#1f3a2b] border-[#7ec850] text-[#e0f0d0] shadow-md font-medium'
+                  : selectedOptionIndex === optIdx
+                    ? 'bg-[#3a1814] border-[#d44040] text-[#ffd0d0] shadow-md animate-shake'
+                    : 'bg-[#170f07] border-[#5a3a18] text-[#8b6f4e] opacity-60'
+                : selectedOptionIndex === optIdx
+                  ? 'bg-[#2d1b0e] border-[#f0d060] text-white shadow-md font-medium scale-[1.02]'
+                  : 'bg-[#170f07] border-[#5a3a18] text-[#f0e0c0] hover:border-[#8b6f4e] hover:-translate-y-0.5'
+            ]"
+          >
+            <span class="font-pixel text-[9px] w-5 h-5 flex items-center justify-center rounded bg-[#281c12] text-[#f0d060] border border-[#5a3a18] shrink-0 font-bold">
+              {{ String.fromCharCode(65 + optIdx) }}
+            </span>
+            <span class="font-sans text-[11px] sm:text-xs leading-tight flex-1 break-words">
+              {{ option }}
+            </span>
+            <PhCheckCircle
+              v-if="isRoundSubmitted && optIdx === currentQuestion.correctAnswerIndex"
+              :size="16"
+              weight="fill"
+              class="text-[#7ec850] shrink-0 animate-pop"
+            />
+            <PhXCircle
+              v-else-if="isRoundSubmitted && selectedOptionIndex === optIdx && !isSelectedCorrect"
+              :size="16"
+              weight="fill"
+              class="text-[#ff8080] shrink-0"
+            />
+          </button>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Feedback Card -->
-    <div
-      v-if="isRoundSubmitted"
-      :class="[
-        'p-2 rounded-lg border space-y-0.5 animate-in fade-in shrink-0',
-        isSelectedCorrect
-          ? 'bg-[#14230f] border-[#7ec850] text-[#e0f0d0]'
-          : 'bg-[#2d1210] border-[#d44040] text-[#ffd0d0]'
-      ]"
-    >
-      <div class="flex items-center gap-1 font-pixel text-[10px] font-bold">
-        <template v-if="isSelectedCorrect">
-          <PhLightning :size="14" weight="fill" class="text-[#7ec850]" />
-          <span class="text-[#7ec850]">Tepat Sekali! Mobilmu melaju cepat!</span>
-        </template>
-        <template v-else>
-          <PhXCircle :size="14" weight="fill" class="text-[#ff8080]" />
-          <span class="text-[#ff8080]">Belum Tepat! Mobilmu tertahan!</span>
-        </template>
+    <Transition name="slide-fade">
+      <div
+        v-if="isRoundSubmitted"
+        :class="[
+          'p-2 rounded-lg border space-y-0.5 shrink-0',
+          isSelectedCorrect
+            ? 'bg-[#14230f] border-[#7ec850] text-[#e0f0d0] animate-pop'
+            : 'bg-[#2d1210] border-[#d44040] text-[#ffd0d0] animate-shake'
+        ]"
+      >
+        <div class="flex items-center gap-1 font-pixel text-[10px] font-bold">
+          <template v-if="isSelectedCorrect">
+            <PhLightning :size="14" weight="fill" class="text-[#7ec850]" />
+            <span class="text-[#7ec850]">Tepat Sekali! Mobilmu melaju cepat!</span>
+          </template>
+          <template v-else>
+            <PhXCircle :size="14" weight="fill" class="text-[#ff8080]" />
+            <span class="text-[#ff8080]">Belum Tepat! Mobilmu tertahan!</span>
+          </template>
+        </div>
+        <p class="font-sans text-[10px] sm:text-[11px] leading-relaxed text-justify break-words">
+          {{ currentQuestion.explanation }}
+        </p>
       </div>
-      <p class="font-sans text-[10px] sm:text-[11px] leading-relaxed text-justify break-words">
-        {{ currentQuestion.explanation }}
-      </p>
-    </div>
+    </Transition>
 
     <!-- Footer Actions -->
     <div class="border-t border-[#5a3a18] pt-1.5 flex items-center justify-between gap-2 shrink-0">
@@ -313,7 +320,7 @@ const handleNextRound = () => {
           type="button"
           @click="handleCheckAnswer"
           :disabled="selectedOptionIndex === null"
-          class="rpg-btn-primary py-2 px-4 text-[10px] sm:text-xs font-pixel font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+          class="rpg-btn-primary py-2 px-4 text-[10px] sm:text-xs font-pixel font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none cursor-pointer hover:animate-pop"
         >
           <PhCheck :size="14" weight="bold" />
           <span>PACU MOBIL</span>
@@ -322,7 +329,7 @@ const handleNextRound = () => {
           v-else
           type="button"
           @click="handleNextRound"
-          class="rpg-btn-primary py-2 px-4 text-[10px] sm:text-xs font-pixel font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+          class="rpg-btn-primary py-2 px-4 text-[10px] sm:text-xs font-pixel font-bold flex items-center justify-center gap-1.5 cursor-pointer animate-pulse-glow"
         >
           <span>{{ currentIndex < questions.length - 1 ? 'Lanjut Balapan' : 'Selesai' }}</span>
           <PhArrowRight :size="14" weight="bold" />
