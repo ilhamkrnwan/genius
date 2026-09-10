@@ -235,9 +235,11 @@ export interface Participant {
   prodi: string;
   faculty: string;
   avatar: string;
+  gender?: 'L' | 'P';
   totalXp: number;
   completedBooths: string[];
   stamps: Record<string, StampRecord>;
+  unlockedFloors?: number[];
   groupId?: string;
   groupName?: string;
   teamId?: string;

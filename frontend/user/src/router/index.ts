@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import HomeView from '@/views/HomeView.vue';
+import DashboardView from '@/views/DashboardView.vue';
+import Floor1View from '@/views/Floor1View.vue';
 import PetaView from '@/views/PetaView.vue';
 import PlayView from '@/views/PlayView.vue';
 import FloorIntroView from '@/views/FloorIntroView.vue';
@@ -17,6 +19,16 @@ const routes: Array<RouteRecordRaw> = [
     path: '/',
     name: 'home',
     component: HomeView,
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: DashboardView,
+  },
+  {
+    path: '/floor/1',
+    name: 'floor-1',
+    component: Floor1View,
   },
   {
     path: '/peta',
