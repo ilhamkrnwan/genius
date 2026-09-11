@@ -38,6 +38,7 @@ const gameStore = useGameStore();
 const floor = computed(() => FLOORS_DATA.find((f) => f.number === 1)!);
 const booth1A = computed(() => BOOTHS_DATA['booth-1a']);
 const booth1B = computed(() => BOOTHS_DATA['booth-1b']);
+const booth1C = computed(() => BOOTHS_DATA['booth-1c']);
 
 const selectedAvatar = computed(
   () => AVATAR_OPTIONS.find((a) => a.id === gameStore.participant.avatar) || AVATAR_OPTIONS[0]
@@ -45,82 +46,40 @@ const selectedAvatar = computed(
 
 // ─── Tutorial state ───────────────────────────────────────────────────────────
 const showTutorial = ref(false);
-const tutorialGame = ref<'booth-1a' | 'booth-1b'>('booth-1a');
 const tutorialStep = ref(0);
 
-const tutorials: Record<'booth-1a' | 'booth-1b', { icon: string; title: string; color: string; steps: { title: string; desc: string; visual: string }[] }> = {
-  'booth-1a': {
-    icon: 'Images',
-    title: 'Tutorial: Tebak Gambar',
-    color: '#f0d060',
-    steps: [
-      {
-        title: 'Perhatikan Visual',
-        desc: 'Setiap soal menampilkan sebuah gambar atau ikon. Amati dengan teliti gambar tersebut sebelum menjawab.',
-        visual: 'image',
-      },
-      {
-        title: 'Baca Pertanyaan',
-        desc: 'Di bawah gambar ada pertanyaan. Baca dengan seksama agar kamu tidak salah pilih jawaban.',
-        visual: 'question',
-      },
-      {
-        title: 'Pilih Jawaban',
-        desc: 'Ada 4 pilihan jawaban (A, B, C, D). Ketuk salah satu yang menurutmu paling benar.',
-        visual: 'options',
-      },
-      {
-        title: 'Periksa & Lanjut',
-        desc: 'Tekan tombol "PERIKSA JAWABAN". Sistem akan langsung memberi tahu apakah kamu benar atau salah beserta penjelasannya.',
-        visual: 'check',
-      },
-      {
-        title: 'Kumpulkan Stempel!',
-        desc: 'Jawab semua soal dan raih skor ≥ 70% untuk mendapatkan Stempel Emas dan +250 XP. Yuk mulai!',
-        visual: 'stamp',
-      },
-    ],
-  },
-  'booth-1b': {
-    icon: 'FlagCheckered',
-    title: 'Tutorial: Kuis Balapan',
-    color: '#7ec850',
-    steps: [
-      {
-        title: 'Mode Balapan!',
-        desc: 'Kamu dan rival bot akan berlomba menjawab soal. Semakin cepat dan tepat, semakin jauh kamu memimpin!',
-        visual: 'race',
-      },
-      {
-        title: 'Baca Soal dengan Cepat',
-        desc: 'Soal akan muncul satu per satu. Kecepatan berpikir adalah kuncinya — tapi jangan terburu-buru sampai salah!',
-        visual: 'question',
-      },
-      {
-        title: 'Ketuk Jawaban Tercepat',
-        desc: 'Pilih jawaban yang benar dari 4 opsi yang tersedia. Setiap jawaban benar akan menggerakkan avatarmu maju.',
-        visual: 'options',
-      },
-      {
-        title: 'Lihat Posisi di Track',
-        desc: 'Perhatikan track balapan di atas. Kalahkan rival dan jadilah yang pertama menyelesaikan semua soal!',
-        visual: 'track',
-      },
-      {
-        title: 'Finis & Raih XP!',
-        desc: 'Selesaikan semua soal sebelum rival dan dapatkan Stempel Emas +250 XP. Siap balapan?',
-        visual: 'stamp',
-      },
-    ],
-  },
+const currentTutorial = {
+  icon: 'Lightning',
+  title: 'Tutorial: Kuis Cepat',
+  color: '#f0d060',
+  steps: [
+    {
+      title: 'Berpacu dengan Waktu!',
+      desc: 'Selesaikan semua pertanyaan pilihan ganda sebelum waktu kuis habis.',
+      visual: 'race',
+    },
+    {
+      title: 'Baca Pertanyaan',
+      desc: 'Baca pertanyaan dengan teliti namun cepat. Jangan sampai terkecoh!',
+      visual: 'question',
+    },
+    {
+      title: 'Pilih Jawaban',
+      desc: 'Pilih jawaban yang paling tepat dari opsi yang tersedia. Pilihanmu akan langsung tersimpan.',
+      visual: 'options',
+    },
+    {
+      title: 'Kumpulkan Stempel!',
+      desc: 'Raih skor minimal 70% untuk lulus pos ini dan mendapatkan stempel emas beserta XP.',
+      visual: 'stamp',
+    },
+  ],
 };
 
-const currentTutorial = computed(() => tutorials[tutorialGame.value]);
-const currentStep = computed(() => currentTutorial.value.steps[tutorialStep.value]);
-const isLastStep = computed(() => tutorialStep.value >= currentTutorial.value.steps.length - 1);
+const currentStep = computed(() => currentTutorial.steps[tutorialStep.value]);
+const isLastStep = computed(() => tutorialStep.value >= currentTutorial.steps.length - 1);
 
-const openTutorial = (game: 'booth-1a' | 'booth-1b') => {
-  tutorialGame.value = game;
+const openTutorial = () => {
   tutorialStep.value = 0;
   showTutorial.value = true;
 };
@@ -134,18 +93,20 @@ const nextTutorialStep = () => {
 };
 
 // ─── Game state ───────────────────────────────────────────────────────────────
-type ActiveGame = 'booth-1a' | 'booth-1b' | null;
+type ActiveGame = 'booth-1a' | 'booth-1b' | 'booth-1c' | null;
 const activeGame = ref<ActiveGame>(null);
 
 const currentBooth = computed(() => {
   if (activeGame.value === 'booth-1a') return booth1A.value;
   if (activeGame.value === 'booth-1b') return booth1B.value;
+  if (activeGame.value === 'booth-1c') return booth1C.value;
   return null;
 });
 
 const isCompleted1A = computed(() => gameStore.isBoothCompleted('booth-1a'));
 const isCompleted1B = computed(() => gameStore.isBoothCompleted('booth-1b'));
-const floorCompleted = computed(() => isCompleted1A.value && isCompleted1B.value);
+const isCompleted1C = computed(() => gameStore.isBoothCompleted('booth-1c'));
+const floorCompleted = computed(() => isCompleted1A.value && isCompleted1B.value && isCompleted1C.value);
 
 // ─── Celebration state ────────────────────────────────────────────────────────
 const showCelebration = ref(false);
@@ -294,7 +255,7 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
           <div class="flex gap-2">
             <button
               type="button"
-              @click="openTutorial('booth-1a')"
+              @click="openTutorial()"
               class="flex-1 flex items-center justify-center gap-2 bg-[#1a0f07] border-2 border-[#5a3a18] hover:border-[#f0d060] rounded-xl p-3 transition-all active:translate-y-1 cursor-pointer shadow-[0_2px_0_#0a0704]"
             >
               <div class="w-8 h-8 rounded-lg bg-[#38761d] border-2 border-[#7ec850] flex items-center justify-center shrink-0">
@@ -302,20 +263,7 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
               </div>
               <div class="text-left">
                 <p class="font-pixel text-[9px] text-[#f0d060]">Cara Main</p>
-                <p class="font-sans text-[10px] text-[#a08060]">Tebak Gambar</p>
-              </div>
-            </button>
-            <button
-              type="button"
-              @click="openTutorial('booth-1b')"
-              class="flex-1 flex items-center justify-center gap-2 bg-[#1a0f07] border-2 border-[#5a3a18] hover:border-[#f0d060] rounded-xl p-3 transition-all active:translate-y-1 cursor-pointer shadow-[0_2px_0_#0a0704]"
-            >
-              <div class="w-8 h-8 rounded-lg bg-[#1a4fa0] border-2 border-[#3a7fd4] flex items-center justify-center shrink-0">
-                <PhInfo :size="18" weight="fill" class="text-white" />
-              </div>
-              <div class="text-left">
-                <p class="font-pixel text-[9px] text-[#f0d060]">Cara Main</p>
-                <p class="font-sans text-[10px] text-[#a08060]">Kuis Balapan</p>
+                <p class="font-sans text-[10px] text-[#a08060]">Kuis Cepat</p>
               </div>
             </button>
           </div>
@@ -324,7 +272,7 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
           <div class="flex items-center justify-center gap-3 bg-[#1a0f07]/60 border border-[#5a3a18] rounded-xl p-2.5 mt-2">
             <PhTrophy :size="20" weight="fill" class="text-[#f0d060] shrink-0" />
             <p class="font-pixel text-[9px] text-[#f0d060]">Total Reward Lantai 1:</p>
-            <p class="font-sans text-[11px] text-[#7ec850] font-bold">+500 XP &amp; 2 Stempel Emas</p>
+            <p class="font-sans text-[11px] text-[#7ec850] font-bold">+750 XP &amp; 3 Stempel Emas</p>
           </div>
         </div>
       </section>
@@ -336,7 +284,7 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
         <div class="flex items-center gap-2 mb-4">
           <span class="w-2 h-6 bg-[#7ec850] border-2 border-[#1e3d0f] shrink-0"></span>
           <h2 class="font-pixel text-sm text-white text-shadow">Misi Lantai 1</h2>
-          <span class="font-pixel text-[9px] text-[#a08060] ml-auto">2 Booth Tersedia</span>
+          <span class="font-pixel text-[9px] text-[#a08060] ml-auto">3 Pos Tersedia</span>
         </div>
 
         <div class="flex flex-col gap-4">
@@ -454,6 +402,68 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
               >
                 <PhPlay :size="14" weight="fill" />
                 <span>{{ isCompleted1B ? 'MAINKAN ULANG' : 'MULAI MISI' }}</span>
+                <PhArrowRight :size="14" weight="bold" />
+              </button>
+            </div>
+          </div>
+
+          <!-- ── BOOTH 1C ── -->
+          <div
+            class="relative rounded-2xl border-4 overflow-hidden transition-all duration-150"
+            :class="isCompleted1C
+              ? 'border-[#7ec850] shadow-[0_4px_0_#1e3d0f] hover:-translate-y-1 hover:shadow-[0_6px_0_#1e3d0f]'
+              : isCompleted1B
+                ? 'border-[#5c4033] shadow-[0_4px_0_#1a0f08] hover:-translate-y-1 hover:shadow-[0_6px_0_#1a0f08]'
+                : 'border-[#3a2818] shadow-[0_4px_0_#0a0704] opacity-60'"
+          >
+            <!-- Locked overlay -->
+            <div v-if="!isCompleted1B" class="absolute inset-0 z-10 flex items-center justify-center bg-[#0a0704]/70 backdrop-blur-[2px]">
+              <div class="text-center space-y-2">
+                <PhLockKey :size="32" weight="fill" class="text-[#5c4033] mx-auto" />
+                <p class="font-pixel text-[10px] text-[#5c4033]">Selesaikan B1-B dahulu</p>
+              </div>
+            </div>
+            <div v-if="isCompleted1B && isCompleted1C" class="absolute inset-0 bg-gradient-to-r from-[#1a2e1a]/60 to-transparent pointer-events-none"></div>
+
+            <div class="p-4 sm:p-5 bg-[#3a2818]">
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div
+                    class="w-10 h-10 rounded-xl flex items-center justify-center border-2 shrink-0"
+                    :class="isCompleted1C ? 'bg-[#1a2e1a] border-[#7ec850]' : 'bg-[#1f140a] border-[#f0d060]'"
+                  >
+                    <StampIcon name="ChatCenteredText" :size="20" :class="isCompleted1C ? 'text-[#7ec850]' : 'text-[#f0d060]'" />
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 mb-0.5">
+                      <span class="font-pixel text-[9px] text-[#f0d060] bg-[#170f07] px-1.5 py-0.5 rounded border border-[#5a3a18]">B1-C</span>
+                      <span v-if="isCompleted1C" class="font-pixel text-[9px] text-[#7ec850]">✓ Selesai</span>
+                      <span v-else class="font-pixel text-[9px] text-[#f0d060]">+250 XP</span>
+                    </div>
+                    <h3 class="font-pixel text-[10px] sm:text-[11px] font-bold text-white leading-snug">{{ booth1C.name }}</h3>
+                  </div>
+                </div>
+                <PhCheckCircle v-if="isCompleted1C" :size="24" weight="fill" class="text-[#7ec850] shrink-0" />
+              </div>
+
+              <div class="flex items-center gap-2 mb-3">
+                <PhGameController :size="14" class="text-[#c4956a]" />
+                <span class="font-sans text-[11px] text-[#c4956a]">{{ getGameLabel(booth1C.tipe_game) }}</span>
+              </div>
+
+              <p class="font-sans text-[11px] sm:text-xs text-[#a89078] leading-relaxed mb-4 line-clamp-2">{{ booth1C.story }}</p>
+
+              <button
+                type="button"
+                @click="isCompleted1B && handleStartGame('booth-1c')"
+                :disabled="!isCompleted1B"
+                class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-4 font-pixel text-[11px] transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                :class="isCompleted1C
+                  ? 'bg-[#1a2e1a] border-[#7ec850] text-[#7ec850] hover:bg-[#223a22] hover:-translate-y-1 hover:shadow-[0_6px_0_#1e3d0f] active:translate-y-1 active:shadow-none shadow-[0_4px_0_#1e3d0f]'
+                  : 'bg-[#38761d] border-[#7ec850] text-white hover:bg-[#44911f] hover:-translate-y-1 hover:shadow-[0_6px_0_#1e3d0f] active:translate-y-1 active:shadow-none shadow-[0_4px_0_#1e3d0f]'"
+              >
+                <PhPlay :size="14" weight="fill" />
+                <span>{{ isCompleted1C ? 'MAINKAN ULANG' : 'MULAI MISI' }}</span>
                 <PhArrowRight :size="14" weight="bold" />
               </button>
             </div>

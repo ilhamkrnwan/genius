@@ -212,7 +212,7 @@ export interface Floor {
   description: string;
   icon: string;
   accentColor: string;
-  boothIds: [string, string];
+  boothIds: string[];
   storyIntro?: FloorStoryIntro;
 }
 
