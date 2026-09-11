@@ -1440,7 +1440,7 @@ export const INITIAL_PARTICIPANT: Participant = {
   totalXp: 0,
   completedBooths: [],
   stamps: {},
-  unlockedFloors: [],
+  unlockedFloors: [1],
   groupId: 'group-03',
   groupName: 'Genius 03',
   isRegistered: false,
