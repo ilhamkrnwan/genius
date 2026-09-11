@@ -31,6 +31,11 @@ const routes: Array<RouteRecordRaw> = [
     component: Floor1View,
   },
   {
+    path: '/floor/2',
+    name: 'floor-2',
+    component: () => import('@/views/Floor2View.vue'),
+  },
+  {
     path: '/peta',
     name: 'peta',
     component: PetaView,
