@@ -514,9 +514,9 @@ async function seed() {
   }
 
   // ============================================================
-  // 8. SEED ATTENDANCE SESSION & ORMAWA BOOTHS
+  // 8. SEED ATTENDANCE SESSION & OFFICIAL 19 ORMAWA BOOTHS
   // ============================================================
-  console.log("🎫 [8/8] Setting up Active Attendance Session & Ormawa Booths...");
+  console.log("🎫 [8/8] Setting up Active Attendance Session & Official Ormawa Booths...");
   await db.insert(attendanceSessions).values({
     title: "Presensi Gerbang Masuk Hari 1 — Campus Discovery",
     description: "Scan QR Code di Lobby Lantai 1 untuk presensi kehadiran pagi & klaim 100 XP awal.",
@@ -528,18 +528,312 @@ async function seed() {
     lateTime: "07:30",
   });
 
-  const sampleOrmawa = [
-    { code: "ORMAWA-SILAT", name: "Pagar Nusa & Pencak Silat UNU Jogja", shortName: "Silat Pagar Nusa", category: "Olahraga & Seni Beladiri", boothNumber: "E3-01", description: "Pengembangan seni beladiri tradisional dan kebugaran jasmani mahasiswa.", qrCode: "UNU-ORMAWA-SILAT-2026", xpReward: 75, badgeIcon: "Shield", badgeColor: "#16a34a", contactPerson: "Zaki (+6281399887766)", instagram: "@silat_unujogja" },
-    { code: "ORMAWA-ROBOTIK", name: "Komunitas Robotika & AI UNU", shortName: "Robotika AI Club", category: "Sains & Teknologi", boothNumber: "E3-02", description: "Riset dan pengembangan robot cerdas, drone, dan IoT kampus.", qrCode: "UNU-ORMAWA-ROBOTIK-2026", xpReward: 75, badgeIcon: "Cpu", badgeColor: "#38bdf8", contactPerson: "Farhan (+6281234567891)", instagram: "@robotika_unujogja" },
-    { code: "ORMAWA-PADUS", name: "Paduan Suara Mahasiswa Gita Nusantara", shortName: "PSM Gita Nusantara", category: "Seni & Vokal", boothNumber: "E3-03", description: "Paduan suara representasi kampus pada agenda protokoler dan festival padus nasional.", qrCode: "UNU-ORMAWA-PADUS-2026", xpReward: 75, badgeIcon: "MusicNotes", badgeColor: "#ec4899", contactPerson: "Nabila (+6281298765432)", instagram: "@psm_unujogja" },
-    { code: "ORMAWA-TEATER", name: "Teater & Seni Peran Candradimuka", shortName: "Teater Candradimuka", category: "Seni Pertunjukan", boothNumber: "E3-04", description: "Apresiasi sastra, lakon panggung, dan seni peran mahasiswa.", qrCode: "UNU-ORMAWA-TEATER-2026", xpReward: 75, badgeIcon: "MasksTheater", badgeColor: "#a855f7", contactPerson: "Danang (+6285612345678)", instagram: "@teater_unujogja" },
-    { code: "ORMAWA-KSR", name: "Korps Sukarela (KSR) PMI Unit UNU", shortName: "KSR PMI UNU", category: "Sosial & Kemanusiaan", boothNumber: "E3-05", description: "Pelayanan pertolongan pertama, donor darah, dan tanggap bencana kampus.", qrCode: "UNU-ORMAWA-KSR-2026", xpReward: 75, badgeIcon: "FirstAidKit", badgeColor: "#ef4444", contactPerson: "Rina (+6287711223344)", instagram: "@ksrpmi_unujogja" },
+  const fl3 = createdFloors.find((f) => f.number === 3)?.id;
+  const fl4 = createdFloors.find((f) => f.number === 4)?.id;
+  const fl5 = createdFloors.find((f) => f.number === 5)?.id;
+
+  const officialOrmawa = [
+    {
+      code: "ORMAWA-HMTE",
+      name: "Himpunan Mahasiswa Teknik Elektro (HMTE)",
+      shortName: "HMTE",
+      category: "Himpunan Mahasiswa",
+      floorId: fl3,
+      boothNumber: "E-01",
+      description: "Wadah aspirasi, kreativitas, riset keteknikan, dan pengembangan kompetensi mahasiswa Teknik Elektro UNU Yogyakarta.",
+      qrCode: "UNU-ORMAWA-HMTE-2026",
+      xpReward: 75,
+      badgeIcon: "Lightning",
+      badgeColor: "#f59e0b",
+      contactPerson: "Dito Aji Nugroho (NIM 241113013) - 085816307604",
+      instagram: "@hmte_unujogja",
+    },
+    {
+      code: "ORMAWA-HIMAFAR",
+      name: "Himpunan Mahasiswa Farmasi (HIMAFAR)",
+      shortName: "HIMAFAR",
+      category: "Himpunan Mahasiswa",
+      floorId: fl4,
+      boothNumber: "E-02",
+      description: "Organisasi keprofesian dan keilmuan mahasiswa Farmasi dalam pengembangan sains obat halal, klinis, dan herbal nusantara.",
+      qrCode: "UNU-ORMAWA-HIMAFAR-2026",
+      xpReward: 75,
+      badgeIcon: "Pill",
+      badgeColor: "#10b981",
+      contactPerson: "Roikhan Ziaulhaq Aula (NIM 243333057) - 082226332991",
+      instagram: "@himafar_unujogja",
+    },
+    {
+      code: "ORMAWA-MUSIK",
+      name: "UKM Musik Florence UNU Yogyakarta",
+      shortName: "Musik Florence",
+      category: "Seni & Musik",
+      floorId: fl3,
+      boothNumber: "E-03",
+      description: "Komunitas musisi kampus penampung minat band, akustik, aransemen lagu, audio engineering, dan panggung apresiasi nada.",
+      qrCode: "UNU-ORMAWA-MUSIK-2026",
+      xpReward: 75,
+      badgeIcon: "Guitar",
+      badgeColor: "#a855f7",
+      contactPerson: "Sahrul Jihad (NIM 244441046) - 082251691584",
+      instagram: "@musikflorence_unu",
+    },
+    {
+      code: "ORMAWA-HIMASII",
+      name: "Himpunan Mahasiswa Studi Islam Interdisipliner (HIMASII)",
+      shortName: "HIMASII",
+      category: "Himpunan Mahasiswa",
+      floorId: fl5,
+      boothNumber: "E-04",
+      description: "Wadah kajian intelektual Islam kontemporer, dialog antar peradaban, sosiologi keagamaan, dan integrasi studi Islam interdisipliner.",
+      qrCode: "UNU-ORMAWA-HIMASII-2026",
+      xpReward: 75,
+      badgeIcon: "BookOpen",
+      badgeColor: "#0d9488",
+      contactPerson: "Risco Dwi Kurniawan (NIM 245551083) - 081373453027",
+      instagram: "@himasii_unujogja",
+    },
+    {
+      code: "ORMAWA-PADUS",
+      name: "UKM Paduan Suara Mahasiswa (PSM) Gita Nusantara",
+      shortName: "PSM Gita Nusantara",
+      category: "Seni & Vokal",
+      floorId: fl3,
+      boothNumber: "E-05",
+      description: "Paduan suara resmi representasi universitas dalam kompetisi paduan suara, konser harmoni kebangsaan, dan protokoler wisuda.",
+      qrCode: "UNU-ORMAWA-PADUS-2026",
+      xpReward: 75,
+      badgeIcon: "MusicNotes",
+      badgeColor: "#ec4899",
+      contactPerson: "Dimas Ardhiwinata (NIM 245551076) - 082374544670",
+      instagram: "@psm_unujogja",
+    },
+    {
+      code: "ORMAWA-HIMATIKA",
+      name: "Himpunan Mahasiswa Informatika (HIMATIKA)",
+      shortName: "HIMATIKA",
+      category: "Himpunan Mahasiswa",
+      floorId: fl3,
+      boothNumber: "E-06",
+      description: "Himpunan pemersatu mahasiswa informatika, pengembang software engineering, data science, cybersecurity, dan kompetisi Gemastik.",
+      qrCode: "UNU-ORMAWA-HIMATIKA-2026",
+      xpReward: 75,
+      badgeIcon: "Code",
+      badgeColor: "#2563eb",
+      contactPerson: "Muhammad Raihan (NIM 241111075) - 082333016806",
+      instagram: "@himatika_unujogja",
+    },
+    {
+      code: "ORMAWA-HIMAGRI",
+      name: "Himpunan Mahasiswa Agribisnis (HIMAGRI)",
+      shortName: "HIMAGRI",
+      category: "Himpunan Mahasiswa",
+      floorId: fl4,
+      boothNumber: "E-07",
+      description: "Penggerak agrososiopreneur modern, rantai pasok pangan berkelanjutan, dan pemberdayaan petani milenial berbasis inovasi cerdas.",
+      qrCode: "UNU-ORMAWA-HIMAGRI-2026",
+      xpReward: 75,
+      badgeIcon: "Plant",
+      badgeColor: "#65a30d",
+      contactPerson: "Eka Aditya (NIM 243331011) - 08812451059",
+      instagram: "@himagri_unujogja",
+    },
+    {
+      code: "ORMAWA-HMP-THP",
+      name: "Himpunan Mahasiswa Teknologi Hasil Pertanian (HMP THP)",
+      shortName: "HMP THP",
+      category: "Himpunan Mahasiswa",
+      floorId: fl4,
+      boothNumber: "E-08",
+      description: "Organisasi kemahasiswaan riset pengolahan pangan halal, bioteknologi pangan nusantara, mikrobiologi terapan, dan ketahanan pangan.",
+      qrCode: "UNU-ORMAWA-HMP-THP-2026",
+      xpReward: 75,
+      badgeIcon: "Flask",
+      badgeColor: "#ca8a04",
+      contactPerson: "Muh. Naufal Rosyiq Ammar (NIM 243332036) - 0882003832116",
+      instagram: "@hmpthp_unujogja",
+    },
+    {
+      code: "ORMAWA-HIMATANSI",
+      name: "Himpunan Mahasiswa Akuntansi (HIMATANSI)",
+      shortName: "HIMATANSI",
+      category: "Himpunan Mahasiswa",
+      floorId: fl5,
+      boothNumber: "E-09",
+      description: "Wadah pengembangan keahlian akuntansi forensik, audit syariah, financial analysis, dan perpajakan di era transformasi digital.",
+      qrCode: "UNU-ORMAWA-HIMATANSI-2026",
+      xpReward: 75,
+      badgeIcon: "Calculator",
+      badgeColor: "#0284c7",
+      contactPerson: "Gita Selfiana Tasya (NIM 244442056) - 087726430792",
+      instagram: "@himatansi_unujogja",
+    },
+    {
+      code: "ORMAWA-JQH-IAC",
+      name: "UKM Jam'iyyatul Qurro' wal Huffazh & Intercollegiate Arabic Club (JQH IAC)",
+      shortName: "UKM JQH IAC",
+      category: "Keagamaan & Bahasa",
+      floorId: fl5,
+      boothNumber: "E-10",
+      description: "Pusat pembinaan tilawatil Qur'an, tahfizh, kajian tartil, serta dialektika debat dan percakapan bahasa Arab mahasiswa.",
+      qrCode: "UNU-ORMAWA-JQH-IAC-2026",
+      xpReward: 75,
+      badgeIcon: "BookBookmark",
+      badgeColor: "#047857",
+      contactPerson: "Akhyar Sabqi (NIM 235551030) - 081523754964",
+      instagram: "@jqhiac_unujogja",
+    },
+    {
+      code: "ORMAWA-BADMINTON",
+      name: "UKM Badminton UNU Yogyakarta",
+      shortName: "UKM Badminton",
+      category: "Olahraga",
+      floorId: fl4,
+      boothNumber: "E-11",
+      description: "Wadah atlet dan peminat olahraga bulutangkis untuk pembinaan teknik, sparring berkala, dan kejuaraan pekan olahraga mahasiswa.",
+      qrCode: "UNU-ORMAWA-BADMINTON-2026",
+      xpReward: 75,
+      badgeIcon: "Trophy",
+      badgeColor: "#f97316",
+      contactPerson: "Riski Ramadhan (NIM 251113022) - 081351770669",
+      instagram: "@badminton_unujogja",
+    },
+    {
+      code: "ORMAWA-MAPALA",
+      name: "UKM Mahasiswa Pecinta Alam UNUYO (MAPALA)",
+      shortName: "UKM MAPALA UNUYO",
+      category: "Pecinta Alam & Lingkungan",
+      floorId: fl4,
+      boothNumber: "E-12",
+      description: "Organisasi penggiat alam bebas, konservasi rimba gunung, susur gua (caving), rock climbing, dan tanggap darurat search & rescue.",
+      qrCode: "UNU-ORMAWA-MAPALA-2026",
+      xpReward: 75,
+      badgeIcon: "Compass",
+      badgeColor: "#166534",
+      contactPerson: "Aditya Firdaus Alfajar (NIM 231111047) - 082138047276",
+      instagram: "@mapala_unuyo",
+    },
+    {
+      code: "ORMAWA-SILAT",
+      name: "UKM Pencak Silat Pagar Nusa UNU Yogyakarta",
+      shortName: "UKM Pencak Silat",
+      category: "Olahraga & Seni Beladiri",
+      floorId: fl3,
+      boothNumber: "E-13",
+      description: "Kawah candradimuka pesilat Nahdlatul Ulama yang memadukan keindahan jurus tradisional, adu tanding fisik, dan nilai ksatria Aswaja.",
+      qrCode: "UNU-ORMAWA-SILAT-2026",
+      xpReward: 75,
+      badgeIcon: "Shield",
+      badgeColor: "#15803d",
+      contactPerson: "Dhany Dwi Saputra (NIM 241113035) - 081288867914",
+      instagram: "@silat_unujogja",
+    },
+    {
+      code: "ORMAWA-TARI",
+      name: "UKM Seni Tari Tradisional & Modern UNU Yogyakarta",
+      shortName: "UKM Tari",
+      category: "Seni & Budaya",
+      floorId: fl3,
+      boothNumber: "E-14",
+      description: "Ruang gerak estetika dan koreografi penari muda dalam melestarikan tarian klasik nusantara serta kreasi tari kontemporer.",
+      qrCode: "UNU-ORMAWA-TARI-2026",
+      xpReward: 75,
+      badgeIcon: "Sparkle",
+      badgeColor: "#f43f5e",
+      contactPerson: "Faiqotul Mahfaza (NIM 244442082) - 082279370055",
+      instagram: "@tari_unujogja",
+    },
+    {
+      code: "ORMAWA-HIMA-PGSD",
+      name: "Himpunan Mahasiswa Pendidikan Guru Sekolah Dasar (HIMA PGSD)",
+      shortName: "HIMA PGSD",
+      category: "Himpunan Mahasiswa",
+      floorId: fl5,
+      boothNumber: "E-15",
+      description: "Wadah calon pendidik bangsa berkarakter inklusif, pengembang media pembelajaran interaktif, microteaching, dan pendidikan anak abad 21.",
+      qrCode: "UNU-ORMAWA-HIMA-PGSD-2026",
+      xpReward: 75,
+      badgeIcon: "GraduationCap",
+      badgeColor: "#4f46e5",
+      contactPerson: "Tri Yuliyanto (NIM 242221040) - 085641353117",
+      instagram: "@himapgsd_unujogja",
+    },
+    {
+      code: "ORMAWA-HMP-PBI",
+      name: "Himpunan Mahasiswa Program Studi Pendidikan Bahasa Inggris (HMP PBI)",
+      shortName: "HMP PBI",
+      category: "Himpunan Mahasiswa",
+      floorId: fl5,
+      boothNumber: "E-16",
+      description: "Komunitas calon guru dan profesional bahasa Inggris, penyelenggara English speech, drama festival, and global pedagogical insights.",
+      qrCode: "UNU-ORMAWA-HMP-PBI-2026",
+      xpReward: 75,
+      badgeIcon: "Translate",
+      badgeColor: "#0891b2",
+      contactPerson: "Masbihul Abidi (NIM 242222020) - 083138822922",
+      instagram: "@hmppbi_unujogja",
+    },
+    {
+      code: "ORMAWA-KSR",
+      name: "UKM Korps Sukarela PMI Unit UNU Yogyakarta (KSR PMI)",
+      shortName: "UKM KSR PMI UNUYO",
+      category: "Sosial & Kemanusiaan",
+      floorId: fl4,
+      boothNumber: "E-17",
+      description: "Garda terdepan kemanusiaan kampus dalam layanan P3K cepat tanggap, donor darah teratur, edukasi tanggap bencana, dan bakti kesehatan.",
+      qrCode: "UNU-ORMAWA-KSR-2026",
+      xpReward: 75,
+      badgeIcon: "FirstAidKit",
+      badgeColor: "#dc2626",
+      contactPerson: "Wahyu Nugroho (NIM 224442005) - 089514729547",
+      instagram: "@ksrpmi_unujogja",
+    },
+    {
+      code: "ORMAWA-PERMASUM",
+      name: "PERMASUM UNUYO (Persatuan Mahasiswa Sumatera UNU Yogyakarta)",
+      shortName: "PERMASUM UNUYO",
+      category: "Organisasi Daerah & Kebudayaan",
+      floorId: fl4,
+      boothNumber: "E-18",
+      description: "Rumah kekeluargaan dan persatuan mahasiswa rantau asal pulau Sumatera di UNU Yogyakarta untuk pelestarian adat, seni, dan sinergi daerah.",
+      qrCode: "UNU-ORMAWA-PERMASUM-2026",
+      xpReward: 75,
+      badgeIcon: "UsersThree",
+      badgeColor: "#b45309",
+      contactPerson: "Rifki Ramadani (NIM 235551056) - 083830130949",
+      instagram: "@permasum_unuyo",
+    },
+    {
+      code: "ORMAWA-HMPM",
+      name: "Himpunan Mahasiswa Program Studi Manajemen UNU Yogyakarta (HMPM)",
+      shortName: "HMPM UNUYO",
+      category: "Himpunan Mahasiswa",
+      floorId: fl5,
+      boothNumber: "E-19",
+      description: "Inkubator calon manajer dan entrepreneur unggul dalam strategi bisnis digital, pemasaran modern, tata kelola korporasi, dan inovasi startup.",
+      qrCode: "UNU-ORMAWA-HMPM-2026",
+      xpReward: 75,
+      badgeIcon: "Briefcase",
+      badgeColor: "#7c3aed",
+      contactPerson: "Muhammad Farits Nauval (NIM 244441014) - 085742923549",
+      instagram: "@hmpm_unujogja",
+    },
   ];
 
-  for (const ob of sampleOrmawa) {
-    const [existing] = await db.select().from(ormawaBooths).where(eq(ormawaBooths.code, ob.code)).limit(1);
-    if (!existing) await db.insert(ormawaBooths).values(ob);
+  for (const ob of officialOrmawa) {
+    const [existing] = await db
+      .select()
+      .from(ormawaBooths)
+      .where(eq(ormawaBooths.code, ob.code))
+      .limit(1);
+
+    if (!existing) {
+      await db.insert(ormawaBooths).values(ob);
+    } else {
+      await db.update(ormawaBooths).set(ob).where(eq(ormawaBooths.id, existing.id));
+    }
   }
+  console.log(`  ✅ ${officialOrmawa.length} Official Ormawa Booths seeded (Lantai 3, 4, 5)`);
 
   console.log("\n========================================================");
   console.log("🎉 GENIUS 2026 DATABASE SEEDING COMPLETED SUCCESSFULLY!");
@@ -548,6 +842,7 @@ async function seed() {
   console.log("👥 Buddies (10): 25111101 s/d 25111110 (password: genius2026)");
   console.log("🎓 MABA (100)  : 26111101 s/d 26111200 (password: genius2026)");
   console.log("🛡️ Kelompok (5): Genius 01 s/d Genius 05 (20 MABA + 2 Buddy/tim)");
+  console.log("🎪 Ormawa (19) : 19 Official Booths (Lantai 3, 4, 5)");
   console.log("========================================================\n");
 
   process.exit(0);

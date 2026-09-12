@@ -82,7 +82,7 @@ const routeLabels: Record<string, string> = {
   floors: "Lantai UNU",
   routes: "Rute Perjalanan",
   missions: "Misi & Pos Tantangan",
-  stages: "Game Stages",
+  stages: "Timeline & Stages",
   "qr-center": "QR Print Center",
   games: "Arena Games",
   questions: "Bank Soal & Kuis",
