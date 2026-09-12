@@ -263,7 +263,7 @@ export const gameSessionRoutes = new Elysia({
           .where(and(eq(gameSessions.id, params.id), eq(gameSessions.status, "ACTIVE")))
           .returning();
         if (expired) {
-          await db.update(locations).set({ status: "AVAILABLE", updatedAt: now }).where(eq(locations.id, session.locationId));
+          if (answerMetadata.isPractice !== true) await db.update(locations).set({ status: "AVAILABLE", updatedAt: now }).where(eq(locations.id, session.locationId));
           await logAudit({ actorId: user?.userId, actorRole: user?.role as any, action: "GAME_SESSION_EXPIRED", targetType: "GAME_SESSION", targetId: session.id, details: { reason: "SERVER_TIMER" } });
           broadcastGameSessionEvent(session.id, "SESSION_EXPIRED", expired);
         }
@@ -367,24 +367,6 @@ export const gameSessionRoutes = new Elysia({
         return { success: false, error: { code: "FORBIDDEN", message: "Buddy is not assigned to this team" } };
       }
 
-      const [existingActiveSession] = await db
-        .select({ id: gameSessions.id, status: gameSessions.status })
-        .from(gameSessions)
-        .where(and(
-          eq(gameSessions.missionId, missionId),
-          eq(gameSessions.teamId, teamId),
-          inArray(gameSessions.status, ["READY", "ACTIVE", "PAUSED"]),
-        ))
-        .limit(1);
-      if (existingActiveSession) {
-        set.status = 409;
-        return {
-          success: false,
-          error: { code: "SESSION_ALREADY_ACTIVE", message: "Tim ini sudah memiliki sesi aktif untuk misi tersebut." },
-          data: { sessionId: existingActiveSession.id },
-        };
-      }
-
       const [mission] = await db
         .select({
           id: missions.id,
@@ -401,6 +383,42 @@ export const gameSessionRoutes = new Elysia({
       if (!mission || !mission.gameId) {
         set.status = 400;
         return { success: false, error: { code: "INVALID_MISSION", message: "Mission has no associated game template" } };
+      }
+
+      const [game] = await db.select().from(games).where(eq(games.id, mission.gameId)).limit(1);
+      if (!game) {
+        set.status = 404;
+        return { success: false, error: { code: "GAME_NOT_FOUND", message: "Game template not found" } };
+      }
+
+      const [existingActiveSession] = await db
+        .select({ id: gameSessions.id, status: gameSessions.status })
+        .from(gameSessions)
+        .where(and(
+          eq(gameSessions.missionId, missionId),
+          eq(gameSessions.teamId, teamId),
+          inArray(gameSessions.status, ["READY", "ACTIVE", "PAUSED"]),
+        ))
+        .limit(1);
+      if (existingActiveSession) {
+        // Auto-Start Cerdas: if existing session is READY and game is ACTIVE, auto-promote to ACTIVE
+        if (existingActiveSession.status === "READY" && game.status === "ACTIVE") {
+          const [promoted] = await db
+            .update(gameSessions)
+            .set({ status: "ACTIVE", serverStartAt: new Date(), updatedAt: new Date() })
+            .where(eq(gameSessions.id, existingActiveSession.id))
+            .returning();
+          return {
+            success: true,
+            data: promoted,
+          };
+        }
+        set.status = 409;
+        return {
+          success: false,
+          error: { code: "SESSION_ALREADY_ACTIVE", message: "Tim ini sudah memiliki sesi aktif untuk misi tersebut." },
+          data: { sessionId: existingActiveSession.id },
+        };
       }
 
       // Enforce No Replay Rule: Check if team has already completed this mission
@@ -421,15 +439,12 @@ export const gameSessionRoutes = new Elysia({
         };
       }
 
-      const [game] = await db.select().from(games).where(eq(games.id, mission.gameId)).limit(1);
-      if (!game) {
-        set.status = 404;
-        return { success: false, error: { code: "GAME_NOT_FOUND", message: "Game template not found" } };
-      }
+      // Replays are practice only, even for admins: never issue a second reward.
+      const isPractice = Boolean(alreadyCompleted);
 
       // Check Location Occupancy
       const [location] = await db.select().from(locations).where(eq(locations.id, mission.locationId)).limit(1);
-      if (location && location.status === "LOCKED") {
+      if (!isPractice && location && location.status === "LOCKED") {
         set.status = 423;
         return { success: false, error: { code: "LOCATION_LOCKED", message: "Location is currently locked by Game Master" } };
       }
@@ -482,10 +497,11 @@ export const gameSessionRoutes = new Elysia({
             locationId: mission.locationId,
             stageId: mission.stageId,
             buddyId: sessionBuddyId,
-            status: "READY",
+            status: (isPractice || game.status === "ACTIVE") ? "ACTIVE" : "READY",
+            serverStartAt: (isPractice || game.status === "ACTIVE") ? new Date() : null,
             timeLimit: mission.timeLimit || 300,
             participants: members,
-            metadata: { gamePayload, initialStep: 1 },
+            metadata: { gamePayload, initialStep: 1, isPractice },
           })
           .returning();
       } catch (error: any) {
@@ -500,7 +516,7 @@ export const gameSessionRoutes = new Elysia({
       }
 
       // Update location status to OCCUPIED
-      await db
+      if (!isPractice) await db
         .update(locations)
         .set({ status: "OCCUPIED", updatedAt: new Date() })
         .where(eq(locations.id, mission.locationId));
@@ -557,6 +573,9 @@ export const gameSessionRoutes = new Elysia({
       if (user?.role === "BUDDY" && !(await validateBuddyTeamScope(user, session.teamId))) {
         set.status = 403;
         return { success: false, error: { code: "FORBIDDEN", message: "Buddy is not assigned to this team" } };
+      }
+      if (session.status === "ACTIVE") {
+        return { success: true, message: "Sesi pos sudah aktif.", data: session };
       }
       if (!canStartSession(session.status)) {
         set.status = 409;
@@ -694,7 +713,7 @@ export const gameSessionRoutes = new Elysia({
           .where(and(eq(gameSessions.id, params.id), eq(gameSessions.status, "ACTIVE")))
           .returning();
         if (expired) {
-          await db.update(locations).set({ status: "AVAILABLE", updatedAt: endAt }).where(eq(locations.id, session.locationId));
+          if (completionMetadata.isPractice !== true) await db.update(locations).set({ status: "AVAILABLE", updatedAt: endAt }).where(eq(locations.id, session.locationId));
           await logAudit({ actorId: user?.userId, actorRole: user?.role as any, action: "GAME_SESSION_EXPIRED", targetType: "GAME_SESSION", targetId: session.id, details: { reason: "SERVER_TIMER_ON_COMPLETE" } });
           broadcastGameSessionEvent(session.id, "SESSION_EXPIRED", expired);
           broadcastAdminEvent("GAME_SESSION_EXPIRED", { sessionId: session.id, teamId: session.teamId });
@@ -741,14 +760,14 @@ export const gameSessionRoutes = new Elysia({
           status: "COMPLETED",
           serverEndAt: endAt,
           result: evalResult,
-          totalScore: evalResult.totalTeamScore,
+          totalScore: metadata.isPractice === true ? 0 : evalResult.totalTeamScore,
           updatedAt: endAt,
         })
         .where(eq(gameSessions.id, params.id))
         .returning();
 
       // Write Score Transactions to Point Ledger for each participant
-      if (evalResult.participantScores.length > 0) {
+      if (metadata.isPractice !== true && evalResult.participantScores.length > 0) {
         const txInserts = evalResult.participantScores.map((ps) => ({
           participantId: ps.participantId,
           teamId: session.teamId,
@@ -793,7 +812,7 @@ export const gameSessionRoutes = new Elysia({
       }
 
       // Reset location status back to AVAILABLE
-      await db
+      if (metadata.isPractice !== true) await db
         .update(locations)
         .set({ status: "AVAILABLE", updatedAt: new Date() })
         .where(eq(locations.id, session.locationId));
@@ -811,7 +830,7 @@ export const gameSessionRoutes = new Elysia({
         session: updatedSession,
         evaluation: evalResult,
       });
-      broadcastLeaderboardUpdate({ type: "SCORE_CHANGE", stageId: session.stageId });
+      if (metadata.isPractice !== true) broadcastLeaderboardUpdate({ type: "SCORE_CHANGE", stageId: session.stageId });
       broadcastAdminEvent("GAME_SESSION_COMPLETED", {
         sessionId: session.id,
         teamId: session.teamId,
@@ -868,8 +887,8 @@ export const gameSessionRoutes = new Elysia({
       .where(and(eq(gameSessions.id, params.id), inArray(gameSessions.status, ["READY", "ACTIVE", "PAUSED"])))
       .returning();
 
-    // Free location
-    await db
+    // Practice never occupies a location.
+    if ((session.metadata as Record<string, unknown> | null)?.isPractice !== true) await db
       .update(locations)
       .set({ status: "AVAILABLE", updatedAt: new Date() })
       .where(eq(locations.id, session.locationId));
@@ -916,7 +935,7 @@ export const gameSessionRoutes = new Elysia({
       .where(eq(gameSessions.id, params.id))
       .returning();
 
-    await db
+    if ((session.metadata as Record<string, unknown> | null)?.isPractice !== true) await db
       .update(locations)
       .set({ status: "AVAILABLE", updatedAt: now })
       .where(eq(locations.id, session.locationId));

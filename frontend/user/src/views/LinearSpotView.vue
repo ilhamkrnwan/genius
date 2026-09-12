@@ -35,10 +35,16 @@ const booth = computed(() => hasBackendAuth.value ? (backendBooth.value || BOOTH
 const serverSessionId = computed(() => gameSessionStore.session?.id);
 
 const floor = computed(() => FLOORS_DATA.find((f) => f.number === floorNumber.value) || FLOORS_DATA[0]);
-const boothA = computed(() => BOOTHS_DATA[floor.value.boothIds[0]]);
-const boothB = computed(() => BOOTHS_DATA[floor.value.boothIds[1]]);
+const floorBooths = computed(() => (floor.value.boothIds || []).map(id => BOOTHS_DATA[id]).filter(Boolean));
+const currentSpotIndex = computed(() => floorBooths.value.findIndex(b => b.id === spotId.value || b.code === booth.value?.code));
+const nextSpot = computed(() => {
+  if (currentSpotIndex.value >= 0 && currentSpotIndex.value < floorBooths.value.length - 1) {
+    return floorBooths.value[currentSpotIndex.value + 1];
+  }
+  return null;
+});
 
-const isSpot1 = computed(() => booth.value ? booth.value.id === boothA.value.id : true);
+const isSpot1 = computed(() => currentSpotIndex.value === 0);
 const isAlreadyCompleted = computed(() => gameStore.isBoothCompleted(spotId.value));
 
 const teamId = computed(() => {
@@ -207,8 +213,8 @@ const handleMiniGameComplete = (score: number, totalQuestions: number) => {
 
 const handleNextStep = () => {
   showCelebration.value = false;
-  if (isSpot1.value) {
-    router.push(`/play/floor/${floor.value.number}/spot/${boothB.value.id}`);
+  if (nextSpot.value) {
+    router.push(`/play/floor/${floor.value.number}/spot/${nextSpot.value.id}`);
   } else {
     router.push(`/play/floor/${floor.value.number}/complete`);
   }
@@ -436,7 +442,7 @@ const handleNextStep = () => {
       :floorNumber="celebrationDetails.floorNumber"
       :isLevelUp="celebrationDetails.isLevelUp"
       :newLevel="celebrationDetails.newLevel"
-      :nextActionLabel="isSpot1 ? `Lanjut Spot 2 (${boothB.code})` : `Lantai ${floor.number} Tuntas!`"
+      :nextActionLabel="nextSpot ? `Lanjut ke ${nextSpot.name} (${nextSpot.code})` : `Lantai ${floor.number} Tuntas!`"
       @close="showCelebration = false"
       @nextAction="handleNextStep"
     />

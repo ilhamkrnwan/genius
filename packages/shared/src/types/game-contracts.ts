@@ -147,8 +147,10 @@ const CANONICAL_TO_RENDERER: Record<CanonicalGameType, RendererKey> = {
   RAPID_ANSWER: 'benar_salah',
   TEAM_CHALLENGE: 'kuis_balapan',
   FLAPPY_BIRD: 'flappy_bird',
-  REACTION: 'flappy_bird',
-  EXPLORATION: 'kuis_cepat',
+  // There are no dedicated User components for these types yet. Do not
+  // silently render a different game engine in their place.
+  REACTION: 'not_implemented',
+  EXPLORATION: 'not_implemented',
 };
 
 const LEGACY_TO_RENDERER: Record<string, RendererKey> = {

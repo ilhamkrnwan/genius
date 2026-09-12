@@ -42,7 +42,7 @@ export const authMiddleware = new Elysia({ name: "auth-middleware" })
  */
 export const requireUser = new Elysia({ name: "require-user" })
   .use(authMiddleware)
-  .onBeforeHandle(({ user, set }) => {
+  .onBeforeHandle({ as: "scoped" }, ({ user, set }) => {
     if (!user) {
       set.status = 401;
       return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } };
@@ -54,7 +54,7 @@ export const requireUser = new Elysia({ name: "require-user" })
  */
 export const requireAdmin = new Elysia({ name: "require-admin" })
   .use(authMiddleware)
-  .onBeforeHandle(({ user, set }) => {
+  .onBeforeHandle({ as: "scoped" }, ({ user, set }) => {
     if (!user) {
       set.status = 401;
       return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } };
@@ -70,7 +70,7 @@ export const requireAdmin = new Elysia({ name: "require-admin" })
  */
 export const requireBuddyOrAdmin = new Elysia({ name: "require-buddy-or-admin" })
   .use(authMiddleware)
-  .onBeforeHandle(({ user, set, request }) => {
+  .onBeforeHandle({ as: "scoped" }, ({ user, set, request }) => {
     if (!user) {
       set.status = 401;
       return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } };

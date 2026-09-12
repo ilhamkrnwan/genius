@@ -43,6 +43,17 @@ if (usePglite) {
 
   // Ensure attendance_sessions table, columns, and enums exist in PGlite
   try {
+    // These profile columns were added after the initial local PGlite schema.
+    // Keep this migration separate so an enum compatibility warning cannot
+    // prevent the user table from being upgraded.
+    await client.exec(`
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "faculty" varchar(255);
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "prodi" varchar(255);
+    `);
+  } catch (e: any) {
+    console.warn("[DB] User profile compatibility migration warning:", e.message);
+  }
+  try {
     await client.exec(`
       ALTER TYPE "game_type" ADD VALUE IF NOT EXISTS 'FLAPPY_BIRD';
       CREATE TABLE IF NOT EXISTS "attendance_sessions" (

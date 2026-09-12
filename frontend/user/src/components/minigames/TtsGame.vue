@@ -110,7 +110,8 @@ const checkSolution = () => {
 
   if (correctCount === clues.value.length) {
     if (gameStore.soundEnabled) soundEngine.playCorrect();
-    emit('complete', correctCount, clues.value.length);
+    const totalTtsScore = clues.value.reduce((acc, c) => acc + (c.score ?? 20), 0);
+    emit('complete', totalTtsScore, clues.value.length);
   } else {
     if (gameStore.soundEnabled) soundEngine.playWrong();
   }

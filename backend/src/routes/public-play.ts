@@ -95,15 +95,61 @@ export const publicPlayRoutes = new Elysia({
     return { success: true, data: rows.filter((row) => row.gameId).map(toPublicMission), timestamp: new Date().toISOString() };
   })
   .get("/api/missions/:id/play", async ({ params, set }) => {
-    const [row] = await db
-      .select(missionSelection)
-      .from(missions)
-      .innerJoin(locations, eq(missions.locationId, locations.id))
-      .leftJoin(floors, eq(locations.floorId, floors.id))
-      .leftJoin(stages, eq(missions.stageId, stages.id))
-      .leftJoin(games, eq(missions.gameId, games.id))
-      .where(eq(missions.id, params.id))
-      .limit(1);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id);
+    const aliasMap: Record<string, string> = {
+      "booth-1": "POS-L1-1", "pos-1": "POS-L1-1", "booth-1a": "POS-L1-1",
+      "booth-2": "POS-L2-2", "pos-2": "POS-L2-2", "booth-2a": "POS-L2-2", "booth-2b": "POS-L2-6",
+      "booth-3": "POS-L3-3", "pos-3": "POS-L3-3", "booth-3a": "POS-L3-3",
+      "booth-4": "POS-L4-4", "pos-4": "POS-L4-4", "booth-4a": "POS-L4-4", "booth-4b": "POS-L4-9",
+      "booth-5": "POS-L5-5", "pos-5": "POS-L5-5", "booth-5a": "POS-L5-5",
+      "booth-6": "POS-L2-6", "pos-6": "POS-L2-6", "booth-6a": "POS-L6-7", "booth-6b": "POS-L6-8",
+      "booth-7": "POS-L6-7", "pos-7": "POS-L6-7",
+      "booth-8": "POS-L6-8", "pos-8": "POS-L6-8",
+      "booth-9": "POS-L4-9", "pos-9": "POS-L4-9",
+    };
+
+    const targetLocCode = aliasMap[params.id.toLowerCase()] || params.id.toUpperCase();
+
+    let [row] = isUuid
+      ? await db
+          .select(missionSelection)
+          .from(missions)
+          .innerJoin(locations, eq(missions.locationId, locations.id))
+          .leftJoin(floors, eq(locations.floorId, floors.id))
+          .leftJoin(stages, eq(missions.stageId, stages.id))
+          .leftJoin(games, eq(missions.gameId, games.id))
+          .where(eq(missions.id, params.id))
+          .limit(1)
+      : [];
+
+    if (!row) {
+      [row] = await db
+        .select(missionSelection)
+        .from(missions)
+        .innerJoin(locations, eq(missions.locationId, locations.id))
+        .leftJoin(floors, eq(locations.floorId, floors.id))
+        .leftJoin(stages, eq(missions.stageId, stages.id))
+        .leftJoin(games, eq(missions.gameId, games.id))
+        .where(and(eq(locations.code, targetLocCode), eq(missions.status, "ACTIVE")))
+        .orderBy(asc(missions.order))
+        .limit(1);
+    }
+
+    if (!row) {
+      // Fallback for legacy POS-L{n}-{A/B}
+      const legacySpot = /^booth-([1-9]\d*)([ab])$/i.exec(params.id);
+      if (legacySpot) {
+        [row] = await db
+          .select(missionSelection)
+          .from(missions)
+          .innerJoin(locations, eq(missions.locationId, locations.id))
+          .leftJoin(floors, eq(locations.floorId, floors.id))
+          .leftJoin(stages, eq(missions.stageId, stages.id))
+          .leftJoin(games, eq(missions.gameId, games.id))
+          .where(and(eq(locations.code, `POS-L${Number(legacySpot[1])}-${legacySpot[2].toUpperCase()}`), eq(missions.status, "ACTIVE")))
+          .limit(1);
+      }
+    }
 
     if (!row) {
       set.status = 404;

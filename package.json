@@ -21,6 +21,7 @@
     "db:push": "bun --filter @genius-unu/backend db:push",
     "db:generate": "bun --filter @genius-unu/backend db:generate",
     "db:studio": "bun --filter @genius-unu/backend db:studio",
-    "db:seed": "bun --filter @genius-unu/backend db:seed"
+    "db:seed": "bun --filter @genius-unu/backend db:seed",
+    "db:seed:quiz": "bun --filter @genius-unu/backend db:seed:quiz"
   }
 }

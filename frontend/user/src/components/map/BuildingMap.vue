@@ -9,7 +9,7 @@ import {
   PhPlay,
   PhGameController,
 } from '@phosphor-icons/vue';
-import { FLOORS_DATA } from '@/data/mockData';
+import { FLOORS_DATA, BOOTHS_DATA } from '@/data/mockData';
 import { useGameStore } from '@/store/gameStore';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
 import StampIcon from '@/components/ui/StampIcon.vue';
@@ -28,9 +28,15 @@ const completedFloors = computed(() => gameStore.getCompletedFloorsCount());
 const selectedFloor = computed(
   () => FLOORS_DATA.find((f) => f.number === selectedFloorNumber.value) || FLOORS_DATA[0]
 );
-const backendBoothsForFloor = computed(() => backendMissions.value.filter((mission) => mission.floorNumber === selectedFloorNumber.value).map((mission) => normalizePlayableMission(mission as any)));
-const selectedBoothA = computed<Booth>(() => backendBoothsForFloor.value[0] as Booth);
-const selectedBoothB = computed<Booth>(() => backendBoothsForFloor.value[1] as Booth);
+const boothsForFloor = computed<Booth[]>(() => {
+  const backendList = backendMissions.value
+    .filter((mission) => mission.floorNumber === selectedFloorNumber.value)
+    .map((mission) => normalizePlayableMission(mission as any));
+  if (backendList.length > 0) return backendList;
+
+  const localIds = selectedFloor.value.boothIds || [];
+  return localIds.map((id) => BOOTHS_DATA[id]).filter(Boolean) as Booth[];
+});
 const backendError = ref<string | null>(null);
 
 function boothPath(booth: Booth) {
@@ -105,7 +111,7 @@ const getGameTypeLabel = (type: string) => {
           <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-sans text-[#c4956a] flex-wrap">
             <span>{{ completedFloors }} Lantai Tuntas</span>
             <span>•</span>
-            <span class="text-[#7ec850]">{{ gameStore.participant.completedBooths.length }}/18 Stempel</span>
+            <span class="text-[#7ec850]">{{ gameStore.participant.completedBooths.length }}/9 Stempel</span>
             <span>•</span>
             <span class="text-[#f0d060]">{{ gameStore.participant.totalXp }} XP</span>
           </div>
@@ -124,7 +130,7 @@ const getGameTypeLabel = (type: string) => {
       </RouterLink>
     </div>
 
-    <!-- 9 Floors Horizontal Selector -->
+    <!-- 6 Floors Horizontal Selector -->
     <div class="bg-[#170f07] p-1.5 sm:p-2 border-2 border-[#5a3a18] rounded-xl shrink-0">
       <div class="flex items-center justify-between px-1 pb-1">
         <span class="text-[9px] font-pixel text-[#a08060] uppercase">
@@ -135,7 +141,7 @@ const getGameTypeLabel = (type: string) => {
         </span>
       </div>
 
-      <div class="grid grid-cols-9 gap-1 sm:gap-2">
+      <div class="grid grid-cols-6 gap-1 sm:gap-2">
         <button
           v-for="floor in FLOORS_DATA"
           :key="floor.number"
@@ -184,117 +190,69 @@ const getGameTypeLabel = (type: string) => {
         </RouterLink>
       </div>
 
-      <!-- 2 Spots Grid -->
+      <!-- Spots Grid -->
       <div class="space-y-2 py-2 flex-1 flex flex-col justify-center">
         <div class="text-[9px] font-pixel text-[#a08060] uppercase px-0.5">
-          {{ backendLoading ? 'Memuat mission backend...' : backendBoothsForFloor.length + ' Spot Tantangan:' }}
+          {{ backendLoading ? 'Memuat mission backend...' : boothsForFloor.length + ' Spot Tantangan:' }}
         </div>
 
-        <div v-if="backendBoothsForFloor.length" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <!-- Spot A Card -->
+        <div v-if="boothsForFloor.length > 0" :class="['grid gap-2', boothsForFloor.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2']">
           <div
-            v-if="selectedBoothB"
+            v-for="spot in boothsForFloor"
+            :key="spot.id"
             :class="[
               'p-2 sm:p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all',
-              gameStore.participant.completedBooths.includes(selectedBoothA.id)
+              gameStore.participant.completedBooths.includes(spot.id) || gameStore.participant.completedBooths.includes(spot.code)
                 ? 'bg-[#1a2e1a] border-[#4a8030]'
                 : 'bg-[#170f07] border-[#3d2b1e] hover:border-[#5a3a18]'
             ]"
           >
             <div class="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
               <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#23160c] border border-[#5a3a18] flex items-center justify-center shrink-0">
-                <StampIcon :name="selectedBoothA.stampIcon" :size="16" class="text-[#f0d060]" />
+                <StampIcon :name="spot.stampIcon" :size="16" class="text-[#f0d060]" />
               </div>
 
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="font-pixel text-[8px] text-[#f0d060]">
-                    {{ selectedBoothA.code }}
+                    {{ spot.code }}
                   </span>
                   <PixelBadge variant="gold" size="sm">
-                    {{ getGameTypeLabel(selectedBoothA.tipe_game) }}
+                    {{ getGameTypeLabel(spot.tipe_game) }}
                   </PixelBadge>
                 </div>
                 <h4 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-normal break-words mt-0.5">
-                  {{ selectedBoothA.name }}
+                  {{ spot.name }}
                 </h4>
               </div>
             </div>
 
             <div class="shrink-0">
-              <RouterLink :to="boothPath(selectedBoothA)">
+              <RouterLink :to="boothPath(spot)">
                 <button
                   type="button"
                   @click="() => gameStore.soundEnabled && soundEngine.playClick()"
                   :class="[
                     'py-1 px-2.5 rounded text-[10px] sm:text-[11px] font-pixel font-bold cursor-pointer transition-all',
-                    gameStore.participant.completedBooths.includes(selectedBoothA.id)
+                    gameStore.participant.completedBooths.includes(spot.id) || gameStore.participant.completedBooths.includes(spot.code)
                       ? 'bg-[#2d1b0e] text-[#a08060] border border-[#5a3a18] hover:text-white'
                       : 'rpg-btn-primary'
                   ]"
                 >
-                  {{ gameStore.participant.completedBooths.includes(selectedBoothA.id) ? 'Ulang' : 'Main' }}
-                </button>
-              </RouterLink>
-            </div>
-          </div>
-
-          <!-- Spot B Card -->
-          <div
-            v-if="selectedBoothB"
-            :class="[
-              'p-2 sm:p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all',
-              gameStore.participant.completedBooths.includes(selectedBoothB.id)
-                ? 'bg-[#1a2e1a] border-[#4a8030]'
-                : 'bg-[#170f07] border-[#3d2b1e] hover:border-[#5a3a18]'
-            ]"
-          >
-            <div class="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
-              <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#23160c] border border-[#5a3a18] flex items-center justify-center shrink-0">
-                <StampIcon :name="selectedBoothB.stampIcon" :size="16" class="text-[#f0d060]" />
-              </div>
-
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="font-pixel text-[8px] text-[#f0d060]">
-                    {{ selectedBoothB.code }}
-                  </span>
-                  <PixelBadge variant="gold" size="sm">
-                    {{ getGameTypeLabel(selectedBoothB.tipe_game) }}
-                  </PixelBadge>
-                </div>
-                <h4 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-normal break-words mt-0.5">
-                  {{ selectedBoothB.name }}
-                </h4>
-              </div>
-            </div>
-
-            <div class="shrink-0">
-              <RouterLink :to="boothPath(selectedBoothB)">
-                <button
-                  type="button"
-                  @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-                  :class="[
-                    'py-1 px-2.5 rounded text-[10px] sm:text-[11px] font-pixel font-bold cursor-pointer transition-all',
-                    gameStore.participant.completedBooths.includes(selectedBoothB.id)
-                      ? 'bg-[#2d1b0e] text-[#a08060] border border-[#5a3a18] hover:text-white'
-                      : 'rpg-btn-primary'
-                  ]"
-                >
-                  {{ gameStore.participant.completedBooths.includes(selectedBoothB.id) ? 'Ulang' : 'Main' }}
+                  {{ gameStore.participant.completedBooths.includes(spot.id) || gameStore.participant.completedBooths.includes(spot.code) ? 'Ulang' : 'Main' }}
                 </button>
               </RouterLink>
             </div>
           </div>
         </div>
-        <div v-else class="border border-[#d44040] bg-[#2d1210] p-4 text-center text-xs text-[#ffd0d0] font-sans">
-          {{ backendError || 'Belum ada mission backend aktif di lantai ini.' }}
+        <div v-else-if="!backendLoading" class="border border-[#d44040] bg-[#2d1210] p-4 text-center text-xs text-[#ffd0d0] font-sans">
+          {{ backendError || 'Belum ada tantangan aktif di lantai ini.' }}
         </div>
       </div>
 
       <!-- Footer Note -->
       <div class="border-t border-[#3d2b1e] pt-1.5 text-center text-[9px] font-sans text-[#a08060] shrink-0">
-        Setiap lantai memiliki 2 spot mini-game. Selesaikan keduanya untuk membuka stempel!
+        Selesaikan seluruh tantangan di lantai ini untuk membuka stempel petualangan!
       </div>
     </div>
   </div>
