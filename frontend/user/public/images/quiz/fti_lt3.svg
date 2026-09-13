@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" width="100%" height="100%">
+  <rect width="400" height="250" fill="#1e1b4b"/>
+  <rect x="10" y="10" width="380" height="230" fill="#312e81" stroke="#818cf8" stroke-width="2" rx="8"/>
+  <!-- Tech Circuit Grid -->
+  <line x1="50" y1="50" x2="350" y2="50" stroke="#4338ca" stroke-width="2"/>
+  <line x1="50" y1="120" x2="350" y2="120" stroke="#4338ca" stroke-width="2"/>
+  <line x1="50" y1="190" x2="350" y2="190" stroke="#4338ca" stroke-width="2"/>
+  <!-- Computer Monitors -->
+  <rect x="70" y="80" width="40" height="30" fill="#0f172a" stroke="#818cf8" stroke-width="2" rx="2"/>
+  <rect x="85" y="110" width="10" height="8" fill="#818cf8"/>
+  <rect x="180" y="80" width="40" height="30" fill="#0f172a" stroke="#818cf8" stroke-width="2" rx="2"/>
+  <rect x="195" y="110" width="10" height="8" fill="#818cf8"/>
+  <rect x="290" y="80" width="40" height="30" fill="#0f172a" stroke="#818cf8" stroke-width="2" rx="2"/>
+  <rect x="305" y="110" width="10" height="8" fill="#818cf8"/>
+  <!-- Label -->
+  <rect x="70" y="200" width="260" height="26" fill="#1e1b4b" stroke="#818cf8" rx="4"/>
+  <text x="200" y="217" font-family="monospace" font-size="11" font-weight="bold" fill="#c7d2fe" text-anchor="middle">FAKULTAS TEKNOLOGI INFORMASI</text>
+</svg>

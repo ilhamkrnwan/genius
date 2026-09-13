@@ -44,6 +44,10 @@ export const useGameSessionStore = defineStore('gameSession', () => {
   }
 
   async function loadMissionForPlay(missionId: string) {
+    session.value = null;
+    selectedMission.value = null;
+    lastResult.value = null;
+    lastAnswer.value = null;
     status.value = 'loading';
     error.value = null;
     const response = await api.getMissionForPlay(missionId);
@@ -59,11 +63,15 @@ export const useGameSessionStore = defineStore('gameSession', () => {
     return response.data;
   }
 
-  async function createSession(missionId: string, teamId: string, allowReplay = false) {
+  async function createSession(missionId: string, teamId: string, allowReplay = false): Promise<GameSession | null> {
     status.value = 'loading';
     error.value = null;
     const response = await api.createGameSession({ missionId, teamId, allowReplay });
     if (!response.success || !response.data) {
+      if (response.error?.code === 'NO_REPLAY_VIOLATION' && !allowReplay) {
+        // The backend marks completed-mission replays as practice, with no rewards.
+        return createSession(missionId, teamId, true);
+      }
       const duplicateSessionId = (response as any).data?.sessionId;
       if (response.error?.code === 'SESSION_ALREADY_ACTIVE' && duplicateSessionId) {
         const existing = await api.getGameSession(duplicateSessionId);
@@ -169,6 +177,9 @@ export const useGameSessionStore = defineStore('gameSession', () => {
     status.value = response.data.status === 'COMPLETED' ? 'completed' : response.data.status === 'EXPIRED' ? 'expired' : response.data.status === 'CANCELLED' ? 'error' : response.data.status === 'PAUSED' ? 'paused' : response.data.status === 'ACTIVE' ? 'active' : 'ready';
     if (response.data.status === 'COMPLETED' || response.data.status === 'EXPIRED' || response.data.status === 'CANCELLED') {
       persistSession(null);
+      session.value = null;
+      status.value = 'idle';
+      return null;
     }
     return response.data;
   }

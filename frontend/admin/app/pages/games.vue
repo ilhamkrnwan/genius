@@ -39,7 +39,7 @@
       <div class="flex items-center gap-2 shrink-0">
         <span class="border border-[#ca8a04]/60 bg-[#2b2014] px-2 py-0.5 text-[9px] font-pixel text-[#facc15] flex items-center gap-1">
           <Zap class="h-3 w-3 text-amber-400" />
-          {{ games.length || 12 }} ENGINES TERSEDIA
+          {{ activeGames.length }} ENGINES TERSEDIA
         </span>
       </div>
     </div>
@@ -48,8 +48,8 @@
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div class="pixel-card p-3.5 border-l-4 border-l-amber-500 bg-[#120f0c]">
         <div class="font-pixel text-[10px] text-gray-400 uppercase">TOTAL ENGINE GAME</div>
-        <div class="font-pixel text-xl sm:text-2xl font-bold text-[#facc15] mt-1">{{ games.length }}</div>
-        <div class="text-[10px] font-mono text-emerald-400 mt-0.5">Semua Engine Siap Digunakan</div>
+        <div class="font-pixel text-xl sm:text-2xl font-bold text-[#facc15] mt-1">{{ activeGames.length }}</div>
+        <div class="text-[10px] font-mono text-emerald-400 mt-0.5">Engine User Aktif</div>
       </div>
 
       <div class="pixel-card p-3.5 border-l-4 border-l-emerald-500 bg-[#120f0c]">
@@ -142,7 +142,7 @@
           <span>{{ cat.icon }}</span>
           <span>{{ cat.label }}</span>
           <span v-if="cat.type !== 'ALL'" class="px-1.5 py-0.2 rounded-full bg-black/50 text-[9px]">
-            {{ games.filter(g => g.type === cat.type).length }}
+            {{ games.filter(g => g.type === cat.type && (statusFilter === 'ALL' || g.status === statusFilter)).length }}
           </span>
         </button>
       </div>
@@ -315,18 +315,20 @@
 
     <!-- MODAL: PENGATURAN & KONFIGURASI ENGINE GAME -->
     <Dialog :open="showGameModal" @update:open="showGameModal = $event">
-      <DialogContent class="sm:max-w-[620px] max-h-[90vh] overflow-y-auto custom-scrollbar pixel-card border-2 border-[#f59e0b] bg-[#140f0c] text-foreground p-5">
-        <DialogHeader>
-          <DialogTitle class="font-pixel text-base text-[#f59e0b] flex items-center gap-2">
-            <Settings class="h-5 w-5 text-amber-400" />
-            <span>{{ isEditing ? 'PENGATURAN ENGINE GAME: ' + form.name : 'BUAT TEMPLATE ENGINE GAME BARU' }}</span>
+      <DialogContent class="sm:max-w-[680px] w-[95vw] h-[85vh] max-h-[85vh] max-h-[85dvh] flex flex-col p-0 overflow-hidden pixel-card border-2 border-[#f59e0b] bg-[#140f0c] text-foreground shadow-2xl rounded-xl">
+        <!-- Sticky Header -->
+        <DialogHeader class="p-4 sm:p-5 border-b border-[#3d2d1e] bg-[#1a140f] shrink-0">
+          <DialogTitle class="font-pixel text-sm sm:text-base text-[#f59e0b] flex items-center gap-2">
+            <Settings class="h-5 w-5 text-amber-400 shrink-0" />
+            <span class="truncate">{{ isEditing ? 'PENGATURAN: ' + form.name : 'BUAT TEMPLATE ENGINE GAME BARU' }}</span>
           </DialogTitle>
           <p class="text-xs font-mono text-muted-foreground mt-0.5">
-            Konfigurasi parameter aturan main, kalkulasi poin, batas waktu, dan interaksi multipemain.
+            Konfigurasi parameter aturan main, batas waktu, scoring reward, dan mode permainan.
           </p>
         </DialogHeader>
 
-        <form @submit.prevent="submitGameForm" class="space-y-4 py-2 font-mono text-xs">
+        <!-- Scrollable Form Body -->
+        <form @submit.prevent="submitGameForm" id="gameEngineForm" class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-4 font-mono text-xs custom-scrollbar">
           <!-- 1. IDENTITAS DASAR -->
           <div class="space-y-3 bg-[#1d1611] p-3.5 rounded-lg border border-[#3d2d1e]">
             <div class="font-pixel text-[11px] text-amber-400 uppercase flex items-center gap-1.5">
@@ -339,7 +341,7 @@
                 <Label class="text-xs font-semibold">Nama Mini Game:</Label>
                 <input
                   v-model="form.name"
-                  placeholder="Contoh: Team Quiz Hub"
+                  placeholder="Contoh: Pos 1 — Studi Kasus Integritas"
                   class="w-full h-8 px-2.5 bg-[#0e0c0a] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
                   required
                 />
@@ -355,9 +357,9 @@
                   <option value="RAPID_ANSWER">⚡ RAPID_ANSWER (Benar / Salah)</option>
                   <option value="MEMORY">🃏 MEMORY (Matrix Card Recall)</option>
                   <option value="PUZZLE">🧩 PUZZLE (Teka-Teki Silang / TTS)</option>
-                  <option value="WORD_GAME">🔤 WORD_GAME (Tebak Kata / Anagram)</option>
+                  <option value="WORD_GAME">🔤 WORD_GAME (Tebak Kata / Riddle)</option>
                   <option value="LOGIC">📍 LOGIC (Tebak Posisi Denah)</option>
-                  <option value="IMAGE_GUESS">🎨 IMAGE_GUESS (Tebak Gambar & Canvas)</option>
+                  <option value="IMAGE_GUESS">🎨 IMAGE_GUESS (Tebak Gambar / Teks Blur)</option>
                   <option value="TEAM_CHALLENGE">🏎️ TEAM_CHALLENGE (Balapan & Boss Raid)</option>
                   <option value="FLAPPY_BIRD">🕊️ FLAPPY_BIRD (Flappy Genius)</option>
                   <option value="REACTION">⚡ REACTION (Speed Reflex Tap)</option>
@@ -394,42 +396,308 @@
               <span>2. Parameter Spesifik Engine ({{ form.type }})</span>
             </div>
 
-            <!-- Specific for QUIZ -->
+            <!-- Specific for QUIZ (Pos 1: Anti Korupsi & Pos 6: Media Sosial) -->
             <div v-if="form.type === 'QUIZ'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div class="space-y-1">
-                <Label class="text-xs">Jumlah Butir Soal per Sesi:</Label>
+                <Label class="text-xs">Jumlah Butir Soal:</Label>
                 <input
                   type="number"
-                  v-model.number="form.config.questionsCount"
+                  v-model.number="form.config.totalQuestions"
                   class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
                 />
               </div>
 
               <div class="space-y-1">
-                <Label class="text-xs">Batas Waktu per Soal (Detik):</Label>
+                <Label class="text-xs">Batas Waktu Arena (Detik):</Label>
                 <input
                   type="number"
-                  v-model.number="form.config.timeLimitPerQuestion"
+                  v-model.number="form.config.timeLimitSeconds"
                   class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
                 />
               </div>
 
               <div class="space-y-1">
-                <Label class="text-xs">Streak Multiplier Bonus:</Label>
+                <Label class="text-xs">Maksimal Skor Reward (PTS):</Label>
                 <input
                   type="number"
-                  step="0.1"
-                  v-model.number="form.config.streakMultiplier"
+                  v-model.number="form.config.maxScore"
                   class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
                 />
               </div>
 
               <div class="space-y-1">
-                <Label class="text-xs">Kategori Bank Soal Utama:</Label>
+                <Label class="text-xs">Kategori Bank Soal:</Label>
                 <input
                   type="text"
                   v-model="form.questionBankCategory"
-                  placeholder="Kampus UNU"
+                  placeholder="Anti Korupsi dan Terorisme"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+            </div>
+
+            <!-- Specific for RAPID_ANSWER (Pos 3: Profil Pelajar Pancasila) -->
+            <div v-else-if="form.type === 'RAPID_ANSWER'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <Label class="text-xs">Jumlah Pernyataan Evaluasi:</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.statementCount"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Batas Waktu Kilat (Detik):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.timeLimitSeconds"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Maksimal Skor Reward (PTS):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.maxScore"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Kategori Bank Soal:</Label>
+                <input
+                  type="text"
+                  v-model="form.questionBankCategory"
+                  placeholder="Profil Pelajar Pancasila"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+            </div>
+
+            <!-- Specific for MEMORY (Pos 2: Leadership Memory Match) -->
+            <div v-else-if="form.type === 'MEMORY'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <Label class="text-xs">Jumlah Pasangan Kartu:</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.totalPairs"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Batas Waktu Arena (Detik):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.timeLimitSeconds"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Maksimal Skor Reward (PTS):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.maxScore"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Kategori Bank Soal:</Label>
+                <input
+                  type="text"
+                  v-model="form.questionBankCategory"
+                  placeholder="Leadership"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+            </div>
+
+            <!-- Specific for PUZZLE (Pos 4: TTS Anti Narkoba) -->
+            <div v-else-if="form.type === 'PUZZLE'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <Label class="text-xs">Ukuran Grid TTS (Kolom x Baris):</Label>
+                <div class="grid grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    v-model.number="form.config.gridCols"
+                    placeholder="Cols: 10"
+                    class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                  />
+                  <input
+                    type="number"
+                    v-model.number="form.config.gridRows"
+                    placeholder="Rows: 10"
+                    class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                  />
+                </div>
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Batas Waktu Arena (Detik):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.timeLimitSeconds"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Maksimal Skor Reward (PTS):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.maxScore"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Kategori Bank Soal:</Label>
+                <input
+                  type="text"
+                  v-model="form.questionBankCategory"
+                  placeholder="Anti Narkoba"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+            </div>
+
+            <!-- Specific for WORD_GAME (Pos 5: Tebak Kata Anti Plagiarisme) -->
+            <div v-else-if="form.type === 'WORD_GAME'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <Label class="text-xs">Jumlah Kata Riddle:</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.totalWords"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Batas Waktu Arena (Detik):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.timeLimitSeconds"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Maksimal Skor Reward (PTS):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.maxScore"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Kategori Bank Soal:</Label>
+                <input
+                  type="text"
+                  v-model="form.questionBankCategory"
+                  placeholder="Anti Plagiarisme"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+            </div>
+
+            <!-- Specific for IMAGE_GUESS (Pos 7: Fun Pos & Pos 9: Ingat Aku Teks Blur) -->
+            <div v-else-if="form.type === 'IMAGE_GUESS'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <Label class="text-xs">Jumlah Butir Gambar:</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.totalQuestions"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Batas Waktu Arena (Detik):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.timeLimitSeconds"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Skor per Gambar (PTS):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.scorePerQuestion"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Maksimal Skor Reward (PTS):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.maxScore"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1 sm:col-span-2">
+                <Label class="text-xs">Kategori Bank Soal:</Label>
+                <input
+                  type="text"
+                  v-model="form.questionBankCategory"
+                  placeholder="Fun Pos / Ingat Aku - Tulisan"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+            </div>
+
+            <!-- Specific for LOGIC (Pos 8: Ingat Aku - Tebak Posisi Lantai Gedung) -->
+            <div v-else-if="form.type === 'LOGIC'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <Label class="text-xs">Jumlah Butir Soal Denah:</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.totalQuestions"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Batas Waktu Arena (Detik):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.timeLimitSeconds"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Skor per Soal (PTS):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.scorePerQuestion"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <Label class="text-xs">Maksimal Skor Reward (PTS):</Label>
+                <input
+                  type="number"
+                  v-model.number="form.config.maxScore"
+                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
+                />
+              </div>
+
+              <div class="space-y-1 sm:col-span-2">
+                <Label class="text-xs">Kategori Bank Soal:</Label>
+                <input
+                  type="text"
+                  v-model="form.questionBankCategory"
+                  placeholder="Ingat Aku - Posisi"
                   class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
                 />
               </div>
@@ -456,15 +724,6 @@
               </div>
 
               <div class="space-y-1">
-                <Label class="text-xs">Penalti Poin Salah Klik:</Label>
-                <input
-                  type="number"
-                  v-model.number="form.config.missPenaltyScore"
-                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
-                />
-              </div>
-
-              <div class="space-y-1">
                 <Label class="text-xs">Total Waktu Arena (Detik):</Label>
                 <input
                   type="number"
@@ -472,111 +731,18 @@
                   class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
                 />
               </div>
-            </div>
-
-            <!-- Specific for MEMORY -->
-            <div v-else-if="form.type === 'MEMORY'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div class="space-y-1">
-                <Label class="text-xs">Ukuran Grid Kartu:</Label>
-                <select
-                  v-model="form.config.gridSize"
-                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
-                >
-                  <option value="3x4">3 x 4 (6 Pasang - Cepat)</option>
-                  <option value="4x4">4 x 4 (8 Pasang - Standar)</option>
-                  <option value="4x5">4 x 5 (10 Pasang - Menantang)</option>
-                </select>
-              </div>
 
               <div class="space-y-1">
-                <Label class="text-xs">Maksimal Batas Balik Kartu (Flips):</Label>
+                <Label class="text-xs">Maksimal Skor (PTS):</Label>
                 <input
                   type="number"
-                  v-model.number="form.config.maxFlipsAllowed"
-                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
-                />
-              </div>
-
-              <div class="space-y-1 sm:col-span-2">
-                <Label class="text-xs">Total Waktu Mencocokkan (Detik):</Label>
-                <input
-                  type="number"
-                  v-model.number="form.config.timeLimitSeconds"
+                  v-model.number="form.config.maxScore"
                   class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
                 />
               </div>
             </div>
 
-            <!-- Specific for AI_DRAWING / IMAGE_GUESS -->
-            <div v-else-if="form.type === 'IMAGE_GUESS'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div class="space-y-1">
-                <Label class="text-xs">Waktu Menggambar (Detik):</Label>
-                <input
-                  type="number"
-                  v-model.number="form.config.drawingTimeSeconds"
-                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
-                />
-              </div>
-
-              <div class="space-y-1">
-                <Label class="text-xs">Model AI Evaluator:</Label>
-                <select
-                  v-model="form.config.aiModel"
-                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
-                >
-                  <option value="gemini-2.0-flash">Gemini 2.0 Flash (Recommended)</option>
-                  <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                  <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite</option>
-                </select>
-              </div>
-
-              <div class="space-y-1 sm:col-span-2">
-                <Label class="text-xs">Persona AI Senior Curator:</Label>
-                <select
-                  v-model="form.config.persona"
-                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
-                >
-                  <option value="SARCASTIC_EDUCATIONAL">Kurator Senior Sarkastik, Cerdas, dan Mendidik</option>
-                  <option value="ACADEMIC_FORMAL">Kurator Formal Akademis</option>
-                  <option value="CASUAL_FRIENDLY">Kurator Ramah & Santai</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Specific for PUZZLE / LOGIC -->
-            <div v-else-if="form.type === 'PUZZLE' || form.type === 'LOGIC'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div class="space-y-1">
-                <Label class="text-xs">Tingkat Kesulitan Cipher:</Label>
-                <select
-                  v-model="form.config.cipherDifficulty"
-                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
-                >
-                  <option value="EASY">Mudah (3-4 Angka Deret)</option>
-                  <option value="MEDIUM">Sedang (Sandi Biner & Modulo)</option>
-                  <option value="HARD">Sulit (Kriptografi AI)</option>
-                </select>
-              </div>
-
-              <div class="space-y-1">
-                <Label class="text-xs">Maksimal Percobaan Input (Tries):</Label>
-                <input
-                  type="number"
-                  v-model.number="form.config.maxAttempts"
-                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
-                />
-              </div>
-
-              <div class="space-y-1 sm:col-span-2">
-                <Label class="text-xs">Waktu Penyelesaian (Detik):</Label>
-                <input
-                  type="number"
-                  v-model.number="form.config.timeLimitSeconds"
-                  class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
-                />
-              </div>
-            </div>
-
-            <!-- Specific for BOSS RAID / TEAM_CHALLENGE -->
+            <!-- Specific for TEAM_CHALLENGE / BOSS RAID -->
             <div v-else-if="form.type === 'TEAM_CHALLENGE'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div class="space-y-1">
                 <Label class="text-xs">Total Boss Max HP:</Label>
@@ -606,13 +772,13 @@
               </div>
             </div>
 
-            <!-- Specific for EXPLORATION / INCUBATION -->
+            <!-- Fallback generic config -->
             <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div class="space-y-1">
-                <Label class="text-xs">Total Skenario Keputusan:</Label>
+                <Label class="text-xs">Batas Waktu Sesi (Detik):</Label>
                 <input
                   type="number"
-                  v-model.number="form.config.totalScenarios"
+                  v-model.number="form.config.timeLimitSeconds"
                   class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
                 />
               </div>
@@ -621,7 +787,7 @@
                 <Label class="text-xs">Poin Hadiah Kelulusan (PTS):</Label>
                 <input
                   type="number"
-                  v-model.number="form.config.completionRewardPoints"
+                  v-model.number="form.config.maxScore"
                   class="w-full h-8 px-2 bg-[#0e0c0a] border border-[#523e2b] text-foreground"
                 />
               </div>
@@ -659,32 +825,34 @@
               </select>
             </div>
           </div>
-
-          <DialogFooter class="pt-4 flex items-center justify-end gap-2 border-t border-[#3d2d1e]">
-            <button
-              type="button"
-              class="h-9 px-4 text-xs font-mono border border-[#523e2b] bg-[#271d15] text-muted-foreground hover:text-foreground rounded"
-              @click="showGameModal = false"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              class="pixel-btn h-9 px-5 text-xs font-pixel bg-[#ca8a04] text-[#16110d] border-[#eab308] font-bold shadow-md hover:bg-[#eab308]"
-              :disabled="saving"
-            >
-              <RotateCw v-if="saving" class="h-3.5 w-3.5 animate-spin mr-1.5 inline" />
-              <span>{{ isEditing ? 'SIMPAN PENGATURAN' : 'BUAT ENGINE GAME' }}</span>
-            </button>
-          </DialogFooter>
         </form>
+
+        <!-- Sticky Footer -->
+        <DialogFooter class="p-3.5 sm:p-4 border-t border-[#3d2d1e] bg-[#1a140f] flex items-center justify-end gap-2.5 shrink-0">
+          <button
+            type="button"
+            class="h-9 px-4 text-xs font-mono border border-[#523e2b] bg-[#271d15] text-muted-foreground hover:text-foreground rounded cursor-pointer transition-colors"
+            @click="showGameModal = false"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            form="gameEngineForm"
+            class="pixel-btn h-9 px-5 text-xs font-pixel bg-[#ca8a04] text-[#16110d] border-[#eab308] font-bold shadow-md hover:bg-[#eab308] cursor-pointer transition-all active:scale-95"
+            :disabled="saving"
+          >
+            <RotateCw v-if="saving" class="h-3.5 w-3.5 animate-spin mr-1.5 inline" />
+            <span>{{ isEditing ? 'SIMPAN PENGATURAN' : 'BUAT ENGINE GAME' }}</span>
+          </button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import {
   Gamepad2,
   Plus,
@@ -728,7 +896,9 @@ const saving = ref(false);
 const syncing = ref(false);
 const games = ref<any[]>([]);
 const searchQuery = ref("");
-const statusFilter = ref("ALL");
+// The operational catalog defaults to engines available to the User app.
+// Legacy definitions remain accessible through the explicit INACTIVE filter.
+const statusFilter = ref("ACTIVE");
 const selectedCategory = ref("ALL");
 const incubationStatus = ref<"OPEN" | "LOCKED">("OPEN");
 
@@ -749,6 +919,8 @@ const CATEGORY_TABS = [
   { type: "REACTION", label: "Speed Reflex", icon: "⚡" },
   { type: "EXPLORATION", label: "Day 1 Incubation", icon: "🌱" },
 ];
+
+const activeGames = computed(() => games.value.filter((game) => game.status === "ACTIVE"));
 
 const form = ref<any>({
   id: "",
@@ -966,60 +1138,95 @@ function openCreateModal() {
     type: "QUIZ",
     description: "",
     instructions: "",
-    config: "{}",
+    config: {
+      totalQuestions: 8,
+      timeLimitSeconds: 120,
+      maxScore: 100,
+    },
     questionBankCategory: "",
     minPlayers: 1,
     maxPlayers: 10,
     status: "ACTIVE",
   };
   showGameModal.value = true;
+  nextTick(() => {
+    const el = document.getElementById('gameEngineForm');
+    if (el) el.scrollTop = 0;
+  });
 }
 
 function openEditModal(g: any) {
   isEditing.value = true;
+  let parsedConfig: any = {};
+  if (typeof g.config === "string") {
+    try {
+      parsedConfig = JSON.parse(g.config);
+    } catch {
+      parsedConfig = {};
+    }
+  } else if (typeof g.config === "object" && g.config !== null) {
+    parsedConfig = { ...g.config };
+  }
+
+  // Normalize aliases
+  if (parsedConfig.timeLimitSeconds === undefined && parsedConfig.timeLimitPerQuestion) {
+    parsedConfig.timeLimitSeconds = parsedConfig.timeLimitPerQuestion;
+  }
+  if (parsedConfig.totalQuestions === undefined && parsedConfig.questionsCount) {
+    parsedConfig.totalQuestions = parsedConfig.questionsCount;
+  }
+  if (parsedConfig.maxScore === undefined) {
+    parsedConfig.maxScore = 100;
+  }
+
   form.value = {
     id: g.id,
     name: g.name,
     type: g.type,
     description: g.description || "",
     instructions: g.instructions || "",
-    config: typeof g.config === "string" ? g.config : JSON.stringify(g.config || {}, null, 2),
+    config: parsedConfig,
     questionBankCategory: g.questionBankCategory || "",
     minPlayers: g.minPlayers || 1,
     maxPlayers: g.maxPlayers || 10,
     status: g.status || "ACTIVE",
   };
   showGameModal.value = true;
+  nextTick(() => {
+    const el = document.getElementById('gameEngineForm');
+    if (el) el.scrollTop = 0;
+  });
 }
 
 async function submitGameForm() {
   saving.value = true;
   try {
+    let payloadConfig = form.value.config;
+    if (typeof payloadConfig === "string") {
+      try {
+        payloadConfig = JSON.parse(payloadConfig);
+      } catch {
+        payloadConfig = {};
+      }
+    }
+
+    const payload = {
+      name: form.value.name,
+      type: form.value.type,
+      description: form.value.description,
+      instructions: form.value.instructions,
+      config: payloadConfig,
+      questionBankCategory: form.value.questionBankCategory,
+      minPlayers: Number(form.value.minPlayers) || 1,
+      maxPlayers: Number(form.value.maxPlayers) || 10,
+      status: form.value.status,
+    };
+
     if (isEditing.value) {
-      await api.put(`/api/games/${form.value.id}`, {
-        name: form.value.name,
-        type: form.value.type,
-        description: form.value.description,
-        instructions: form.value.instructions,
-        config: form.value.config,
-        questionBankCategory: form.value.questionBankCategory,
-        minPlayers: form.value.minPlayers,
-        maxPlayers: form.value.maxPlayers,
-        status: form.value.status,
-      });
+      await api.put(`/api/games/${form.value.id}`, payload);
       toast.success("Game Diperbarui", `Template game '${form.value.name}' berhasil diperbarui.`);
     } else {
-      await api.post("/api/games", {
-        name: form.value.name,
-        type: form.value.type,
-        description: form.value.description,
-        instructions: form.value.instructions,
-        config: form.value.config,
-        questionBankCategory: form.value.questionBankCategory,
-        minPlayers: form.value.minPlayers,
-        maxPlayers: form.value.maxPlayers,
-        status: form.value.status,
-      });
+      await api.post("/api/games", payload);
       toast.success("Game Dibuat", `Template game '${form.value.name}' berhasil dibuat.`);
     }
     showGameModal.value = false;

@@ -34,6 +34,7 @@ export interface Question {
   options: string[];
   correctAnswerIndex: number;
   explanation: string;
+  score?: number;
 }
 
 // 1. TTS (Teka-Teki Silang)
@@ -45,6 +46,7 @@ export interface TtsClue {
   answer: string; // Uppercase
   row: number; // 0-indexed start row in grid
   col: number; // 0-indexed start col in grid
+  score?: number;
 }
 
 export interface TtsContent {
@@ -61,6 +63,7 @@ export interface TebakKataItem {
   scrambledLetters: string[]; // e.g. ["T", "A", "S", "A", "M", "U", "H", "K", "L"]
   hint?: string;
   explanation: string;
+  score?: number;
 }
 
 export interface TebakKataContent {
@@ -77,6 +80,7 @@ export interface TebakPosisiItem {
   correctOptionIndex: number;
   explanation: string;
   locationHint?: string;
+  score?: number;
 }
 
 export interface TebakPosisiContent {
@@ -93,6 +97,7 @@ export interface TebakGambarItem {
   options: string[];
   correctOptionIndex: number;
   explanation: string;
+  score?: number;
 }
 
 export interface TebakGambarContent {
@@ -111,6 +116,7 @@ export interface MemoryPair {
   labelA: string;
   labelB: string;
   tag?: string;
+  score?: number;
 }
 
 export interface MemoryMatchContent {
@@ -130,6 +136,7 @@ export interface BenarSalahStatement {
   statement: string;
   isCorrect: boolean;
   explanation: string;
+  score?: number;
 }
 
 export interface BenarSalahContent {
@@ -186,7 +193,7 @@ export interface Booth {
   stampTitle: string;
   stampColor: string;
   badgeTag: string;
-  questions: Question[];
+  questions?: Question[];
   ttsContent?: TtsContent;
   tebakKataContent?: TebakKataContent;
   tebakPosisiContent?: TebakPosisiContent;
@@ -212,7 +219,7 @@ export interface Floor {
   description: string;
   icon: string;
   accentColor: string;
-  boothIds: [string, string];
+  boothIds: [string, string?] | string[];
   storyIntro?: FloorStoryIntro;
 }
 

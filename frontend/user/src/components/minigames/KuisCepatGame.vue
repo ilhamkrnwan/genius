@@ -122,7 +122,8 @@ const handleCheckAnswer = async () => {
   const isCorrect = selectedOptionIndex.value === currentQuestion.value.correctAnswerIndex;
   if (isCorrect) {
     if (gameStore.soundEnabled) soundEngine.playCorrect();
-    totalScore.value += 1;
+    const qScore = currentQuestion.value.score ?? Math.round(100 / questions.value.length);
+    totalScore.value += qScore;
   } else {
     if (gameStore.soundEnabled) soundEngine.playWrong();
   }

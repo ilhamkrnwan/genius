@@ -45,8 +45,24 @@ const totalScore = ref<number>(0);
 const showHint = ref<boolean>(false);
 
 const currentItem = computed(() => items.value[currentIndex.value]);
-const targetLength = computed(() => currentItem.value ? currentItem.value.targetWord.length : 0);
+const cleanTargetWord = computed(() => (currentItem.value?.targetWord || '').replace(/\s+/g, '').toUpperCase());
+const targetLength = computed(() => cleanTargetWord.value.length);
 const currentWordAttempt = computed(() => selectedLetters.value.map((l) => l.char).join(''));
+
+const wordGroups = computed(() => {
+  if (!currentItem.value) return [];
+  const words = currentItem.value.targetWord.toUpperCase().split(' ');
+  let offset = 0;
+  return words.map((w) => {
+    const startIdx = offset;
+    offset += w.length;
+    return {
+      word: w,
+      length: w.length,
+      startIndex: startIdx,
+    };
+  });
+});
 
 const handleSelectPoolTile = (char: string, index: number) => {
   if (isRoundSubmitted.value) return;
@@ -86,13 +102,14 @@ const handleClearAll = () => {
 const handleCheckWord = () => {
   if (!currentItem.value || selectedLetters.value.length !== targetLength.value) return;
 
-  const isMatch = currentWordAttempt.value.toUpperCase() === currentItem.value.targetWord.toUpperCase();
+  const isMatch = currentWordAttempt.value.toUpperCase() === cleanTargetWord.value;
   isRoundSubmitted.value = true;
   isRoundCorrect.value = isMatch;
 
   if (isMatch) {
     if (gameStore.soundEnabled) soundEngine.playCorrect();
-    totalScore.value += 1;
+    const roundScore = currentItem.value.score ?? Math.round(100 / items.value.length);
+    totalScore.value += roundScore;
   } else {
     if (gameStore.soundEnabled) soundEngine.playWrong();
   }
@@ -108,8 +125,7 @@ const handleNextRound = () => {
     showHint.value = false;
     if (gameStore.soundEnabled) soundEngine.playClick();
   } else {
-    const finalScore = isRoundCorrect.value ? totalScore.value + 1 : totalScore.value;
-    emit('complete', finalScore, items.value.length);
+    emit('complete', totalScore.value, items.value.length);
   }
 };
 
@@ -171,17 +187,17 @@ const handleUseHint = () => {
     </div>
 
     <!-- Answer Slots (Letter Boxes) -->
-    <div class="space-y-1 text-center shrink-0">
-      <div class="flex flex-wrap items-center justify-center gap-1.5 py-0.5">
+    <div class="space-y-1.5 text-center shrink-0">
+      <div v-for="(group, gIdx) in wordGroups" :key="gIdx" class="flex flex-wrap items-center justify-center gap-1 sm:gap-1.5 py-0.5">
         <button
-          v-for="(_, idx) in Array.from({ length: targetLength })"
-          :key="idx"
+          v-for="(_, wIdx) in Array.from({ length: group.length })"
+          :key="`${gIdx}-${wIdx}`"
           type="button"
-          @click="selectedLetters[idx] && handleRemovePlacedLetter(idx)"
+          @click="selectedLetters[group.startIndex + wIdx] && handleRemovePlacedLetter(group.startIndex + wIdx)"
           :disabled="isRoundSubmitted"
           :class="[
-            'w-8 h-9 sm:w-10 sm:h-11 rounded-lg border font-pixel text-xs sm:text-sm font-bold transition-all flex items-center justify-center cursor-pointer',
-            selectedLetters[idx]
+            'w-7 h-8 sm:w-9 sm:h-10 rounded-lg border font-pixel text-xs sm:text-sm font-bold transition-all flex items-center justify-center cursor-pointer',
+            selectedLetters[group.startIndex + wIdx]
               ? isRoundSubmitted
                 ? isRoundCorrect
                   ? 'bg-[#1f3a2b] border-[#7ec850] text-[#7ec850] shadow-[0_0_8px_rgba(126,200,80,0.5)]'
@@ -190,7 +206,7 @@ const handleUseHint = () => {
               : 'bg-[#170f07] border-dashed border-[#5a3a18] text-[#5a3a18]'
           ]"
         >
-          {{ selectedLetters[idx] ? selectedLetters[idx].char : '' }}
+          {{ selectedLetters[group.startIndex + wIdx] ? selectedLetters[group.startIndex + wIdx].char : '' }}
         </button>
       </div>
     </div>

@@ -13,6 +13,47 @@ export interface ApiResponse<T = any> {
   };
 }
 
+function parseApiResponse<T>(raw: string): T {
+  const text = raw.replace(/^\uFEFF/, '').trim();
+  if (!text) throw new Error('Empty API response');
+
+  try {
+    return JSON.parse(text) as T;
+  } catch (firstError) {
+    // A dev proxy can append diagnostics after a valid JSON object. Recover the
+    // first complete object so a playable session is not discarded by a suffix.
+    const start = text.search(/[\[{]/);
+    if (start >= 0) {
+      let depth = 0;
+      let quoted = false;
+      let escaped = false;
+      for (let index = start; index < text.length; index += 1) {
+        const char = text[index];
+        if (quoted) {
+          if (escaped) escaped = false;
+          else if (char === '\\') escaped = true;
+          else if (char === '"') quoted = false;
+          continue;
+        }
+        if (char === '"') {
+          quoted = true;
+          continue;
+        }
+        if (char === '{' || char === '[') depth += 1;
+        if (char === '}' || char === ']') depth -= 1;
+        if (depth === 0) {
+          try {
+            return JSON.parse(text.slice(start, index + 1)) as T;
+          } catch {
+            break;
+          }
+        }
+      }
+    }
+    throw firstError;
+  }
+}
+
 export const api = {
   async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const token = localStorage.getItem('genius_user_token');
@@ -32,7 +73,30 @@ export const api = {
         headers,
       });
 
-      const data = await response.json();
+      if (response.status === 401 && !endpoint.startsWith('/auth/')) {
+        window.dispatchEvent(new Event('genius:auth-required'));
+        return { success: false, error: { code: 'UNAUTHORIZED', message: 'Sesi login telah berakhir. Silakan masuk kembali.' } };
+      }
+
+      const raw = await response.text();
+      let data: ApiResponse<T>;
+      try {
+        data = parseApiResponse<ApiResponse<T>>(raw);
+      } catch {
+        console.warn(`[API] Invalid response to ${endpoint}: HTTP ${response.status}`);
+        return {
+          success: false,
+          error: {
+            code: response.ok ? 'INVALID_RESPONSE' : `HTTP_${response.status}`,
+            message: response.ok
+              ? 'Respons server tidak valid. Silakan coba lagi.'
+              : `Server gagal memproses permintaan (HTTP ${response.status}). Silakan coba lagi.`,
+          },
+        };
+      }
+      if (!response.ok && !data.error) {
+        return { success: false, error: { code: `HTTP_${response.status}`, message: `Permintaan gagal (HTTP ${response.status}).` } };
+      }
       return data;
     } catch (err: any) {
       console.warn(`[API] Request failed to ${endpoint}:`, err.message);

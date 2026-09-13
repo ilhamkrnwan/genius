@@ -49,7 +49,8 @@ const handleAnswer = (choice: boolean) => {
   const isCorrect = choice === currentStatement.value.isCorrect;
   if (isCorrect) {
     if (gameStore.soundEnabled) soundEngine.playCorrect();
-    totalScore.value += 1;
+    const roundScore = currentStatement.value.score ?? Math.round(100 / statements.value.length);
+    totalScore.value += roundScore;
   } else {
     if (gameStore.soundEnabled) soundEngine.playWrong();
   }
@@ -100,7 +101,7 @@ const handleNextStatement = () => {
 
       <div class="bg-[#170f07] p-3 sm:p-4 border border-[#5a3a18] rounded-xl shadow-inner my-auto">
         <p class="font-sans text-xs sm:text-sm font-semibold text-white leading-relaxed text-justify break-words">
-          &ldquo;{{ currentStatement.statement }}&rdquo;
+          &ldquo;{{ currentStatement?.statement || 'Memuat butir pernyataan...' }}&rdquo;
         </p>
       </div>
 

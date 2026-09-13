@@ -21,6 +21,7 @@ const props = withDefaults(
   defineProps<{
     isOpen: boolean;
     initialStep?: 'login' | 'profile';
+    reauthenticate?: boolean;
   }>(),
   {
     initialStep: 'login',
@@ -96,6 +97,11 @@ const handleLoginSubmit = async (e: Event) => {
     avatar: user.avatarUrl || gameStore.participant.avatar,
   });
 
+  if (props.reauthenticate) {
+    emit('complete');
+    return;
+  }
+
   // Sinkronkan NIM ke profile form
   profileNim.value = loginNim.value.trim();
   profileName.value = user.fullName || profileName.value;
@@ -148,7 +154,7 @@ const selectAvatar = (avId: string) => {
       </button>
 
       <!-- Top Steps Indicator Pill -->
-      <div class="flex items-center justify-center gap-2 mb-3">
+      <div v-if="!reauthenticate" class="flex items-center justify-center gap-2 mb-3">
         <div
           :class="[
             'px-2.5 py-0.5 rounded-full font-pixel text-[8px] uppercase tracking-wider flex items-center gap-1 border',
@@ -233,7 +239,7 @@ const selectAvatar = (avId: string) => {
             class="rpg-btn-primary w-full py-3 px-4 font-pixel text-xs font-bold uppercase flex items-center justify-center gap-2 cursor-pointer shadow-lg mt-2"
           >
             <PhSignIn :size="16" weight="bold" />
-            <span>MASUK &amp; LANJUT KE PROFIL ▶</span>
+            <span>{{ reauthenticate ? 'MASUK & LANJUTKAN PERMAINAN ▶' : 'MASUK & LANJUT KE PROFIL ▶' }}</span>
           </button>
         </form>
       </div>

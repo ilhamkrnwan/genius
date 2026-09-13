@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import {
   PhArrowLeft,
@@ -31,7 +31,9 @@ const isBackendLoading = ref(false);
 const backendError = ref<string | null>(null);
 const hasBackendAuth = computed(() => typeof window !== 'undefined' && Boolean(localStorage.getItem('genius_user_token')));
 const booth = computed(() => hasBackendAuth.value ? backendBooth.value : (backendBooth.value || BOOTHS_DATA[boothId.value]));
-const serverSessionId = computed(() => gameSessionStore.session?.id);
+const serverSessionId = computed(() => hasBackendAuth.value ? gameSessionStore.session?.id : undefined);
+const isPractice = computed(() => gameSessionStore.session?.metadata?.isPractice === true);
+const practiceFinished = ref(false);
 const floor = computed(
   () => FLOORS_DATA.find((f) => f.number === (booth.value ? booth.value.floorNumber : 1)) || FLOORS_DATA[0]
 );
@@ -41,7 +43,7 @@ const selectedAvatarObj = computed(
   () => AVATAR_OPTIONS.find((a) => a.id === gameStore.participant.avatar) || AVATAR_OPTIONS[0]
 );
 
-const isSpot1 = computed(() => booth.value && floor.value ? booth.value.id === floor.value.boothIds[0] : true);
+const isSpot1 = computed(() => booth.value && floor.value ? booth.value.id === floor.value.boothIds[0] || booth.value.code === `POS-L${floor.value.number}-A` : true);
 const nextSpotId = computed(() => isSpot1.value && floor.value ? floor.value.boothIds[1] : null);
 
 const teamId = computed(() => {
@@ -57,8 +59,7 @@ let sessionPollingTimer: any = null;
 
 const isWaitingForBuddy = computed(() => {
   if (!hasBackendAuth.value) return false;
-  if (isAlreadyCompleted.value) return false;
-  return gameSessionStore.session?.status === 'READY' || gameSessionStore.status === 'ready';
+  return !isBackendLoading.value && !backendError.value && gameSessionStore.session?.status === 'READY';
 });
 
 const isSessionActive = computed(() => {
@@ -86,6 +87,8 @@ async function initializeBackendMission() {
 
   isBackendLoading.value = true;
   backendError.value = null;
+  backendBooth.value = null;
+  practiceFinished.value = false;
   const missionResponse = await gameSessionStore.loadMissionForPlay(boothId.value);
 
   if (!missionResponse || missionResponse.status !== 'ACTIVE' || !missionResponse.game) {
@@ -94,6 +97,7 @@ async function initializeBackendMission() {
     return;
   }
 
+  missionResponseRef.value = missionResponse;
   backendBooth.value = normalizePlayableMission(missionResponse);
 
   if (!teamId.value) {
@@ -130,9 +134,9 @@ onMounted(() => {
   }, 1000);
 
   sessionPollingTimer = setInterval(async () => {
-    if (isWaitingForBuddy.value && gameSessionStore.session?.id) {
+    if (!isBackendLoading.value && ['READY', 'ACTIVE', 'PAUSED'].includes(gameSessionStore.session?.status || '') && gameSessionStore.session?.id) {
       const refreshed = await gameSessionStore.refreshSession();
-      if (refreshed && refreshed.status === 'ACTIVE' && backendBooth.value) {
+      if (refreshed && refreshed.status === 'ACTIVE' && backendBooth.value && missionResponseRef.value) {
         backendBooth.value = normalizePlayableSessionMission(missionResponseRef.value, refreshed);
       }
     }
@@ -140,6 +144,12 @@ onMounted(() => {
 });
 
 const missionResponseRef = ref<any>(null);
+watch(boothId, () => { void initializeBackendMission(); });
+watch(() => gameSessionStore.session, (session) => {
+  if (session?.status === 'ACTIVE' && missionResponseRef.value?.id === session.missionId) {
+    backendBooth.value = normalizePlayableSessionMission(missionResponseRef.value, session);
+  }
+});
 
 onUnmounted(() => {
   if (tickTimer) clearInterval(tickTimer);
@@ -162,7 +172,12 @@ const celebrationDetails = ref<{
   newLevel: 'New You',
 });
 
-const handleMiniGameComplete = (score: number, totalQuestions: number) => {
+const handleMiniGameComplete = async (score: number, totalQuestions: number) => {
+  if (isPractice.value) {
+    if (gameSessionStore.status === 'active' && !await gameSessionStore.completeSession()) return;
+    practiceFinished.value = true;
+    return;
+  }
   if (!booth.value) return;
   if (gameStore.soundEnabled) soundEngine.playCorrect();
 
@@ -256,7 +271,7 @@ const handleNextStep = () => {
               <span class="font-pixel text-[8px] text-[#7ec850]">Selesai</span>
             </div>
             <PixelBadge v-else variant="gold" size="sm">
-              +250 XP
+              {{ isPractice ? 'LATIHAN - TANPA XP' : '+250 XP' }}
             </PixelBadge>
           </div>
         </div>
@@ -274,7 +289,7 @@ const handleNextStep = () => {
 
       <!-- Server-Authoritative Timer Banner (When Active) -->
       <div
-        v-if="hasBackendAuth && isSessionActive && !isAlreadyCompleted && gameSessionStore.session?.serverStartAt"
+        v-if="hasBackendAuth && isSessionActive && gameSessionStore.session?.serverStartAt"
         class="mb-2 px-3 py-1.5 bg-[#170f07] border-2 border-[#f0d060] rounded-lg flex items-center justify-between shadow"
       >
         <div class="flex items-center gap-1.5 text-[8.5px] sm:text-[9px] font-pixel text-[#86efac]">
@@ -332,11 +347,21 @@ const handleNextStep = () => {
           </button>
         </div>
 
+        <div v-else-if="practiceFinished" class="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-4">
+          <h2 class="font-pixel text-sm text-[#7ec850]">LATIHAN SELESAI</h2>
+          <p class="text-sm">Latihan ini tidak menambah XP atau stempel.</p>
+          <button class="rpg-btn-primary py-2 px-4 text-[10px] font-pixel" @click="initializeBackendMission">ULANG LATIHAN</button>
+          <RouterLink to="/peta" class="text-xs underline">Kembali ke Peta</RouterLink>
+        </div>
+        <div v-else-if="hasBackendAuth && gameSessionStore.session?.status === 'PAUSED'" class="flex-1 flex items-center justify-center text-center p-6">
+          <p class="font-pixel text-xs">SESI DIJEDA OLEH KAKAK BUDDY</p>
+        </div>
         <!-- ACTIVE MINI GAME CONTAINER -->
         <MiniGameContainer
-          v-else-if="gameSessionStore.status !== 'expired' && gameSessionStore.status !== 'error'"
+          v-else-if="!isBackendLoading && !backendError && (isSessionActive || !hasBackendAuth)"
+          :key="serverSessionId || boothId"
           :booth="booth"
-          :isCompleted="isAlreadyCompleted"
+          :isCompleted="isAlreadyCompleted && !isPractice"
           :serverSessionId="serverSessionId"
           @complete="handleMiniGameComplete"
         />
@@ -360,7 +385,7 @@ const handleNextStep = () => {
         <div v-if="isBackendLoading" class="absolute inset-0 z-10 flex items-center justify-center bg-[#170f07]/85">
           <span class="font-pixel text-xs text-[#f0d060] animate-pulse">MENYIAPKAN SESI GAME...</span>
         </div>
-        <div v-else-if="backendError && backendBooth" class="mt-2 border border-[#d44040] bg-[#2d1210] p-2 text-[10px] text-[#ffd0d0] font-sans">
+        <div v-else-if="backendError && backendBooth && gameSessionStore.status !== 'error'" class="mt-2 border border-[#d44040] bg-[#2d1210] p-2 text-[10px] text-[#ffd0d0] font-sans">
           {{ backendError }}
         </div>
       </div>
@@ -445,10 +470,10 @@ const handleNextStep = () => {
     <div class="flex-1 flex items-center justify-center p-6 text-center">
       <div class="p-8 max-w-md sdv-card-gold text-center space-y-4">
         <h2 class="font-pixel text-base font-bold text-[#ff8080]">
-          BOOTH TIDAK DITEMUKAN
+          {{ isBackendLoading ? 'MEMUAT MISI...' : backendError ? 'MISI BELUM DAPAT DIMUAT' : 'BOOTH TIDAK DITEMUKAN' }}
         </h2>
         <p class="font-sans text-sm text-[#d0c0a0]">
-          Maaf, ID booth &quot;{{ boothId }}&quot; tidak terdaftar dalam gedung kampus ini.
+          {{ isBackendLoading ? 'Mohon tunggu sebentar.' : backendError || `Maaf, ID booth "${boothId}" tidak terdaftar dalam gedung kampus ini.` }}
         </p>
         <RouterLink to="/peta">
           <button class="rpg-btn-primary py-3 px-6 text-xs font-pixel font-bold">

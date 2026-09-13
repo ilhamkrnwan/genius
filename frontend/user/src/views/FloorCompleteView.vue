@@ -23,11 +23,7 @@ const gameStore = useGameStore();
 
 const floorNumber = computed(() => parseInt((route.params.floorId as string) || '1', 10) || 1);
 const floor = computed(() => FLOORS_DATA.find((f) => f.number === floorNumber.value) || FLOORS_DATA[0]);
-const boothA = computed(() => BOOTHS_DATA[floor.value.boothIds[0]]);
-const boothB = computed(() => BOOTHS_DATA[floor.value.boothIds[1]]);
-
-const stampA = computed(() => gameStore.participant.stamps[boothA.value.id]);
-const stampB = computed(() => gameStore.participant.stamps[boothB.value.id]);
+const floorBooths = computed(() => (floor.value.boothIds || []).map(id => BOOTHS_DATA[id]).filter(Boolean));
 
 const currentLevel = computed(() => gameStore.getCurrentLevel());
 const completedFloors = computed(() => gameStore.getCompletedFloorsCount());
@@ -35,7 +31,7 @@ const currentLevelData = computed(
   () => LEVEL_CONFIG.find((l) => l.level === currentLevel.value) || LEVEL_CONFIG[0]
 );
 
-const hasNextFloor = computed(() => floorNumber.value < 9);
+const hasNextFloor = computed(() => floorNumber.value < 6);
 const nextFloorNumber = computed(() => floorNumber.value + 1);
 
 onMounted(() => {
@@ -88,44 +84,29 @@ const handleNextAction = () => {
             {{ hasNextFloor ? `LANTAI ${floor.number} TUNTAS!` : 'SEMUA LANTAI TUNTAS!' }}
           </h1>
           <p class="font-sans text-[11px] sm:text-xs text-[#f0e6d2] max-w-md mx-auto leading-snug break-words">
-            2 stempel di <strong>{{ floor.name }}</strong> berhasil dikumpulkan!
+            {{ floorBooths.length }} stempel di <strong>{{ floor.name }}</strong> berhasil dikumpulkan!
           </p>
         </div>
 
-        <!-- 2 Collected Stamps Showcase -->
-        <div class="grid grid-cols-2 gap-2 my-1">
-          <!-- Stamp 1 -->
-          <div class="complete-stamp-item bg-[#170f07] p-2 rounded-xl border-2 border-[#7ec850] flex items-center gap-2 shadow-inner">
+        <!-- Collected Stamps Showcase -->
+        <div :class="['grid gap-2 my-1', floorBooths.length === 1 ? 'grid-cols-1 max-w-md mx-auto w-full' : 'grid-cols-2']">
+          <div
+            v-for="b in floorBooths"
+            :key="b.id"
+            class="complete-stamp-item bg-[#170f07] p-2 rounded-xl border-2 border-[#7ec850] flex items-center gap-2 shadow-inner"
+          >
             <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-b from-[#3d7828] to-[#255018] border border-[#f0d060] flex items-center justify-center shrink-0 shadow">
-              <StampIcon :name="boothA.stampIcon" :size="16" class="text-[#f0d060]" />
+              <StampIcon :name="b.stampIcon" :size="16" class="text-[#f0d060]" />
             </div>
             <div class="text-left min-w-0 flex-1">
               <span class="font-pixel text-[7px] text-[#7ec850] uppercase block">
-                {{ boothA.code }} • Stempel
+                {{ b.code }} • Stempel
               </span>
               <h4 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-normal break-words mt-0.5">
-                {{ boothA.name }}
+                {{ b.name }}
               </h4>
               <span class="font-mono text-[9px] text-[#f0d060] block mt-0.5">
-                Skor: {{ stampA?.score ?? 2 }}/{{ stampA?.totalQuestions ?? 2 }} Benar
-              </span>
-            </div>
-          </div>
-
-          <!-- Stamp 2 -->
-          <div class="complete-stamp-item bg-[#170f07] p-2 rounded-xl border-2 border-[#7ec850] flex items-center gap-2 shadow-inner">
-            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-b from-[#3d7828] to-[#255018] border border-[#f0d060] flex items-center justify-center shrink-0 shadow">
-              <StampIcon :name="boothB.stampIcon" :size="16" class="text-[#f0d060]" />
-            </div>
-            <div class="text-left min-w-0 flex-1">
-              <span class="font-pixel text-[7px] text-[#7ec850] uppercase block">
-                {{ boothB.code }} • Stempel
-              </span>
-              <h4 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-normal break-words mt-0.5">
-                {{ boothB.name }}
-              </h4>
-              <span class="font-mono text-[9px] text-[#f0d060] block mt-0.5">
-                Skor: {{ stampB?.score ?? 2 }}/{{ stampB?.totalQuestions ?? 2 }} Benar
+                Status: {{ gameStore.isBoothCompleted(b.id) ? 'Tuntas (+100 Poin)' : 'Tuntas' }}
               </span>
             </div>
           </div>

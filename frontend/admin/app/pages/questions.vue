@@ -72,10 +72,9 @@
             @change="currentPage = 1"
           >
             <option value="">Semua Kategori</option>
-            <option value="Kampus UNU">Wawasan Kampus UNU</option>
-            <option value="Sains & AI">Sains & AI</option>
-            <option value="Logika">Logika Komputasi</option>
-            <option value="Umum">Pengetahuan Umum</option>
+            <option v-for="cat in availableCategories" :key="cat" :value="cat">
+              {{ cat }}
+            </option>
           </select>
 
           <!-- Difficulty Select -->
@@ -532,6 +531,24 @@ const questions = ref<any[]>([]);
 const searchQuery = ref("");
 const categoryFilter = ref("");
 const difficultyFilter = ref("");
+
+const availableCategories = computed(() => {
+  const set = new Set<string>();
+  const defaults = [
+    "Profil Pelajar Pancasila",
+    "Anti Korupsi dan Terorisme",
+    "Anti Narkoba",
+    "Anti Plagiarisme",
+    "Ingat Aku - Posisi",
+    "Ingat Aku - Tulisan",
+    "Kampus UNU",
+  ];
+  defaults.forEach((c) => set.add(c));
+  questions.value.forEach((q) => {
+    if (q.category) set.add(q.category);
+  });
+  return Array.from(set).sort();
+});
 
 // Selection & Bulk Actions
 const selectedQuestionIds = ref<string[]>([]);

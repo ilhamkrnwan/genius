@@ -146,7 +146,8 @@ const finishGame = async () => {
     return;
   }
   isFinished.value = true;
-  emit('complete', pairs.value.length, pairs.value.length);
+  const totalMemoryScore = pairs.value.reduce((acc, p) => acc + (p.score ?? Math.round(100 / pairs.value.length)), 0);
+  emit('complete', totalMemoryScore, pairs.value.length);
 };
 
 const handleResetGame = () => {

@@ -39,3 +39,32 @@ Thumbs.db
 backups/*.sql
 !backups/.gitkeep
 backend/data/
+
+# Code analysis & generated tooling artifacts
+graphify-out/
+
+# Testing & Coverage reports
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Temporary files & Caches
+*.tmp
+*.temp
+.cache/
+.turbo/
+temp/
+tmp/
+scratch/
+.tempmediaStorage/
+
+# Editor / System swap files
+*.swp
+*.swo
+*~
+
+# Temporary scratch & analysis scripts
+backend/scripts/analyze_admin_games.ts
+backend/scripts/sync_official_games_and_clean.ts
+

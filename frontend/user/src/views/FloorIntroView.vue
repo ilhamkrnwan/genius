@@ -23,8 +23,8 @@ const gameStore = useGameStore();
 
 const floorNumber = computed(() => parseInt((route.params.floorId as string) || '1', 10) || 1);
 const floor = computed(() => FLOORS_DATA.find((f) => f.number === floorNumber.value) || FLOORS_DATA[0]);
-const boothA = computed(() => BOOTHS_DATA[floor.value.boothIds[0]]);
-const boothB = computed(() => BOOTHS_DATA[floor.value.boothIds[1]]);
+const floorBooths = computed(() => (floor.value.boothIds || []).map(id => BOOTHS_DATA[id]).filter(Boolean));
+const firstBooth = computed(() => floorBooths.value[0]);
 
 const isPortalPulsing = ref(false);
 const floorStatus = computed(() => gameStore.getFloorStatus(floor.value.number));
@@ -35,7 +35,9 @@ const selectedAvatar = computed(
 
 const handleStartSpot1 = () => {
   if (gameStore.soundEnabled) soundEngine.playClick();
-  router.push(`/play/floor/${floor.value.number}/spot/${boothA.value.id}`);
+  if (firstBooth.value) {
+    router.push(`/play/floor/${floor.value.number}/spot/${firstBooth.value.id}`);
+  }
 };
 
 const handlePortalTap = () => {
@@ -174,23 +176,24 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 2 Spots Grid Preview -->
+        <!-- Spots Grid Preview -->
         <div class="space-y-1.5 text-left py-1">
           <div class="flex items-center justify-between px-1">
             <span class="font-pixel text-[8px] sm:text-[9px] text-[#a08060] uppercase">
               Tantangan di Lantai Ini:
             </span>
             <span class="font-pixel text-[8px] sm:text-[9px] text-[#7ec850]">
-              Total: +500 XP & 2 Stempel
+              Total: +{{ floorBooths.length * 100 }} Poin & {{ floorBooths.length }} Stempel
             </span>
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
-            <!-- Spot 1 -->
+          <div :class="['grid gap-2', floorBooths.length === 1 ? 'grid-cols-1' : 'grid-cols-2']">
             <div
+              v-for="b in floorBooths"
+              :key="b.id"
               :class="[
                 'floor-intro-spot p-2 rounded-xl border transition-all',
-                gameStore.participant.completedBooths.includes(boothA.id)
+                gameStore.participant.completedBooths.includes(b.id) || gameStore.participant.completedBooths.includes(b.code)
                   ? 'bg-[#1a2e1a] border-[#7ec850]'
                   : 'bg-[#170f07] border-[#5a3a18]'
               ]"
@@ -198,81 +201,43 @@ onMounted(() => {
               <div class="flex items-center justify-between gap-1 mb-1">
                 <div class="flex items-center gap-1.5 min-w-0">
                   <div class="w-6 h-6 rounded-md bg-[#281c12] border border-[#f0d060] flex items-center justify-center shrink-0">
-                    <StampIcon :name="boothA.stampIcon" :size="14" class="text-[#f0d060]" />
+                    <StampIcon :name="b.stampIcon" :size="14" class="text-[#f0d060]" />
                   </div>
                   <span class="font-pixel text-[8px] text-[#7ec850] font-bold">
-                    {{ boothA.code }}
+                    {{ b.code }}
                   </span>
                 </div>
 
                 <PhCheckCircle
-                  v-if="gameStore.participant.completedBooths.includes(boothA.id)"
+                  v-if="gameStore.participant.completedBooths.includes(b.id) || gameStore.participant.completedBooths.includes(b.code)"
                   :size="14"
                   weight="fill"
                   class="text-[#7ec850] shrink-0"
                 />
                 <span v-else class="text-[8px] font-pixel text-[#f0d060] bg-[#281c12] px-1 py-0.5 rounded border border-[#5a3a18]">
-                  +250 XP
+                  +100 Poin
                 </span>
               </div>
 
               <h4 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-normal break-words mt-0.5">
-                {{ boothA.name }}
+                {{ b.name }}
               </h4>
               <div class="text-[9px] font-sans text-[#c4956a] mt-0.5">
-                {{ getGameTypeLabel(boothA.tipe_game) }}
-              </div>
-            </div>
-
-            <!-- Spot 2 -->
-            <div
-              :class="[
-                'floor-intro-spot p-2 rounded-xl border transition-all',
-                gameStore.participant.completedBooths.includes(boothB.id)
-                  ? 'bg-[#1a2e1a] border-[#7ec850]'
-                  : 'bg-[#170f07] border-[#5a3a18]'
-              ]"
-            >
-              <div class="flex items-center justify-between gap-1 mb-1">
-                <div class="flex items-center gap-1.5 min-w-0">
-                  <div class="w-6 h-6 rounded-md bg-[#281c12] border border-[#f0d060] flex items-center justify-center shrink-0">
-                    <StampIcon :name="boothB.stampIcon" :size="14" class="text-[#f0d060]" />
-                  </div>
-                  <span class="font-pixel text-[8px] text-[#f0d060] font-bold">
-                    {{ boothB.code }}
-                  </span>
-                </div>
-
-                <PhCheckCircle
-                  v-if="gameStore.participant.completedBooths.includes(boothB.id)"
-                  :size="14"
-                  weight="fill"
-                  class="text-[#7ec850] shrink-0"
-                />
-                <span v-else class="text-[8px] font-pixel text-[#f0d060] bg-[#281c12] px-1 py-0.5 rounded border border-[#5a3a18]">
-                  +250 XP
-                </span>
-              </div>
-
-              <h4 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-normal break-words mt-0.5">
-                {{ boothB.name }}
-              </h4>
-              <div class="text-[9px] font-sans text-[#c4956a] mt-0.5">
-                {{ getGameTypeLabel(boothB.tipe_game) }}
+                {{ getGameTypeLabel(b.tipe_game) }}
               </div>
             </div>
           </div>
         </div>
 
         <!-- Action CTA Button -->
-        <div class="pt-1 shrink-0">
+        <div v-if="firstBooth" class="pt-1 shrink-0">
           <button
             type="button"
             @click="handleStartSpot1"
             class="w-full rpg-btn-primary py-2.5 sm:py-3.5 px-4 text-xs sm:text-sm font-pixel font-bold flex items-center justify-center gap-2 shadow-xl cursor-pointer"
           >
             <PhPlay :size="16" weight="fill" />
-            <span>MASUK KE SPOT 1 ({{ boothA.code }})</span>
+            <span>MASUK KE {{ firstBooth.code }}</span>
             <PhArrowRight :size="16" weight="bold" />
           </button>
         </div>
