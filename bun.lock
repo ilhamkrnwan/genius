@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "genius-unu-monorepo",
+      "devDependencies": {
+        "sharp": "^0.35.4",
+      },
     },
     "backend": {
       "name": "@genius-unu/backend",

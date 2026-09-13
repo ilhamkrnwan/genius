@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import {
-  PhScroll,
   PhScales,
   PhCompass,
   PhHandshake,
@@ -24,7 +23,6 @@ const pillars = [
     desc: 'Menghargai keberagaman pandangan, menghindari ekstremisme, dan mengedepankan dialog rasional serta santun.',
     icon: PhCompass,
     color: '#60a5fa',
-    badge: 'Pilar I',
   },
   {
     title: 'Tawazun',
@@ -32,7 +30,6 @@ const pillars = [
     desc: 'Harmoni antara ketajaman intelektual sains modern dengan kedalaman spiritual akhlak mulia.',
     icon: PhScales,
     color: '#34d399',
-    badge: 'Pilar II',
   },
   {
     title: 'Tasamuh',
@@ -40,7 +37,6 @@ const pillars = [
     desc: 'Rukun dan inklusif terhadap sesama, menciptakan ekosistem kampus yang ramah bagi siapapun.',
     icon: PhHandshake,
     color: '#facc15',
-    badge: 'Pilar III',
   },
   {
     title: "I'tidal",
@@ -48,7 +44,6 @@ const pillars = [
     desc: 'Menjunjung tinggi kebenaran moral, integritas akademik, dan keberpihakan pada nilai-nilai keadilan.',
     icon: PhShieldCheck,
     color: '#f87171',
-    badge: 'Pilar IV',
   },
 ];
 
@@ -63,11 +58,11 @@ onMounted(async () => {
     gsap.fromTo(header,
       { y: 35, opacity: 0 },
       {
-        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out',
         scrollTrigger: {
           trigger: header,
           start: 'top 88%',
-          toggleActions: 'play none none none',
+          toggleActions: 'play reverse play reverse',
         },
       }
     );
@@ -82,11 +77,11 @@ onMounted(async () => {
         { y: 45, opacity: 0, scale: 0.94 },
         {
           y: 0, opacity: 1, scale: 1, duration: 0.65, stagger: 0.12,
-          ease: 'back.out(1.4)', clearProps: 'all',
+          ease: 'back.out(1.4)',
           scrollTrigger: {
             trigger: grid,
             start: 'top 85%',
-            toggleActions: 'play none none none',
+            toggleActions: 'play reverse play reverse',
           },
         }
       );
@@ -99,11 +94,11 @@ onMounted(async () => {
     gsap.fromTo(quote,
       { y: 30, opacity: 0 },
       {
-        y: 0, opacity: 1, duration: 0.75, ease: 'power2.out', clearProps: 'all',
+        y: 0, opacity: 1, duration: 0.75, ease: 'power2.out',
         scrollTrigger: {
           trigger: quote,
           start: 'top 88%',
-          toggleActions: 'play none none none',
+          toggleActions: 'play reverse play reverse',
         },
       }
     );
@@ -130,13 +125,6 @@ onUnmounted(() => {
     <div class="relative z-10 max-w-5xl mx-auto flex flex-col items-center">
       <!-- Section Header with GSAP Reveal -->
       <div ref="storyHeaderRef" class="story-header text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1b1007] border border-[#f0d060]/50 shadow-md mb-3">
-          <PhScroll :size="16" weight="fill" class="text-[#f0d060]" />
-          <span class="font-pixel text-[9px] sm:text-[10px] text-[#f0d060] uppercase tracking-wider">
-            KISAH PETUALANGAN GENIUS
-          </span>
-        </div>
-        
         <h2 class="font-pixel text-2xl sm:text-4xl font-extrabold text-[#fbf6e9] leading-tight mb-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
           Bukan Ospek Biasa, Ini Adalah <span class="text-[#f0d060] underline decoration-[#7ec850] decoration-4 underline-offset-4">Ekspedisi Transformasi</span>
         </h2>
@@ -154,15 +142,12 @@ onUnmounted(() => {
           class="story-pillar-card sdv-card p-5 sm:p-6 flex flex-col justify-between hover:-translate-y-1 hover:border-[#f0d060] transition-all duration-200 group will-change-transform"
         >
           <div>
-            <div class="flex items-center justify-between gap-2 mb-4">
-              <span class="font-pixel text-[9px] px-2 py-0.5 rounded bg-[#1f1309] border border-[#8b6f4e] text-[#a08060]">
-                {{ pillar.badge }}
-              </span>
+            <div class="mb-4">
               <div
-                class="w-10 h-10 rounded-lg flex items-center justify-center border shadow-inner transition-transform group-hover:scale-110"
+                class="w-11 h-11 rounded-lg flex items-center justify-center border shadow-inner transition-transform group-hover:scale-110"
                 :style="{ backgroundColor: `${pillar.color}20`, borderColor: pillar.color }"
               >
-                <component :is="pillar.icon" :size="22" weight="duotone" :style="{ color: pillar.color }" />
+                <component :is="pillar.icon" :size="24" weight="duotone" :style="{ color: pillar.color }" />
               </div>
             </div>
 

@@ -2,7 +2,6 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import {
-  PhBuildings,
   PhCheckCircle,
   PhLockKey,
   PhArrowRight,
@@ -64,11 +63,11 @@ onMounted(async () => {
     gsap.fromTo(floorsHeaderRef.value,
       { y: 35, opacity: 0 },
       {
-        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out',
         scrollTrigger: {
           trigger: floorsHeaderRef.value,
           start: 'top 88%',
-          toggleActions: 'play none none none',
+          toggleActions: 'play reverse play reverse',
         },
       }
     );
@@ -81,11 +80,11 @@ onMounted(async () => {
       gsap.fromTo(pills,
         { y: 20, opacity: 0 },
         {
-          y: 0, opacity: 1, stagger: 0.04, duration: 0.45, ease: 'power1.out', clearProps: 'all',
+          y: 0, opacity: 1, stagger: 0.04, duration: 0.45, ease: 'power1.out',
           scrollTrigger: {
             trigger: floorsPillsRef.value,
             start: 'top 87%',
-            toggleActions: 'play none none none',
+            toggleActions: 'play reverse play reverse',
           },
         }
       );
@@ -97,11 +96,11 @@ onMounted(async () => {
     gsap.fromTo(floorsDetailRef.value,
       { scale: 0.95, opacity: 0 },
       {
-        scale: 1, opacity: 1, duration: 0.65, ease: 'back.out(1.3)', clearProps: 'all',
+        scale: 1, opacity: 1, duration: 0.65, ease: 'back.out(1.3)',
         scrollTrigger: {
           trigger: floorsDetailRef.value,
           start: 'top 85%',
-          toggleActions: 'play none none none',
+          toggleActions: 'play reverse play reverse',
         },
       }
     );
@@ -122,13 +121,6 @@ onUnmounted(() => {
     <div class="relative z-10 max-w-5xl mx-auto">
       <!-- Section Header with GSAP Reveal -->
       <div ref="floorsHeaderRef" class="floors-header text-center max-w-2xl mx-auto mb-10 sm:mb-14">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1c1107] border border-[#f0d060]/50 shadow-md mb-3">
-          <PhBuildings :size="16" weight="fill" class="text-[#f0d060]" />
-          <span class="font-pixel text-[9px] sm:text-[10px] text-[#f0d060] uppercase tracking-wider">
-            SNEAK PEEK 9 LANTAI
-          </span>
-        </div>
-        
         <h2 class="font-pixel text-2xl sm:text-4xl font-extrabold text-[#fbf6e9] leading-tight mb-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
           Menara Kampus <span class="text-[#7ec850]">9 Tingkat Kemegahan</span>
         </h2>
@@ -167,18 +159,8 @@ onUnmounted(() => {
         <div class="flex flex-col lg:flex-row gap-8 items-start justify-between">
           <!-- Floor Basic Info & Theme -->
           <div class="flex-1">
-            <div class="flex items-center gap-3 mb-3">
-              <span
-                class="font-pixel text-xs px-2.5 py-1 rounded-md border font-bold"
-                :style="{
-                  backgroundColor: `${selectedFloor.accentColor}20`,
-                  borderColor: selectedFloor.accentColor,
-                  color: selectedFloor.accentColor
-                }"
-              >
-                LANTAI {{ selectedFloor.number }}
-              </span>
-              <span class="font-sans text-xs text-[#a08060] font-medium">
+            <div class="mb-3">
+              <span class="font-pixel text-xs tracking-wider uppercase" :style="{ color: selectedFloor.accentColor }">
                 {{ selectedFloor.theme }}
               </span>
             </div>

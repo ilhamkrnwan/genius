@@ -117,14 +117,12 @@ export function scrollReveal(target: HTMLElement | string, options: gsap.TweenVa
     scrollTrigger: {
       trigger: target,
       start: 'top 85%',
-      toggleActions: 'play none none none',
-      once: true,
+      toggleActions: 'play reverse play reverse',
     },
     opacity: 0,
     y: 35,
     duration: 0.7,
     ease: 'power2.out',
-    clearProps: 'all',
     ...options,
   });
 }
@@ -143,15 +141,13 @@ export function scrollStagger(
     scrollTrigger: {
       trigger: trig,
       start: 'top 82%',
-      toggleActions: 'play none none none',
-      once: true,
+      toggleActions: 'play reverse play reverse',
     },
     opacity: 0,
     y: 40,
     duration: 0.65,
     stagger,
     ease: 'power2.out',
-    clearProps: 'all',
     ...options,
   });
 }

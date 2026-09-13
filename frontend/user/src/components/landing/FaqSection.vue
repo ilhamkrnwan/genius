@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import {
-  PhQuestion,
   PhCaretDown,
   PhChatsTeardrop,
   PhPhoneCall,
@@ -57,11 +56,11 @@ onMounted(async () => {
     gsap.fromTo(faqHeaderRef.value,
       { y: 35, opacity: 0 },
       {
-        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out',
         scrollTrigger: {
           trigger: faqHeaderRef.value,
           start: 'top 88%',
-          toggleActions: 'play none none none',
+          toggleActions: 'play reverse play reverse',
         },
       }
     );
@@ -74,11 +73,11 @@ onMounted(async () => {
       gsap.fromTo(items,
         { y: 30, opacity: 0 },
         {
-          y: 0, opacity: 1, stagger: 0.08, duration: 0.6, ease: 'power1.out', clearProps: 'all',
+          y: 0, opacity: 1, stagger: 0.08, duration: 0.6, ease: 'power1.out',
           scrollTrigger: {
             trigger: faqListRef.value,
             start: 'top 85%',
-            toggleActions: 'play none none none',
+            toggleActions: 'play reverse play reverse',
           },
         }
       );
@@ -90,11 +89,11 @@ onMounted(async () => {
     gsap.fromTo(faqHelpdeskRef.value,
       { y: 25, opacity: 0 },
       {
-        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out',
         scrollTrigger: {
           trigger: faqHelpdeskRef.value,
           start: 'top 90%',
-          toggleActions: 'play none none none',
+          toggleActions: 'play reverse play reverse',
         },
       }
     );
@@ -115,13 +114,6 @@ onUnmounted(() => {
     <div class="relative z-10 max-w-4xl mx-auto">
       <!-- Section Header with GSAP Reveal -->
       <div ref="faqHeaderRef" class="faq-header text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1b1107] border border-[#7ec850]/50 shadow-md mb-3">
-          <PhQuestion :size="16" weight="fill" class="text-[#7ec850]" />
-          <span class="font-pixel text-[9px] sm:text-[10px] text-[#7ec850] uppercase tracking-wider">
-            PUSAT BANTUAN & FAQ
-          </span>
-        </div>
-        
         <h2 class="font-pixel text-2xl sm:text-4xl font-extrabold text-[#fbf6e9] leading-tight mb-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
           Pertanyaan Seputar <span class="text-[#f0d060]">Petualangan PKKMB</span>
         </h2>

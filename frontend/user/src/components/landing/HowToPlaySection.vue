@@ -69,11 +69,11 @@ onMounted(async () => {
     gsap.fromTo(htpHeaderRef.value,
       { y: 35, opacity: 0 },
       {
-        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+        y: 0, opacity: 1, duration: 0.7, ease: 'power2.out',
         scrollTrigger: {
           trigger: htpHeaderRef.value,
           start: 'top 88%',
-          toggleActions: 'play none none none',
+          toggleActions: 'play reverse play reverse',
         },
       }
     );
@@ -87,11 +87,11 @@ onMounted(async () => {
         { y: 45, opacity: 0, scale: 0.95 },
         {
           y: 0, opacity: 1, scale: 1, duration: 0.65, stagger: 0.12,
-          ease: 'power2.out', clearProps: 'all',
+          ease: 'power2.out',
           scrollTrigger: {
             trigger: htpGridRef.value,
             start: 'top 85%',
-            toggleActions: 'play none none none',
+            toggleActions: 'play reverse play reverse',
           },
         }
       );
@@ -103,11 +103,11 @@ onMounted(async () => {
     gsap.fromTo(htpCtaRef.value,
       { y: 25, opacity: 0 },
       {
-        y: 0, opacity: 1, duration: 0.6, ease: 'back.out(1.5)', clearProps: 'all',
+        y: 0, opacity: 1, duration: 0.6, ease: 'back.out(1.5)',
         scrollTrigger: {
           trigger: htpCtaRef.value,
           start: 'top 90%',
-          toggleActions: 'play none none none',
+          toggleActions: 'play reverse play reverse',
         },
       }
     );
@@ -128,13 +128,6 @@ onUnmounted(() => {
     <div class="relative z-10 max-w-5xl mx-auto">
       <!-- Section Header with GSAP Reveal -->
       <div ref="htpHeaderRef" class="htp-header text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1e130a] border border-[#7ec850]/50 shadow-md mb-3">
-          <PhGameController :size="16" weight="fill" class="text-[#7ec850]" />
-          <span class="font-pixel text-[9px] sm:text-[10px] text-[#7ec850] uppercase tracking-wider">
-            ATURAN MAIN & PANDUAN
-          </span>
-        </div>
-        
         <h2 class="font-pixel text-2xl sm:text-4xl font-extrabold text-[#fbf6e9] leading-tight mb-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
           4 Langkah Menjadi <span class="text-[#f0d060]">Petualang Genius Sejati</span>
         </h2>
@@ -157,13 +150,7 @@ onUnmounted(() => {
           </div>
 
           <div>
-            <div class="flex items-center justify-between mb-4">
-              <span
-                class="font-pixel text-xs px-2.5 py-1 rounded-md border font-bold"
-                :style="{ backgroundColor: `${step.accent}15`, borderColor: step.accent, color: step.accent }"
-              >
-                LANGKAH {{ step.num }}
-              </span>
+            <div class="mb-4">
               <div
                 class="w-11 h-11 rounded-xl flex items-center justify-center border shadow-inner transition-transform group-hover:scale-110"
                 :style="{ backgroundColor: `${step.accent}20`, borderColor: step.accent }"

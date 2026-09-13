@@ -35,11 +35,11 @@ onMounted(async () => {
   gsap.fromTo(footerContentRef.value,
     { y: 25, opacity: 0 },
     {
-      y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', clearProps: 'all',
+      y: 0, opacity: 1, duration: 0.7, ease: 'power2.out',
       scrollTrigger: {
         trigger: footerContentRef.value,
         start: 'top 95%',
-        toggleActions: 'play none none none',
+        toggleActions: 'play reverse play reverse',
       },
     }
   );
