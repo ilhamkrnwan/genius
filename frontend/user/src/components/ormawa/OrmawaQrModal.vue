@@ -1,62 +1,78 @@
 <template>
-  <div v-if="modelValue" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  <div v-if="modelValue" class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 select-none">
     <!-- Backdrop -->
     <div 
       class="absolute inset-0 bg-black/80 backdrop-blur-sm"
       @click="close"
-    ></div>
+    />
 
     <!-- Modal Content -->
     <div 
-      class="relative w-full max-w-sm bg-[#fbf6e9] border-4 border-[#3a2818] rounded-xl shadow-[8px_8px_0px_#000000] p-6 flex flex-col items-center animate-in fade-in zoom-in duration-200"
+      class="relative w-full max-w-sm bg-[#fbf6e9] border-[3.5px] border-[#3a2818] rounded-2xl shadow-[inset_0_0_0_2px_#d4b886,0_20px_50px_rgba(0,0,0,0.85)] p-5 sm:p-6 flex flex-col items-center animate-in zoom-in-95 duration-200 z-10"
     >
+      <!-- Close Button (Inside card, cleanly aligned) -->
       <button 
+        type="button"
         @click="close"
-        class="absolute -top-4 -right-4 h-10 w-10 bg-[#e11d48] border-2 border-[#3a2818] rounded-full text-white font-bold flex items-center justify-center hover:bg-[#be123c] shadow-[2px_2px_0px_#3a2818] z-10"
+        class="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#2a1a0e] hover:bg-[#3d2714] text-[#f0d060] hover:text-white border border-[#8b6f4e] hover:border-[#f0d060] flex items-center justify-center transition-all cursor-pointer shadow active:scale-95 z-20"
+        title="Tutup QR"
       >
-        <PhX class="h-5 w-5" />
+        <PhX :size="15" weight="bold" />
       </button>
 
-      <div class="text-center space-y-2 mb-6">
-        <h3 class="font-pixel text-[#3a2818] text-lg font-bold">QR PASPOR ANDA</h3>
-        <p class="text-xs font-mono text-[#5c4033] leading-relaxed">
-          Tunjukkan QR Code ini kepada petugas stan <b>{{ standName }}</b> untuk dipindai.
+      <div class="text-center space-y-1.5 mb-4 pr-6 sm:pr-0">
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#ede3cb] border border-[#c4a97d] text-[8.5px] font-pixel text-[#5c4033] uppercase">
+          <PhQrCode :size="12" weight="fill" class="text-[#2e6822]" />
+          <span>SCAN STAN ORMAWA</span>
+        </div>
+
+        <h3 class="font-pixel text-[#2d1b0e] text-base font-bold tracking-wide">
+          QR PASPOR ANDA
+        </h3>
+
+        <p class="text-xs font-sans text-[#5c4033] leading-relaxed">
+          Tunjukkan QR Code ini kepada panitia stan <strong class="text-[#2e6822]">{{ standName }}</strong> untuk dipindai.
         </p>
       </div>
 
       <!-- QR Code Area -->
-      <div class="bg-white p-4 border-2 border-[#3a2818] rounded-xl shadow-inner mb-6 relative">
+      <div class="bg-white p-3.5 border-2 border-[#8b6f4e] rounded-xl shadow-inner mb-4 relative">
         <!-- Corner decorations -->
-        <div class="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-[#166534]"></div>
-        <div class="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-[#166534]"></div>
-        <div class="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-[#166534]"></div>
-        <div class="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-[#166534]"></div>
+        <div class="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-[#2e6822]" />
+        <div class="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-[#2e6822]" />
+        <div class="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-[#2e6822]" />
+        <div class="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-[#2e6822]" />
         
         <img 
           :src="`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent('GENIUS-MABA-' + participantNim)}`"
           alt="QR Code Maba"
-          class="w-48 h-48 sm:w-56 sm:h-56 object-contain"
+          class="w-44 h-44 sm:w-52 sm:h-52 object-contain"
         />
       </div>
 
-      <div class="w-full bg-[#f3ecd8] border-2 border-[#d4c3a3] rounded-lg p-3 text-center space-y-1">
-        <div class="font-pixel text-[#3a2818] font-bold text-sm">{{ participantName }}</div>
-        <div class="font-mono text-xs text-[#5c4033]">{{ participantNim }}</div>
+      <!-- Maba Identity Pill -->
+      <div class="w-full bg-[#ede3cb] border border-[#c4a97d] rounded-xl p-2.5 text-center space-y-0.5 shadow-inner">
+        <div class="font-pixel text-[#2d1b0e] font-bold text-xs sm:text-sm">
+          {{ participantName }}
+        </div>
+        <div class="font-sans text-[11px] text-[#7a5836]">
+          NIM: {{ participantNim }}
+        </div>
       </div>
 
       <!-- Auto close timer -->
-      <div class="mt-4 flex items-center gap-2 text-[10px] font-mono text-[#8c6b4a]">
-        <PhTimer class="h-3 w-3" />
-        <span>Menutup otomatis dalam {{ timeLeft }}s...</span>
+      <div class="mt-3.5 flex items-center gap-1.5 text-[10px] font-sans text-[#8c6b4a]">
+        <PhTimer :size="13" class="text-[#b45309]" />
+        <span>Menutup otomatis dalam <strong class="font-mono text-[#2d1b0e]">{{ timeLeft }}s</strong>...</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue';
-import { PhX, PhTimer } from '@phosphor-icons/vue';
-import { useGameStore } from '../../store/gameStore';
+import { ref, watch, onUnmounted, computed } from 'vue';
+import { PhX, PhTimer, PhQrCode } from '@phosphor-icons/vue';
+import { useGameStore } from '@/store/gameStore';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -68,8 +84,8 @@ const emit = defineEmits<{
 }>();
 
 const store = useGameStore();
-const participantName = store.participant.name;
-const participantNim = store.participant.username || 'UNKNOWN';
+const participantName = computed(() => store.participant?.name || 'Mahasiswa Baru');
+const participantNim = computed(() => store.participant?.nim || store.participant?.username || '261100123');
 
 const timeLeft = ref(60);
 let timer: any = null;

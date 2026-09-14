@@ -1,97 +1,136 @@
 <template>
-  <div v-if="modelValue" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-    <!-- Backdrop -->
+  <div v-if="modelValue" class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+    <!-- Backdrop with blur -->
     <div 
       class="absolute inset-0 bg-black/80 backdrop-blur-sm"
       @click="close"
-    ></div>
+    />
 
-    <!-- Modal Content -->
+    <!-- Modal Card (Polished Retro RPG Parchment Card) -->
     <div 
-      class="relative w-full max-w-md bg-[#fbf6e9] border-4 border-[#3a2818] rounded-xl shadow-[8px_8px_0px_#000000] p-6 flex flex-col animate-in slide-in-from-bottom-4 duration-300 max-h-[90vh] overflow-y-auto"
+      class="relative w-full max-w-md bg-[#fbf6e9] border-[3.5px] border-[#3a2818] rounded-2xl shadow-[inset_0_0_0_2px_#d4b886,0_20px_50px_rgba(0,0,0,0.85)] p-4 sm:p-6 flex flex-col max-h-[92vh] overflow-y-auto z-10 select-none animate-in zoom-in-95 duration-200"
     >
+      <!-- Close Button (Inside card, cleanly aligned) -->
       <button 
+        type="button"
         @click="close"
-        class="absolute -top-4 -right-4 h-10 w-10 bg-[#e11d48] border-2 border-[#3a2818] rounded-full text-white font-bold flex items-center justify-center hover:bg-[#be123c] shadow-[2px_2px_0px_#3a2818] z-10"
+        class="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#2a1a0e] hover:bg-[#3d2714] text-[#f0d060] hover:text-white border border-[#8b6f4e] hover:border-[#f0d060] flex items-center justify-center transition-all cursor-pointer shadow active:scale-95 z-20"
+        title="Tutup Formulir"
       >
-        <PhX class="h-5 w-5" />
+        <PhX :size="15" weight="bold" />
       </button>
 
-      <div class="text-center space-y-2 mb-6">
-        <h3 class="font-pixel text-[#3a2818] text-lg font-bold">FORMULIR MINAT</h3>
-        <p class="text-xs font-mono text-[#5c4033] leading-relaxed">
-          Tunjukkan minat Anda untuk bergabung dengan <b>{{ standName }}</b>.
+      <!-- Modal Header -->
+      <div class="text-center space-y-1.5 mb-4 pr-6 sm:pr-0">
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#ede3cb] border border-[#c4a97d] text-[8.5px] font-pixel text-[#5c4033] uppercase">
+          <PhHandshake :size="13" weight="fill" class="text-[#2e6822]" />
+          <span>REKRUTMEN MAHASISWA BARU</span>
+        </div>
+
+        <h3 class="font-pixel text-[#2d1b0e] text-base sm:text-lg font-bold tracking-wide">
+          FORMULIR MINAT
+        </h3>
+
+        <p class="text-xs font-sans text-[#5c4033] leading-relaxed max-w-xs mx-auto">
+          Tunjukkan minat Anda untuk bergabung dengan <br class="hidden sm:block" />
+          <strong class="text-[#2e6822] font-bold">{{ standName }}</strong>.
         </p>
       </div>
 
-      <form @submit.prevent="submit" class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-[#3a2818] mb-1">Nomor WhatsApp *</label>
-          <input 
-            v-model="form.phoneNumber" 
-            type="text" 
-            required 
-            placeholder="0812xxxx"
-            class="w-full bg-white border-2 border-[#3a2818] rounded-lg p-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#166534]"
-          />
+      <!-- Form Content -->
+      <form @submit.prevent="submit" class="space-y-3.5 text-left">
+        <!-- Field 1: WhatsApp -->
+        <div class="space-y-1">
+          <label class="block font-pixel text-[9px] sm:text-[9.5px] text-[#3a2818] uppercase tracking-wider">
+            Nomor WhatsApp <span class="text-red-600">*</span>
+          </label>
+          <div class="relative">
+            <PhWhatsappLogo :size="16" weight="fill" class="absolute left-3 top-1/2 -translate-y-1/2 text-[#2e6822]" />
+            <input 
+              v-model="form.phoneNumber" 
+              type="tel" 
+              required 
+              placeholder="Contoh: 081234567890"
+              class="w-full bg-[#f3ecd8] hover:bg-[#fffdf7] focus:bg-white border-2 border-[#8b6f4e] focus:border-[#2e6822] rounded-xl pl-9 pr-3 py-2 font-sans text-xs sm:text-sm text-[#2d1b0e] placeholder-[#a08060] focus:outline-none focus:ring-2 focus:ring-[#2e6822]/20 shadow-inner transition-colors"
+            />
+          </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-[#3a2818] mb-1">Motivasi Bergabung (Opsional)</label>
+        <!-- Field 2: Motivasi -->
+        <div class="space-y-1">
+          <label class="block font-pixel text-[9px] sm:text-[9.5px] text-[#3a2818] uppercase tracking-wider">
+            Motivasi Bergabung <span class="text-[#8c7860] lowercase font-sans text-[10px]">(opsional)</span>
+          </label>
           <textarea 
             v-model="form.motivation" 
-            rows="3"
-            placeholder="Mengapa Anda tertarik bergabung?"
-            class="w-full bg-white border-2 border-[#3a2818] rounded-lg p-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#166534]"
+            rows="2"
+            placeholder="Apa yang membuat Anda tertarik bergabung dengan organisasi ini?"
+            class="w-full bg-[#f3ecd8] hover:bg-[#fffdf7] focus:bg-white border-2 border-[#8b6f4e] focus:border-[#2e6822] rounded-xl p-2.5 font-sans text-xs sm:text-sm text-[#2d1b0e] placeholder-[#a08060] focus:outline-none focus:ring-2 focus:ring-[#2e6822]/20 shadow-inner transition-colors resize-none"
           ></textarea>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-[#3a2818] mb-1">Pengalaman Terkait (Opsional)</label>
+        <!-- Field 3: Pengalaman -->
+        <div class="space-y-1">
+          <label class="block font-pixel text-[9px] sm:text-[9.5px] text-[#3a2818] uppercase tracking-wider">
+            Pengalaman Terkait <span class="text-[#8c7860] lowercase font-sans text-[10px]">(opsional)</span>
+          </label>
           <textarea 
             v-model="form.experience" 
             rows="2"
-            placeholder="Sebutkan pengalaman Anda jika ada"
-            class="w-full bg-white border-2 border-[#3a2818] rounded-lg p-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#166534]"
+            placeholder="Pernah ikut kegiatan serupa saat di SMA/MA? (tuliskan jika ada)"
+            class="w-full bg-[#f3ecd8] hover:bg-[#fffdf7] focus:bg-white border-2 border-[#8b6f4e] focus:border-[#2e6822] rounded-xl p-2.5 font-sans text-xs sm:text-sm text-[#2d1b0e] placeholder-[#a08060] focus:outline-none focus:ring-2 focus:ring-[#2e6822]/20 shadow-inner transition-colors resize-none"
           ></textarea>
         </div>
 
-        <!-- Warning Disclaimer -->
-        <div class="bg-[#fefce8] border-2 border-[#ca8a04] p-3 rounded-lg flex items-start gap-3 mt-4">
+        <!-- Warning Disclaimer / Agreement -->
+        <div class="bg-[#ede3cb] border border-[#c4a97d] p-3 rounded-xl flex items-start gap-2.5 shadow-inner mt-1">
           <input 
             type="checkbox" 
             id="agreement" 
             v-model="isAgreed"
             required
-            class="mt-1 w-4 h-4 text-[#166534] border-2 border-[#3a2818] rounded focus:ring-[#166534]"
+            class="mt-0.5 w-4 h-4 text-[#2e6822] accent-[#2e6822] border-2 border-[#8b6f4e] rounded cursor-pointer shrink-0"
           >
-          <label for="agreement" class="text-[10px] font-mono text-[#854d0e] leading-tight">
-            Saya menyatakan benar-benar berminat untuk bergabung dengan ormawa/ukm ini. 
-            Data yang saya berikan dapat diakses oleh admin ormawa terkait untuk keperluan rekrutmen.
+          <label for="agreement" class="text-[10px] sm:text-[10.5px] font-sans text-[#4a341e] leading-snug cursor-pointer select-none">
+            Saya menyatakan benar-benar berminat bergabung dengan <strong>{{ standName }}</strong>. Kontak yang saya berikan dapat diakses panitia stan untuk rekrutmen.
           </label>
         </div>
 
+        <!-- Submit Button -->
         <button 
           type="submit"
-          :disabled="isSubmitting || !isAgreed"
-          class="w-full mt-4 bg-[#166534] hover:bg-[#14532d] disabled:bg-gray-400 text-white font-pixel py-3 rounded-lg border-2 border-[#3a2818] shadow-[4px_4px_0px_#3a2818] transition-all flex items-center justify-center gap-2"
+          :disabled="isSubmitting || !isAgreed || !form.phoneNumber.trim()"
+          class="w-full mt-2 py-2.5 sm:py-3 px-4 rounded-xl font-pixel text-xs sm:text-sm font-bold tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:cursor-not-allowed border-2 active:scale-[0.99]"
+          :class="[
+            (isAgreed && form.phoneNumber.trim())
+              ? 'bg-gradient-to-b from-[#38761d] to-[#275314] hover:from-[#438d22] hover:to-[#2e6217] text-[#fbf6e9] border-[#1d3d0f] shadow-[0_4px_0_#1d3d0f,0_6px_12px_rgba(0,0,0,0.2)]'
+              : 'bg-[#d8ceba] text-[#8c7860] border-[#b0a088] shadow-none opacity-80'
+          ]"
         >
-          <PhSpinner v-if="isSubmitting" class="h-4 w-4 animate-spin" />
-          <span>{{ isSubmitting ? 'MENGIRIM...' : 'KIRIM FORMULIR' }}</span>
+          <PhSpinner v-if="isSubmitting" :size="16" class="animate-spin text-white" />
+          <PhPaperPlaneTilt v-else :size="15" weight="fill" class="text-[#f0d060]" />
+          <span>{{ isSubmitting ? 'MENGIRIM...' : 'KIRIM FORMULIR MINAT' }}</span>
         </button>
       </form>
       
-      <p v-if="errorMessage" class="mt-4 text-xs font-mono text-red-600 text-center">
-        {{ errorMessage }}
-      </p>
-
+      <div v-if="errorMessage" class="mt-3 p-2 rounded-lg bg-red-100 border border-red-400 text-xs font-sans text-red-700 text-center flex items-center justify-center gap-1.5">
+        <PhWarningCircle :size="14" weight="fill" class="shrink-0" />
+        <span>{{ errorMessage }}</span>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue';
-import { PhX, PhSpinner } from '@phosphor-icons/vue';
+import { 
+  PhX, 
+  PhSpinner, 
+  PhPaperPlaneTilt, 
+  PhWhatsappLogo, 
+  PhHandshake, 
+  PhWarningCircle 
+} from '@phosphor-icons/vue';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -125,14 +164,13 @@ const submit = () => {
     errorMessage.value = "Anda harus menyetujui pernyataan di atas.";
     return;
   }
-  if (!form.phoneNumber) {
+  if (!form.phoneNumber.trim()) {
     errorMessage.value = "Nomor WhatsApp wajib diisi.";
     return;
   }
   
   isSubmitting.value = true;
-  emit('submit', { ...form });
-  // Parent will handle the actual API call and close the modal
+  emit('submit', { ...form, phoneNumber: form.phoneNumber.trim() });
 };
 
 watch(() => props.modelValue, (newVal) => {
