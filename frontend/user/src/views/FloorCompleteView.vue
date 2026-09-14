@@ -78,11 +78,23 @@ const handleNextAction = () => {
 </script>
 
 <template>
-  <div class="min-h-[100dvh] h-[100dvh] max-h-[100dvh] flex flex-col bg-[#2d1b0e] text-[#f0e0c0] overflow-hidden">
+  <div class="relative min-h-[100dvh] flex flex-col text-[#f0e0c0] overflow-y-auto">
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
+    <!-- Dark Vignette Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
     <CrtScanlines />
-    <Navbar />
+    <Navbar class="relative z-10" />
 
-    <main class="max-w-2xl mx-auto px-2.5 sm:px-6 py-2 sm:py-3 flex-1 flex flex-col justify-between items-center text-center overflow-hidden w-full gap-2">
+    <main class="relative z-10 max-w-2xl mx-auto px-2.5 sm:px-6 py-2 sm:py-3 flex-1 flex flex-col justify-between items-center text-center w-full gap-2">
       <!-- Victory Badge -->
       <div class="complete-victory-badge inline-flex items-center gap-1.5 bg-[#14230f] border-2 border-[#7ec850] rounded-full px-3 py-1 shadow-md shrink-0">
         <PhSparkle :size="14" weight="fill" class="text-[#f0d060]" />
