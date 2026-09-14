@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
+import { animatePageEnter, staggerFadeUp, floatElement } from '@/lib/gsap';
 import {
   PhArrowLeft,
   PhArrowRight,
@@ -64,6 +65,13 @@ const getGameTypeLabel = (type: string) => {
       return 'Tantangan Mini-Game';
   }
 };
+
+onMounted(() => {
+  animatePageEnter('.floor-intro-card', { y: 20, scale: 0.98, duration: 0.45 });
+  animatePageEnter('.floor-intro-dialogue', { y: 15, duration: 0.4, delay: 0.15 });
+  staggerFadeUp('.floor-intro-spot', 0.08, { delay: 0.25 });
+  floatElement('.floor-portal-avatar', 3, 2.2);
+});
 </script>
 
 <template>
@@ -85,7 +93,7 @@ const getGameTypeLabel = (type: string) => {
 
         <div class="flex items-center gap-1.5">
           <PixelBadge variant="gold" size="sm">
-            Lantai {{ floor.number }} dari 9
+            Lantai {{ floor.number }}
           </PixelBadge>
           <PixelBadge v-if="floorStatus === 'completed'" variant="emerald" size="sm">
             Tuntas
@@ -94,7 +102,7 @@ const getGameTypeLabel = (type: string) => {
       </div>
 
       <!-- Main Floor Banner Card -->
-      <div class="flex-1 sdv-card-gold p-3 sm:p-5 flex flex-col justify-between overflow-hidden text-center shadow-xl">
+      <div class="floor-intro-card flex-1 sdv-card-gold p-3 sm:p-5 flex flex-col justify-between overflow-hidden text-center shadow-xl">
         <!-- Header Title -->
         <div class="space-y-0.5 shrink-0">
           <div class="inline-flex items-center gap-1 font-pixel text-[8px] sm:text-[9px] text-[#7ec850] uppercase tracking-wider bg-[#170f07] px-2.5 py-0.5 rounded-full border border-[#5a3a18]">
@@ -110,8 +118,8 @@ const getGameTypeLabel = (type: string) => {
         </div>
 
         <!-- Interactive Portal + Dialogue Row -->
-        <div class="my-1.5 flex items-center gap-2.5 sm:gap-4 text-left bg-[#170f07] p-2.5 sm:p-3 border-2 border-[#5a3a18] rounded-xl shadow-inner shrink-0">
-          <div class="relative shrink-0">
+        <div class="floor-intro-dialogue my-1.5 flex items-center gap-2.5 sm:gap-4 text-left bg-[#170f07] p-2.5 sm:p-3 border-2 border-[#5a3a18] rounded-xl shadow-inner shrink-0">
+          <div class="floor-portal-avatar relative shrink-0">
             <button
               type="button"
               @click="handlePortalTap"
@@ -180,7 +188,7 @@ const getGameTypeLabel = (type: string) => {
             <div
               v-for="b in floorBooths" :key="b.id"
               :class="[
-                'p-2 rounded-xl border transition-all',
+                'floor-intro-spot p-2 rounded-xl border transition-all',
                 gameStore.participant.completedBooths.includes(b.id)
                   ? 'bg-[#1a2e1a] border-[#7ec850]'
                   : 'bg-[#170f07] border-[#5a3a18]'

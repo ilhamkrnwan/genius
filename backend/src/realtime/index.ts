@@ -83,6 +83,9 @@ export const broadcastAdminEvent = (action: string, details: any) => {
 
 export const broadcastGameSessionEvent = (sessionId: string, event: string, payload: any) => {
   broadcastToTopic(`game-session:${sessionId}`, event, payload);
+  if (payload?.teamId) {
+    broadcastToTopic(`team:${payload.teamId}`, event, payload);
+  }
 };
 
 export const realtimeRoutes = new Elysia({ prefix: "/ws" })

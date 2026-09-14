@@ -4,7 +4,18 @@ export type OrmawaCategory =
   | 'SENI_BUDAYA'
   | 'SOSIAL_KEMANUSIAAN'
   | 'OLAHRAGA'
-  | 'PENALARAN_KEISLAMAN';
+  | 'PENALARAN_KEISLAMAN'
+  | 'Himpunan Mahasiswa'
+  | 'Seni & Musik'
+  | 'Seni & Vokal'
+  | 'Seni & Budaya'
+  | 'Keagamaan & Bahasa'
+  | 'Olahraga'
+  | 'Pecinta Alam & Lingkungan'
+  | 'Olahraga & Seni Beladiri'
+  | 'Sosial & Kemanusiaan'
+  | 'Organisasi Daerah & Kebudayaan'
+  | (string & {});
 
 export interface OrmawaStand {
   id: string;

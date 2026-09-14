@@ -51,6 +51,37 @@ const teamId = computed(() => {
   return parsed?.teamId || parsed?.groupId || gameStore.participant.groupId || '';
 });
 
+// Server-Authoritative Timer & Waiting Room States
+const nowTick = ref(Date.now());
+let tickTimer: any = null;
+let sessionPollingTimer: any = null;
+
+const isWaitingForBuddy = computed(() => {
+  if (!hasBackendAuth.value) return false;
+  if (isAlreadyCompleted.value) return false;
+  return gameSessionStore.session?.status === 'READY' || gameSessionStore.status === 'ready';
+});
+
+const isSessionActive = computed(() => {
+  if (!hasBackendAuth.value) return true;
+  return gameSessionStore.session?.status === 'ACTIVE' || gameSessionStore.status === 'active';
+});
+
+const serverRemainingSeconds = computed(() => {
+  if (!gameSessionStore.session?.serverStartAt) return 0;
+  const startMs = new Date(gameSessionStore.session.serverStartAt).getTime();
+  const limitMs = Number(gameSessionStore.session.timeLimit || 900) * 1000;
+  const elapsed = nowTick.value - startMs;
+  return Math.max(0, Math.floor((limitMs - elapsed) / 1000));
+});
+
+const formattedServerTimer = computed(() => {
+  const s = serverRemainingSeconds.value;
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+});
+
 async function initializeBackendMission() {
   if (!spotId.value || !gameStore.isLoggedIn || !hasBackendAuth.value) return;
 
@@ -115,6 +146,29 @@ onUnmounted(() => {
 
 onMounted(() => {
   void initializeBackendMission();
+
+  tickTimer = setInterval(() => {
+    nowTick.value = Date.now();
+    if (isSessionActive.value && serverRemainingSeconds.value === 0 && gameSessionStore.session?.id) {
+      void gameSessionStore.refreshSession();
+    }
+  }, 1000);
+
+  sessionPollingTimer = setInterval(async () => {
+    if (isWaitingForBuddy.value && gameSessionStore.session?.id) {
+      const refreshed = await gameSessionStore.refreshSession();
+      if (refreshed && refreshed.status === 'ACTIVE' && backendBooth.value) {
+        backendBooth.value = normalizePlayableSessionMission(missionResponseRef.value, refreshed);
+      }
+    }
+  }, 2500);
+});
+
+const missionResponseRef = ref<any>(null);
+
+onUnmounted(() => {
+  if (tickTimer) clearInterval(tickTimer);
+  if (sessionPollingTimer) clearInterval(sessionPollingTimer);
 });
 
 const selectedAvatarObj = computed(
@@ -244,10 +298,69 @@ const handleNextStep = () => {
         </div>
       </div>
 
-      <!-- Dynamic Mini-Game Arena -->
+      <!-- Server-Authoritative Timer Banner (When Active) -->
+      <div
+        v-if="hasBackendAuth && isSessionActive && !isAlreadyCompleted && gameSessionStore.session?.serverStartAt"
+        class="mb-2 px-3 py-1.5 bg-[#170f07] border-2 border-[#f0d060] rounded-lg flex items-center justify-between shadow"
+      >
+        <div class="flex items-center gap-1.5 text-[8.5px] sm:text-[9px] font-pixel text-[#86efac]">
+          <span class="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse"></span>
+          <span>SESI POS AKTIF</span>
+        </div>
+        <div class="flex items-center gap-1.5 font-mono text-[10px]">
+          <span class="text-[#c4956a]">SISA WAKTU SERVER:</span>
+          <span
+            :class="[
+              'font-pixel text-xs sm:text-sm font-bold',
+              serverRemainingSeconds <= 120 ? 'text-red-400 animate-pulse' : 'text-[#fef08a]'
+            ]"
+          >
+            ⏱️ {{ formattedServerTimer }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Dynamic Mini-Game Arena / Waiting Room -->
       <div class="flex-1 sdv-card p-2.5 sm:p-4 flex flex-col justify-between overflow-hidden shadow-lg relative">
+        <!-- WAITING ROOM (Menunggu Buddy Mengaktifkan) -->
+        <div
+          v-if="isWaitingForBuddy"
+          class="flex-1 flex flex-col items-center justify-center text-center p-4 sm:p-6 space-y-3.5 my-auto"
+        >
+          <div class="w-14 h-14 rounded-2xl bg-[#170f07] border-2 border-[#f0d060] flex items-center justify-center text-[#facc15] shadow-xl animate-bounce">
+            <span class="text-2xl">⏳</span>
+          </div>
+
+          <div class="space-y-1.5 max-w-sm">
+            <span class="border border-[#f0d060] bg-[#1a1008] px-2 py-0.5 text-[7.5px] font-pixel text-[#f0d060] uppercase tracking-wider rounded">
+              GATEKEEPER POS AKTIF
+            </span>
+            <h2 class="font-pixel text-xs sm:text-sm text-[#fef08a] font-bold uppercase mt-1">
+              MENUNGGU AKTIVASI KAKAK BUDDY
+            </h2>
+            <p class="font-sans text-xs text-[#f0e0c0] leading-relaxed">
+              Pos <strong class="text-white">{{ booth.name }}</strong> telah siap untuk regu Anda. Mini-game akan otomatis terbuka serentak begitu Kakak Buddy menekan tombol aktivasi sesi di portal bimbingan.
+            </p>
+          </div>
+
+          <!-- Pulsing Live Sync Box -->
+          <div class="px-3 py-1.5 bg-[#170f07] border border-[#5a3a18] rounded-xl flex items-center gap-2 font-mono text-[10px] text-[#86efac]">
+            <span class="w-2 h-2 rounded-full bg-[#22c55e] animate-ping"></span>
+            <span>Menunggu jam server... Tetap di halaman ini!</span>
+          </div>
+
+          <button
+            type="button"
+            @click="gameSessionStore.refreshSession()"
+            class="rpg-btn-wood py-1.5 px-3 font-pixel text-[8.5px] flex items-center gap-1.5 cursor-pointer shadow active:scale-95 text-[#f0d060]"
+          >
+            <span>🔄 PERIKSA STATUS SESI</span>
+          </button>
+        </div>
+
+        <!-- ACTIVE MINI GAME CONTAINER -->
         <MiniGameContainer
-          v-if="gameSessionStore.status !== 'expired' && gameSessionStore.status !== 'error'"
+          v-else-if="gameSessionStore.status !== 'expired' && gameSessionStore.status !== 'error'"
           :booth="booth"
           :isCompleted="isAlreadyCompleted"
           :serverSessionId="serverSessionId"

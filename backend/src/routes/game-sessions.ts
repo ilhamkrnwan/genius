@@ -18,6 +18,9 @@ import {
   saveAIDrawingResult,
 } from "../engine/aiDrawing";
 
+const isValidUUID = (val?: string): boolean =>
+  typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
 export const gameSessionRoutes = new Elysia({
   prefix: "/api/game-sessions",
   detail: {
@@ -172,8 +175,48 @@ export const gameSessionRoutes = new Elysia({
     return { success: true, data: sessions };
   })
 
+  // GET /api/game-sessions/team/:teamId/active — Get currently active session by specific teamId
+  .get("/team/:teamId/active", async ({ params, set }) => {
+    const { teamId } = params;
+    if (!isValidUUID(teamId)) {
+      return { success: true, data: null };
+    }
+    const [activeSession] = await db
+      .select({
+        id: gameSessions.id,
+        gameId: gameSessions.gameId,
+        gameName: games.name,
+        gameType: games.type,
+        gameConfig: games.config,
+        missionId: gameSessions.missionId,
+        missionName: missions.name,
+        teamId: gameSessions.teamId,
+        locationId: gameSessions.locationId,
+        locationName: locations.name,
+        locationCode: locations.code,
+        status: gameSessions.status,
+        serverStartAt: gameSessions.serverStartAt,
+        timeLimit: gameSessions.timeLimit,
+        metadata: gameSessions.metadata,
+      })
+      .from(gameSessions)
+      .innerJoin(games, eq(gameSessions.gameId, games.id))
+      .leftJoin(missions, eq(gameSessions.missionId, missions.id))
+      .leftJoin(locations, eq(gameSessions.locationId, locations.id))
+      .where(and(eq(gameSessions.teamId, teamId), inArray(gameSessions.status, ["READY", "ACTIVE", "PAUSED"])))
+      .orderBy(desc(gameSessions.createdAt))
+      .limit(1);
+
+    return { success: true, data: activeSession || null };
+  })
+
   // GET /api/game-sessions/:id — Get session status and details
   .get("/:id", async ({ params, user, set }) => {
+    if (!isValidUUID(params.id)) {
+      set.status = 404;
+      return { success: false, error: { code: "NOT_FOUND", message: "Game session not found" } };
+    }
+
     const [session] = await db
       .select({
         id: gameSessions.id,
@@ -231,6 +274,11 @@ export const gameSessionRoutes = new Elysia({
   .post(
     "/:id/answer",
     async ({ params, body, user, set }) => {
+      if (!isValidUUID(params.id)) {
+        set.status = 404;
+        return { success: false, error: { code: "NOT_FOUND", message: "Session not found" } };
+      }
+
       const [session] = await db
         .select()
         .from(gameSessions)
@@ -524,50 +572,90 @@ export const gameSessionRoutes = new Elysia({
   )
 
   // POST /api/game-sessions/:id/start — Start timer on server (Status: ACTIVE)
-  .post("/:id/start", async ({ params, user, set }) => {
-    const [session] = await db.select().from(gameSessions).where(eq(gameSessions.id, params.id)).limit(1);
-    if (!session) {
-      set.status = 404;
-      return { success: false, error: { code: "NOT_FOUND", message: "Session not found" } };
-    }
+  .post(
+    "/:id/start",
+    async ({ params, body, user, set }) => {
+      if (user?.role === "PARTICIPANT") {
+        set.status = 403;
+        return {
+          success: false,
+          error: {
+            code: "FORBIDDEN",
+            message: "Sesi pos permainan hanya dapat diaktifkan oleh Kakak Pendamping (Buddy) atau Admin.",
+          },
+        };
+      }
 
-    if (user?.role === "PARTICIPANT" && session.teamId !== user.teamId) {
-      set.status = 403;
-      return { success: false, error: { code: "FORBIDDEN", message: "Session does not belong to your team" } };
-    }
-    if (user?.role === "BUDDY" && !(await validateBuddyTeamScope(user, session.teamId))) {
-      set.status = 403;
-      return { success: false, error: { code: "FORBIDDEN", message: "Buddy is not assigned to this team" } };
-    }
-    if (!canStartSession(session.status)) {
-      set.status = 409;
-      return { success: false, error: { code: "INVALID_STATUS", message: "Only ready or paused sessions can start" } };
-    }
+      if (!isValidUUID(params.id)) {
+        set.status = 404;
+        return { success: false, error: { code: "NOT_FOUND", message: "Session not found" } };
+      }
 
-    const now = new Date();
-    const sessionMetadata = (session.metadata && typeof session.metadata === "object" ? session.metadata : {}) as Record<string, any>;
-    const pausedAt = sessionMetadata.pausedAt ? new Date(sessionMetadata.pausedAt).getTime() : null;
-    const pausedDurationMs = Number(sessionMetadata.pausedDurationMs || 0) + (pausedAt ? Math.max(0, now.getTime() - pausedAt) : 0);
-    const [updated] = await db
-      .update(gameSessions)
-      .set({
-        status: "ACTIVE",
-        serverStartAt: session.serverStartAt || now,
-        metadata: { ...sessionMetadata, pausedAt: null, pausedDurationMs },
-        updatedAt: now,
-      })
-      .where(eq(gameSessions.id, params.id))
-      .returning();
+      const [session] = await db.select().from(gameSessions).where(eq(gameSessions.id, params.id)).limit(1);
+      if (!session) {
+        set.status = 404;
+        return { success: false, error: { code: "NOT_FOUND", message: "Session not found" } };
+      }
 
-    broadcastGameSessionEvent(updated.id, "SESSION_STARTED", updated);
-    return { success: true, data: updated };
-  })
+      if (user?.role === "BUDDY" && !(await validateBuddyTeamScope(user, session.teamId))) {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Buddy is not assigned to this team" } };
+      }
+      if (!canStartSession(session.status)) {
+        set.status = 409;
+        return { success: false, error: { code: "INVALID_STATUS", message: "Only ready or paused sessions can start" } };
+      }
+
+      const now = new Date();
+      const sessionMetadata = (session.metadata && typeof session.metadata === "object" ? session.metadata : {}) as Record<string, any>;
+      const pausedAt = sessionMetadata.pausedAt ? new Date(sessionMetadata.pausedAt).getTime() : null;
+      const pausedDurationMs = Number(sessionMetadata.pausedDurationMs || 0) + (pausedAt ? Math.max(0, now.getTime() - pausedAt) : 0);
+
+      // Configurable duration (e.g. 600s, 720s, 900s)
+      const requestedDuration = body?.timeLimitSeconds ? Number(body.timeLimitSeconds) : undefined;
+      const effectiveTimeLimit = requestedDuration && requestedDuration >= 60 && requestedDuration <= 3600
+        ? requestedDuration
+        : (session.timeLimit || 900);
+
+      const [updated] = await db
+        .update(gameSessions)
+        .set({
+          status: "ACTIVE",
+          timeLimit: effectiveTimeLimit,
+          serverStartAt: session.serverStartAt || now,
+          metadata: { ...sessionMetadata, pausedAt: null, pausedDurationMs },
+          updatedAt: now,
+        })
+        .where(eq(gameSessions.id, params.id))
+        .returning();
+
+      broadcastGameSessionEvent(updated.id, "SESSION_STARTED", updated);
+      broadcastAdminEvent("GAME_SESSION_STARTED", {
+        sessionId: updated.id,
+        teamId: updated.teamId,
+        timeLimit: effectiveTimeLimit,
+      });
+
+      return { success: true, data: updated };
+    },
+    {
+      body: t.Optional(
+        t.Object({
+          timeLimitSeconds: t.Optional(t.Number({ minimum: 60, maximum: 3600 })),
+        })
+      ),
+    }
+  )
 
   // POST /api/game-sessions/:id/pause — Pause session
   .post("/:id/pause", async ({ params, user, set }) => {
     if (user?.role === "PARTICIPANT") {
       set.status = 403;
       return { success: false, error: { code: "FORBIDDEN", message: "Participant cannot pause sessions" } };
+    }
+    if (!isValidUUID(params.id)) {
+      set.status = 404;
+      return { success: false, error: { code: "NOT_FOUND", message: "Session not found" } };
     }
     const [session] = await db.select().from(gameSessions).where(eq(gameSessions.id, params.id)).limit(1);
     if (!session) {
@@ -638,6 +726,10 @@ export const gameSessionRoutes = new Elysia({
   .post(
     "/:id/complete",
     async ({ params, body, user, set }) => {
+      if (!isValidUUID(params.id)) {
+        set.status = 404;
+        return { success: false, error: { code: "NOT_FOUND", message: "Session not found" } };
+      }
       const [session] = await db.select().from(gameSessions).where(eq(gameSessions.id, params.id)).limit(1);
       if (!session) {
         set.status = 404;

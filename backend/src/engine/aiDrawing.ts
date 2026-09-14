@@ -91,7 +91,7 @@ Output WAJIB berupa JSON murni tanpa markdown (\`\`\`json):
         jsonMode: true,
         imageBase64: cleanBase64,
         mimeType: "image/webp",
-        preferredModel: "gemini-2.0-flash",
+        preferredModel: "gemini-3.6-flash",
         cacheTtlMinutes: 180, // Cache for 3 hours
       });
 

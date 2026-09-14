@@ -41,9 +41,10 @@ if (usePglite) {
     }
   }
 
-  // Ensure attendance_sessions table and columns exist in PGlite
+  // Ensure attendance_sessions table, columns, and enums exist in PGlite
   try {
     await client.exec(`
+      ALTER TYPE "game_type" ADD VALUE IF NOT EXISTS 'FLAPPY_BIRD';
       CREATE TABLE IF NOT EXISTS "attendance_sessions" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
         "title" varchar(255) NOT NULL,
@@ -65,7 +66,7 @@ if (usePglite) {
       CREATE INDEX IF NOT EXISTS "attendance_sessions_type_idx" ON "attendance_sessions" ("type");
     `);
   } catch (e: any) {
-    console.warn("[DB] Attendance sessions table setup warning:", e.message);
+    console.warn("[DB] Attendance sessions & enum setup warning:", e.message);
   }
 
   dbInstance = drizzlePglite(client, { schema });

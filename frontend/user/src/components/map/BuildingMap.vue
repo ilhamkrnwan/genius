@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { RouterLink } from 'vue-router';
+import { animatePageEnter, staggerFadeUp, bouncePop } from '@/lib/gsap';
 import {
   PhTrophy,
   PhCheckCircle,
@@ -33,6 +34,10 @@ const selectedFloor = computed(
 );
 
 onMounted(async () => {
+  animatePageEnter('.map-top-bar', { y: 15, duration: 0.4 });
+  staggerFadeUp('.map-floor-btn', 0.03, { delay: 0.1 });
+  bouncePop('.map-floor-detail', { delay: 0.25 });
+
   await gameSessionStore.fetchMyTeamSessions();
   
   if (route.query.floor) {
@@ -84,6 +89,14 @@ function boothPath(booth: any) {
   return `/play/floor/${booth.floorNumber}/spot/${booth.id}`;
 }
 
+=======
+watch(selectedFloorNumber, () => {
+  nextTick(() => {
+    bouncePop('.map-floor-detail', { duration: 0.35 });
+  });
+});
+
+>>>>>>> origin/main
 const handleSelectFloor = (floorNum: number) => {
   selectedFloorNumber.value = floorNum;
   if (gameStore.soundEnabled) soundEngine.playSelect();
@@ -114,7 +127,38 @@ const getGameTypeLabel = (type: string) => {
 </script>
 
 <template>
-  <div class="w-full flex flex-col gap-2">
+  <div class="w-full h-full max-w-5xl mx-auto px-2.5 sm:px-6 py-2 sm:py-4 flex flex-col justify-between overflow-hidden gap-2">
+    <!-- Top Status Bar -->
+    <div class="map-top-bar bg-[#1f140a] border-2 border-[#5a3a18] rounded-xl p-2 sm:p-3 flex items-center justify-between gap-2 shadow-md shrink-0">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 bg-[#2d1b0e] border border-[#8b6f4e] rounded-lg flex items-center justify-center text-[#f0d060] shrink-0">
+          <PhGameController :size="18" weight="bold" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="font-pixel text-[11px] sm:text-xs font-bold text-white leading-tight">
+            PETA EKSPLORASI KAMPUS
+          </div>
+          <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-sans text-[#c4956a] flex-wrap">
+            <span>{{ completedFloors }} Lantai Tuntas</span>
+            <span>•</span>
+            <span class="text-[#7ec850]">{{ gameStore.participant.completedBooths.length }}/18 Stempel</span>
+            <span>•</span>
+            <span class="text-[#f0d060]">{{ gameStore.participant.totalXp }} XP</span>
+          </div>
+        </div>
+      </div>
+
+      <RouterLink to="/play" class="shrink-0">
+        <button
+          type="button"
+          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+          class="rpg-btn-primary py-1.5 sm:py-2 px-3 text-[10px] sm:text-xs font-pixel font-bold flex items-center gap-1.5"
+        >
+          <PhPlay :size="12" weight="fill" />
+          <span>Mulai</span>
+        </button>
+      </RouterLink>
+    </div>
 
     <!-- 9 Floors Horizontal Selector -->
     <div class="bg-[#170f07] p-1.5 sm:p-2 border-2 border-[#5a3a18] rounded-xl shrink-0">
@@ -134,7 +178,7 @@ const getGameTypeLabel = (type: string) => {
           type="button"
           @click="handleSelectFloor(floor.number)"
           :class="[
-            'py-1.5 sm:py-2 px-0.5 rounded-lg text-center border font-pixel text-[9px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center relative',
+            'map-floor-btn py-1.5 sm:py-2 px-0.5 rounded-lg text-center border font-pixel text-[9px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center relative',
             selectedFloorNumber === floor.number
               ? 'bg-[#3d7828] border-[#f0d060] text-white font-bold shadow-[0_0_8px_rgba(240,208,96,0.4)] scale-[1.02]'
               : gameStore.getFloorStatus(floor.number) === 'completed'
@@ -152,7 +196,7 @@ const getGameTypeLabel = (type: string) => {
     </div>
 
     <!-- Selected Floor Details Card -->
-    <div class="flex-1 sdv-card p-3 sm:p-4 flex flex-col justify-between overflow-hidden shadow-lg">
+    <div class="map-floor-detail flex-1 sdv-card p-3 sm:p-4 flex flex-col justify-between overflow-hidden shadow-lg">
       <!-- Floor Header -->
       <div class="flex items-center justify-between gap-2 border-b border-[#5a3a18] pb-2 shrink-0">
         <div class="min-w-0 flex-1">

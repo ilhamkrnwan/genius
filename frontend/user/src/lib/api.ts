@@ -241,6 +241,31 @@ export const api = {
     });
   },
 
+  // AI Drawing & Vision Art Curator
+  async getAiDrawingPrompt() {
+    return this.request<{ sentence: string }>('/game-sessions/ai-drawing/prompt');
+  },
+
+  async evaluateAiDrawing(payload: {
+    promptSentence: string;
+    imageBase64: string;
+    teamId?: string;
+    gameSessionId?: string;
+  }) {
+    return this.request<{
+      evaluation: {
+        score: number;
+        feedback: string;
+        titles: string[];
+      };
+      newTitles: string[];
+      unlockedTitles: string[];
+    }>('/game-sessions/ai-drawing/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   // Health check
   async checkHealth() {
     try {

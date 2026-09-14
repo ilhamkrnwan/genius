@@ -17,7 +17,12 @@ Dokumentasi ini disusun secara komprehensif untuk memandu seluruh tahapan pengem
 | **04** | [**04-SPESIFIKASI-FITUR-UTAMA.md**](./04-SPESIFIKASI-FITUR-UTAMA.md) | **Spesifikasi Detail Fitur:** Presensi QR Dinamis, Portal Penilaian Buddy (FGD), Dynamic Campus Quest & Question Bank Builder, 7 Core Engine Mini-Game, UKM Expo Discovery QR, dan Live Leaderboard Projector. |
 | **05** | [**05-SPESIFIKASI-REST-API.md**](./05-SPESIFIKASI-REST-API.md) | **Kontrak REST API Backend Lengkap:** Endpoint Auth, Presensi, Buddy Scoring, Quest/Games, Stempel, Manajemen Pos & Soal Admin, Ormawa QR Scan, serta Leaderboard & Statistik. |
 | **06** | [**06-AUDIT-PROGRESS-SAAT-INI.md**](./06-AUDIT-PROGRESS-SAAT-INI.md) | **Audit Status Implementasi & Gap Analysis:** Inventarisasi kondisi riil repositori saat ini (Mock in-memory, UI Prototype) versus kebutuhan target production. |
-| **07** | [**07-ROADMAP-PENGEMBANGAN.md**](./07-ROADMAP-PENGEMBANGAN.md) | **Roadmap & Rencana Eksekusi Bertahap:** 7 Tahap pengembangan terstruktur mulai dari koneksi database MongoDB Atlas, integrasi presensi, portal buddy, quest engine dinamis, hingga load testing 1000+ MABA. |
+| **07** | [**07-ROADMAP-PENGEMBANGAN.md**](./07-ROADMAP-PENGEMBANGAN.md) | **Roadmap & Rencana Eksekusi Bertahap:** 7 Tahap pengembangan terstruktur mulai dari koneksi database, integrasi presensi, portal buddy, quest engine dinamis, hingga load testing 1000+ MABA. |
+| **08** | [**08-PANDUAN-MODUL-GAME-DAN-KONTRIBUSI.md**](./08-PANDUAN-MODUL-GAME-DAN-KONTRIBUSI.md) | **Panduan Modul Game & Kontribusi:** Standar arsitektur plug-and-play untuk 7 modul mini-game gamifikasi orientasi kampus. |
+| **09** | [**09-PENYELARASAN-FLOW-FRONTEND-3-HARI.md**](./09-PENYELARASAN-FLOW-FRONTEND-3-HARI.md) | **Penyelarasan Alur Pengalaman Pengguna (UX Flow):** Pemetaan detail perjalanan maba Hari 1 s.d. Hari 3. |
+| **10** | [**10-PANDUAN-IMPLEMENTASI-FRONTEND-LENGKAP.md**](./10-PANDUAN-IMPLEMENTASI-FRONTEND-LENGKAP.md) | **Panduan Implementasi Frontend Lengkap:** Integrasi antarmuka User Maba dan Backoffice Admin dengan tema Retro RPG. |
+| **11** | [**11-SISTEM-PRESENSI-SESI-FLEKSIBEL.md**](./11-SISTEM-PRESENSI-SESI-FLEKSIBEL.md) | **Sistem Presensi Sesi Dinamis:** Arsitektur sesi check-in & check-out fleksibel dengan QR token putar dan anti-titip absen. |
+| **12** | [**12-RATIONALE-TECH-STACK-POSTGRESQL-VS-MONGODB.md**](./12-RATIONALE-TECH-STACK-POSTGRESQL-VS-MONGODB.md) | **Rationale Arsitektur Database & Tech Stack:** Analisis teknis mendalam mengapa proyek menggunakan PostgreSQL + Drizzle ORM + Elysia/Bun daripada NoSQL/MongoDB. |
 
 ---
 
@@ -57,13 +62,13 @@ flowchart LR
 ---
 
 ## 🛠️ Ringkasan Target Tech Stack
-
-Sesuai arahan teknis proyek, stack yang digunakan bersifat modular dan scalable:
-
-* **Basis Data:** **NoSQL (MongoDB Atlas)** — Document-oriented data store untuk menyimpan data user, log presensi dinamis, konfigurasi pos/lantai fleksibel, bank soal multi-tipe game, log stempel, dan akumulasi poin leaderboard.
-* **Backend:** **Node.js (Hono / Express / Fastify)** — RESTful API service performa tinggi dengan MongoDB Node Driver / Mongoose ODM, mendukung otentikasi JWT, validasi skema, dan real-time leaderboard aggregation.
+ 
+Sesuai evaluasi kebutuhan integritas data dan performa tinggi (lihat [Dokumen 12](./12-RATIONALE-TECH-STACK-POSTGRESQL-VS-MONGODB.md)), stack produksi yang digunakan:
+ 
+* **Basis Data:** **PostgreSQL + PGlite (Embedded WASM)** — Relasional dengan transaksi ACID penuh, constraint integritas finansial skor gamifikasi, dan kolom hybrid `JSONB` untuk konfigurasi mini-game fleksibel. PGlite memungkinkan zero-config local development tanpa Docker/service eksternal.
+* **Backend:** **ElysiaJS + Bun Runtime + Drizzle ORM** — RESTful API & WebSocket service ultra-cepat (> 200k req/s), stateless JWT auth, TypeBox JIT validation, dan end-to-end type safety dengan frontend.
 * **Frontend Mahasiswa (`frontend/user`):** **Vue 3 (Composition API `<script setup lang="ts">`) + Vite + Tailwind CSS v4** — PWA Mobile-first interaktif bertema Retro RPG, visual paspor stempel, audio synthesizer Web Audio API, QR Scanner kamera, dan 7 modul mini-game.
-* **Frontend Admin & Panitia (`frontend/admin`):** **Nuxt 3 / Vue 3 + Tailwind CSS** — Backoffice portal untuk Super Admin, PJ Lantai, dan Buddy dengan fitur live monitoring, builders pos & soal, evaluasi FGD, QR generator, dan mode proyektor leaderboard.
+* **Frontend Admin & Panitia (`frontend/admin`):** **Vue 3 + Vite + Tailwind CSS v4** — Backoffice portal untuk Super Admin, PJ Lantai, dan Buddy dengan fitur live monitoring, builders pos & soal, evaluasi FGD, QR generator, dan mode proyektor leaderboard.
 * **Shared Types (`packages/shared`):** Shared TypeScript contracts & DTOs untuk memastikan *type safety* end-to-end.
 
 ---

@@ -73,12 +73,16 @@ const handleLoginSubmit = async (e: Event) => {
     loginError.value = 'Mohon masukkan NIM Mahasiswa Baru';
     return;
   }
+  if (!loginPassword.value) {
+    loginError.value = 'Mohon masukkan kata sandi Anda';
+    return;
+  }
   loginError.value = '';
   if (gameStore.soundEnabled) soundEngine.playClick();
 
-  const response = await api.loginMaba(loginNim.value.trim(), loginPassword.value || 'genius2026');
+  const response = await api.loginMaba(loginNim.value.trim(), loginPassword.value);
   if (!response.success || !response.data?.user) {
-    loginError.value = response.error?.message || 'Login backend gagal.';
+    loginError.value = response.error?.message || 'Login gagal. Periksa kembali NIM dan kata sandi Anda.';
     return;
   }
 
@@ -202,7 +206,7 @@ const selectAvatar = (avId: string) => {
                 type="text"
                 v-model="loginNim"
                 required
-                placeholder="Contoh: 2611101"
+                placeholder="Masukkan NIM Anda"
                 class="w-full pl-8 pr-3 py-2 bg-[#170f07] border-2 border-[#5a3a18] focus:border-[#f0d060] rounded-lg text-xs text-white outline-none"
               />
             </div>
@@ -210,7 +214,7 @@ const selectAvatar = (avId: string) => {
 
           <div class="space-y-1">
             <label class="block font-pixel text-[8px] text-[#c4956a] uppercase">
-              KATA SANDI (PIN / DEFAULT)
+              KATA SANDI
             </label>
             <div class="relative">
               <PhLockKey :size="16" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#f0d060]" />

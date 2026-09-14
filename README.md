@@ -1,7 +1,7 @@
 # GENIUS UNU (Gedung Edukasi Navigasi Interaktif Universitas Nahdlatul Ulama Yogyakarta) 2026 — Monorepo
 
 > **Platform Orientasi Kampus Interaktif Berbasis Gamifikasi RPG & 9 Lantai Kampus UNU Yogyakarta.**  
-> *Tema: "Upgrade New U 2026"*
+> _Tema: "Upgrade New U 2026"_
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.5-4FC08D?style=flat-square&logo=vuedotjs)](https://vuejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)](https://vitejs.dev/)
@@ -16,13 +16,18 @@
 
 Dokumentasi arsitektur, integrasi alur rundown 3 hari kegiatan, pemodelan MongoDB Atlas, spesifikasi modul, dan roadmap telah disusun secara terstruktur di folder [`docs/`](./docs/README.md):
 
-* 📑 [**01. Pemetaan Rundown 3 Hari ke Fitur Aplikasi**](./docs/01-RUNDOWN-DAN-EVENT-FLOW.md)
-* 🏗️ [**02. Arsitektur Sistem & Spesifikasi Tech Stack**](./docs/02-ARSITEKTUR-DAN-TECH-STACK.md)
-* 🍃 [**03. Skema Database NoSQL (MongoDB Atlas)**](./docs/03-SKEMA-DATABASE-MONGODB.md)
-* ⚙️ [**04. Spesifikasi Fitur Utama & Logika Gamifikasi**](./docs/04-SPESIFIKASI-FITUR-UTAMA.md)
-* 📡 [**05. Spesifikasi Kontrak REST API Backend**](./docs/05-SPESIFIKASI-REST-API.md)
-* 🔍 [**06. Audit Status Implementasi & Gap Analysis**](./docs/06-AUDIT-PROGRESS-SAAT-INI.md)
-* 🗺️ [**07. Roadmap Pengembangan Menuju Produksi**](./docs/07-ROADMAP-PENGEMBANGAN.md)
+- 📑 [**01. Pemetaan Rundown 3 Hari ke Fitur Aplikasi**](./docs/01-RUNDOWN-DAN-EVENT-FLOW.md)
+- 🏗️ [**02. Arsitektur Sistem & Spesifikasi Tech Stack**](./docs/02-ARSITEKTUR-DAN-TECH-STACK.md)
+- 🍃 [**03. Skema Database NoSQL (MongoDB Atlas - Draft Awal)**](./docs/03-SKEMA-DATABASE-MONGODB.md)
+- ⚙️ [**04. Spesifikasi Fitur Utama & Logika Gamifikasi**](./docs/04-SPESIFIKASI-FITUR-UTAMA.md)
+- 📡 [**05. Spesifikasi Kontrak REST API Backend**](./docs/05-SPESIFIKASI-REST-API.md)
+- 🔍 [**06. Audit Status Implementasi & Gap Analysis**](./docs/06-AUDIT-PROGRESS-SAAT-INI.md)
+- 🗺️ [**07. Roadmap Pengembangan Menuju Produksi**](./docs/07-ROADMAP-PENGEMBANGAN.md)
+- 🎮 [**08. Panduan Modul Game & Kontribusi**](./docs/08-PANDUAN-MODUL-GAME-DAN-KONTRIBUSI.md)
+- 🧭 [**09. Penyelarasan Alur Pengalaman Pengguna (UX Flow)**](./docs/09-PENYELARASAN-FLOW-FRONTEND-3-HARI.md)
+- 💻 [**10. Panduan Implementasi Frontend Lengkap**](./docs/10-PANDUAN-IMPLEMENTASI-FRONTEND-LENGKAP.md)
+- 📋 [**11. Sistem Presensi Sesi Dinamis**](./docs/11-SISTEM-PRESENSI-SESI-FLEKSIBEL.md)
+- 🏛️ [**12. Rationale Arsitektur: Mengapa PostgreSQL + Drizzle ORM, Bukan NoSQL/MongoDB?**](./docs/12-RATIONALE-TECH-STACK-POSTGRESQL-VS-MONGODB.md)
 
 ---
 
@@ -74,20 +79,22 @@ genius-unu/
 ## 🚀 Panduan Menjalankan Proyek
 
 ### 1. Instalasi Seluruh Workspace
+
 ```bash
 bun install
 ```
 
 ### 2. Menjalankan Aplikasi
 
-| Service | Perintah | URL Lokal | Deskripsi |
-| :--- | :--- | :--- | :--- |
-| **Frontend User (MABA)** | `bun run dev:user` | `http://localhost:3000` | Gamifikasi & eksplorasi 9 lantai |
-| **Frontend Admin** | `bun run dev:admin` | `http://localhost:3002` | Dashboard monitoring panitia |
-| **Backend API** | `bun run dev:backend` | `http://localhost:3001` | REST API (Hono) |
-| **Jalankan Semua Sekaligus** | `bun run dev` | - | Menjalankan seluruh workspace paralel |
+| Service                      | Perintah              | URL Lokal               | Deskripsi                             |
+| :--------------------------- | :-------------------- | :---------------------- | :------------------------------------ |
+| **Frontend User (MABA)**     | `bun run dev:user`    | `http://localhost:3000` | Gamifikasi & eksplorasi 9 lantai      |
+| **Frontend Admin**           | `bun run dev:admin`   | `http://localhost:3002` | Dashboard monitoring panitia          |
+| **Backend API**              | `bun run dev:backend` | `http://localhost:3001` | REST API (Hono)                       |
+| **Jalankan Semua Sekaligus** | `bun run dev`         | -                       | Menjalankan seluruh workspace paralel |
 
 ### 3. Build Semua Aplikasi
+
 ```bash
 bun run build
 ```
@@ -119,4 +126,5 @@ bun run build
 ---
 
 ## 📜 Lisensi
+
 Dikembangkan untuk Kepanitiaan Orientasi PKKMB 2026 Universitas Nahdlatul Ulama Yogyakarta.
