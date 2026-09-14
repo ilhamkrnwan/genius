@@ -31,35 +31,44 @@ const currentLevelData = computed(
   () => LEVEL_CONFIG.find((l) => l.level === currentLevel.value) || LEVEL_CONFIG[0]
 );
 
-const hasNextFloor = computed(() => floorNumber.value < 6);
+const hasNextFloor = computed(() => floorNumber.value < 9);
 const nextFloorNumber = computed(() => floorNumber.value + 1);
 
 onMounted(() => {
-  confetti({
-    particleCount: 100,
-    spread: 90,
-    origin: { y: 0.5 },
-    colors: ['#7ec850', '#f0d060', '#60a8d8', '#c4956a', '#ffffff'],
-  });
+  try {
+    confetti({
+      particleCount: 100,
+      spread: 90,
+      origin: { y: 0.5 },
+      colors: ['#7ec850', '#f0d060', '#60a8d8', '#c4956a', '#ffffff'],
+    });
+  } catch (_) {}
 
-  if (gameStore.soundEnabled) {
-    soundEngine.playLevelUp();
-  }
+  try {
+    if (gameStore.soundEnabled) {
+      soundEngine.playLevelUp?.();
+    }
+  } catch (_) {}
 
-  bouncePop('.complete-victory-badge', { delay: 0.1 });
-  animatePageEnter('.complete-card', { y: 20, duration: 0.45, delay: 0.15 });
-  stampSlamEffect('.complete-stamp-item', { delay: 0.35, stagger: 0.15 });
-  floatElement('.complete-victory-badge', 3, 2.2);
+  try {
+    bouncePop('.complete-victory-badge', { delay: 0.1 });
+    animatePageEnter('.complete-card', { y: 20, duration: 0.45, delay: 0.15 });
+    stampSlamEffect('.complete-stamp-item', { delay: 0.35, stagger: 0.15 });
+    floatElement('.complete-victory-badge', 3, 2.2);
+  } catch (_) {}
 });
 
 const handleNextAction = () => {
-  if (gameStore.soundEnabled) soundEngine.playClick();
+  try {
+    if (gameStore.soundEnabled) soundEngine.playClick?.();
+  } catch (_) {}
   if (hasNextFloor.value) {
     router.push(`/play/floor/${nextFloorNumber.value}/intro`);
   } else {
     router.push('/paspor');
   }
 };
+
 </script>
 
 <template>

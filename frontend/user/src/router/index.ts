@@ -13,6 +13,7 @@ import LeaderboardView from '@/views/LeaderboardView.vue';
 import BantuanView from '@/views/BantuanView.vue';
 import AttendanceView from '@/views/AttendanceView.vue';
 import OrmawaExpoView from '@/views/OrmawaExpoView.vue';
+import ProfileView from '@/views/ProfileView.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -31,13 +32,19 @@ const routes: Array<RouteRecordRaw> = [
     component: Floor1View,
   },
   {
+    path: '/floor/:floorId',
+    redirect: (to) => `/play/floor/${to.params.floorId || 1}/intro`,
+  },
+  {
     path: '/peta',
     name: 'peta',
+    alias: ['/map'],
     component: PetaView,
   },
   {
     path: '/play',
     name: 'play',
+    alias: ['/onboard', '/menu'],
     component: PlayView,
   },
   {
@@ -63,6 +70,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/paspor',
     name: 'paspor',
+    alias: ['/passport'],
     component: PasporView,
   },
   {
@@ -73,17 +81,26 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/presensi',
     name: 'presensi',
+    alias: ['/attendance'],
     component: AttendanceView,
   },
   {
     path: '/ormawa',
     name: 'ormawa',
+    alias: ['/expo'],
     component: OrmawaExpoView,
   },
   {
     path: '/bantuan',
     name: 'bantuan',
+    alias: ['/help', '/panduan'],
     component: BantuanView,
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    alias: ['/profil', '/ktm'],
+    component: ProfileView,
   },
   {
     path: '/:catchAll(.*)*',

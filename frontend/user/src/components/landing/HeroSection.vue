@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { RouterLink } from 'vue-router';
+import { useRouter } from 'vue-router';
 import AmbientEffects from '@/components/ambient/AmbientEffects.vue';
 import {
   PhSparkle,
@@ -22,28 +22,45 @@ import {
   PhStorefront,
   PhTree,
   PhCaretDown,
+  PhPencilSimple,
+  PhUser,
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
-import { AVATAR_OPTIONS, UNU_FACULTIES } from '@/data/mockData';
+import { AVATAR_OPTIONS, UNU_FACULTIES, LEVEL_CONFIG } from '@/data/mockData';
 import { soundEngine } from '@/lib/sound';
 import { gsap, floatElement } from '@/lib/gsap';
 
+const router = useRouter();
 const gameStore = useGameStore();
 
 const completedFloors = computed(() => gameStore.getCompletedFloorsCount());
 const totalStamps = computed(() => gameStore.getTotalStampsCount());
-const currentLevel = computed(() => gameStore.getCurrentLevel());
+const currentLevelName = computed(() => gameStore.getCurrentLevel());
+const currentLevelInfo = computed(() => {
+  return LEVEL_CONFIG.find((l) => l.title === currentLevelName.value) || LEVEL_CONFIG[0];
+});
 const isCheckedInToday = computed(() => gameStore.isDayCheckedIn(gameStore.activeDay || 1));
+
+const isUserRegistered = computed(() => {
+  const p = gameStore.participant;
+  return Boolean(
+    gameStore.isLoggedIn ||
+    p.isRegistered ||
+    (p.name && p.name.trim() !== '' && p.name !== 'Mahasiswa Baru')
+  );
+});
+
+const currentAvatarImg = computed(() => {
+  return gameStore.participant.avatar === 'character_cewek'
+    ? '/character-cewek-avatar.png'
+    : '/character-cowok-avatar.png';
+});
 
 import MabaAuthModal from '@/components/auth/MabaAuthModal.vue';
 
 // Auth / Profile Onboarding Modal State
-const isAuthModalOpen = ref(
-  !gameStore.isLoggedIn || !gameStore.participant.isRegistered || !gameStore.participant.name
-);
-const authInitialStep = ref<'login' | 'profile'>(
-  gameStore.isLoggedIn ? 'profile' : 'login'
-);
+const isAuthModalOpen = ref(false);
+const authInitialStep = ref<'login' | 'profile'>('login');
 
 const openLoginModal = () => {
   if (gameStore.soundEnabled) soundEngine.playClick();
@@ -57,8 +74,24 @@ const openProfileModal = () => {
   isAuthModalOpen.value = true;
 };
 
+const navigateToProfile = () => {
+  if (gameStore.soundEnabled) soundEngine.playClick();
+  router.push('/profile');
+};
+
+const handleStartJourney = () => {
+  if (gameStore.soundEnabled) soundEngine.playClick();
+  if (gameStore.isLoggedIn) {
+    router.push('/play');
+  } else {
+    authInitialStep.value = 'login';
+    isAuthModalOpen.value = true;
+  }
+};
+
 const handleAuthComplete = () => {
   isAuthModalOpen.value = false;
+  router.push('/play');
 };
 
 const handleSelectQuickAvatar = (avatarId: string) => {
@@ -240,12 +273,12 @@ onUnmounted(() => {
 
       <!-- Top Right Quick Controls & Student Profile -->
       <div class="flex items-center gap-1.5 sm:gap-2">
-        <!-- Student Profile Button (Square box matching buttons beside it) -->
+        <!-- Student Profile Button (Opens /profile page) -->
         <button
           type="button"
-          @click="openProfileModal"
+          @click="navigateToProfile"
           class="p-1 sm:p-1.5 bg-[#2d1b0e]/90 border border-[#8b6f4e] hover:border-[#f0d060] rounded-lg text-[#f0d060] transition-all shadow-md active:scale-95 cursor-pointer flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 shrink-0"
-          :title="`Profil: ${gameStore.participant.name || 'Mahasiswa Baru'} (Klik untuk ubah)`"
+          :title="`Halaman Profil & KTM: ${gameStore.participant.name || 'Mahasiswa Baru'} (Klik untuk buka)`"
         >
           <div class="w-full h-full rounded border border-[#f0d060]/70 overflow-hidden bg-black/40">
             <img
@@ -327,15 +360,113 @@ onUnmounted(() => {
         </p>
       </div>
 
-      <!-- Character Quick-Select Bar -->
-      <div class="hero-char-box backdrop-blur-md bg-[#19120c]/90 border border-[#8b6f4e] rounded-xl p-2 mb-2.5 sm:mb-3 max-w-sm w-full shadow-md">
+      <!-- Character Box: Switch between Profile Card (if Registered) vs Character Selector (if Guest) -->
+      <!-- A. Participant Profile Card (When Logged In / Registered) -->
+      <div
+        v-if="isUserRegistered"
+        class="hero-char-box backdrop-blur-md bg-[#19120c]/95 border-2 border-[#8b6f4e] hover:border-[#f0d060]/70 rounded-xl p-2.5 mb-2.5 sm:mb-3 max-w-sm w-full shadow-lg transition-all"
+      >
+        <!-- Header: Title & Action -->
+        <div class="flex items-center justify-between gap-2 px-1 mb-2 border-b border-[#5a3a18]/60 pb-1.5">
+          <div class="flex items-center gap-1.5">
+            <PhIdentificationBadge :size="13" weight="bold" class="text-[#f0d060]" />
+            <span class="font-pixel text-[8px] sm:text-[9px] text-[#f0d060] uppercase tracking-wider">
+              PROFIL PETUALANG TERDAFTAR
+            </span>
+          </div>
+          <button
+            type="button"
+            @click="openProfileModal"
+            class="text-[8px] sm:text-[8.5px] font-pixel text-[#86efac] hover:text-white flex items-center gap-1 bg-[#22160d] hover:bg-[#382313] border border-[#5c3e23] hover:border-[#86efac] px-2 py-0.5 rounded transition-all cursor-pointer active:scale-95"
+            title="Klik untuk ubah profil mahasiswa"
+          >
+            <PhPencilSimple :size="10" weight="bold" />
+            <span>Ubah</span>
+          </button>
+        </div>
+
+        <!-- Profile Body -->
+        <div class="flex items-center gap-3 text-left">
+          <!-- Avatar Frame -->
+          <div
+            @click="openProfileModal"
+            class="w-13 h-13 sm:w-14 sm:h-14 rounded-xl bg-[#120a05] border-2 border-[#f0d060] overflow-hidden shrink-0 relative cursor-pointer hover:border-white transition-all shadow-md group"
+            title="Klik untuk ubah profil / ganti avatar"
+          >
+            <img
+              :src="currentAvatarImg"
+              :alt="gameStore.participant.name || 'Petualang'"
+              class="w-full h-full object-cover object-top"
+            />
+            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[#f0d060]">
+              <PhPencilSimple :size="16" weight="bold" />
+            </div>
+            <!-- Gender Badge Pill on Avatar -->
+            <span
+              class="absolute bottom-0 inset-x-0 bg-black/80 text-[7px] font-pixel text-center py-0.5 text-white flex items-center justify-center gap-0.5"
+            >
+              <PhGenderMale v-if="gameStore.participant.avatar !== 'character_cewek'" :size="8" weight="bold" class="text-[#60a8d8]" />
+              <PhGenderFemale v-else :size="8" weight="bold" class="text-[#ff8080]" />
+              <span>{{ gameStore.participant.avatar === 'character_cewek' ? 'Cewek' : 'Cowok' }}</span>
+            </span>
+          </div>
+
+          <!-- Profile Details -->
+          <div class="min-w-0 flex-1">
+            <!-- Name & Level Badge -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[#86efac] text-xs sm:text-[13px] font-bold truncate block">
+                {{ gameStore.participant.name }}
+              </span>
+              <span
+                class="font-pixel text-[7.5px] px-1.5 py-0.5 rounded border uppercase"
+                :style="{ color: currentLevelInfo.color, borderColor: currentLevelInfo.color }"
+              >
+                {{ currentLevelInfo.title }}
+              </span>
+            </div>
+
+            <!-- NIM & Prodi -->
+            <div class="text-[9.5px] text-[#e2d5c3] font-sans truncate mt-0.5">
+              NIM: <span class="font-mono text-[#fde047] font-semibold">{{ gameStore.participant.nim || '-' }}</span> • {{ gameStore.participant.prodi || 'UNU Yogyakarta' }}
+            </div>
+
+            <!-- Faculty -->
+            <div class="text-[8.5px] text-[#a89279] font-sans truncate">
+              {{ gameStore.participant.faculty || 'Fakultas Teknologi Informasi' }}
+            </div>
+
+            <!-- XP & Stamps Count -->
+            <div class="flex items-center gap-2 mt-1 text-[8.5px] font-pixel">
+              <span class="text-[#facc15] flex items-center gap-1">
+                <PhSparkle :size="10" weight="fill" />
+                {{ gameStore.participant.totalXp }} XP
+              </span>
+              <span class="text-[#5a3a18]">•</span>
+              <span class="text-[#86efac]">
+                {{ totalStamps }}/18 Stempel
+              </span>
+              <span class="text-[#5a3a18]">•</span>
+              <span class="text-[#a0d870]">
+                {{ gameStore.participant.groupName || 'Regu Maba' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B. Character Quick-Select Bar (When Guest / Not Registered) -->
+      <div
+        v-else
+        class="hero-char-box backdrop-blur-md bg-[#19120c]/90 border border-[#8b6f4e] rounded-xl p-2 mb-2.5 sm:mb-3 max-w-sm w-full shadow-md"
+      >
         <div class="flex items-center justify-between gap-2 px-1 mb-1.5">
           <div class="min-w-0 text-left">
             <span class="font-pixel text-[8px] text-[#f0d060] uppercase block">
-              Karakter Petualang:
+              PILIH KARAKTER PETUALANG:
             </span>
-            <span class="text-[9.5px] text-[#86efac] font-bold truncate block">
-              {{ gameStore.participant.name || 'Mahasiswa Baru' }}
+            <span class="text-[9px] text-[#86efac] font-bold truncate block">
+              Pilih karakter awal untuk orientasi
             </span>
           </div>
         </div>
@@ -376,17 +507,17 @@ onUnmounted(() => {
 
       <!-- Main Action Button -->
       <div class="w-full max-w-sm flex flex-col items-center">
-        <!-- Primary Action Button -->
-        <RouterLink to="/play" class="hero-cta-main w-full">
+        <!-- Primary Action Button (Smart Guarded) -->
+        <div class="hero-cta-main w-full">
           <button
             type="button"
-            @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+            @click="handleStartJourney"
             class="w-full py-2.5 sm:py-3.5 px-4 text-xs sm:text-sm font-pixel font-bold uppercase tracking-wider rpg-btn-primary flex items-center justify-center gap-2 shadow-lg cursor-pointer"
           >
             <PhGameController :size="18" weight="bold" />
-            <span>{{ totalStamps > 0 ? 'LANJUTKAN PENJELAJAHAN' : 'MULAI PERJALANAN' }}</span>
+            <span>{{ (isUserRegistered || totalStamps > 0) ? 'LANJUTKAN PENJELAJAHAN' : 'MULAI PERJALANAN' }}</span>
           </button>
-        </RouterLink>
+        </div>
 
         <!-- Smooth Scroll to Story/Guide Section Button -->
         <button
@@ -400,7 +531,7 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
-    </div>
+  </div>
 
     <!-- Bottom Awwwards-style Floating Menu Dock with GSAP Scroll Parallax -->
     <div class="hero-scroll-dock hero-awwwards-dock relative z-20 w-full mx-auto px-2 sm:px-4 pb-3 sm:pb-5 shrink-0 flex flex-col items-center will-change-transform">
@@ -409,6 +540,16 @@ onUnmounted(() => {
         class="w-fit max-w-full backdrop-blur-xl bg-[#140e09]/95 border border-[#8b6f4e]/80 rounded-2xl p-1.5 sm:p-2 shadow-[0_16px_40px_rgba(0,0,0,0.85)] flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar"
         aria-label="Navigasi Utama"
       >
+        <!-- 0. Profil Mahasiswa Box -->
+        <RouterLink
+          to="/profile"
+          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+          class="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-[#22160d] border border-[#5c3e23] hover:border-[#f0d060] hover:bg-[#322013] transition-all flex items-center justify-center shrink-0 group cursor-pointer shadow-sm active:scale-95"
+          title="KTM Digital & Profil Petualang"
+        >
+          <PhUser :size="19" weight="bold" class="text-[#f0d060] group-hover:scale-110 transition-transform" />
+        </RouterLink>
+
         <!-- 1. Presensi Box -->
         <RouterLink
           to="/presensi"
@@ -465,20 +606,19 @@ onUnmounted(() => {
           <PhInfo :size="19" weight="bold" class="text-[#86efac] group-hover:scale-110 transition-transform" />
         </RouterLink>
 
-        <!-- 7. Right Highlighted CTA Box -->
-        <RouterLink
-          to="/play"
-          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-          class="shrink-0"
+        <!-- 7. Right Highlighted CTA Box (Smart Guarded) -->
+        <div
+          class="shrink-0 cursor-pointer"
           :title="totalStamps > 0 ? 'Lanjutkan Penjelajahan Kampus' : 'Mulai Eksplorasi Kampus'"
         >
           <button
             type="button"
+            @click="handleStartJourney"
             class="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-[#fbf6e9] hover:bg-[#fef08a] border-2 border-[#d4af37] text-[#1b120a] flex items-center justify-center shadow-md hover:brightness-105 active:scale-95 transition-all cursor-pointer group"
           >
             <PhGameController :size="21" weight="bold" class="text-[#1b120a] group-hover:scale-110 transition-transform" />
           </button>
-        </RouterLink>
+        </div>
       </nav>
     </div>
 

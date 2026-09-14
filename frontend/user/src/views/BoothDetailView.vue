@@ -30,7 +30,7 @@ const backendBooth = ref<ReturnType<typeof normalizePlayableMission> | null>(nul
 const isBackendLoading = ref(false);
 const backendError = ref<string | null>(null);
 const hasBackendAuth = computed(() => typeof window !== 'undefined' && Boolean(localStorage.getItem('genius_user_token')));
-const booth = computed(() => hasBackendAuth.value ? backendBooth.value : (backendBooth.value || BOOTHS_DATA[boothId.value]));
+const booth = computed(() => backendBooth.value || BOOTHS_DATA[boothId.value] || null);
 const serverSessionId = computed(() => hasBackendAuth.value ? gameSessionStore.session?.id : undefined);
 const isPractice = computed(() => gameSessionStore.session?.metadata?.isPractice === true);
 const practiceFinished = ref(false);

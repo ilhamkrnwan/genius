@@ -112,7 +112,7 @@ export const useGameStore = defineStore('game', {
       if (!floor) return 'not_started';
 
       const completedCount = floor.boothIds.filter((id) =>
-        state.participant.completedBooths.includes(id)
+        id ? state.participant.completedBooths.includes(id) : false
       ).length;
 
       if (completedCount === 2) return 'completed';
@@ -123,14 +123,14 @@ export const useGameStore = defineStore('game', {
     getCompletedFloorsCount: (state) => (): number => {
       const completedBooths = state.participant.completedBooths;
       return FLOORS_DATA.filter((f) =>
-        f.boothIds.every((bId) => completedBooths.includes(bId))
+        f.boothIds.every((bId) => (bId ? completedBooths.includes(bId) : false))
       ).length;
     },
 
     getCurrentLevel: (state) => (): PlayerLevel => {
       const completedBooths = state.participant.completedBooths;
       const completedFloors = FLOORS_DATA.filter((f) =>
-        f.boothIds.every((bId) => completedBooths.includes(bId))
+        f.boothIds.every((bId) => (bId ? completedBooths.includes(bId) : false))
       ).length;
       return calculateLevel(completedFloors);
     },
@@ -157,6 +157,15 @@ export const useGameStore = defineStore('game', {
 
     isDayCheckedOut: (state) => (day: number): boolean => {
       return Boolean(state.attendance[day]?.checkOutAt);
+    },
+
+    getAttendedSessionsCount: (state) => (): number => {
+      let count = 0;
+      for (const d of [1, 2, 3]) {
+        if (state.attendance[d]?.checkInAt) count++;
+        if (state.attendance[d]?.checkOutAt) count++;
+      }
+      return count;
     },
 
     getTotalAttendanceXp: (state) => (): number => {
@@ -505,13 +514,13 @@ export const useGameStore = defineStore('game', {
 
       const floor = FLOORS_DATA.find((f) => f.number === booth.floorNumber);
       const floorBooths = floor ? floor.boothIds : [];
-      const isFloorNowCompleted = floorBooths.every((bId) => newCompletedBooths.includes(bId));
+      const isFloorNowCompleted = floorBooths.every((bId) => (bId ? newCompletedBooths.includes(bId) : false));
       const wasFloorPreviouslyCompleted = floorBooths.every((bId) =>
-        this.participant.completedBooths.includes(bId)
+        bId ? this.participant.completedBooths.includes(bId) : false
       );
 
       const newCompletedFloorsCount = FLOORS_DATA.filter((f) =>
-        f.boothIds.every((bId) => newCompletedBooths.includes(bId))
+        f.boothIds.every((bId) => (bId ? newCompletedBooths.includes(bId) : false))
       ).length;
 
       const newLevel = calculateLevel(newCompletedFloorsCount);
