@@ -70,17 +70,18 @@ function loadInitialState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-        const loadedParticipant = { ...INITIAL_PARTICIPANT, ...(parsed.participant || {}) } as Participant;
-        if (!loadedParticipant.unlockedFloors) loadedParticipant.unlockedFloors = [];
-        if (!loadedParticipant.unlockedFloors.includes(1)) loadedParticipant.unlockedFloors.push(1);
-        
-        const isLoggedIn = Boolean(parsed.isLoggedIn ?? (loadedParticipant.isRegistered && loadedParticipant.name));
-        return {
-          participant: loadedParticipant,
-          attendance: { ...DEFAULT_ATTENDANCE, ...(parsed.attendance || {}) } as AttendanceStoreMap,
-          visitedOrmawa: (parsed.visitedOrmawa || []) as string[],
-          isLoggedIn,
-        };
+      const loadedParticipant = { ...INITIAL_PARTICIPANT, ...(parsed.participant || {}) } as Participant;
+      if (!loadedParticipant.unlockedFloors) loadedParticipant.unlockedFloors = [];
+      if (!loadedParticipant.unlockedFloors.includes(1)) loadedParticipant.unlockedFloors.push(1);
+      
+      const isLoggedIn = Boolean(parsed.isLoggedIn ?? (loadedParticipant.isRegistered && loadedParticipant.name));
+      return {
+        participant: loadedParticipant,
+        attendance: { ...DEFAULT_ATTENDANCE, ...(parsed.attendance || {}) } as AttendanceStoreMap,
+        visitedOrmawa: (parsed.visitedOrmawa || []) as string[],
+        ormawaInterests: (parsed.ormawaInterests || []) as string[],
+        isLoggedIn,
+      };
     }
   } catch (err) {
     console.warn('[Store] Failed to load local storage state:', err);
@@ -90,6 +91,7 @@ function loadInitialState() {
     participant: { ...INITIAL_PARTICIPANT } as Participant,
     attendance: { ...DEFAULT_ATTENDANCE },
     visitedOrmawa: [] as string[],
+    ormawaInterests: [] as string[],
     isLoggedIn: false,
   };
 }
@@ -101,6 +103,7 @@ export const useGameStore = defineStore('game', {
     participant: saved.participant,
     attendance: saved.attendance,
     visitedOrmawa: saved.visitedOrmawa as string[],
+    ormawaInterests: saved.ormawaInterests as string[],
     isLoggedIn: saved.isLoggedIn,
     soundEnabled: true,
     crtEffect: false,
@@ -174,6 +177,16 @@ export const useGameStore = defineStore('game', {
 
     isStandVisited: (state) => (standId: string): boolean => {
       return state.visitedOrmawa.includes(standId);
+    },
+
+    interestCount: (state) => state.ormawaInterests.length,
+
+    interestXpEarned: (state) => Math.min(state.ormawaInterests.length, 3) * 25,
+
+    isInterestCapped: (state) => state.ormawaInterests.length >= 3,
+
+    isStandInterested: (state) => (standId: string): boolean => {
+      return state.ormawaInterests.includes(standId);
     },
   },
 
@@ -624,6 +637,50 @@ export const useGameStore = defineStore('game', {
         stand,
         isCapped: this.visitedOrmawa.length >= 10,
       };
+    },
+
+    async submitInterest(boothId: string, payload: { phoneNumber: string; motivation?: string; experience?: string }) {
+      if (this.ormawaInterests.includes(boothId)) {
+        return { success: false, message: 'Anda sudah mendaftar minat pada ormawa ini.' };
+      }
+
+      const isCapped = this.ormawaInterests.length >= 3;
+      const xpBonusEarned = isCapped ? 0 : 25;
+
+      try {
+        // Optimistic update
+        this.ormawaInterests.push(boothId);
+        if (xpBonusEarned > 0) {
+          this.participant.totalXp += xpBonusEarned;
+        }
+        this.saveToStorage();
+
+        // Sync with API
+        const res = await api.submitOrmawaInterest({
+          boothId,
+          phoneNumber: payload.phoneNumber,
+          motivation: payload.motivation,
+          experience: payload.experience,
+        });
+
+        if (this.soundEnabled) soundEngine.playCorrect();
+
+        return {
+          success: true,
+          message: isCapped 
+            ? 'Minat bergabung dicatat! (Batas 3 ormawa tercapai, +0 XP)'
+            : `Minat bergabung berhasil dicatat! (+${xpBonusEarned} XP)`,
+          xpBonusEarned
+        };
+      } catch (err: any) {
+        // Rollback on failure
+        this.ormawaInterests = this.ormawaInterests.filter(id => id !== boothId);
+        if (xpBonusEarned > 0) {
+          this.participant.totalXp -= xpBonusEarned;
+        }
+        this.saveToStorage();
+        return { success: false, message: err?.message || 'Gagal menyimpan data minat. Coba lagi.' };
+      }
     },
 
     resetProgress() {

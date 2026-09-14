@@ -33,6 +33,7 @@ export interface OrmawaStand {
   activities: string[];
   requirements: string[];
   contactPerson?: string;
+  logoUrl?: string;
 }
 
 export interface OrmawaScanResult {
@@ -41,4 +42,22 @@ export interface OrmawaScanResult {
   xpEarned: number;
   stand?: OrmawaStand;
   isCapped: boolean;
+}
+
+export interface OrmawaInterest {
+  id: string;
+  boothId: string;
+  participantId: string;
+  phoneNumber: string;
+  motivation?: string;
+  experience?: string;
+  xpBonusEarned: number;
+  createdAt: string;
+}
+
+export interface OrmawaInterestPayload {
+  boothId: string;
+  phoneNumber: string;
+  motivation?: string;
+  experience?: string;
 }

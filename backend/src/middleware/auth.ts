@@ -109,3 +109,20 @@ export async function validateBuddyTeamScope(user: TokenPayload | null, targetTe
 
   return Boolean(membership && membership.teamId === targetTeamId);
 }
+
+/**
+ * Restricts access to ORMAWA_PIC or ADMIN roles.
+ * Used for endpoints like POST /api/ormawa/scan-maba where PIC scans maba QR.
+ */
+export const requireOrmawaOrAdmin = new Elysia({ name: "require-ormawa-or-admin" })
+  .use(authMiddleware)
+  .onBeforeHandle(({ user, set }) => {
+    if (!user) {
+      set.status = 401;
+      return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } };
+    }
+    if (user.role !== "ADMIN" && user.role !== "ORMAWA_PIC") {
+      set.status = 403;
+      return { success: false, error: { code: "FORBIDDEN", message: "Ormawa PIC or Admin permission required" } };
+    }
+  });
