@@ -46,6 +46,7 @@ const movesCount = ref<number>(0);
 const isProcessing = ref<boolean>(false);
 const isFinished = ref<boolean>(props.isCompleted);
 const isSubmitting = ref<boolean>(false);
+const isWrongMatch = ref<boolean>(false);
 
 const initCards = () => {
   if (pairs.value.length === 0) return;
@@ -80,6 +81,7 @@ const initCards = () => {
   movesCount.value = 0;
   isProcessing.value = false;
   isFinished.value = false;
+  isWrongMatch.value = false;
 };
 
 watch(
@@ -120,9 +122,11 @@ const handleCardClick = (index: number) => {
         }
       }, 500);
     } else {
+      isWrongMatch.value = true;
       setTimeout(() => {
         if (gameStore.soundEnabled) soundEngine.playWrong();
         flippedIndices.value = [];
+        isWrongMatch.value = false;
         isProcessing.value = false;
       }, 900);
     }
@@ -181,43 +185,59 @@ const handleResetGame = () => {
     </div>
 
     <!-- 8 Cards Grid -->
-    <div class="grid grid-cols-4 gap-1.5 sm:gap-2 flex-1 items-center select-none py-1">
+    <div class="grid grid-cols-4 gap-2 sm:gap-3 flex-1 items-center select-none py-2 px-1">
       <button
         v-for="(card, idx) in cards"
         :key="card.uid"
         type="button"
         @click="handleCardClick(idx)"
         :disabled="flippedIndices.includes(idx) || matchedPairIds.includes(card.pairId) || isProcessing"
-        :class="[
-          'h-20 sm:h-28 rounded-lg sm:rounded-xl border p-1.5 sm:p-2 flex flex-col items-center justify-center text-center transition-all cursor-pointer relative overflow-hidden active:scale-95',
-          matchedPairIds.includes(card.pairId)
-            ? 'bg-gradient-to-b from-[#235736] to-[#14331e] border-[#7ec850] text-[#f0ffd0] shadow-[0_0_8px_rgba(126,200,80,0.3)]'
-            : flippedIndices.includes(idx)
-            ? 'bg-gradient-to-b from-[#4d3b2e] to-[#2d1b0e] border-[#f0d060] text-white shadow'
-            : 'bg-gradient-to-b from-[#281c12] to-[#170f07] border-[#5a3a18] hover:border-[#8b6f4e] text-[#a08060]'
-        ]"
+        class="group perspective-1000 h-24 sm:h-32 w-full cursor-pointer focus:outline-none"
       >
-        <div v-if="flippedIndices.includes(idx) || matchedPairIds.includes(card.pairId)" class="flex flex-col items-center justify-between h-full w-full py-0.5">
-          <span v-if="card.tag" class="font-pixel text-[7px] text-[#f0d060] bg-[#120b06]/80 px-1 py-0.2 rounded border border-[#5a3a18] break-words">
-            {{ card.tag }}
-          </span>
-
-          <p class="font-sans text-[10px] sm:text-xs font-semibold leading-tight my-auto px-0.5 break-words">
-            {{ card.text }}
-          </p>
-
-          <div v-if="matchedPairIds.includes(card.pairId)" class="flex items-center gap-0.5 text-[7px] font-pixel text-[#7ec850]">
-            <PhCheckCircle :size="10" weight="fill" />
-            <span>COCOK</span>
+        <div 
+          :class="[
+            'relative w-full h-full transition-transform duration-500 preserve-3d',
+            (flippedIndices.includes(idx) || matchedPairIds.includes(card.pairId)) ? 'rotate-y-180' : 'rotate-y-0',
+            matchedPairIds.includes(card.pairId) ? 'animate-slide-up-fade' : '',
+            (isWrongMatch && flippedIndices.includes(idx)) ? 'animate-shake' : ''
+          ]"
+        >
+          <!-- Front of Card (Face Down) -->
+          <div 
+            class="absolute w-full h-full backface-hidden rounded-xl border-2 flex flex-col items-center justify-center bg-gradient-to-b from-[#281c12] to-[#170f07] border-[#5a3a18] shadow-[0_6px_12px_rgba(0,0,0,0.6)] group-hover:border-[#8b6f4e] transition-colors"
+          >
+            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#120b06] border border-[#8b6f4e] flex items-center justify-center text-[#f0d060] shadow-[inset_0_4px_8px_rgba(0,0,0,0.8)]">
+              <PhStar :size="18" weight="fill" class="opacity-80 drop-shadow-[0_0_4px_rgba(240,208,96,0.5)]" />
+            </div>
+            <span class="font-pixel text-[8px] sm:text-[9px] text-[#8b6f4e] mt-2">
+              #{{ idx + 1 }}
+            </span>
           </div>
-        </div>
-        <div v-else class="flex flex-col items-center justify-center gap-1">
-          <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#120b06] border border-[#8b6f4e] flex items-center justify-center text-[#f0d060] shadow-inner">
-            <PhStar :size="14" weight="fill" class="opacity-80" />
+
+          <!-- Back of Card (Face Up) -->
+          <div 
+            :class="[
+              'absolute w-full h-full backface-hidden rotate-y-180 rounded-xl border-2 p-1.5 sm:p-2 flex flex-col items-center justify-between shadow-[0_6px_16px_rgba(0,0,0,0.7)]',
+              matchedPairIds.includes(card.pairId) 
+                ? 'bg-gradient-to-b from-[#1f3a2b] to-[#142318] border-[#7ec850] text-[#f0ffd0] shadow-[0_0_20px_rgba(126,200,80,0.4)]'
+                : (isWrongMatch && flippedIndices.includes(idx))
+                ? 'bg-gradient-to-b from-[#3a1814] to-[#2d1210] border-[#d44040] text-[#ffd0d0] shadow-[0_0_20px_rgba(212,64,64,0.4)]'
+                : 'bg-gradient-to-b from-[#4d3b2e] to-[#2d1b0e] border-[#f0d060] text-white'
+            ]"
+          >
+            <span v-if="card.tag" class="font-pixel text-[7px] text-[#f0d060] bg-[#120b06]/90 px-1.5 py-0.5 rounded border border-[#5a3a18] break-words shadow-inner">
+              {{ card.tag }}
+            </span>
+
+            <p class="font-sans text-[11px] sm:text-[13px] font-bold leading-tight my-auto px-1 break-words drop-shadow-md">
+              {{ card.text }}
+            </p>
+
+            <div v-if="matchedPairIds.includes(card.pairId)" class="flex items-center gap-1 text-[8px] font-pixel text-[#7ec850] drop-shadow-[0_0_2px_rgba(126,200,80,0.8)]">
+              <PhCheckCircle :size="12" weight="fill" />
+              <span>COCOK</span>
+            </div>
           </div>
-          <span class="font-pixel text-[7px] sm:text-[8px] text-[#8b6f4e]">
-            #{{ idx + 1 }}
-          </span>
         </div>
       </button>
     </div>

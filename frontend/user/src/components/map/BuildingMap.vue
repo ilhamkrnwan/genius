@@ -18,37 +18,71 @@ import { normalizePlayableMission } from '@/lib/game-adapter';
 import type { Booth } from '@/types/game';
 import type { PlayableMission } from '@genius-unu/shared';
 
+import { useGameSessionStore } from '@/store/gameSessionStore';
+import { BOOTHS_DATA } from '@/data/mockData';
+import { useRoute } from 'vue-router';
+
 const gameStore = useGameStore();
+const gameSessionStore = useGameSessionStore();
+const route = useRoute();
 const selectedFloorNumber = ref<number>(1);
-const backendMissions = ref<PlayableMission[]>([]);
-const backendLoading = ref(false);
 
 const completedFloors = computed(() => gameStore.getCompletedFloorsCount());
 const selectedFloor = computed(
   () => FLOORS_DATA.find((f) => f.number === selectedFloorNumber.value) || FLOORS_DATA[0]
 );
-const backendBoothsForFloor = computed(() => backendMissions.value.filter((mission) => mission.floorNumber === selectedFloorNumber.value).map((mission) => normalizePlayableMission(mission as any)));
-const selectedBoothA = computed<Booth>(() => backendBoothsForFloor.value[0] as Booth);
-const selectedBoothB = computed<Booth>(() => backendBoothsForFloor.value[1] as Booth);
-const backendError = ref<string | null>(null);
-
-function boothPath(booth: Booth) {
-  return backendMissions.value.some((mission) => mission.id === booth.id)
-    ? `/booth/${booth.id}`
-    : `/play/floor/${booth.floorNumber}/spot/${booth.id}`;
-}
 
 onMounted(async () => {
-  if (!localStorage.getItem('genius_user_token')) {
-    backendError.value = 'Login participant backend diperlukan untuk memuat mission.';
-    return;
+  await gameSessionStore.fetchMyTeamSessions();
+  
+  if (route.query.floor) {
+    const floorParam = parseInt(route.query.floor as string, 10);
+    if (!isNaN(floorParam) && floorParam >= 1 && floorParam <= 9) {
+      selectedFloorNumber.value = floorParam;
+    }
+  } else {
+    // If no floor param, default to the floor with an active mission!
+    const activeSession = gameSessionStore.mySessions.find((s: any) => s.status !== 'COMPLETED');
+    if (activeSession) {
+      selectedFloorNumber.value = activeSession.floorNumber;
+    } else {
+      // If no active mission, find the latest completed floor or default to 1
+      const completedSessions = gameSessionStore.mySessions.filter((s: any) => s.status === 'COMPLETED');
+      if (completedSessions.length > 0) {
+        // Sort to find the highest floor number completed
+        const highestCompleted = Math.max(...completedSessions.map((s: any) => s.floorNumber));
+        selectedFloorNumber.value = highestCompleted;
+      }
+    }
   }
-  backendLoading.value = true;
-  const response = await api.getAvailableMissions();
-  if (response.success && response.data) backendMissions.value = response.data;
-  else backendError.value = response.error?.message || 'Mission backend gagal dimuat.';
-  backendLoading.value = false;
 });
+
+const backendBoothsForFloor = computed(() => {
+  const floorSessions = gameSessionStore.mySessions.filter((s: any) => s.floorNumber === selectedFloorNumber.value);
+  
+  return floorSessions.map((session: any) => {
+    // Extract letter A/B/C from locationCode (e.g. "B2-A" -> "a")
+    const letter = session.locationCode?.slice(-1)?.toLowerCase() || 'a';
+    // Match with the mockData.ts booth ID format (e.g. 'booth-2a')
+    const templateId = `booth-${session.floorNumber}${letter}`;
+    
+    const template = BOOTHS_DATA[templateId] || BOOTHS_DATA['booth-1a'];
+
+    return {
+      id: session.missionId,
+      code: session.locationCode || template.code,
+      name: session.missionName || template.name,
+      stampIcon: template.stampIcon,
+      tipe_game: session.gameType?.toLowerCase() || template.tipe_game,
+      status: session.status,
+      floorNumber: session.floorNumber
+    };
+  });
+});
+
+function boothPath(booth: any) {
+  return `/play/floor/${booth.floorNumber}/spot/${booth.id}`;
+}
 
 const handleSelectFloor = (floorNum: number) => {
   selectedFloorNumber.value = floorNum;
@@ -80,38 +114,7 @@ const getGameTypeLabel = (type: string) => {
 </script>
 
 <template>
-  <div class="w-full h-full max-w-5xl mx-auto px-2.5 sm:px-6 py-2 sm:py-4 flex flex-col justify-between overflow-hidden gap-2">
-    <!-- Top Status Bar -->
-    <div class="bg-[#1f140a] border-2 border-[#5a3a18] rounded-xl p-2 sm:p-3 flex items-center justify-between gap-2 shadow-md shrink-0">
-      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-        <div class="w-8 h-8 sm:w-9 sm:h-9 bg-[#2d1b0e] border border-[#8b6f4e] rounded-lg flex items-center justify-center text-[#f0d060] shrink-0">
-          <PhGameController :size="18" weight="bold" />
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="font-pixel text-[11px] sm:text-xs font-bold text-white leading-tight">
-            PETA 9 LANTAI KAMPUS
-          </div>
-          <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-sans text-[#c4956a] flex-wrap">
-            <span>{{ completedFloors }}/9 Tuntas</span>
-            <span>•</span>
-            <span class="text-[#7ec850]">{{ gameStore.participant.completedBooths.length }}/18 Stempel</span>
-            <span>•</span>
-            <span class="text-[#f0d060]">{{ gameStore.participant.totalXp }} XP</span>
-          </div>
-        </div>
-      </div>
-
-      <RouterLink to="/play" class="shrink-0">
-        <button
-          type="button"
-          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-          class="rpg-btn-primary py-1.5 sm:py-2 px-3 text-[10px] sm:text-xs font-pixel font-bold flex items-center gap-1.5"
-        >
-          <PhPlay :size="12" weight="fill" />
-          <span>Mulai</span>
-        </button>
-      </RouterLink>
-    </div>
+  <div class="w-full flex flex-col gap-2">
 
     <!-- 9 Floors Horizontal Selector -->
     <div class="bg-[#170f07] p-1.5 sm:p-2 border-2 border-[#5a3a18] rounded-xl shrink-0">
@@ -161,13 +164,13 @@ const getGameTypeLabel = (type: string) => {
           </h2>
         </div>
 
-        <RouterLink :to="`/play/floor/${selectedFloor.number}/intro`" class="shrink-0">
+        <RouterLink v-if="backendBoothsForFloor.length > 0" :to="`/play/floor/${selectedFloor.number}/intro`" class="shrink-0">
           <button
             type="button"
             @click="() => gameStore.soundEnabled && soundEngine.playClick()"
             class="rpg-btn-primary py-1.5 px-3 text-[10px] sm:text-xs font-pixel font-bold flex items-center gap-1.5 shadow"
           >
-            <span>Mulai Lantai</span>
+            <span>Lihat Intro</span>
             <PhArrowRight :size="12" weight="bold" />
           </button>
         </RouterLink>
@@ -176,108 +179,67 @@ const getGameTypeLabel = (type: string) => {
       <!-- 2 Spots Grid -->
       <div class="space-y-2 py-2 flex-1 flex flex-col justify-center">
         <div class="text-[9px] font-pixel text-[#a08060] uppercase px-0.5">
-          {{ backendLoading ? 'Memuat mission backend...' : backendBoothsForFloor.length + ' Spot Tantangan:' }}
+          {{ gameSessionStore.status === 'loading' ? 'Memuat data misi...' : backendBoothsForFloor.length + ' Pos Misi Tersedia' }}
         </div>
 
         <div v-if="backendBoothsForFloor.length" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <!-- Spot A Card -->
+          <!-- Dynamic Booth Cards -->
           <div
-            v-if="selectedBoothB"
+            v-for="(booth, index) in backendBoothsForFloor"
+            :key="booth.id"
             :class="[
               'p-2 sm:p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all',
-              gameStore.participant.completedBooths.includes(selectedBoothA.id)
+              booth.status === 'COMPLETED'
                 ? 'bg-[#1a2e1a] border-[#4a8030]'
                 : 'bg-[#170f07] border-[#3d2b1e] hover:border-[#5a3a18]'
             ]"
           >
             <div class="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
               <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#23160c] border border-[#5a3a18] flex items-center justify-center shrink-0">
-                <StampIcon :name="selectedBoothA.stampIcon" :size="16" class="text-[#f0d060]" />
+                <StampIcon :name="booth.stampIcon" :size="16" class="text-[#f0d060]" />
               </div>
 
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="font-pixel text-[8px] text-[#f0d060]">
-                    {{ selectedBoothA.code }}
+                    {{ booth.code }}
                   </span>
                   <PixelBadge variant="gold" size="sm">
-                    {{ getGameTypeLabel(selectedBoothA.tipe_game) }}
+                    {{ getGameTypeLabel(booth.tipe_game) }}
                   </PixelBadge>
                 </div>
                 <h4 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-normal break-words mt-0.5">
-                  {{ selectedBoothA.name }}
+                  {{ booth.name }}
                 </h4>
               </div>
             </div>
 
             <div class="shrink-0">
-              <RouterLink :to="boothPath(selectedBoothA)">
+              <RouterLink v-if="booth.status !== 'COMPLETED'" :to="boothPath(booth)">
                 <button
                   type="button"
                   @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-                  :class="[
-                    'py-1 px-2.5 rounded text-[10px] sm:text-[11px] font-pixel font-bold cursor-pointer transition-all',
-                    gameStore.participant.completedBooths.includes(selectedBoothA.id)
-                      ? 'bg-[#2d1b0e] text-[#a08060] border border-[#5a3a18] hover:text-white'
-                      : 'rpg-btn-primary'
-                  ]"
+                  class="py-1 px-2.5 rounded text-[10px] sm:text-[11px] font-pixel font-bold cursor-pointer transition-all rpg-btn-primary"
                 >
-                  {{ gameStore.participant.completedBooths.includes(selectedBoothA.id) ? 'Ulang' : 'Main' }}
+                  Main
                 </button>
               </RouterLink>
-            </div>
-          </div>
-
-          <!-- Spot B Card -->
-          <div
-            v-if="selectedBoothB"
-            :class="[
-              'p-2 sm:p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all',
-              gameStore.participant.completedBooths.includes(selectedBoothB.id)
-                ? 'bg-[#1a2e1a] border-[#4a8030]'
-                : 'bg-[#170f07] border-[#3d2b1e] hover:border-[#5a3a18]'
-            ]"
-          >
-            <div class="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
-              <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#23160c] border border-[#5a3a18] flex items-center justify-center shrink-0">
-                <StampIcon :name="selectedBoothB.stampIcon" :size="16" class="text-[#f0d060]" />
-              </div>
-
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="font-pixel text-[8px] text-[#f0d060]">
-                    {{ selectedBoothB.code }}
-                  </span>
-                  <PixelBadge variant="gold" size="sm">
-                    {{ getGameTypeLabel(selectedBoothB.tipe_game) }}
-                  </PixelBadge>
-                </div>
-                <h4 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-normal break-words mt-0.5">
-                  {{ selectedBoothB.name }}
-                </h4>
-              </div>
-            </div>
-
-            <div class="shrink-0">
-              <RouterLink :to="boothPath(selectedBoothB)">
-                <button
-                  type="button"
-                  @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-                  :class="[
-                    'py-1 px-2.5 rounded text-[10px] sm:text-[11px] font-pixel font-bold cursor-pointer transition-all',
-                    gameStore.participant.completedBooths.includes(selectedBoothB.id)
-                      ? 'bg-[#2d1b0e] text-[#a08060] border border-[#5a3a18] hover:text-white'
-                      : 'rpg-btn-primary'
-                  ]"
-                >
-                  {{ gameStore.participant.completedBooths.includes(selectedBoothB.id) ? 'Ulang' : 'Main' }}
-                </button>
-              </RouterLink>
+              <button
+                v-else
+                type="button"
+                disabled
+                class="py-1 px-2.5 rounded text-[10px] sm:text-[11px] font-pixel font-bold transition-all bg-[#2d1b0e] text-[#7ec850] border border-[#4a8030] cursor-not-allowed"
+              >
+                ✓ Tuntas
+              </button>
             </div>
           </div>
         </div>
-        <div v-else class="border border-[#d44040] bg-[#2d1210] p-4 text-center text-xs text-[#ffd0d0] font-sans">
-          {{ backendError || 'Belum ada mission backend aktif di lantai ini.' }}
+        <div v-else class="border-2 border-dashed border-[#5a3a18] bg-[#1a0f07] p-4 text-center rounded-xl space-y-2">
+          <span class="text-3xl">🔒</span>
+          <p class="text-xs text-[#a08060] font-sans">
+            Game Master belum membuka akses pos apa pun untuk tim Anda di Lantai {{ selectedFloorNumber }}.
+          </p>
         </div>
       </div>
 

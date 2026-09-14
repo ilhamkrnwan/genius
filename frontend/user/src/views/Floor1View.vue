@@ -1,136 +1,87 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter, RouterLink } from 'vue-router';
 import {
   PhPlay,
   PhArrowRight,
   PhCheckCircle,
-  PhLockKey,
   PhStar,
   PhBookOpen,
   PhGameController,
   PhTrophy,
   PhArrowLeft,
   PhSparkle,
-  PhX,
-  PhInfo,
-  PhArrowCircleRight,
-  PhImages,
-  PhFlag,
-  PhCursor,
-  PhListChecks,
-  PhSealCheck,
 } from '@phosphor-icons/vue';
 import { FLOORS_DATA, BOOTHS_DATA, AVATAR_OPTIONS } from '@/data/mockData';
 import { useGameStore } from '@/store/gameStore';
+import { useGameSessionStore } from '@/store/gameSessionStore';
 import Navbar from '@/components/layout/Navbar.vue';
 import CrtScanlines from '@/components/layout/CrtScanlines.vue';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
 import StampIcon from '@/components/ui/StampIcon.vue';
-import MiniGameContainer from '@/components/minigames/MiniGameContainer.vue';
-import CelebrationModal from '@/components/ui/CelebrationModal.vue';
 import { soundEngine } from '@/lib/sound';
-import { PlayerLevel, StampRecord } from '@/types/game';
 
 const router = useRouter();
 const gameStore = useGameStore();
+const gameSessionStore = useGameSessionStore();
 
 const floor = computed(() => FLOORS_DATA.find((f) => f.number === 1)!);
-const booth1A = computed(() => BOOTHS_DATA['booth-1a']);
-const booth1B = computed(() => BOOTHS_DATA['booth-1b']);
-const booth1C = computed(() => BOOTHS_DATA['booth-1c']);
+
+onMounted(() => {
+  gameSessionStore.fetchMyTeamSessions();
+});
+
+const booths = computed(() => {
+  // Hanya ambil sesi milik tim di Lantai 1
+  const f1Sessions = gameSessionStore.mySessions.filter((s: any) => 
+    s.floorNumber === 1 || s.locationCode?.startsWith('POS-L1')
+  );
+  
+  return f1Sessions.map((session: any) => {
+    // Gunakan template UI dari mockData berdasarkan zona
+    let templateId = 'booth-1a';
+    if (session.locationCode?.endsWith('A')) templateId = 'booth-1a';
+    if (session.locationCode?.endsWith('B')) templateId = 'booth-1b';
+    
+    const template = BOOTHS_DATA[templateId] || BOOTHS_DATA['booth-1a'];
+
+    return {
+      id: session.missionId, // PENTING: Gunakan UUID Misi untuk URL
+      originalBoothId: templateId,
+      code: session.locationCode || template.code,
+      name: session.missionName || template.name,
+      story: `Misi: ${session.gameName}. Akses ini dibuka khusus untuk tim Anda.`,
+      stampIcon: template.stampIcon,
+      tipe_game: session.gameType?.toLowerCase() || template.tipe_game,
+      status: session.status // ACTIVE, READY, PAUSED, COMPLETED
+    };
+  });
+});
 
 const selectedAvatar = computed(
   () => AVATAR_OPTIONS.find((a) => a.id === gameStore.participant.avatar) || AVATAR_OPTIONS[0]
 );
 
-// Tutorial state removed
-// ─── Game state ───────────────────────────────────────────────────────────────
-type ActiveGame = 'booth-1a' | 'booth-1b' | 'booth-1c' | null;
-const activeGame = ref<ActiveGame>(null);
-
-const currentBooth = computed(() => {
-  if (activeGame.value === 'booth-1a') return booth1A.value;
-  if (activeGame.value === 'booth-1b') return booth1B.value;
-  if (activeGame.value === 'booth-1c') return booth1C.value;
-  return null;
-});
-
-const isCompleted1A = computed(() => gameStore.isBoothCompleted('booth-1a'));
-const isCompleted1B = computed(() => gameStore.isBoothCompleted('booth-1b'));
-const isCompleted1C = computed(() => gameStore.isBoothCompleted('booth-1c'));
-const floorCompleted = computed(() => isCompleted1A.value && isCompleted1B.value && isCompleted1C.value);
-
-// ─── Celebration state ────────────────────────────────────────────────────────
-const showCelebration = ref(false);
-const celebrationDetails = ref<{
-  stampRecord: StampRecord | null;
-  isFloorCompleted: boolean;
-  floorNumber: number;
-  isLevelUp: boolean;
-  newLevel: PlayerLevel;
-}>({
-  stampRecord: null,
-  isFloorCompleted: false,
-  floorNumber: 1,
-  isLevelUp: false,
-  newLevel: 'New You',
-});
-
-const handleStartGame = (boothId: ActiveGame) => {
+const handleStartGame = (missionId: string) => {
   if (gameStore.soundEnabled) soundEngine.playClick();
-  activeGame.value = boothId;
-};
-
-const handleCloseGame = () => {
-  if (gameStore.soundEnabled) soundEngine.playClick();
-  activeGame.value = null;
-};
-
-const handleGameComplete = (score: number, totalQuestions: number) => {
-  if (!currentBooth.value) return;
-  if (gameStore.soundEnabled) soundEngine.playCorrect();
-
-  const result = gameStore.completeBooth(currentBooth.value.id, score, totalQuestions);
-  const stamp: StampRecord = {
-    boothId: currentBooth.value.id,
-    boothName: currentBooth.value.name,
-    floorNumber: 1,
-    stampTitle: currentBooth.value.stampTitle,
-    stampIcon: currentBooth.value.stampIcon,
-    stampColor: currentBooth.value.stampColor,
-    earnedAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-    score,
-    totalQuestions,
-  };
-
-  celebrationDetails.value = {
-    stampRecord: stamp,
-    isFloorCompleted: result.isFloorCompleted,
-    floorNumber: 1,
-    isLevelUp: result.isLevelUp,
-    newLevel: result.newLevel,
-  };
-
-  activeGame.value = null;
-  showCelebration.value = true;
+  // Navigasi menggunakan UUID Misi ke LinearSpotView
+  router.push(`/play/floor/1/spot/${missionId}`);
 };
 
 const getGameLabel = (type: string) => {
   const map: Record<string, string> = {
+    quiz: '⚡ Kuis Cepat',
+    reaction: '🏁 Kuis Balapan',
+    memory: '🃏 Memory Match',
+    logic: '📝 Puzzle Logika',
     tebak_gambar: '🖼️ Tebak Gambar',
-    kuis_balapan: '🏁 Kuis Balapan',
-    tts: '📝 Teka-Teki Silang',
-    tebak_kata: '🔤 Tebak Kata',
-    memory_match: '🃏 Memory Match',
-    kuis_cepat: '⚡ Kuis Cepat',
-    benar_salah: '✅ Benar / Salah',
-    tebak_posisi: '📍 Tebak Lokasi',
   };
   return map[type] || '🎮 Mini-Game';
 };
 
 const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
+
+const floorCompleted = computed(() => gameStore.getFloorStatus(1) === 'completed');
 </script>
 
 <template>
@@ -143,11 +94,11 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
       <!-- Breadcrumb -->
       <div class="flex items-center justify-between mb-4 shrink-0">
         <RouterLink
-          to="/dashboard"
+          to="/"
           class="inline-flex items-center gap-1.5 font-pixel text-[10px] text-[#c4956a] hover:text-[#f0d060] transition-colors"
         >
           <PhArrowLeft :size="14" weight="bold" />
-          <span>Dashboard</span>
+          <span>Beranda</span>
         </RouterLink>
         <div class="flex items-center gap-2">
           <PixelBadge variant="gold" size="sm">Lantai 1 dari 9</PixelBadge>
@@ -220,19 +171,33 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
         <div class="flex items-center gap-2 mb-4">
           <span class="w-2 h-6 bg-[#7ec850] border-2 border-[#1e3d0f] shrink-0"></span>
           <h2 class="font-pixel text-sm text-white text-shadow">Misi Lantai 1</h2>
-          <span class="font-pixel text-[9px] text-[#a08060] ml-auto">3 Pos Tersedia</span>
+          <span class="font-pixel text-[9px] text-[#a08060] ml-auto">{{ booths.length }} Pos Ditugaskan</span>
         </div>
 
-        <div class="flex flex-col gap-4">
-          <!-- ── BOOTH 1A ── -->
+        <div v-if="gameSessionStore.status === 'loading'" class="flex justify-center p-8">
+          <span class="font-pixel text-xs text-[#f0d060] animate-pulse">Memuat data Misi...</span>
+        </div>
+
+        <div v-else-if="booths.length === 0" class="p-6 border-2 border-dashed border-[#5a3a18] bg-[#1a0f07] rounded-xl text-center space-y-3">
+          <PhBookOpen :size="32" class="mx-auto text-[#8b6f4e]" />
+          <h3 class="font-pixel text-xs text-[#c4956a]">TIDAK ADA MISI AKTIF</h3>
+          <p class="font-sans text-[11px] text-[#a08060] max-w-[250px] mx-auto">
+            Game Master belum membuka akses pos apa pun untuk tim Anda. Silakan lapor ke Panitia/Buddy.
+          </p>
+        </div>
+
+        <div v-else class="flex flex-col gap-4">
+          <!-- ── DYNAMIC BOOTHS ── -->
           <div
+            v-for="(booth, index) in booths"
+            :key="booth.id"
             class="relative rounded-2xl border-4 overflow-hidden transition-all duration-150"
-            :class="isCompleted1A
+            :class="booth.status === 'COMPLETED'
               ? 'border-[#7ec850] shadow-[0_4px_0_#1e3d0f]'
               : 'border-[#5c4033] shadow-[0_4px_0_#1a0f08]'"
           >
             <!-- Completed shimmer -->
-            <div v-if="isCompleted1A" class="absolute inset-0 bg-gradient-to-r from-[#1a2e1a]/60 to-transparent pointer-events-none"></div>
+            <div v-if="booth.status === 'COMPLETED'" class="absolute inset-0 bg-gradient-to-r from-[#1a2e1a]/60 to-transparent pointer-events-none"></div>
 
             <div class="p-4 sm:p-5 bg-[#3a2818]">
               <!-- Header -->
@@ -240,150 +205,44 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
                 <div class="flex items-center gap-3 min-w-0">
                   <div
                     class="w-10 h-10 rounded-xl flex items-center justify-center border-2 shrink-0"
-                    :class="isCompleted1A ? 'bg-[#1a2e1a] border-[#7ec850]' : 'bg-[#1f140a] border-[#f0d060]'"
+                    :class="booth.status === 'COMPLETED' ? 'bg-[#1a2e1a] border-[#7ec850]' : 'bg-[#1f140a] border-[#f0d060]'"
                   >
-                    <StampIcon name="Images" :size="20" :class="isCompleted1A ? 'text-[#7ec850]' : 'text-[#f0d060]'" />
+                    <StampIcon :name="booth.stampIcon" :size="20" :class="booth.status === 'COMPLETED' ? 'text-[#7ec850]' : 'text-[#f0d060]'" />
                   </div>
                   <div class="min-w-0">
                     <div class="flex items-center gap-2 mb-0.5">
-                      <span class="font-pixel text-[9px] text-[#7ec850] bg-[#170f07] px-1.5 py-0.5 rounded border border-[#3a4a3a]">B1-A</span>
-                      <span v-if="isCompleted1A" class="font-pixel text-[9px] text-[#7ec850]">✓ Selesai</span>
-                      <span v-else class="font-pixel text-[9px] text-[#f0d060]">+250 XP</span>
+                      <span class="font-pixel text-[9px] text-[#f0d060] bg-[#170f07] px-1.5 py-0.5 rounded border border-[#5a3a18]">{{ booth.code }}</span>
+                      <span v-if="booth.status === 'COMPLETED'" class="font-pixel text-[9px] text-[#7ec850]">✓ Selesai</span>
+                      <span v-else class="font-pixel text-[9px] text-[#f0d060]">TERTUGAS</span>
                     </div>
-                    <h3 class="font-pixel text-[10px] sm:text-[11px] font-bold text-white leading-snug">{{ booth1A.name }}</h3>
+                    <h3 class="font-pixel text-[10px] sm:text-[11px] font-bold text-white leading-snug">{{ booth.name }}</h3>
                   </div>
                 </div>
-                <PhCheckCircle v-if="isCompleted1A" :size="24" weight="fill" class="text-[#7ec850] shrink-0" />
+                <PhCheckCircle v-if="booth.status === 'COMPLETED'" :size="24" weight="fill" class="text-[#7ec850] shrink-0" />
               </div>
 
               <!-- Game type badge -->
               <div class="flex items-center gap-2 mb-3">
                 <PhGameController :size="14" class="text-[#c4956a]" />
-                <span class="font-sans text-[11px] text-[#c4956a]">{{ getGameLabel(booth1A.tipe_game) }}</span>
+                <span class="font-sans text-[11px] text-[#c4956a]">{{ getGameLabel(booth.tipe_game) }}</span>
               </div>
 
               <!-- Story snippet -->
-              <p class="font-sans text-[11px] sm:text-xs text-[#a89078] leading-relaxed mb-4 line-clamp-2">{{ booth1A.story }}</p>
+              <p class="font-sans text-[11px] sm:text-xs text-[#a89078] leading-relaxed mb-4 line-clamp-2">{{ booth.story }}</p>
 
               <!-- CTA Button -->
               <button
                 type="button"
-                @click="!isCompleted1A ? handleStartGame('booth-1a') : null"
-                :disabled="isCompleted1A"
+                @click="booth.status !== 'COMPLETED' ? handleStartGame(booth.id) : null"
+                :disabled="booth.status === 'COMPLETED'"
                 class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-4 font-pixel text-[11px] transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-80"
-                :class="isCompleted1A
+                :class="booth.status === 'COMPLETED'
                   ? 'bg-[#1a2e1a] border-[#7ec850] text-[#7ec850] shadow-none'
                   : 'bg-[#38761d] border-[#7ec850] text-white hover:bg-[#44911f] hover:-translate-y-1 hover:shadow-[0_6px_0_#1e3d0f] active:translate-y-1 active:shadow-none shadow-[0_4px_0_#1e3d0f] cursor-pointer'"
               >
-                <PhPlay v-if="!isCompleted1A" :size="14" weight="fill" />
-                <span>{{ isCompleted1A ? '✓ POS TUNTAS' : 'MULAI MISI' }}</span>
-                <PhArrowRight v-if="!isCompleted1A" :size="14" weight="bold" />
-              </button>
-            </div>
-          </div>
-
-          <!-- ── BOOTH 1B ── -->
-          <div
-            class="relative rounded-2xl border-4 overflow-hidden transition-all duration-150"
-            :class="isCompleted1B
-              ? 'border-[#7ec850] shadow-[0_4px_0_#1e3d0f]'
-              : 'border-[#5c4033] shadow-[0_4px_0_#1a0f08]'"
-          >
-            <div v-if="isCompleted1A && isCompleted1B" class="absolute inset-0 bg-gradient-to-r from-[#1a2e1a]/60 to-transparent pointer-events-none"></div>
-
-            <div class="p-4 sm:p-5 bg-[#3a2818]">
-              <div class="flex items-start justify-between gap-3 mb-3">
-                <div class="flex items-center gap-3 min-w-0">
-                  <div
-                    class="w-10 h-10 rounded-xl flex items-center justify-center border-2 shrink-0"
-                    :class="isCompleted1B ? 'bg-[#1a2e1a] border-[#7ec850]' : 'bg-[#1f140a] border-[#f0d060]'"
-                  >
-                    <StampIcon name="FlagCheckered" :size="20" :class="isCompleted1B ? 'text-[#7ec850]' : 'text-[#f0d060]'" />
-                  </div>
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2 mb-0.5">
-                      <span class="font-pixel text-[9px] text-[#f0d060] bg-[#170f07] px-1.5 py-0.5 rounded border border-[#5a3a18]">B1-B</span>
-                      <span v-if="isCompleted1B" class="font-pixel text-[9px] text-[#7ec850]">✓ Selesai</span>
-                      <span v-else class="font-pixel text-[9px] text-[#f0d060]">+250 XP</span>
-                    </div>
-                    <h3 class="font-pixel text-[10px] sm:text-[11px] font-bold text-white leading-snug">{{ booth1B.name }}</h3>
-                  </div>
-                </div>
-                <PhCheckCircle v-if="isCompleted1B" :size="24" weight="fill" class="text-[#7ec850] shrink-0" />
-              </div>
-
-              <div class="flex items-center gap-2 mb-3">
-                <PhGameController :size="14" class="text-[#c4956a]" />
-                <span class="font-sans text-[11px] text-[#c4956a]">{{ getGameLabel(booth1B.tipe_game) }}</span>
-              </div>
-
-              <p class="font-sans text-[11px] sm:text-xs text-[#a89078] leading-relaxed mb-4 line-clamp-2">{{ booth1B.story }}</p>
-
-              <button
-                type="button"
-                @click="!isCompleted1B ? handleStartGame('booth-1b') : null"
-                :disabled="isCompleted1B"
-                class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-4 font-pixel text-[11px] transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-80"
-                :class="isCompleted1B
-                  ? 'bg-[#1a2e1a] border-[#7ec850] text-[#7ec850] shadow-none'
-                  : 'bg-[#38761d] border-[#7ec850] text-white hover:bg-[#44911f] hover:-translate-y-1 hover:shadow-[0_6px_0_#1e3d0f] active:translate-y-1 active:shadow-none shadow-[0_4px_0_#1e3d0f] cursor-pointer'"
-              >
-                <PhPlay v-if="!isCompleted1B" :size="14" weight="fill" />
-                <span>{{ isCompleted1B ? '✓ POS TUNTAS' : 'MULAI MISI' }}</span>
-                <PhArrowRight v-if="!isCompleted1B" :size="14" weight="bold" />
-              </button>
-            </div>
-          </div>
-
-          <!-- ── BOOTH 1C ── -->
-          <div
-            class="relative rounded-2xl border-4 overflow-hidden transition-all duration-150"
-            :class="isCompleted1C
-              ? 'border-[#7ec850] shadow-[0_4px_0_#1e3d0f]'
-              : 'border-[#5c4033] shadow-[0_4px_0_#1a0f08]'"
-          >
-            <div v-if="isCompleted1B && isCompleted1C" class="absolute inset-0 bg-gradient-to-r from-[#1a2e1a]/60 to-transparent pointer-events-none"></div>
-
-            <div class="p-4 sm:p-5 bg-[#3a2818]">
-              <div class="flex items-start justify-between gap-3 mb-3">
-                <div class="flex items-center gap-3 min-w-0">
-                  <div
-                    class="w-10 h-10 rounded-xl flex items-center justify-center border-2 shrink-0"
-                    :class="isCompleted1C ? 'bg-[#1a2e1a] border-[#7ec850]' : 'bg-[#1f140a] border-[#f0d060]'"
-                  >
-                    <StampIcon name="ChatCenteredText" :size="20" :class="isCompleted1C ? 'text-[#7ec850]' : 'text-[#f0d060]'" />
-                  </div>
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2 mb-0.5">
-                      <span class="font-pixel text-[9px] text-[#f0d060] bg-[#170f07] px-1.5 py-0.5 rounded border border-[#5a3a18]">B1-C</span>
-                      <span v-if="isCompleted1C" class="font-pixel text-[9px] text-[#7ec850]">✓ Selesai</span>
-                      <span v-else class="font-pixel text-[9px] text-[#f0d060]">+250 XP</span>
-                    </div>
-                    <h3 class="font-pixel text-[10px] sm:text-[11px] font-bold text-white leading-snug">{{ booth1C.name }}</h3>
-                  </div>
-                </div>
-                <PhCheckCircle v-if="isCompleted1C" :size="24" weight="fill" class="text-[#7ec850] shrink-0" />
-              </div>
-
-              <div class="flex items-center gap-2 mb-3">
-                <PhGameController :size="14" class="text-[#c4956a]" />
-                <span class="font-sans text-[11px] text-[#c4956a]">{{ getGameLabel(booth1C.tipe_game) }}</span>
-              </div>
-
-              <p class="font-sans text-[11px] sm:text-xs text-[#a89078] leading-relaxed mb-4 line-clamp-2">{{ booth1C.story }}</p>
-
-              <button
-                type="button"
-                @click="!isCompleted1C ? handleStartGame('booth-1c') : null"
-                :disabled="isCompleted1C"
-                class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-4 font-pixel text-[11px] transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-80"
-                :class="isCompleted1C
-                  ? 'bg-[#1a2e1a] border-[#7ec850] text-[#7ec850] shadow-none'
-                  : 'bg-[#38761d] border-[#7ec850] text-white hover:bg-[#44911f] hover:-translate-y-1 hover:shadow-[0_6px_0_#1e3d0f] active:translate-y-1 active:shadow-none shadow-[0_4px_0_#1e3d0f] cursor-pointer'"
-              >
-                <PhPlay v-if="!isCompleted1C" :size="14" weight="fill" />
-                <span>{{ isCompleted1C ? '✓ POS TUNTAS' : 'MULAI MISI' }}</span>
-                <PhArrowRight v-if="!isCompleted1C" :size="14" weight="bold" />
+                <PhPlay v-if="booth.status !== 'COMPLETED'" :size="14" weight="fill" />
+                <span>{{ booth.status === 'COMPLETED' ? '✓ POS TUNTAS' : 'MULAI MISI' }}</span>
+                <PhArrowRight v-if="booth.status !== 'COMPLETED'" :size="14" weight="bold" />
               </button>
             </div>
           </div>
@@ -401,62 +260,6 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
         </RouterLink>
       </div>
     </main>
-
-
-
-    <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!-- MODAL: MINI GAME ARENA                                                -->
-    <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <Teleport to="body">
-      <div
-        v-if="activeGame && currentBooth"
-        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#0a0604]/90 backdrop-blur-md"
-      >
-        <div class="w-full max-w-lg bg-[#2d1b0e] border-t-4 sm:border-4 border-[#f0d060] sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[85dvh]">
-          <!-- Game modal header -->
-          <div class="flex items-center justify-between px-4 py-3 border-b-2 border-[#5a3a18] shrink-0">
-            <div class="flex items-center gap-2 min-w-0">
-              <div class="w-7 h-7 bg-[#170f07] border border-[#f0d060] rounded-md flex items-center justify-center shrink-0">
-                <StampIcon :name="currentBooth.stampIcon" :size="16" class="text-[#f0d060]" />
-              </div>
-              <div class="min-w-0">
-                <p class="font-pixel text-[8px] text-[#7ec850]">{{ currentBooth.code }} • Lantai 1</p>
-                <p class="font-pixel text-[9px] sm:text-[10px] font-bold text-white truncate">{{ currentBooth.name }}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              @click="handleCloseGame"
-              class="w-8 h-8 rounded-lg bg-[#3a2818] border-2 border-[#5a3a18] flex items-center justify-center hover:border-[#f0d060] cursor-pointer transition-colors shrink-0"
-            >
-              <PhX :size="16" class="text-[#f0e0c0]" />
-            </button>
-          </div>
-
-          <!-- Game arena -->
-          <div class="flex-1 overflow-hidden p-3 sm:p-4">
-            <MiniGameContainer
-              :booth="currentBooth"
-              :isCompleted="activeGame === 'booth-1a' ? isCompleted1A : activeGame === 'booth-1b' ? isCompleted1B : isCompleted1C"
-              @complete="handleGameComplete"
-            />
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Celebration modal -->
-    <CelebrationModal
-      :isOpen="showCelebration"
-      :stampRecord="celebrationDetails.stampRecord"
-      :isFloorCompleted="celebrationDetails.isFloorCompleted"
-      :floorNumber="celebrationDetails.floorNumber"
-      :isLevelUp="celebrationDetails.isLevelUp"
-      :newLevel="celebrationDetails.newLevel"
-      nextActionLabel="Kembali ke Lantai 1"
-      @close="showCelebration = false"
-      @nextAction="showCelebration = false"
-    />
   </div>
 </template>
 

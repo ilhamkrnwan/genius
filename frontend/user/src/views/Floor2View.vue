@@ -19,10 +19,7 @@ import Navbar from '@/components/layout/Navbar.vue';
 import CrtScanlines from '@/components/layout/CrtScanlines.vue';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
 import StampIcon from '@/components/ui/StampIcon.vue';
-import MiniGameContainer from '@/components/minigames/MiniGameContainer.vue';
-import CelebrationModal from '@/components/ui/CelebrationModal.vue';
 import { soundEngine } from '@/lib/sound';
-import { PlayerLevel, StampRecord } from '@/types/game';
 
 const router = useRouter();
 const gameStore = useGameStore();
@@ -35,74 +32,9 @@ const selectedAvatar = computed(
   () => AVATAR_OPTIONS.find((a) => a.id === gameStore.participant.avatar) || AVATAR_OPTIONS[0]
 );
 
-// Tutorial state removed
-// ─── Game state ───────────────────────────────────────────────────────────────
-type ActiveGame = 'booth-2a' | 'booth-2b' | null;
-const activeGame = ref<ActiveGame>(null);
-
-const currentBooth = computed(() => {
-  if (activeGame.value === 'booth-2a') return booth2A.value;
-  if (activeGame.value === 'booth-2b') return booth2B.value;
-  return null;
-});
-
-const isCompleted2A = computed(() => gameStore.isBoothCompleted('booth-2a'));
-const isCompleted2B = computed(() => gameStore.isBoothCompleted('booth-2b'));
-const floorCompleted = computed(() => isCompleted2A.value && isCompleted2B.value);
-
-// ─── Celebration state ────────────────────────────────────────────────────────
-const showCelebration = ref(false);
-const celebrationDetails = ref<{
-  stampRecord: StampRecord | null;
-  isFloorCompleted: boolean;
-  floorNumber: number;
-  isLevelUp: boolean;
-  newLevel: PlayerLevel;
-}>({
-  stampRecord: null,
-  isFloorCompleted: false,
-  floorNumber: 2,
-  isLevelUp: false,
-  newLevel: 'New You',
-});
-
-const handleStartGame = (boothId: ActiveGame) => {
+const handleStartGame = (boothId: string) => {
   if (gameStore.soundEnabled) soundEngine.playClick();
-  activeGame.value = boothId;
-};
-
-const handleCloseGame = () => {
-  if (gameStore.soundEnabled) soundEngine.playClick();
-  activeGame.value = null;
-};
-
-const handleGameComplete = (score: number, totalQuestions: number) => {
-  if (!currentBooth.value) return;
-  if (gameStore.soundEnabled) soundEngine.playCorrect();
-
-  const result = gameStore.completeBooth(currentBooth.value.id, score, totalQuestions);
-  const stamp: StampRecord = {
-    boothId: currentBooth.value.id,
-    boothName: currentBooth.value.name,
-    floorNumber: 2,
-    stampTitle: currentBooth.value.stampTitle,
-    stampIcon: currentBooth.value.stampIcon,
-    stampColor: currentBooth.value.stampColor,
-    earnedAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-    score,
-    totalQuestions,
-  };
-
-  celebrationDetails.value = {
-    stampRecord: stamp,
-    isFloorCompleted: result.isFloorCompleted,
-    floorNumber: 2,
-    isLevelUp: result.isLevelUp,
-    newLevel: result.newLevel,
-  };
-
-  activeGame.value = null;
-  showCelebration.value = true;
+  router.push(`/play/floor/2/spot/${boothId}`);
 };
 
 const getGameLabel = (type: string) => {
@@ -337,62 +269,6 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
         </RouterLink>
       </div>
     </main>
-
-
-
-    <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!-- MODAL: MINI GAME ARENA                                                -->
-    <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <Teleport to="body">
-      <div
-        v-if="activeGame && currentBooth"
-        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#0a0604]/90 backdrop-blur-md"
-      >
-        <div class="w-full max-w-lg bg-[#2d1b0e] border-t-4 sm:border-4 border-[#f0d060] sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[85dvh]">
-          <!-- Game modal header -->
-          <div class="flex items-center justify-between px-4 py-3 border-b-2 border-[#5a3a18] shrink-0">
-            <div class="flex items-center gap-2 min-w-0">
-              <div class="w-7 h-7 bg-[#071717] border border-[#06B6D4] rounded-md flex items-center justify-center shrink-0">
-                <StampIcon :name="currentBooth.stampIcon" :size="16" class="text-[#06B6D4]" />
-              </div>
-              <div class="min-w-0">
-                <p class="font-pixel text-[8px] text-[#7ec850]">{{ currentBooth.code }} • Lantai 2</p>
-                <p class="font-pixel text-[9px] sm:text-[10px] font-bold text-white truncate">{{ currentBooth.name }}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              @click="handleCloseGame"
-              class="w-8 h-8 rounded-lg bg-[#3a2818] border-2 border-[#5a3a18] flex items-center justify-center hover:border-[#f0d060] cursor-pointer transition-colors shrink-0"
-            >
-              <PhX :size="16" class="text-[#f0e0c0]" />
-            </button>
-          </div>
-
-          <!-- Game arena -->
-          <div class="flex-1 overflow-hidden p-3 sm:p-4">
-            <MiniGameContainer
-              :booth="currentBooth"
-              :isCompleted="activeGame === 'booth-2a' ? isCompleted2A : isCompleted2B"
-              @complete="handleGameComplete"
-            />
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Celebration modal -->
-    <CelebrationModal
-      :isOpen="showCelebration"
-      :stampRecord="celebrationDetails.stampRecord"
-      :isFloorCompleted="celebrationDetails.isFloorCompleted"
-      :floorNumber="celebrationDetails.floorNumber"
-      :isLevelUp="celebrationDetails.isLevelUp"
-      :newLevel="celebrationDetails.newLevel"
-      nextActionLabel="Kembali ke Lantai 2"
-      @close="showCelebration = false"
-      @nextAction="showCelebration = false"
-    />
   </div>
 </template>
 

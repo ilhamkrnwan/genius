@@ -61,6 +61,14 @@ function buildContent(game: ApiPlayableMission['game'], renderer: RendererKey) {
     };
   }
 
+  if (renderer === 'benar_salah') {
+    return {
+      benarSalahContent: {
+        statements: Array.isArray(config.statements) ? config.statements : [],
+      },
+    };
+  }
+
   return { questions };
 }
 

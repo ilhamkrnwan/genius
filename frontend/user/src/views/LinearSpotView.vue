@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import {
   PhArrowLeft,
@@ -30,15 +30,19 @@ const spotId = computed(() => (route.params.spotId as string) || '');
 const backendBooth = ref<ReturnType<typeof normalizePlayableMission> | null>(null);
 const isBackendLoading = ref(false);
 const backendError = ref<string | null>(null);
+const waitingForGameMaster = ref(false);
+let pollingInterval: any = null;
 const hasBackendAuth = computed(() => typeof window !== 'undefined' && Boolean(localStorage.getItem('genius_user_token')));
 const booth = computed(() => hasBackendAuth.value ? (backendBooth.value || BOOTHS_DATA[spotId.value]) : (backendBooth.value || BOOTHS_DATA[spotId.value]));
 const serverSessionId = computed(() => gameSessionStore.session?.id);
 
 const floor = computed(() => FLOORS_DATA.find((f) => f.number === floorNumber.value) || FLOORS_DATA[0]);
-const boothA = computed(() => BOOTHS_DATA[floor.value.boothIds[0]]);
-const boothB = computed(() => BOOTHS_DATA[floor.value.boothIds[1]]);
+const floorBooths = computed(() => floor.value.boothIds);
+const currentBoothIndex = computed(() => floorBooths.value.indexOf(spotId.value));
+const isLastSpot = computed(() => currentBoothIndex.value === floorBooths.value.length - 1);
+const nextBoothId = computed(() => isLastSpot.value ? null : floorBooths.value[currentBoothIndex.value + 1]);
+const nextBoothCode = computed(() => nextBoothId.value ? BOOTHS_DATA[nextBoothId.value]?.code : '');
 
-const isSpot1 = computed(() => booth.value ? booth.value.id === boothA.value.id : true);
 const isAlreadyCompleted = computed(() => gameStore.isBoothCompleted(spotId.value));
 
 const teamId = computed(() => {
@@ -68,26 +72,46 @@ async function initializeBackendMission() {
     return;
   }
 
+  // 1. Coba restore sesi yang sudah ada di memori browser
   const restored = await gameSessionStore.restoreSession(missionResponse.id);
+  
+  // 2. Coba ambil dari server apakah ada sesi aktif untuk tim ini
   const activeRestored = restored || await gameSessionStore.restoreActiveSessionForMission(missionResponse.id);
-  const created = activeRestored || await gameSessionStore.createSession(missionResponse.id, teamId.value);
-  if (!created) {
-    backendError.value = gameSessionStore.error?.message || 'Sesi game gagal dibuat.';
+  
+  if (activeRestored && activeRestored.status === 'ACTIVE') {
+    // Sesi sudah dibuka & DIMULAI oleh Game Master
+    waitingForGameMaster.value = false;
+    backendBooth.value = normalizePlayableSessionMission(missionResponse, activeRestored);
     isBackendLoading.value = false;
-    return;
+  } else {
+    // Sesi belum dimulai (mungkin belum dibuat atau masih READY), tunggu Game Master
+    waitingForGameMaster.value = true;
+    isBackendLoading.value = false;
+    startPollingForSession(missionResponse.id);
   }
-
-  backendBooth.value = normalizePlayableSessionMission(missionResponse, created);
-
-  if (created.status === 'READY' && !restored) {
-    const started = await gameSessionStore.startSession();
-    if (!started) {
-      backendError.value = gameSessionStore.error?.message || 'Sesi game gagal dimulai.';
-    }
-  }
-
-  isBackendLoading.value = false;
 }
+
+function startPollingForSession(missionId: string) {
+  if (pollingInterval) clearInterval(pollingInterval);
+  pollingInterval = setInterval(async () => {
+    if (!waitingForGameMaster.value) {
+      clearInterval(pollingInterval);
+      return;
+    }
+    
+    const activeSession = await gameSessionStore.restoreActiveSessionForMission(missionId);
+    if (activeSession && activeSession.status === 'ACTIVE') {
+      waitingForGameMaster.value = false;
+      clearInterval(pollingInterval);
+      // Reload ulang page atau re-initialize agar data terupdate bersih
+      void initializeBackendMission();
+    }
+  }, 3000);
+}
+
+onUnmounted(() => {
+  if (pollingInterval) clearInterval(pollingInterval);
+});
 
 onMounted(() => {
   void initializeBackendMission();
@@ -157,11 +181,8 @@ const handleMiniGameComplete = (score: number, totalQuestions: number) => {
 
 const handleNextStep = () => {
   showCelebration.value = false;
-  if (isSpot1.value) {
-    router.push(`/play/floor/${floor.value.number}/spot/${boothB.value.id}`);
-  } else {
-    router.push(`/play/floor/${floor.value.number}/complete`);
-  }
+  // Always return to the floor hub to maintain linear progression logic and narrative context
+  router.push(`/dashboard?floor=${floor.value.number}`);
 };
 </script>
 
@@ -176,7 +197,7 @@ const handleNextStep = () => {
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-1.5 min-w-0">
             <RouterLink
-              :to="`/play/floor/${floor.number}/intro`"
+              :to="`/dashboard?floor=${floor.number}`"
               @click="() => gameStore.soundEnabled && soundEngine.playClick()"
               class="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-pixel text-[#c4956a] hover:text-[#f0d060] transition-colors shrink-0 bg-[#170f07] px-2 py-1 rounded border border-[#5a3a18]"
             >
@@ -237,22 +258,33 @@ const handleNextStep = () => {
           <div class="max-w-sm space-y-3">
             <h2 class="font-pixel text-sm text-[#ff8080]">WAKTU GAME HABIS</h2>
             <p class="font-sans text-xs text-[#f0e0c0]">Sesi ini sudah kedaluwarsa dan tidak menerima jawaban lagi.</p>
-            <RouterLink to="/peta" class="inline-block rpg-btn-primary py-2 px-4 text-[10px] font-pixel">KEMBALI KE PETA</RouterLink>
+            <RouterLink :to="`/dashboard?floor=${floorNumber}`" class="inline-block rpg-btn-primary py-2 px-4 text-[10px] font-pixel">KEMBALI KE PETA</RouterLink>
           </div>
         </div>
 
-        <div v-else-if="gameSessionStore.status === 'error' && !isBackendLoading" class="flex-1 flex items-center justify-center text-center p-6">
+        <div v-else-if="gameSessionStore.status === 'error' && !isBackendLoading && !waitingForGameMaster" class="flex-1 flex items-center justify-center text-center p-6">
           <div class="max-w-sm space-y-3">
             <h2 class="font-pixel text-sm text-[#ff8080]">SESI TIDAK TERSEDIA</h2>
             <p class="font-sans text-xs text-[#f0e0c0]">{{ gameSessionStore.error?.message || backendError || 'Sesi game tidak dapat dimuat.' }}</p>
-            <RouterLink to="/peta" class="inline-block rpg-btn-primary py-2 px-4 text-[10px] font-pixel">KEMBALI KE PETA</RouterLink>
+            <RouterLink :to="`/dashboard?floor=${floorNumber}`" class="inline-block rpg-btn-primary py-2 px-4 text-[10px] font-pixel">KEMBALI KE PETA</RouterLink>
           </div>
         </div>
 
-        <div v-if="isBackendLoading" class="absolute inset-0 z-10 flex items-center justify-center bg-[#170f07]/85">
+        <div v-if="isBackendLoading" class="absolute inset-0 z-10 flex items-center justify-center bg-[#170f07]/85 backdrop-blur-sm">
           <span class="font-pixel text-xs text-[#f0d060] animate-pulse">MENYIAPKAN SESI GAME...</span>
         </div>
-        <div v-else-if="backendError && backendBooth" class="mt-2 border border-[#d44040] bg-[#2d1210] p-2 text-[10px] text-[#ffd0d0] font-sans">
+        
+        <div v-if="waitingForGameMaster" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#170f07]/95 backdrop-blur-md p-6 text-center space-y-5">
+          <div class="w-16 h-16 rounded-full border-4 border-[#3a2818] border-t-[#f0d060] animate-spin"></div>
+          <div>
+            <h2 class="font-pixel text-sm text-[#f0d060] mb-2 animate-pulse">MENUNGGU AKSES</h2>
+            <p class="font-sans text-xs text-[#d0c0a0] max-w-[200px] leading-relaxed">
+              Silakan minta Game Master (Panitia/Buddy) untuk membukakan akses sesi kuis untuk tim Anda.
+            </p>
+          </div>
+        </div>
+
+        <div v-else-if="backendError && backendBooth && !waitingForGameMaster" class="mt-2 border border-[#d44040] bg-[#2d1210] p-2 text-[10px] text-[#ffd0d0] font-sans">
           {{ backendError }}
         </div>
       </div>
@@ -327,7 +359,7 @@ const handleNextStep = () => {
       :floorNumber="celebrationDetails.floorNumber"
       :isLevelUp="celebrationDetails.isLevelUp"
       :newLevel="celebrationDetails.newLevel"
-      :nextActionLabel="isSpot1 ? `Lanjut Spot 2 (${boothB.code})` : `Lantai ${floor.number} Tuntas!`"
+      :nextActionLabel="`Kembali ke Peta Lantai ${floor.number}`"
       @close="showCelebration = false"
       @nextAction="handleNextStep"
     />
@@ -342,9 +374,9 @@ const handleNextStep = () => {
         <p class="font-sans text-sm text-[#d0c0a0]">
           Spot &quot;{{ spotId }}&quot; tidak terdaftar di Lantai {{ floorNumber }}.
         </p>
-        <RouterLink :to="`/play/floor/${floorNumber}/intro`">
+        <RouterLink :to="`/dashboard?floor=${floorNumber}`">
           <button class="rpg-btn-primary py-3 px-6 text-xs font-pixel font-bold">
-            Kembali ke Intro Lantai
+            Kembali ke Peta Lantai {{ floorNumber }}
           </button>
         </RouterLink>
       </div>

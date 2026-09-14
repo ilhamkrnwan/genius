@@ -33,7 +33,7 @@ const navLinks = [
   { href: '/presensi', label: 'Presensi', icon: PhCalendarCheck },
   { href: '/play', label: 'Main', icon: PhGameController },
   { href: '/ormawa', label: 'Ormawa', icon: PhStorefront },
-  { href: '/peta', label: 'Peta', icon: PhBuildings },
+  { href: '/dashboard', label: 'Dashboard', icon: PhBuildings },
   { href: '/leaderboard', label: 'Peringkat', icon: PhTrophy },
   { href: '/paspor', label: 'Paspor', icon: PhIdentificationBadge },
 ];
@@ -45,14 +45,14 @@ const handleLinkClick = () => {
 
 const isLinkActive = (href: string) => {
   if (href === '/') return route.path === '/';
-  if (href === '/play') return route.path.startsWith('/play') || route.path.startsWith('/booth');
+  if (href === '/play') return route.path.startsWith('/play') || route.path.startsWith('/booth') || route.path.startsWith('/floor');
   return route.path.startsWith(href);
 };
 </script>
 
 <template>
-  <header class="sticky top-0 z-40 w-full bg-[#1c120a] border-b-2 border-[#5a3a18] shadow-md shrink-0 h-[48px] sm:h-[52px] flex items-center">
-    <div class="w-full max-w-6xl mx-auto px-2.5 sm:px-6 flex items-center justify-between">
+  <header class="sticky top-0 z-40 w-full bg-[#1c120a]/95 backdrop-blur-sm border-b-2 border-[#5a3a18] shadow-[0_4px_20px_rgba(0,0,0,0.5)] shrink-0 h-[56px] sm:h-[64px] flex items-center transition-all duration-300">
+    <div class="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between">
       <!-- Brand & Logo -->
       <RouterLink
         to="/"
@@ -69,17 +69,17 @@ const isLinkActive = (href: string) => {
           />
         </div>
         <div>
-          <div class="font-pixel text-[11px] sm:text-xs font-bold text-[#f0d060] tracking-wider leading-none">
+          <div class="font-pixel text-xs sm:text-sm font-bold text-[#f0d060] tracking-wider leading-none">
             GENIUS
           </div>
-          <p class="text-[7px] sm:text-[8px] text-[#a08060] font-pixel leading-tight">
+          <p class="text-[9px] sm:text-[10px] text-[#a08060] font-pixel leading-tight">
             UNU YOGYA
           </p>
         </div>
       </RouterLink>
 
       <!-- Desktop Navigation Links -->
-      <nav class="hidden md:flex items-center gap-1.5">
+      <nav class="hidden xl:flex items-center gap-1 lg:gap-2">
         <RouterLink
           v-for="link in navLinks"
           :key="link.href"
@@ -100,7 +100,7 @@ const isLinkActive = (href: string) => {
       <!-- Right Controls & Mobile Menu Button -->
       <div class="flex items-center gap-1.5 sm:gap-2">
         <!-- Quick Stats (Desktop) -->
-        <div class="hidden lg:flex items-center gap-2 bg-[#2d1b0e] px-2 py-0.5 border border-[#5a3a18] rounded-md text-[11px] font-pixel">
+        <div class="hidden md:flex items-center gap-2 bg-[#2d1b0e] px-2.5 py-1 border border-[#5a3a18] rounded-md text-[10px] xl:text-[11px] font-pixel shadow-inner">
           <span class="text-[#f0d060]">{{ completedFloors }}/9 Lt</span>
           <span class="text-[#5a3a18]">•</span>
           <span class="text-[#7ec850]">{{ totalStamps }}/18 Stempel</span>
@@ -112,13 +112,13 @@ const isLinkActive = (href: string) => {
           </PixelBadge>
         </div>
 
-        <!-- Sound Toggle -->
+        <!-- Sound Toggle (Desktop) -->
         <button
           type="button"
           @click="gameStore.toggleSound"
           :title="gameStore.soundEnabled ? 'Matikan Suara' : 'Nyalakan Suara'"
           :class="[
-            'p-1 sm:p-1.5 rounded-md border transition-all cursor-pointer',
+            'hidden sm:block p-1.5 sm:p-2 rounded-md border transition-all cursor-pointer hover:-translate-y-0.5 active:translate-y-0 shadow-sm',
             gameStore.soundEnabled
               ? 'bg-[#2d1b0e] text-[#7ec850] border-[#7ec850]'
               : 'bg-[#23160c] text-[#a08060] border-[#5a3a18]'
@@ -134,7 +134,7 @@ const isLinkActive = (href: string) => {
           @click="gameStore.toggleCrt"
           title="Efek Layar"
           :class="[
-            'hidden sm:block p-1 sm:p-1.5 rounded-md border transition-all cursor-pointer',
+            'hidden sm:block p-1.5 sm:p-2 rounded-md border transition-all cursor-pointer hover:-translate-y-0.5 active:translate-y-0 shadow-sm',
             gameStore.crtEffect
               ? 'bg-[#2d1b0e] text-[#f0d060] border-[#f0d060]'
               : 'bg-[#23160c] text-[#a08060] border-[#5a3a18]'
@@ -150,7 +150,7 @@ const isLinkActive = (href: string) => {
             if (gameStore.soundEnabled) soundEngine.playClick();
             mobileMenuOpen = !mobileMenuOpen;
           }"
-          class="md:hidden p-1 bg-[#2d1b0e] text-[#f0d060] border border-[#8b6f4e] hover:border-[#f0d060] rounded-md transition-all cursor-pointer flex items-center justify-center"
+          class="hidden md:flex xl:hidden p-1.5 sm:p-2 bg-[#2d1b0e] text-[#f0d060] border border-[#8b6f4e] hover:border-[#f0d060] hover:bg-[#3a2818] rounded-md transition-all cursor-pointer items-center justify-center hover:-translate-y-0.5 active:translate-y-0 shadow-sm"
           aria-label="Menu Navigasi"
         >
           <PhX v-if="mobileMenuOpen" :size="18" weight="bold" />
@@ -159,10 +159,10 @@ const isLinkActive = (href: string) => {
       </div>
     </div>
 
-    <!-- Mobile Modal Drawer Menu -->
+    <!-- Tablet Modal Drawer Menu -->
     <div
       v-if="mobileMenuOpen"
-      class="fixed inset-0 top-[48px] z-50 bg-[#0d0905]/90 backdrop-blur-md p-4 flex flex-col justify-between animate-in fade-in duration-150 shadow-2xl"
+      class="fixed inset-0 top-[64px] z-50 bg-[#0d0905]/80 backdrop-blur-md p-6 flex flex-col justify-between animate-in fade-in duration-200 shadow-2xl hidden md:flex xl:hidden"
       @click="mobileMenuOpen = false"
     >
       <div
