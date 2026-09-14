@@ -8,7 +8,7 @@ export interface User {
   id: string;
   username: string;
   fullName: string;
-  role: "ADMIN" | "BUDDY" | "PARTICIPANT";
+  role: "ADMIN" | "BUDDY" | "PARTICIPANT" | "ORMAWA_PIC";
   status?: string;
   characterClass?: string;
   characterTitle?: string;
@@ -147,11 +147,11 @@ export function useAuth() {
         };
       }
 
-      // Verify that user is Panitia (ADMIN or BUDDY)
-      if (res.data.user.role !== "ADMIN" && res.data.user.role !== "BUDDY") {
+      // Verify that user is Panitia (ADMIN, BUDDY, ORMAWA_PIC)
+      if (res.data.user.role !== "ADMIN" && res.data.user.role !== "BUDDY" && res.data.user.role !== "ORMAWA_PIC") {
         return {
           success: false,
-          error: "Akses ditolak: Akun Anda terdaftar sebagai Peserta, bukan Panitia/Buddy.",
+          error: "Akses ditolak: Akun Anda terdaftar sebagai Peserta, bukan Panitia/Ormawa.",
         };
       }
 
@@ -165,6 +165,8 @@ export function useAuth() {
 
       if (res.data.user.role === "BUDDY") {
         navigateTo("/buddy");
+      } else if (res.data.user.role === "ORMAWA_PIC") {
+        navigateTo("/ormawa/scan");
       } else {
         navigateTo("/");
       }

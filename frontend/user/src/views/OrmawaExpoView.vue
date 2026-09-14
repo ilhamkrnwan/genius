@@ -15,6 +15,7 @@ import {
   PhQrCode,
   PhSpinner,
   PhWarning,
+  PhHeart,
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
 import { ORMAWA_STANDS } from '@/data/ormawaData';
@@ -22,6 +23,9 @@ import { OrmawaStand } from '@/types/ormawa';
 import PixelCard from '@/components/ui/PixelCard.vue';
 import PixelButton from '@/components/ui/PixelButton.vue';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
+import OrmawaQrModal from '@/components/ormawa/OrmawaQrModal.vue';
+import OrmawaInterestModal from '@/components/ormawa/OrmawaInterestModal.vue';
+import OrmawaStampGrid from '@/components/ormawa/OrmawaStampGrid.vue';
 import { soundEngine } from '@/lib/sound';
 import { api } from '@/lib/api';
 
@@ -37,6 +41,10 @@ const apiError = ref<string | null>(null);
 // Katalog stan: akan diisi dari API, fallback ke data lokal
 const apiStands = ref<OrmawaStand[]>([]);
 const stands = computed(() => apiStands.value.length > 0 ? apiStands.value : ORMAWA_STANDS);
+
+// Modal State
+const isQrModalOpen = ref(false);
+const isInterestModalOpen = ref(false);
 
 // QR Code Maba — menampilkan NIM sebagai QR agar bisa di-scan PIC Ormawa
 const mabaQrValue = computed(() => {
@@ -112,6 +120,27 @@ const openStandDetail = (stand: OrmawaStand) => {
   activeStandDetail.value = stand;
 };
 
+const openQrModal = () => {
+  if (gameStore.soundEnabled) soundEngine.playSelect();
+  isQrModalOpen.value = true;
+};
+
+const openInterestModal = () => {
+  if (gameStore.soundEnabled) soundEngine.playSelect();
+  isInterestModalOpen.value = true;
+};
+
+const submitInterestHandler = async (payload: { phoneNumber: string; motivation?: string; experience?: string }) => {
+  if (!activeStandDetail.value) return;
+  const res = await gameStore.submitInterest(activeStandDetail.value.id, payload);
+  if (res.success) {
+    isInterestModalOpen.value = false;
+    alert(res.message); // can use toast in real app
+  } else {
+    alert(res.message);
+  }
+};
+
 const closeStandDetail = () => {
   if (gameStore.soundEnabled) soundEngine.playClick();
   activeStandDetail.value = null;
@@ -165,6 +194,9 @@ const getCategoryLabel = (category: string) => {
         </div>
       </PixelCard>
 
+      <!-- Stamp Grid Collection -->
+      <OrmawaStampGrid :maxStamps="10" />
+
       <!-- API Error Notice -->
       <div
         v-if="apiError"
@@ -175,77 +207,26 @@ const getCategoryLabel = (category: string) => {
       </div>
 
       <!-- ══════════════════════════════════════════════════════════ -->
-      <!--   QR CODE MABA — Tunjukkan ke PIC Ormawa untuk di-scan   -->
+      <!--   QR CODE MABA BUTTON                                     -->
       <!-- ══════════════════════════════════════════════════════════ -->
-      <div class="bg-[#1a1109] border-2 border-[#ca8a04] rounded-xl p-4 sm:p-5 space-y-3 shadow-[0_0_20px_rgba(202,138,4,0.15)]">
-        <div class="flex items-center gap-2">
-          <PhQrCode :size="18" weight="fill" class="text-[#facc15]" />
-          <span class="font-pixel text-[#fef08a] text-xs font-bold uppercase tracking-wide">
-            QR Code Paspor Kamu
-          </span>
+      <div class="bg-[#1a1109] border-2 border-[#ca8a04] rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_0_20px_rgba(202,138,4,0.15)]">
+        <div class="space-y-1 text-center sm:text-left">
+          <h3 class="font-pixel text-[#fef08a] text-sm font-bold flex items-center justify-center sm:justify-start gap-2">
+            <PhQrCode :size="18" weight="fill" class="text-[#facc15]" />
+            PASPOR DIGITAL EXPO
+          </h3>
+          <p class="text-xs text-amber-200/80 font-sans max-w-sm leading-relaxed">
+            Klik tombol di samping untuk menampilkan QR Code Paspor Anda kepada petugas stan.
+          </p>
         </div>
-
-        <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-          <!-- QR Image -->
-          <div class="shrink-0 relative">
-            <div class="w-[140px] h-[140px] sm:w-[160px] sm:h-[160px] bg-[#1a1109] border-4 border-[#ca8a04] rounded-xl overflow-hidden flex items-center justify-center">
-              <img
-                v-if="gameStore.isLoggedIn && gameStore.participant.nim"
-                :src="mabaQrUrl"
-                :alt="`QR Code ${gameStore.participant.nim}`"
-                class="w-full h-full object-contain"
-                loading="lazy"
-              />
-              <div v-else class="text-center p-3">
-                <PhQrCode :size="48" class="text-amber-400/30 mx-auto" />
-                <p class="text-[9px] text-amber-300/60 font-mono mt-1">Login dulu ya!</p>
-              </div>
-            </div>
-            <!-- Glow ring -->
-            <div class="absolute inset-0 rounded-xl ring-2 ring-[#facc15]/20 pointer-events-none"></div>
-          </div>
-
-          <!-- Info Text -->
-          <div class="space-y-2 text-center sm:text-left">
-            <div v-if="gameStore.isLoggedIn && gameStore.participant.nim">
-              <p class="font-pixel text-[#fef08a] text-sm font-bold">{{ gameStore.participant.name || 'Mahasiswa' }}</p>
-              <p class="font-mono text-amber-300 text-xs mt-0.5">NIM: {{ gameStore.participant.nim }}</p>
-            </div>
-
-            <div class="space-y-1.5 text-xs font-sans text-amber-200/80 leading-relaxed">
-              <p class="flex items-start gap-1.5">
-                <span class="text-[#facc15] font-bold mt-0.5">1.</span>
-                Datangi stan UKM/Himpunan yang ingin kamu kunjungi.
-              </p>
-              <p class="flex items-start gap-1.5">
-                <span class="text-[#facc15] font-bold mt-0.5">2.</span>
-                <strong>Tunjukkan QR Code ini</strong> kepada PIC/petugas stan.
-              </p>
-              <p class="flex items-start gap-1.5">
-                <span class="text-[#facc15] font-bold mt-0.5">3.</span>
-                Petugas akan scan QR kamu — lencana & XP otomatis masuk ke paspormu!
-              </p>
-            </div>
-
-            <!-- Progress mini -->
-            <div class="pt-1">
-              <div class="flex items-center justify-between text-[10px] font-mono mb-1">
-                <span class="text-amber-300/70">{{ visitedCount }}/10 stan dikunjungi</span>
-                <span :class="isCapped ? 'text-[#86efac]' : 'text-amber-300/70'">
-                  {{ isCapped ? '✓ KUOTA PENUH' : `+${xpEarned} XP` }}
-                </span>
-              </div>
-              <div class="w-full bg-[#100a06] h-2 rounded-full border border-[#3d2613] overflow-hidden">
-                <div
-                  class="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-[#ca8a04] via-[#eab308] to-[#22c55e]"
-                  :style="{ width: `${Math.min(100, (visitedCount / 10) * 100)}%` }"
-                ></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <button 
+          @click="openQrModal"
+          class="shrink-0 w-full sm:w-auto bg-gradient-to-r from-[#ca8a04] to-[#facc15] hover:from-[#a16207] hover:to-[#eab308] text-[#140e08] font-pixel text-xs font-bold py-3 px-6 rounded-lg border-2 border-[#fef08a] shadow-[4px_4px_0px_#713f12] active:translate-y-1 active:shadow-[0px_0px_0px_#713f12] transition-all flex items-center justify-center gap-2"
+        >
+          <PhQrCode :size="16" weight="bold" />
+          <span>TAMPILKAN QR PASPOR</span>
+        </button>
       </div>
-
       <!-- ═══════════════════════════════════════ -->
       <!--   KATALOG STAN UKM & HIMPUNAN          -->
       <!-- ═══════════════════════════════════════ -->
@@ -521,18 +502,48 @@ const getCategoryLabel = (category: string) => {
 
         <!-- CTA: Petunjuk Cara Mendapat Lencana -->
         <div class="pt-2 border-t border-[#3d2613] space-y-2">
-          <p class="text-[10px] text-amber-300/70 font-mono text-center">
-            Datangi stan ini & tunjukkan QR Code paspormu kepada petugas untuk mendapat lencana!
-          </p>
-          <button
-            type="button"
-            @click="closeStandDetail"
-            class="w-full h-9 bg-[#2a1d12] hover:bg-[#3d2919] text-amber-200 font-pixel text-[10px] rounded border border-[#6b4724] cursor-pointer transition-all"
-          >
-            TUTUP
-          </button>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              v-if="!gameStore.isStandInterested(activeStandDetail.id)"
+              type="button"
+              @click="openInterestModal"
+              class="w-full h-9 bg-gradient-to-r from-[#166534] to-[#14532d] hover:from-[#14532d] hover:to-[#064e3b] text-[#86efac] font-pixel text-[10px] rounded border border-[#166534] shadow-[2px_2px_0px_#064e3b] active:translate-y-0.5 active:shadow-none cursor-pointer transition-all flex items-center justify-center gap-1"
+            >
+              <PhHeart weight="fill" :size="14" />
+              <span>BERMINAT GABUNG</span>
+            </button>
+            <div 
+              v-else 
+              class="w-full h-9 bg-[#142314] text-[#86efac] font-pixel text-[10px] rounded border border-[#22c55e] flex items-center justify-center gap-1 cursor-not-allowed opacity-80"
+            >
+              <PhCheckCircle :size="14" weight="fill" />
+              <span>SUDAH BERMINAT</span>
+            </div>
+
+            <button
+              type="button"
+              @click="closeStandDetail"
+              class="w-full h-9 bg-[#2a1d12] hover:bg-[#3d2919] text-amber-200 font-pixel text-[10px] rounded border border-[#6b4724] shadow-[2px_2px_0px_#1a1109] active:translate-y-0.5 active:shadow-none cursor-pointer transition-all"
+            >
+              TUTUP
+            </button>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Modals -->
+    <OrmawaQrModal 
+      v-model="isQrModalOpen"
+      :standName="'Ormawa Pilihan'" 
+    />
+
+    <OrmawaInterestModal
+      v-if="activeStandDetail"
+      v-model="isInterestModalOpen"
+      :standId="activeStandDetail.id"
+      :standName="activeStandDetail.name"
+      @submit="submitInterestHandler"
+    />
   </div>
 </template>

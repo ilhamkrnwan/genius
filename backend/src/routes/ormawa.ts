@@ -1,8 +1,8 @@
 import { Elysia, t } from "elysia";
 import { db } from "../db";
-import { ormawaBooths, ormawaScans, users, teams, teamMembers, scoreTransactions, floors } from "../db/schema";
+import { ormawaBooths, ormawaScans, ormawaInterests, users, teams, teamMembers, scoreTransactions, floors } from "../db/schema";
 import { eq, and, sql, desc, or, ilike } from "drizzle-orm";
-import { authMiddleware, requireAdmin } from "../middleware/auth";
+import { authMiddleware, requireAdmin, requireOrmawaOrAdmin, requireUser } from "../middleware/auth";
 import { broadcastLeaderboardUpdate, broadcastAdminEvent } from "../realtime";
 
 export const ormawaRoutes = new Elysia({
@@ -141,6 +141,39 @@ export const ormawaRoutes = new Elysia({
     },
     {
       params: t.Object({ id: t.String() }),
+    }
+  )
+
+  // GET /api/ormawa/my-booth — PIC ambil data stannya sendiri
+  .get(
+    "/my-booth",
+    async ({ user, set }) => {
+      if (user?.role !== "ORMAWA_PIC") {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Hanya PIC Ormawa yang dapat mengakses" } };
+      }
+
+      const [booth] = await db
+        .select({
+          id: ormawaBooths.id,
+          name: ormawaBooths.name,
+          category: ormawaBooths.category,
+          floorNumber: floors.number,
+        })
+        .from(ormawaBooths)
+        .leftJoin(floors, eq(ormawaBooths.floorId, floors.id))
+        .where(eq(ormawaBooths.picUserId, user.userId))
+        .limit(1);
+
+      if (!booth) {
+        set.status = 404;
+        return { success: false, error: { code: "NOT_FOUND", message: "Stan tidak ditemukan untuk akun ini" } };
+      }
+
+      return { success: true, data: booth };
+    },
+    {
+      detail: { summary: "Data stan PIC Ormawa yang sedang login" },
     }
   )
 
@@ -614,6 +647,285 @@ export const ormawaRoutes = new Elysia({
       params: t.Object({
         participantId: t.String(),
       }),
+    }
+  )
+
+  // GET /api/ormawa/my-interests/:participantId — Ambil daftar minat ormawa
+  .get(
+    "/my-interests/:participantId",
+    async ({ params }) => {
+      const { participantId } = params;
+      const interests = await db
+        .select({
+          id: ormawaInterests.id,
+          createdAt: ormawaInterests.createdAt,
+          boothId: ormawaBooths.id,
+          boothName: ormawaBooths.name,
+          category: ormawaBooths.category,
+        })
+        .from(ormawaInterests)
+        .innerJoin(ormawaBooths, eq(ormawaInterests.boothId, ormawaBooths.id))
+        .where(eq(ormawaInterests.participantId, participantId))
+        .orderBy(desc(ormawaInterests.createdAt));
+
+      return {
+        success: true,
+        data: {
+          participantId,
+          totalInterests: interests.length,
+          interests,
+        },
+      };
+    },
+    {
+      detail: {
+        summary: "Daftar minat stan UKM mahasiswa",
+      },
+      params: t.Object({
+        participantId: t.String(),
+      }),
+    }
+  )
+
+  // POST /api/ormawa/scan-maba — (BARU) PIC Ormawa scan QR maba
+  .post(
+    "/scan-maba",
+    async ({ body, user, set }) => {
+      const { mabaNim, mabaQrToken } = body;
+      
+      let identifier = mabaNim || "";
+      if (mabaQrToken) {
+         identifier = mabaQrToken.replace("GENIUS-MABA-", "");
+      }
+      if (!identifier) {
+        set.status = 400;
+        return { success: false, error: { code: "BAD_REQUEST", message: "mabaNim atau mabaQrToken diperlukan" } };
+      }
+
+      // 1. Cari maba berdasarkan NIM (identifier)
+      const [maba] = await db.select().from(users).where(eq(users.username, identifier)).limit(1);
+      if (!maba) {
+        set.status = 404;
+        return { success: false, error: { code: "NOT_FOUND", message: "Mahasiswa tidak ditemukan" } };
+      }
+
+      // 2. Cari booth berdasarkan picUserId yang login
+      const [booth] = await db.select().from(ormawaBooths).where(eq(ormawaBooths.picUserId, user?.userId!)).limit(1);
+      if (!booth) {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Akun Anda tidak terhubung dengan stan manapun." } };
+      }
+
+      // 3. Cek duplikat
+      const [existingScan] = await db
+        .select({ id: ormawaScans.id })
+        .from(ormawaScans)
+        .where(and(eq(ormawaScans.participantId, maba.id), eq(ormawaScans.boothId, booth.id)))
+        .limit(1);
+
+      if (existingScan) {
+        return {
+          success: false,
+          message: `Mahasiswa ${maba.fullName} sudah di-scan sebelumnya di stan ini.`,
+          data: { xpEarned: 0, isCapped: false },
+        };
+      }
+
+      // 4. Cek Capping (max 10)
+      const [scanCountRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(ormawaScans)
+        .where(eq(ormawaScans.participantId, maba.id));
+      
+      const previousScanCount = Number(scanCountRow?.count || 0);
+      const isEligibleForXp = previousScanCount < 10;
+      const xpEarned = isEligibleForXp ? booth.xpReward : 0;
+
+      // 5. Insert scan
+      const [newScan] = await db.insert(ormawaScans).values({
+        participantId: maba.id,
+        boothId: booth.id,
+        xpEarned,
+      }).returning();
+
+      // 6. Tambah transaksi score
+      let targetTeamId = null;
+      const [mabaMembership] = await db
+        .select({ teamId: teamMembers.teamId })
+        .from(teamMembers)
+        .where(eq(teamMembers.userId, maba.id))
+        .limit(1);
+      if (mabaMembership) targetTeamId = mabaMembership.teamId;
+
+      if (xpEarned > 0 && targetTeamId) {
+        await db.insert(scoreTransactions).values({
+          participantId: maba.id,
+          teamId: targetTeamId,
+          amount: xpEarned,
+          sourceType: "BONUS",
+          reason: `Kunjungan Stan Ormawa: ${booth.name}`,
+          createdBy: user?.userId,
+        });
+        broadcastLeaderboardUpdate({
+          type: "ORMAWA_BOOTH_SCANNED",
+          participantId: maba.id,
+          teamId: targetTeamId,
+          boothName: booth.name,
+          xpEarned,
+        });
+      }
+
+      broadcastAdminEvent("ORMAWA_VISIT_RECORDED", {
+        participantId: maba.id,
+        boothName: booth.name,
+        totalVisited: previousScanCount + 1,
+      });
+
+      return {
+        success: true,
+        message: `Kunjungan mahasiswa ${maba.fullName} berhasil dicatat!`,
+        data: {
+          maba: {
+            id: maba.id,
+            fullName: maba.fullName,
+            username: maba.username,
+          },
+          booth: {
+            id: booth.id,
+            name: booth.name,
+          },
+          xpEarned,
+          totalScanned: previousScanCount + 1,
+          isCapped: !isEligibleForXp,
+        },
+      };
+    },
+    {
+      use: requireOrmawaOrAdmin,
+      detail: { summary: "PIC Ormawa scan QR maba" },
+      body: t.Object({
+        mabaNim: t.Optional(t.String()),
+        mabaQrToken: t.Optional(t.String()),
+      }),
+    }
+  )
+
+  // POST /api/ormawa/interest — Maba berminat gabung
+  .post(
+    "/interest",
+    async ({ body, user, set }) => {
+      const { boothId, phoneNumber, motivation, experience } = body;
+      const participantId = user?.userId!;
+
+      // 1. Cek booth ada
+      const [booth] = await db.select({ id: ormawaBooths.id, name: ormawaBooths.name }).from(ormawaBooths).where(eq(ormawaBooths.id, boothId)).limit(1);
+      if (!booth) {
+        set.status = 404;
+        return { success: false, error: { code: "NOT_FOUND", message: "Stan tidak ditemukan" } };
+      }
+
+      // 2. Cek duplikat
+      const [existingInterest] = await db.select({ id: ormawaInterests.id }).from(ormawaInterests)
+        .where(and(eq(ormawaInterests.participantId, participantId), eq(ormawaInterests.boothId, boothId))).limit(1);
+      if (existingInterest) {
+        return { success: false, error: { code: "ALREADY_INTERESTED", message: "Anda sudah menyatakan minat pada ormawa ini." } };
+      }
+
+      // 3. Cek capping (max 3)
+      const [interestCountRow] = await db.select({ count: sql<number>`count(*)` }).from(ormawaInterests).where(eq(ormawaInterests.participantId, participantId));
+      const previousCount = Number(interestCountRow?.count || 0);
+      const isEligibleForXp = previousCount < 3;
+      const xpBonusEarned = isEligibleForXp ? 25 : 0;
+
+      // 4. Insert
+      const [newInterest] = await db.insert(ormawaInterests).values({
+        participantId,
+        boothId,
+        phoneNumber,
+        motivation,
+        experience,
+        xpBonusEarned,
+      }).returning();
+
+      // 5. Tambah XP bonus
+      if (xpBonusEarned > 0) {
+        const [mabaMembership] = await db.select({ teamId: teamMembers.teamId }).from(teamMembers).where(eq(teamMembers.userId, participantId)).limit(1);
+        if (mabaMembership) {
+          await db.insert(scoreTransactions).values({
+            participantId,
+            teamId: mabaMembership.teamId,
+            amount: xpBonusEarned,
+            sourceType: "BONUS",
+            reason: `Pendaftaran Minat Ormawa: ${booth.name}`,
+            createdBy: participantId,
+          });
+          broadcastLeaderboardUpdate({
+            type: "ORMAWA_INTEREST_REGISTERED",
+            participantId,
+            teamId: mabaMembership.teamId,
+            boothName: booth.name,
+            xpEarned: xpBonusEarned,
+          });
+        }
+      }
+
+      return {
+        success: true,
+        message: `Minat bergabung ke ${booth.name} berhasil dicatat!`,
+        data: { interest: newInterest, xpBonusEarned, totalInterests: previousCount + 1 },
+      };
+    },
+    {
+      use: requireUser,
+      detail: { summary: "Maba menyatakan minat bergabung" },
+      body: t.Object({
+        boothId: t.String(),
+        phoneNumber: t.String(),
+        motivation: t.Optional(t.String()),
+        experience: t.Optional(t.String()),
+      }),
+    }
+  )
+
+  // GET /api/ormawa/booths/:id/interests — Admin/PIC lihat pendaftar minat
+  .get(
+    "/booths/:id/interests",
+    async ({ params, user, set }) => {
+      // Pastikan kalau dia PIC, cuma bisa akses booth miliknya
+      if (user?.role === "ORMAWA_PIC") {
+        const [booth] = await db.select({ id: ormawaBooths.id }).from(ormawaBooths).where(eq(ormawaBooths.id, params.id)).limit(1);
+        // Bisa tambahkan validasi tambahan kalau mau ketat
+      }
+
+      const interests = await db
+        .select({
+          id: ormawaInterests.id,
+          participantId: ormawaInterests.participantId,
+          fullName: users.fullName,
+          username: users.username,
+          phoneNumber: ormawaInterests.phoneNumber,
+          motivation: ormawaInterests.motivation,
+          experience: ormawaInterests.experience,
+          createdAt: ormawaInterests.createdAt,
+        })
+        .from(ormawaInterests)
+        .innerJoin(users, eq(ormawaInterests.participantId, users.id))
+        .where(eq(ormawaInterests.boothId, params.id))
+        .orderBy(desc(ormawaInterests.createdAt));
+
+      return {
+        success: true,
+        data: {
+          boothId: params.id,
+          totalInterests: interests.length,
+          interests,
+        },
+      };
+    },
+    {
+      use: requireOrmawaOrAdmin,
+      detail: { summary: "Daftar mahasiswa yang berminat pada stan" },
+      params: t.Object({ id: t.String() }),
     }
   )
 
