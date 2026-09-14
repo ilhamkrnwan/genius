@@ -22,6 +22,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/dashboard',
+    alias: ['/main'],
     name: 'dashboard',
     component: DashboardView,
   },
@@ -74,7 +75,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/paspor',
     name: 'paspor',
-    alias: ['/passport'],
+    alias: ['/passport', '/passpor', '/stamps', '/stempel'],
     component: PasporView,
   },
   {

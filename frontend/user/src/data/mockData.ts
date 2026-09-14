@@ -16,8 +16,9 @@ export const LEVEL_CONFIG: LevelInfo[] = OFFICIAL_LEVEL_CONFIG;
 
 export const FLOORS_DATA: Floor[] = OFFICIAL_FLOORS_DATA;
 
-export const BOOTHS_DATA: Record<string, Booth> = {
-  // FLOOR 1
+export const BOOTHS_DATA: Record<string, Booth> = OFFICIAL_BOOTHS_MAP;
+
+export const LEGACY_BOOTHS_DATA: Record<string, Booth> = {
   'booth-1a': {
     id: 'booth-1a',
     floorNumber: 1,

@@ -122,7 +122,7 @@
               {{ m.totalXp }} XP
             </span>
             <span class="text-[9px] text-[#38bdf8] font-mono">
-              {{ m.stampsCount }}/18 Pos
+              {{ m.stampsCount }}/9 Pos
             </span>
           </div>
         </div>
@@ -176,7 +176,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { FileEdit, Gift, Trophy } from "lucide-vue-next";
 import BuddyPosController from "@/components/buddy/BuddyPosController.vue";
 import { useAuth } from "~/composables/useAuth";
@@ -327,7 +327,7 @@ async function loadData() {
           totalXp: Number(m.totalScore || 0),
           attendanceStatus: att ? att.status : "ABSENT",
           checkInTime: att ? att.time : undefined,
-          stampsCount: Math.min(18, Math.floor(Number(m.totalScore || 0) / 50)),
+          stampsCount: Math.min(9, Math.floor(Number(m.totalScore || 0) / 100)),
           fgdScore: fgdScore && fgdScore > 0 ? fgdScore : undefined,
         };
       });
@@ -339,7 +339,22 @@ async function loadData() {
   }
 }
 
+const { onEvent } = useRealtime();
+let refreshInterval: ReturnType<typeof setInterval> | null = null;
+let unsubscribeWs: (() => void) | null = null;
+
 onMounted(() => {
   loadData();
+  unsubscribeWs = onEvent((event) => {
+    if (["SCORE_SUBMITTED", "XP_AWARDED", "LEADERBOARD_UPDATED", "GAME_SESSION_COMPLETED", "ATTENDANCE_CHECKIN"].includes(event)) {
+      loadData();
+    }
+  });
+  refreshInterval = setInterval(loadData, 12000);
+});
+
+onUnmounted(() => {
+  if (refreshInterval) clearInterval(refreshInterval);
+  if (unsubscribeWs) unsubscribeWs();
 });
 </script>

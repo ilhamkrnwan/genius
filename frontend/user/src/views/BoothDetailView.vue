@@ -186,8 +186,16 @@ const handleMiniGameComplete = async (score: number, totalQuestions: number) => 
 
   // Sync complete server session if session is active
   if (hasServerSession) {
-    gameSessionStore.completeSession([{ score, totalQuestions, action: 'COMPLETE' }]).then((res) => {
-      if (res) console.log('[BoothDetailView] Server session completed:', res);
+    gameSessionStore.completeSession([{
+      participantId: gameStore.participant.id || gameStore.participant.nim,
+      score,
+      totalQuestions,
+      action: 'COMPLETE',
+    }]).then((res) => {
+      if (res) {
+        console.log('[BoothDetailView] Server session completed:', res);
+        gameStore.syncWithServer();
+      }
     }).catch((err) => {
       console.warn('[BoothDetailView] Error completing server session:', err);
     });
@@ -272,7 +280,7 @@ const handleNextStep = () => {
               <span class="font-pixel text-[8px] text-[#7ec850]">Selesai</span>
             </div>
             <PixelBadge v-else variant="gold" size="sm">
-              {{ isPractice ? 'LATIHAN - TANPA XP' : '+250 XP' }}
+              {{ isPractice ? 'LATIHAN - TANPA XP' : 'Max 100 XP' }}
             </PixelBadge>
           </div>
         </div>

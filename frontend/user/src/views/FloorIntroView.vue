@@ -185,7 +185,7 @@ onMounted(() => {
               Tantangan di Lantai Ini:
             </span>
             <span class="font-pixel text-[8px] sm:text-[9px] text-[#7ec850]">
-              Total: +{{ floorBooths.length * 250 }} XP & {{ floorBooths.length }} Stempel
+              Total: +{{ floorBooths.length * 100 }} XP & {{ floorBooths.length }} Stempel
             </span>
           </div>
 
@@ -217,7 +217,7 @@ onMounted(() => {
                   class="text-[#7ec850] shrink-0"
                 />
                 <span v-else class="text-[8px] font-pixel text-[#f0d060] bg-[#281c12] px-1 py-0.5 rounded border border-[#5a3a18]">
-                  +250 XP
+                  Max 100 XP
                 </span>
               </div>
 

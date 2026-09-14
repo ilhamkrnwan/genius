@@ -25,7 +25,6 @@ const showMoreMenu = ref(false);
 const bottomNavLinks = [
   { href: '/', label: 'Beranda', icon: PhHouse },
   { href: '/play', label: 'Main', icon: PhGameController },
-  { href: '/dashboard', label: 'Dashboard', icon: PhBuildings },
   { href: '/paspor', label: 'Paspor', icon: PhIdentificationBadge },
 ];
 
@@ -41,9 +40,8 @@ const toggleMoreMenu = () => {
 
 const isLinkActive = (href: string) => {
   if (href === '/') return route.path === '/';
-  if (href === '/play') return route.path.startsWith('/play') || route.path.startsWith('/booth') || route.path.startsWith('/floor');
-  if (href === '/dashboard') return route.path.startsWith('/dashboard');
-  if (href === '/paspor') return route.path.startsWith('/paspor');
+  if (href === '/play') return route.path.startsWith('/play') || route.path.startsWith('/dashboard') || route.path.startsWith('/booth') || route.path.startsWith('/floor');
+  if (href === '/paspor') return route.path.startsWith('/paspor') || route.path.startsWith('/passport') || route.path.startsWith('/passpor');
   return false;
 };
 </script>

@@ -36,7 +36,7 @@ onMounted(async () => {
 
   if (route.query.floor) {
     const floorParam = parseInt(route.query.floor as string, 10);
-    if (!isNaN(floorParam) && floorParam >= 1 && floorParam <= 9) {
+    if (!isNaN(floorParam) && floorParam >= 1 && floorParam <= 6) {
       selectedFloorNumber.value = floorParam;
     }
   } else {
@@ -61,39 +61,35 @@ watch(selectedFloorNumber, () => {
 });
 
 const backendBoothsForFloor = computed(() => {
-  const floorSessions = gameSessionStore.mySessions.filter((s: any) => s.floorNumber === selectedFloorNumber.value);
-  if (floorSessions.length > 0) {
-    return floorSessions.map((session: any) => {
-      const letter = session.locationCode?.slice(-1)?.toLowerCase() || 'a';
-      const templateId = `booth-${session.floorNumber}${letter}`;
-      const template = BOOTHS_DATA[templateId] || BOOTHS_DATA['booth-1a'];
-
-      return {
-        id: session.missionId || session.id || templateId,
-        code: session.locationCode || template.code,
-        name: session.missionName || template.name,
-        stampIcon: template?.stampIcon || 'trophy',
-        tipe_game: session.gameType?.toLowerCase() || template.tipe_game,
-        status: session.status,
-        floorNumber: session.floorNumber
-      };
-    });
-  }
-
-  // Fallback to local booth data if no backend session
   const localIds = selectedFloor.value.boothIds || [];
-  return localIds.map((id) => {
-    const b = BOOTHS_DATA[id];
-    if (!b) return null;
-    const isCompleted = gameStore.participant.completedBooths.includes(b.id) || gameStore.participant.completedBooths.includes(b.code);
+  const floorSessions = gameSessionStore.mySessions.filter((s: any) => s.floorNumber === selectedFloorNumber.value);
+
+  return localIds.map((bId) => {
+    const template = BOOTHS_DATA[bId] || BOOTHS_DATA['booth-1a'];
+    if (!template) return null;
+
+    const matchingSessions = floorSessions.filter((s: any) =>
+      s.locationCode === template.code ||
+      s.missionId === template.id ||
+      (template.code && s.locationCode?.startsWith(template.code))
+    );
+
+    const bestSession = matchingSessions.find((s: any) => s.status === 'COMPLETED')
+      || matchingSessions.find((s: any) => s.status === 'ACTIVE')
+      || matchingSessions.find((s: any) => s.status === 'READY')
+      || matchingSessions[matchingSessions.length - 1];
+
+    const isCompleted = gameStore.isBoothCompleted(bId) || bestSession?.status === 'COMPLETED';
+
     return {
-      id: b.id,
-      code: b.code,
-      name: b.name,
-      stampIcon: b.stampIcon,
-      tipe_game: b.tipe_game,
-      status: isCompleted ? 'COMPLETED' : 'PENDING',
-      floorNumber: b.floorNumber
+      id: bestSession?.missionId || bId,
+      originalBoothId: bId,
+      code: bestSession?.locationCode || template.code,
+      name: bestSession?.missionName || template.name,
+      stampIcon: template?.stampIcon || 'trophy',
+      tipe_game: bestSession?.gameType?.toLowerCase() || template.tipe_game,
+      status: isCompleted ? 'COMPLETED' : (bestSession?.status || 'PENDING'),
+      floorNumber: template.floorNumber
     };
   }).filter(Boolean) as any[];
 });
@@ -144,9 +140,9 @@ const getGameTypeLabel = (type: string) => {
             PETA EKSPLORASI KAMPUS
           </div>
           <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-sans text-[#c4956a] flex-wrap">
-            <span>{{ completedFloors }} Lantai Tuntas</span>
+            <span>{{ completedFloors }}/6 Lantai Tuntas</span>
             <span>•</span>
-            <span class="text-[#7ec850]">{{ gameStore.participant.completedBooths.length }}/9 Stempel</span>
+            <span class="text-[#7ec850]">{{ gameStore.getTotalStampsCount() }}/9 Stempel</span>
             <span>•</span>
             <span class="text-[#f0d060]">{{ gameStore.participant.totalXp }} XP</span>
           </div>

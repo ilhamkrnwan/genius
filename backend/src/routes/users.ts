@@ -13,6 +13,9 @@ import {
   gameSessions,
   questions,
   auditLogs,
+  missions,
+  locations,
+  floors,
 } from "../db/schema";
 import { eq, like, ilike, or, sql, desc, inArray, and } from "drizzle-orm";
 import { hashPassword } from "../lib/password";
@@ -116,6 +119,130 @@ export const userRoutes = new Elysia({
         characters: Object.values(RPG_CHARACTERS),
         titles: TITLE_CATALOG,
         avatars: PRESET_AVATARS,
+      },
+    };
+  })
+  // GET /api/users/:id — Get single user with full profile, ledger & completed sessions (public/self accessible)
+  .get("/:id", async ({ params, set }) => {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id);
+    const [user] = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        fullName: users.fullName,
+        role: users.role,
+        status: users.status,
+        gender: users.gender,
+        faculty: users.faculty,
+        prodi: users.prodi,
+        characterClass: users.characterClass,
+        characterTitle: users.characterTitle,
+        characterTier: users.characterTier,
+        unlockedTitles: users.unlockedTitles,
+        avatarUrl: users.avatarUrl,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        teamId: teams.id,
+        teamName: teams.name,
+        teamCode: teams.code,
+        buddyRole: teamMembers.buddyRole,
+      })
+      .from(users)
+      .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
+      .leftJoin(teams, eq(teamMembers.teamId, teams.id))
+      .where(isUuid ? eq(users.id, params.id) : eq(users.username, params.id))
+      .orderBy(desc(teamMembers.joinedAt))
+      .limit(1);
+
+    if (!user) {
+      set.status = 404;
+      return { success: false, error: { code: "NOT_FOUND", message: "User not found" } };
+    }
+
+    // Fetch score history if participant
+    const scoreHistory = await db
+      .select()
+      .from(scoreTransactions)
+      .where(eq(scoreTransactions.participantId, user.id))
+      .orderBy(desc(scoreTransactions.createdAt))
+      .limit(50);
+
+    const totalScore = scoreHistory.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+    // Fetch completed game missions for this user's team
+    const completedSessions = user.teamId
+      ? await db
+          .select({
+            sessionId: gameSessions.id,
+            missionId: gameSessions.missionId,
+            score: gameSessions.totalScore,
+            status: gameSessions.status,
+            completedAt: gameSessions.serverEndAt,
+            locationCode: locations.code,
+            floorNumber: floors.number,
+          })
+          .from(gameSessions)
+          .leftJoin(missions, eq(gameSessions.missionId, missions.id))
+          .leftJoin(locations, eq(gameSessions.locationId, locations.id))
+          .leftJoin(floors, eq(locations.floorId, floors.id))
+          .where(and(eq(gameSessions.teamId, user.teamId), eq(gameSessions.status, "COMPLETED")))
+      : [];
+
+    // Fetch bonus transactions awarded by this buddy (if role is BUDDY)
+    let bonusAwardsGiven: any[] = [];
+    let assignedSquadMembers: any[] = [];
+
+    if (user.role === "BUDDY") {
+      bonusAwardsGiven = await db
+        .select({
+          id: scoreTransactions.id,
+          amount: scoreTransactions.amount,
+          reason: scoreTransactions.reason,
+          stageId: scoreTransactions.stageId,
+          participantId: scoreTransactions.participantId,
+          recipientName: users.fullName,
+          recipientUsername: users.username,
+          createdAt: scoreTransactions.createdAt,
+        })
+        .from(scoreTransactions)
+        .leftJoin(users, eq(scoreTransactions.participantId, users.id))
+        .where(eq(scoreTransactions.createdBy, user.id))
+        .orderBy(desc(scoreTransactions.createdAt))
+        .limit(50);
+
+      // If assigned to a team, fetch the team's participants
+      if (user.teamId) {
+        assignedSquadMembers = await db
+          .select({
+            id: users.id,
+            username: users.username,
+            fullName: users.fullName,
+            role: users.role,
+            gender: users.gender,
+            characterClass: users.characterClass,
+            characterTitle: users.characterTitle,
+            characterTier: users.characterTier,
+            avatarUrl: users.avatarUrl,
+            joinedAt: teamMembers.joinedAt,
+          })
+          .from(teamMembers)
+          .innerJoin(users, eq(teamMembers.userId, users.id))
+          .where(eq(teamMembers.teamId, user.teamId));
+      }
+    }
+
+    const bonusSpent = bonusAwardsGiven.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+    return {
+      success: true,
+      data: {
+        ...user,
+        totalScore,
+        bonusSpent,
+        scoreHistory,
+        completedSessions,
+        bonusAwardsGiven,
+        assignedSquadMembers,
       },
     };
   })
@@ -274,110 +401,6 @@ export const userRoutes = new Elysia({
         pageSize,
         total: Number(count),
         totalPages: Math.ceil(Number(count) / pageSize),
-      },
-    };
-  })
-
-  // GET /api/users/:id — Get single user with full profile & ledger
-  .get("/:id", async ({ params, set }) => {
-    const [user] = await db
-      .select({
-        id: users.id,
-        username: users.username,
-        fullName: users.fullName,
-        role: users.role,
-        status: users.status,
-        gender: users.gender,
-        faculty: users.faculty,
-        prodi: users.prodi,
-        characterClass: users.characterClass,
-        characterTitle: users.characterTitle,
-        characterTier: users.characterTier,
-        unlockedTitles: users.unlockedTitles,
-        avatarUrl: users.avatarUrl,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-        teamId: teams.id,
-        teamName: teams.name,
-        teamCode: teams.code,
-        buddyRole: teamMembers.buddyRole,
-      })
-      .from(users)
-      .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
-      .leftJoin(teams, eq(teamMembers.teamId, teams.id))
-      .where(eq(users.id, params.id))
-      .orderBy(desc(teamMembers.joinedAt))
-      .limit(1);
-
-    if (!user) {
-      set.status = 404;
-      return { success: false, error: { code: "NOT_FOUND", message: "User not found" } };
-    }
-
-    // Fetch score history if participant
-    const scoreHistory = await db
-      .select()
-      .from(scoreTransactions)
-      .where(eq(scoreTransactions.participantId, params.id))
-      .orderBy(desc(scoreTransactions.createdAt))
-      .limit(50);
-
-    const totalScore = scoreHistory.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-
-    // Fetch bonus transactions awarded by this buddy (if role is BUDDY)
-    let bonusAwardsGiven: any[] = [];
-    let assignedSquadMembers: any[] = [];
-
-    if (user.role === "BUDDY") {
-      bonusAwardsGiven = await db
-        .select({
-          id: scoreTransactions.id,
-          amount: scoreTransactions.amount,
-          reason: scoreTransactions.reason,
-          stageId: scoreTransactions.stageId,
-          participantId: scoreTransactions.participantId,
-          recipientName: users.fullName,
-          recipientUsername: users.username,
-          createdAt: scoreTransactions.createdAt,
-        })
-        .from(scoreTransactions)
-        .leftJoin(users, eq(scoreTransactions.participantId, users.id))
-        .where(eq(scoreTransactions.createdBy, params.id))
-        .orderBy(desc(scoreTransactions.createdAt))
-        .limit(50);
-
-      // If assigned to a team, fetch the team's participants
-      if (user.teamId) {
-        assignedSquadMembers = await db
-          .select({
-            id: users.id,
-            username: users.username,
-            fullName: users.fullName,
-            role: users.role,
-            gender: users.gender,
-            characterClass: users.characterClass,
-            characterTitle: users.characterTitle,
-            characterTier: users.characterTier,
-            avatarUrl: users.avatarUrl,
-            joinedAt: teamMembers.joinedAt,
-          })
-          .from(teamMembers)
-          .innerJoin(users, eq(teamMembers.userId, users.id))
-          .where(eq(teamMembers.teamId, user.teamId));
-      }
-    }
-
-    const bonusSpent = bonusAwardsGiven.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-
-    return {
-      success: true,
-      data: {
-        ...user,
-        totalScore,
-        bonusSpent,
-        scoreHistory,
-        bonusAwardsGiven,
-        assignedSquadMembers,
       },
     };
   })

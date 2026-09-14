@@ -37,10 +37,20 @@ onMounted(async () => {
   bouncePop('.lb-user-banner', { delay: 0.1 });
   staggerFadeUp('.lb-item-card', 0.03, { delay: 0.2 });
 
+  // Sync latest score from server
+  gameStore.syncWithServer();
+
   try {
     const res = await api.getLeaderboard(50);
     if (res.success && res.data) {
       liveLeaderboard.value = res.data;
+      const myEntry = res.data.participantLeaderboard?.find(
+        (p: any) => p.username === gameStore.participant.nim || p.participantId === gameStore.participant.id
+      );
+      if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > gameStore.participant.totalXp) {
+        gameStore.participant.totalXp = myEntry.totalScore;
+        gameStore.saveToStorage();
+      }
       nextTick(() => {
         staggerFadeUp('.lb-item-card', 0.03);
       });
@@ -73,8 +83,8 @@ const individualList = computed<LeaderboardUser[]>(() => {
       prodi: item.characterClass || 'Mahasiswa Baru',
       avatar: item.gender === 'FEMALE' ? 'character_cewek' : 'character_cowok',
       totalXp: item.totalScore || 0,
-      stampsCount: Math.min(item.transactionCount || 0, 18),
-      completedFloors: Math.min(Math.floor((item.transactionCount || 0) / 2), 9),
+      stampsCount: Math.min(item.transactionCount || 0, 9),
+      completedFloors: Math.min(Math.floor((item.transactionCount || 0) / 1.5), 6),
       isCurrentUser: item.username === gameStore.participant.nim || item.participantId === gameStore.participant.id,
       groupId: item.teamId || 'group-01',
       groupName: item.teamName || 'Genius 01',
@@ -246,7 +256,7 @@ const currentUserRankInfo = computed(() => {
           <div class="w-[1px] h-6 bg-[#5a3a18]" />
           <div class="text-center">
             <div class="font-pixel text-xs text-[#7ec850] font-bold">
-              {{ gameStore.participant.completedBooths.length }}/18
+              {{ gameStore.participant.completedBooths.length }}/9
             </div>
             <div class="text-[9px] font-sans text-[#a08060]">Stempel</div>
           </div>
@@ -380,7 +390,7 @@ const currentUserRankInfo = computed(() => {
                 {{ user.totalXp }} XP
               </div>
               <div class="font-sans text-[10px] text-[#7ec850]">
-                {{ user.stampsCount }}/18 Stempel
+                {{ user.stampsCount }}/9 Stempel
               </div>
             </div>
           </div>

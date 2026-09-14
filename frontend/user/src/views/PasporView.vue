@@ -64,8 +64,8 @@ const currentLevel = computed(() => gameStore.getCurrentLevel());
 const currentLevelData = computed(
   () => LEVEL_CONFIG.find((l) => l.level === currentLevel.value) || LEVEL_CONFIG[0]
 );
-const totalStampsCollected = computed(() => gameStore.participant.completedBooths.length);
-const isAllCompleted = computed(() => completedFloors.value === 9 && totalStampsCollected.value === 18);
+const totalStampsCollected = computed(() => gameStore.getTotalStampsCount());
+const isAllCompleted = computed(() => completedFloors.value >= 6 && totalStampsCollected.value >= 9);
 
 const selectedAvatarObj = computed(
   () => AVATAR_OPTIONS.find((a) => a.id === gameStore.participant.avatar) || AVATAR_OPTIONS[0]
@@ -111,6 +111,7 @@ function isFloorFullyCompleted(floor: any) {
 
 
 onMounted(() => {
+  gameStore.syncWithServer();
   animatePageEnter('.paspor-header', { y: 20, duration: 0.45 });
   animatePageEnter('.paspor-id-card', { y: 25, duration: 0.5, delay: 0.1 });
   animatePageEnter('.paspor-stats-card', { y: 25, duration: 0.5, delay: 0.15 });
@@ -225,7 +226,7 @@ watch(showCertificate, (val) => {
                     Pangkat:
                   </span>
                   <PixelBadge
-                    :variant="completedFloors === 9 ? 'gold' : 'emerald'"
+                    :variant="completedFloors >= 6 ? 'gold' : 'emerald'"
                     size="sm"
                   >
                     {{ currentLevel }}
@@ -261,7 +262,7 @@ watch(showCertificate, (val) => {
               v-else
               class="bg-[#170f07] p-2.5 border border-[#5a3a18] rounded-lg text-xs font-sans text-[#a08060] text-center"
             >
-              Selesaikan {{ 9 - completedFloors }} lantai lagi untuk membuka sertifikat kelulusan.
+              Selesaikan {{ Math.max(0, 6 - completedFloors) }} lantai lagi untuk membuka sertifikat kelulusan.
             </div>
           </div>
         </div>
@@ -275,7 +276,7 @@ watch(showCertificate, (val) => {
                   Koleksi Stempel
                 </div>
                 <div class="font-pixel text-xs text-[#7ec850]">
-                  {{ totalStampsCollected }} / 18 Stempel
+                  {{ totalStampsCollected }} / 9 Stempel
                 </div>
               </div>
 
@@ -283,18 +284,18 @@ watch(showCertificate, (val) => {
               <div class="space-y-3">
                 <PixelProgress
                   :value="totalStampsCollected"
-                  :max="18"
+                  :max="9"
                   label="TOTAL STEMPEL"
-                  :sublabel="`${totalStampsCollected} dari 18`"
+                  :sublabel="`${totalStampsCollected} dari 9`"
                   color="emerald"
                   height="md"
                 />
 
                 <PixelProgress
                   :value="completedFloors"
-                  :max="9"
+                  :max="6"
                   label="LANTAI SELESAI"
-                  :sublabel="`${completedFloors} dari 9`"
+                  :sublabel="`${completedFloors} dari 6`"
                   color="gold"
                   height="md"
                 />
@@ -320,11 +321,11 @@ watch(showCertificate, (val) => {
         </div>
       </div>
 
-      <!-- 18-Stamp Grid (9 Floors x 2 Booths) -->
+      <!-- 9-Stamp Grid (6 Floors with 9 Official Pos) -->
       <div class="space-y-3 pt-2">
         <div class="flex items-center justify-between px-1">
           <h3 class="font-pixel text-xs sm:text-sm font-bold text-[#f0d060]">
-            DAFTAR 18 STEMPEL PETUALANG
+            DAFTAR 9 STEMPEL PETUALANG (6 LANTAI)
           </h3>
           <span class="text-[10px] font-pixel text-[#a08060]">
             KLIK UNTUK DETAIL
@@ -656,7 +657,7 @@ watch(showCertificate, (val) => {
           </div>
 
           <p class="font-sans text-xs sm:text-sm text-[#f0e6d2] max-w-lg mx-auto leading-relaxed">
-            Telah berhasil menyelesaikan seluruh rangkaian eksplorasi kampus dan mengumpulkan seluruh 18 stempel orientasi.
+            Telah berhasil menyelesaikan seluruh rangkaian eksplorasi 6 lantai kampus dan mengumpulkan seluruh 9 stempel orientasi resmi.
           </p>
 
           <div class="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
