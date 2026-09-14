@@ -1,17 +1,7 @@
 import { Elysia, t } from "elysia";
 import { db } from "../db";
-import {
-  gameSessions,
-  games,
-  missions,
-  teams,
-  locations,
-  users,
-  scoreTransactions,
-  teamMembers,
-  questions,
-} from "../db/schema";
-import { eq, and, sql, desc, inArray } from "drizzle-orm";
+import { gameSessions, games, users, locations, missions, answerSubmissions, teams, teamMembers, scoreTransactions, floors, questions } from "../db/schema";
+import { eq, and, sql, desc, inArray, asc } from "drizzle-orm";
 import { authMiddleware, requireUser, requireBuddyOrAdmin, validateBuddyTeamScope } from "../middleware/auth";
 import { GameEngine } from "../engine";
 import { canCancelOrExpireSession, canCompleteSession, canPauseSession, canStartSession, hasSessionTimedOut } from "../lib/session-lifecycle";
@@ -131,6 +121,58 @@ export const gameSessionRoutes = new Elysia({
       .limit(1);
 
     return { success: true, data: activeSession || null };
+  })
+
+  // GET /api/game-sessions/my-team — Get all sessions assigned to the current user's team
+  .get("/my-team", async ({ user, set }) => {
+    if (!user) {
+      set.status = 401;
+      return { success: false, error: { code: "UNAUTHORIZED", message: "Not authenticated" } };
+    }
+
+    let teamId = user.teamId;
+    if (!teamId) {
+      const [membership] = await db
+        .select({ teamId: teamMembers.teamId })
+        .from(teamMembers)
+        .where(eq(teamMembers.userId, user.userId))
+        .limit(1);
+      teamId = membership?.teamId;
+    }
+
+    if (!teamId) {
+      return { success: true, data: [], message: "User is not in any team" };
+    }
+
+    const sessions = await db
+      .select({
+        id: gameSessions.id,
+        gameId: gameSessions.gameId,
+        gameName: games.name,
+        gameType: games.type,
+        gameConfig: games.config,
+        missionId: gameSessions.missionId,
+        missionName: missions.name,
+        teamId: gameSessions.teamId,
+        locationId: gameSessions.locationId,
+        locationName: locations.name,
+        locationCode: locations.code,
+        floorNumber: floors.number,
+        status: gameSessions.status,
+        serverStartAt: gameSessions.serverStartAt,
+        timeLimit: gameSessions.timeLimit,
+        metadata: gameSessions.metadata,
+        createdAt: gameSessions.createdAt,
+      })
+      .from(gameSessions)
+      .innerJoin(games, eq(gameSessions.gameId, games.id))
+      .leftJoin(missions, eq(gameSessions.missionId, missions.id))
+      .leftJoin(locations, eq(gameSessions.locationId, locations.id))
+      .leftJoin(floors, eq(locations.floorId, floors.id))
+      .where(eq(gameSessions.teamId, teamId))
+      .orderBy(asc(gameSessions.createdAt));
+
+    return { success: true, data: sessions };
   })
 
   // GET /api/game-sessions/team/:teamId/active — Get currently active session by specific teamId
@@ -281,7 +323,8 @@ export const gameSessionRoutes = new Elysia({
       const payloadQuestions = Array.isArray(metadata.gamePayload?.questions) ? metadata.gamePayload.questions : [];
       const progressTotal = payloadQuestions.length;
       const participantId = user?.userId || "";
-      const submissionId = body.submissionId || participantId + ":" + body.questionId;
+      const b = body as any;
+      const submissionId = b.submissionId || participantId + ":" + b.questionId;
 
       const duplicate = answerSubmissions.find((item: any) => item.submissionId === submissionId);
       if (duplicate) {
@@ -307,9 +350,9 @@ export const gameSessionRoutes = new Elysia({
         return { success: false, error: { code: "INVALID_QUESTION", message: "Question is not available" } };
       }
 
-      const selected = String(body.answer).trim().toLowerCase();
+      const selected = String(b.answer).trim().toLowerCase();
       const options = Array.isArray(question.options) ? question.options : [];
-      const selectedOption = Number.isInteger(Number(body.answer)) ? options[Number(body.answer)] : undefined;
+      const selectedOption = Number.isInteger(Number(b.answer)) ? options[Number(b.answer)] : undefined;
       const isCorrect = selected === String(question.correctAnswer).trim().toLowerCase()
         || String(selectedOption ?? "").trim().toLowerCase() === String(question.correctAnswer).trim().toLowerCase();
       const scoreEarned = isCorrect ? (question.baseScore || 10) : 0;
@@ -317,9 +360,9 @@ export const gameSessionRoutes = new Elysia({
       answerSubmissions.push({
         submissionId,
         participantId,
-        questionId: body.questionId,
-        selected: body.answer,
-        elapsedMs: body.elapsedMs || 0,
+        questionId: b.questionId,
+        selected: b.answer,
+        elapsedMs: b.elapsedMs || 0,
         isCorrect,
         scoreEarned,
         submittedAt: new Date().toISOString(),
@@ -355,7 +398,7 @@ export const gameSessionRoutes = new Elysia({
   .post(
     "/create",
     async ({ body, user, set }) => {
-      const { missionId, teamId, allowReplay } = body;
+      const { missionId, teamId, allowReplay } = body as any;
 
       if (user?.role === "PARTICIPANT" && user.teamId !== teamId) {
         set.status = 403;
@@ -505,7 +548,7 @@ export const gameSessionRoutes = new Elysia({
           })
           .returning();
       } catch (error: any) {
-        if (error?.code === "23505" && error?.constraint_name === "game_sessions_active_team_mission_unique") {
+        if (error?.code === "23505" && (error?.constraint_name === "game_sessions_active_team_mission_unique" || error?.constraint === "game_sessions_active_team_mission_unique")) {
           set.status = 409;
           return {
             success: false,
@@ -662,6 +705,42 @@ export const gameSessionRoutes = new Elysia({
     return { success: true, data: updated };
   })
 
+  // POST /api/game-sessions/:id/next-question — Advance question index
+  .post("/:id/next-question", async ({ params, user, set }) => {
+    if (user?.role === "PARTICIPANT") {
+      set.status = 403;
+      return { success: false, error: { code: "FORBIDDEN", message: "Participant cannot advance questions" } };
+    }
+    const [session] = await db.select().from(gameSessions).where(eq(gameSessions.id, params.id)).limit(1);
+    if (!session) {
+      set.status = 404;
+      return { success: false, error: { code: "NOT_FOUND", message: "Session not found" } };
+    }
+    if (user?.role === "BUDDY" && !(await validateBuddyTeamScope(user, session.teamId))) {
+      set.status = 403;
+      return { success: false, error: { code: "FORBIDDEN", message: "Buddy is not assigned to this team" } };
+    }
+    if (session.status !== "ACTIVE") {
+      set.status = 409;
+      return { success: false, error: { code: "INVALID_STATUS", message: "Session must be ACTIVE to advance" } };
+    }
+
+    const metadata = (session.metadata && typeof session.metadata === "object" ? session.metadata : {}) as Record<string, any>;
+    const currentIdx = typeof metadata.currentQuestionIndex === 'number' ? metadata.currentQuestionIndex : 0;
+    
+    const [updated] = await db
+      .update(gameSessions)
+      .set({
+        metadata: { ...metadata, currentQuestionIndex: currentIdx + 1 },
+        updatedAt: new Date(),
+      })
+      .where(eq(gameSessions.id, params.id))
+      .returning();
+
+    broadcastGameSessionEvent(updated.id, "NEXT_QUESTION", updated);
+    return { success: true, data: updated };
+  })
+
   // POST /api/game-sessions/:id/complete — Server-Authoritative Evaluation, Point Ledger, and Achievement Trigger
   .post(
     "/:id/complete",
@@ -724,11 +803,12 @@ export const gameSessionRoutes = new Elysia({
 
       const metadata = (session.metadata && typeof session.metadata === "object" ? session.metadata : {}) as Record<string, any>;
       const storedAnswers = Array.isArray(metadata.answerSubmissions) ? metadata.answerSubmissions : [];
+      const b = body as any;
       const submittedAnswers = String(game.type) === "QUIZ" || String(game.type) === "TEAM_QUIZ"
         ? (user?.role === "PARTICIPANT"
           ? storedAnswers
-          : Array.isArray(body.submissions) && body.submissions.length > 0 ? body.submissions : storedAnswers)
-        : (Array.isArray(body.submissions) && body.submissions.length > 0 ? body.submissions : storedAnswers);
+          : Array.isArray(b.submissions) && b.submissions.length > 0 ? b.submissions : storedAnswers)
+        : (Array.isArray(b.submissions) && b.submissions.length > 0 ? b.submissions : storedAnswers);
       const participantIds = Array.from(new Set(storedAnswers.map((item: any) => item.participantId).filter(Boolean)));
       const engineSubmissions = String(game.type) === "QUIZ" || String(game.type) === "TEAM_QUIZ"
         ? participantIds.map((participantId) => ({
@@ -782,7 +862,7 @@ export const gameSessionRoutes = new Elysia({
         try {
           await db.insert(scoreTransactions).values(txInserts);
         } catch (error: any) {
-          if (error?.code === "23505" && error?.constraint_name === "score_tx_game_session_participant_unique") {
+          if (error?.code === "23505" && (error?.constraint_name === "score_tx_game_session_participant_unique" || error?.constraint === "score_tx_game_session_participant_unique")) {
             const [completedSession] = await db
               .select()
               .from(gameSessions)

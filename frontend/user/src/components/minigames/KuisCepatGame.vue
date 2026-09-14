@@ -41,8 +41,10 @@ const isQuestionSubmitted = ref<boolean>(false);
 const isTimeUp = ref<boolean>(false);
 const totalScore = ref<number>(0);
 const serverAnswerResult = ref<{ isCorrect?: boolean; scoreEarned?: number } | null>(null);
+const waitingForGameMaster = ref<boolean>(false);
 
 let timerInterval: any = null;
+let pollInterval: any = null;
 
 const currentQuestion = computed(() => questions.value[currentIndex.value]);
 
@@ -85,6 +87,10 @@ watch(
 
 onUnmounted(() => {
   clearTimer();
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
 });
 
 const handleSelectOption = (index: number) => {
@@ -110,6 +116,7 @@ const handleCheckAnswer = async () => {
       startTimer();
     } else {
       serverAnswerResult.value = answerResult;
+      waitingForGameMaster.value = true;
       if (answerResult.isCorrect) {
         if (gameStore.soundEnabled) soundEngine.playCorrect();
       } else if (gameStore.soundEnabled) {
@@ -128,6 +135,39 @@ const handleCheckAnswer = async () => {
     if (gameStore.soundEnabled) soundEngine.playWrong();
   }
 };
+
+const startPollingForGameMaster = () => {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(async () => {
+    const updatedSession = await gameSessionStore.refreshSession();
+    if (!updatedSession) return;
+    
+    if (updatedSession.status === 'COMPLETED') {
+      clearInterval(pollInterval);
+      pollInterval = null;
+      const evaluation = (updatedSession.result || {}) as any;
+      emit('complete', evaluation.score || 0, questions.value.length);
+    } else if (
+      updatedSession.metadata &&
+      typeof updatedSession.metadata.currentQuestionIndex === 'number' &&
+      updatedSession.metadata.currentQuestionIndex > currentIndex.value
+    ) {
+      // Game Master advanced the question
+      currentIndex.value = updatedSession.metadata.currentQuestionIndex;
+      selectedOptionIndex.value = null;
+      serverAnswerResult.value = null;
+      isQuestionSubmitted.value = false;
+      isTimeUp.value = false;
+      waitingForGameMaster.value = false;
+      if (gameStore.soundEnabled) soundEngine.playClick();
+    }
+  }, 3000);
+};
+
+// Start continuous polling if we are in server mode
+if (props.serverSessionId) {
+  startPollingForGameMaster();
+}
 
 const handleNextQuestion = async () => {
   if (currentIndex.value < questions.value.length - 1) {
@@ -201,70 +241,76 @@ const timerColorClass = computed(() => {
     </div>
 
     <!-- Countdown Timer Line Bar -->
-    <div class="w-full h-1.5 bg-[#120b06] border border-[#5a3a18] rounded-full overflow-hidden shrink-0">
+    <div class="w-full h-2 bg-[#120b06] border-2 border-[#5a3a18] rounded-full overflow-hidden shrink-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]">
       <div
-        :class="['h-full transition-all duration-1000', timerColorClass]"
+        :class="['h-full transition-all duration-1000 shadow-[0_0_8px_currentColor]', timerColorClass]"
         :style="{ width: `${timerPercentage}%` }"
       />
     </div>
 
-    <!-- Question Card -->
-    <div class="sdv-card-elevated p-2.5 sm:p-3 border border-[#5a3a18] shrink-0">
-      <span class="font-pixel text-[8px] text-[#7ec850] uppercase tracking-wider block mb-1">
-        SOAL #{{ currentIndex + 1 }}:
-      </span>
-      <h4 class="font-sans text-xs sm:text-sm font-bold text-white leading-relaxed text-justify break-words">
-        {{ currentQuestion.text }}
-      </h4>
-    </div>
+    <!-- Question & Options with Transition -->
+    <Transition name="slide-fade" mode="out-in">
+      <div :key="currentQuestion.id" class="flex flex-col gap-1.5 sm:gap-2 flex-1">
+        
+        <!-- Question Card -->
+        <div class="rpg-card-glass p-3 sm:p-4 rounded-xl shrink-0">
+          <span class="font-pixel text-[8px] text-[#7ec850] uppercase tracking-wider block mb-1.5 drop-shadow-md">
+            SOAL #{{ currentIndex + 1 }}:
+          </span>
+          <h4 class="font-sans text-xs sm:text-sm font-bold text-white leading-relaxed text-justify break-words">
+            {{ currentQuestion.text }}
+          </h4>
+        </div>
 
-    <!-- Multiple Choice Options -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 flex-1 overflow-y-auto py-0.5">
-      <button
-        v-for="(option, optIdx) in currentQuestion.options"
-        :key="optIdx"
-        type="button"
-        @click="handleSelectOption(optIdx)"
-        :disabled="isQuestionSubmitted || isTimeUp"
-        :class="[
-          'w-full text-left p-2 sm:p-2.5 rounded-lg border transition-all flex items-center gap-2 cursor-pointer',
-            (isQuestionSubmitted || isTimeUp)
-            ? props.serverSessionId
-              ? selectedOptionIndex === optIdx
-                ? isCurrentCorrect
-                  ? 'bg-[#1f3a2b] border-[#7ec850] text-[#e0f0d0] shadow-md font-medium'
-                  : 'bg-[#3a1814] border-[#d44040] text-[#ffd0d0] shadow-md'
-                : 'bg-[#170f07] border-[#5a3a18] text-[#f0e0c0]'
-              : optIdx === currentQuestion.correctAnswerIndex
-                ? 'bg-[#1f3a2b] border-[#7ec850] text-[#e0f0d0] shadow-md font-medium'
-                : selectedOptionIndex === optIdx && !isCurrentCorrect
-                ? 'bg-[#3a1814] border-[#d44040] text-[#ffd0d0] shadow-md'
-                : 'bg-[#170f07] border-[#5a3a18] text-[#f0e0c0]'
-            : selectedOptionIndex === optIdx
-            ? 'bg-[#2d1b0e] border-[#f0d060] text-white shadow-md font-medium'
-            : 'bg-[#170f07] border-[#5a3a18] text-[#f0e0c0] hover:border-[#8b6f4e]'
-        ]"
-      >
-        <span class="font-pixel text-[9px] w-5 h-5 flex items-center justify-center rounded bg-[#281c12] text-[#f0d060] border border-[#5a3a18] shrink-0 font-bold">
-          {{ String.fromCharCode(65 + optIdx) }}
-        </span>
-        <span class="font-sans text-[11px] sm:text-xs leading-tight flex-1">
-          {{ option }}
-        </span>
-        <PhCheckCircle
-          v-if="(isQuestionSubmitted || isTimeUp) && ((props.serverSessionId && selectedOptionIndex === optIdx && isCurrentCorrect) || (!props.serverSessionId && optIdx === currentQuestion.correctAnswerIndex))"
-          :size="16"
-          weight="fill"
-          class="text-[#7ec850] shrink-0"
-        />
-        <PhXCircle
-          v-if="isQuestionSubmitted && selectedOptionIndex === optIdx && !isCurrentCorrect"
-          :size="16"
-          weight="fill"
-          class="text-[#ff8080] shrink-0"
-        />
-      </button>
-    </div>
+        <!-- Multiple Choice Options -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 flex-1 overflow-y-auto py-1 px-0.5">
+          <button
+            v-for="(option, optIdx) in currentQuestion.options"
+            :key="optIdx"
+            type="button"
+            @click="handleSelectOption(optIdx)"
+            :disabled="isQuestionSubmitted || isTimeUp"
+            :class="[
+              'btn-pushable w-full text-left p-2.5 sm:p-3 rounded-xl border-2 transition-colors flex items-center gap-2 cursor-pointer focus:outline-none',
+                (isQuestionSubmitted || isTimeUp)
+                ? props.serverSessionId
+                  ? selectedOptionIndex === optIdx
+                    ? isCurrentCorrect
+                      ? 'bg-gradient-to-b from-[#1f3a2b] to-[#142318] border-[#7ec850] text-[#f0ffd0] shadow-[0_4px_12px_rgba(126,200,80,0.3)] font-medium animate-pop'
+                      : 'bg-gradient-to-b from-[#3a1814] to-[#2d1210] border-[#d44040] text-[#ffd0d0] shadow-[0_4px_12px_rgba(212,64,64,0.3)] animate-shake'
+                    : 'bg-[#170f07] border-[#5a3a18] text-[#a08060] opacity-70'
+                  : optIdx === currentQuestion.correctAnswerIndex
+                    ? 'bg-gradient-to-b from-[#1f3a2b] to-[#142318] border-[#7ec850] text-[#f0ffd0] shadow-[0_4px_12px_rgba(126,200,80,0.3)] font-medium animate-pop'
+                    : selectedOptionIndex === optIdx && !isCurrentCorrect
+                    ? 'bg-gradient-to-b from-[#3a1814] to-[#2d1210] border-[#d44040] text-[#ffd0d0] shadow-[0_4px_12px_rgba(212,64,64,0.3)] animate-shake'
+                    : 'bg-[#170f07] border-[#5a3a18] text-[#a08060] opacity-70'
+                : selectedOptionIndex === optIdx
+                ? 'bg-gradient-to-b from-[#4d3b2e] to-[#2d1b0e] border-[#f0d060] text-white shadow-[0_4px_12px_rgba(0,0,0,0.5)] font-medium'
+                : 'bg-gradient-to-b from-[#281c12] to-[#170f07] border-[#5a3a18] text-[#f0e0c0] shadow-[0_4px_8px_rgba(0,0,0,0.4)] hover:border-[#8b6f4e]'
+            ]"
+          >
+            <span class="font-pixel text-[9px] w-6 h-6 flex items-center justify-center rounded-md bg-[#120b06] text-[#f0d060] border border-[#5a3a18] shadow-inner shrink-0 font-bold">
+              {{ String.fromCharCode(65 + optIdx) }}
+            </span>
+            <span class="font-sans text-[12px] sm:text-[13px] leading-snug flex-1 drop-shadow-sm">
+              {{ option }}
+            </span>
+            <PhCheckCircle
+              v-if="(isQuestionSubmitted || isTimeUp) && ((props.serverSessionId && selectedOptionIndex === optIdx && isCurrentCorrect) || (!props.serverSessionId && optIdx === currentQuestion.correctAnswerIndex))"
+              :size="20"
+              weight="fill"
+              class="text-[#7ec850] shrink-0 drop-shadow-[0_0_4px_rgba(126,200,80,0.6)]"
+            />
+            <PhXCircle
+              v-if="isQuestionSubmitted && selectedOptionIndex === optIdx && !isCurrentCorrect"
+              :size="20"
+              weight="fill"
+              class="text-[#ff8080] shrink-0 drop-shadow-[0_0_4px_rgba(255,128,128,0.6)]"
+            />
+          </button>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Feedback Alert Card -->
     <div
@@ -298,7 +344,12 @@ const timerColorClass = computed(() => {
     <!-- Footer Actions -->
     <div class="border-t border-[#5a3a18] pt-1.5 flex items-center justify-between gap-2 shrink-0">
       <div class="text-[10px] font-sans text-[#a08060]">
-        {{ selectedOptionIndex !== null ? 'Siap dikirim' : 'Pilih 1 jawaban' }}
+        <template v-if="waitingForGameMaster">
+          <span class="animate-pulse">Menunggu Game Master...</span>
+        </template>
+        <template v-else>
+          {{ selectedOptionIndex !== null ? 'Siap dikirim' : 'Pilih 1 jawaban' }}
+        </template>
       </div>
 
       <div class="shrink-0">
@@ -313,7 +364,7 @@ const timerColorClass = computed(() => {
           <span>KIRIM JAWABAN</span>
         </button>
         <button
-          v-else
+          v-else-if="!props.serverSessionId"
           type="button"
           @click="handleNextQuestion"
           class="rpg-btn-primary py-2 px-4 text-[10px] sm:text-xs font-pixel font-bold flex items-center justify-center gap-1.5"

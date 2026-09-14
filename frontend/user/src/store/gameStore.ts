@@ -70,14 +70,17 @@ function loadInitialState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      const participant = { ...INITIAL_PARTICIPANT, ...(parsed.participant || {}) } as Participant;
-      const isLoggedIn = Boolean(parsed.isLoggedIn ?? (participant.isRegistered && participant.name));
-      return {
-        participant,
-        attendance: { ...DEFAULT_ATTENDANCE, ...(parsed.attendance || {}) } as AttendanceStoreMap,
-        visitedOrmawa: (parsed.visitedOrmawa || []) as string[],
-        isLoggedIn,
-      };
+        const loadedParticipant = { ...INITIAL_PARTICIPANT, ...(parsed.participant || {}) } as Participant;
+        if (!loadedParticipant.unlockedFloors) loadedParticipant.unlockedFloors = [];
+        if (!loadedParticipant.unlockedFloors.includes(1)) loadedParticipant.unlockedFloors.push(1);
+        
+        const isLoggedIn = Boolean(parsed.isLoggedIn ?? (loadedParticipant.isRegistered && loadedParticipant.name));
+        return {
+          participant: loadedParticipant,
+          attendance: { ...DEFAULT_ATTENDANCE, ...(parsed.attendance || {}) } as AttendanceStoreMap,
+          visitedOrmawa: (parsed.visitedOrmawa || []) as string[],
+          isLoggedIn,
+        };
     }
   } catch (err) {
     console.warn('[Store] Failed to load local storage state:', err);
@@ -115,8 +118,8 @@ export const useGameStore = defineStore('game', {
         state.participant.completedBooths.includes(id)
       ).length;
 
-      if (completedCount === 2) return 'completed';
-      if (completedCount === 1) return 'partial';
+      if (completedCount === floor.boothIds.length && completedCount > 0) return 'completed';
+      if (completedCount > 0) return 'partial';
       return 'not_started';
     },
 

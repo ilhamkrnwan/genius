@@ -261,6 +261,10 @@ export const api = {
     return this.request<GameSession | null>('/game-sessions/active');
   },
 
+  async getMyTeamSessions() {
+    return this.request<GameSession[]>('/game-sessions/my-team');
+  },
+
   async startGameSession(sessionId: string) {
     return this.request<GameSession>('/game-sessions/' + encodeURIComponent(sessionId) + '/start', {
       method: 'POST',

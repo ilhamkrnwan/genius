@@ -91,13 +91,24 @@ export class GameEngine {
       }
 
       case "MEMORY_MATCH": {
+        // If the game config already has predefined pairs (like in mockData), use them!
+        if (config.pairs && Array.isArray(config.pairs) && config.pairs.length > 0) {
+          return { pairs: config.pairs };
+        }
+        
+        // Otherwise generate fallback pairs using symbols
         const pairCount = config.pairCount || 6;
         const symbols = ["🛡️", "🔮", "🏹", "🧪", "🗡️", "📜", "⚡", "⚙️"];
         const chosen = symbols.slice(0, pairCount);
-        const cards = [...chosen, ...chosen].sort(() => Math.random() - 0.5);
+        const pairs = chosen.map((symbol, idx) => ({
+          id: `mm-auto-${idx}`,
+          labelA: symbol,
+          labelB: symbol,
+          tag: 'Symbol',
+        }));
+        
         return {
-          pairCount,
-          cards,
+          pairs,
         };
       }
 
