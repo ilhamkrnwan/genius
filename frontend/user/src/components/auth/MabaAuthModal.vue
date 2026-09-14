@@ -89,16 +89,20 @@ const handleLoginSubmit = async (e: Event) => {
 
   const user = response.data.user as any;
   gameStore.loginMaba({
+    id: user.id,
     name: user.fullName || loginNim.value.trim(),
-    nim: loginNim.value.trim(),
+    nim: user.username || loginNim.value.trim(),
     isRegistered: true,
     teamId: user.teamId || undefined,
     groupId: user.teamId || undefined,
     avatar: user.avatarUrl || gameStore.participant.avatar,
+    totalXp: Number(user.totalScore || user.totalXp || 0),
   });
+  void gameStore.syncWithServer();
 
-  if (props.reauthenticate) {
+  if (props.reauthenticate || (user.fullName && (user.faculty || user.prodi))) {
     emit('complete');
+    emit('close');
     return;
   }
 

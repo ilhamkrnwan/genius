@@ -3,8 +3,10 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
 import MabaAuthModal from '@/components/auth/MabaAuthModal.vue';
 import MobileBottomNav from '@/components/layout/MobileBottomNav.vue';
+import { useGameStore } from '@/store/gameStore';
 
 const route = useRoute();
+const gameStore = useGameStore();
 
 const needsLogin = ref(false);
 const viewVersion = ref(0);
@@ -13,7 +15,10 @@ function resumePage() {
   needsLogin.value = false;
   viewVersion.value += 1;
 }
-onMounted(() => window.addEventListener('genius:auth-required', requestLogin));
+onMounted(() => {
+  window.addEventListener('genius:auth-required', requestLogin);
+  gameStore.syncWithServer();
+});
 onUnmounted(() => window.removeEventListener('genius:auth-required', requestLogin));
 
 // Hide bottom nav on full-screen game views or intros to preserve game immersion

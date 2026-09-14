@@ -20,8 +20,9 @@ const routes: Array<RouteRecordRaw> = [
     component: HomeView,
   },
   {
-    path: '/dashboard',
-    name: 'dashboard',
+    path: '/play',
+    alias: ['/dashboard', '/main'],
+    name: 'play',
     component: DashboardView,
   },
   {
@@ -33,12 +34,6 @@ const routes: Array<RouteRecordRaw> = [
     path: '/floor/2',
     name: 'floor-2',
     component: () => import('@/views/Floor2View.vue'),
-  },
-
-  {
-    path: '/play',
-    name: 'play',
-    component: PlayView,
   },
   {
     path: '/play/floor/:floorId/intro',
@@ -62,6 +57,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/paspor',
+    alias: ['/passport', '/passpor', '/stamps', '/stempel'],
     name: 'paspor',
     component: PasporView,
   },

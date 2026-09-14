@@ -147,7 +147,7 @@
                 </span>
               </div>
               <span class="text-[9.5px] text-[#c4956a] font-mono">
-                Kode: {{ team.code }} &bull; {{ team.completedStamps }}/18 Pos
+                Kode: {{ team.code }} &bull; {{ team.completedStamps }}/9 Pos
               </span>
             </div>
           </div>
@@ -345,7 +345,7 @@ async function fetchLeaderboard() {
         name: t.teamName || "Genius Tim",
         code: t.teamCode || "-",
         score: Number(t.totalScore || 0),
-        completedStamps: Math.min(18, Math.floor(Number(t.totalScore || 0) / 100)),
+        completedStamps: Math.min(9, Math.floor(Number(t.totalScore || 0) / 100)),
         buddyName: t.buddyName || "Buddy",
       }));
 
@@ -359,7 +359,7 @@ async function fetchLeaderboard() {
         teamName: p.teamName || "Genius",
         teamId: p.teamId,
         totalXp: Number(p.totalScore || 0),
-        stamps: Math.min(18, Math.floor(Number(p.totalScore || 0) / 50)),
+        stamps: Math.min(9, Math.floor(Number(p.totalScore || 0) / 100)),
         avatarUrl: p.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png",
       }));
     }

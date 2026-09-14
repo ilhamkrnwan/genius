@@ -121,7 +121,7 @@ const handleNext = () => {
           Skor: {{ props.stampRecord?.score ?? 2 }}/{{ props.stampRecord?.totalQuestions ?? 2 }}
         </PixelBadge>
         <PixelBadge variant="gold" size="sm">
-          +250 XP
+          +{{ props.stampRecord?.score ?? 100 }} XP
         </PixelBadge>
       </div>
 

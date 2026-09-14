@@ -302,6 +302,21 @@ export const api = {
     return this.request(`/leaderboard?limit=${limit}`);
   },
 
+  // User Profile & Score Sync
+  async getUserProfile(idOrNim: string) {
+    return this.request<{
+      id: string;
+      username: string;
+      fullName: string;
+      role: string;
+      totalScore: number;
+      teamId?: string;
+      teamName?: string;
+      teamCode?: string;
+      scoreHistory?: any[];
+    }>(`/users/${encodeURIComponent(idOrNim)}`);
+  },
+
   // Submit Game Score
   async submitScore(payload: {
     participantId: string;
@@ -310,7 +325,11 @@ export const api = {
     sourceType: string;
     reason?: string;
   }) {
-    return this.request('/scores', {
+    return this.request<{
+      transactionId?: string;
+      totalXp?: number;
+      amount?: number;
+    }>('/scores/award', {
       method: 'POST',
       body: JSON.stringify(payload),
     });

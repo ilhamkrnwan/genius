@@ -281,33 +281,30 @@ export const scoreRoutes = new Elysia({
     }
   )
 
-  .use(requireUser)
-
   // POST /api/scores — Submit game or activity score
   .post(
     "/",
     async ({ body, user, set }: any) => {
-      if (!user) {
-        set.status = 401;
-        return { success: false, error: { code: "UNAUTHORIZED", message: "Not authenticated" } };
+      const participantId = body.participantId || user?.userId;
+      if (!participantId) {
+        set.status = 400;
+        return { success: false, error: { code: "MISSING_PARTICIPANT", message: "ID Mahasiswa atau NIM wajib disertakan" } };
       }
-
-      const participantId = body.participantId || user.userId;
 
       // Ensure participant exists (Bisa berupa UUID atau NIM/username)
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(participantId);
-      let participant: { id: string } | undefined = undefined;
+      let participant: { id: string; fullName: string; username: string } | undefined = undefined;
 
       if (isUuid) {
         const [found] = await db
-          .select({ id: users.id })
+          .select({ id: users.id, fullName: users.fullName, username: users.username })
           .from(users)
           .where(eq(users.id, participantId))
           .limit(1);
         participant = found;
       } else {
         const [found] = await db
-          .select({ id: users.id })
+          .select({ id: users.id, fullName: users.fullName, username: users.username })
           .from(users)
           .where(eq(users.username, participantId))
           .limit(1);
@@ -316,7 +313,7 @@ export const scoreRoutes = new Elysia({
 
       if (!participant) {
         set.status = 404;
-        return { success: false, error: { code: "PARTICIPANT_NOT_FOUND", message: "Peserta tidak ditemukan" } };
+        return { success: false, error: { code: "PARTICIPANT_NOT_FOUND", message: `Peserta dengan ID/NIM "${participantId}" tidak ditemukan` } };
       }
 
       const verifiedUserId = participant.id;
@@ -347,16 +344,35 @@ export const scoreRoutes = new Elysia({
           reason: body.reason ? body.reason.trim() : "Penyelesaian Game Pos",
           stageId: body.stageId || null,
           gameSessionId: body.gameSessionId || null,
-          createdBy: user.userId,
+          createdBy: user?.userId || verifiedUserId,
         })
         .returning();
 
+      // Hitung total XP terkini
+      const [totalRow] = await db
+        .select({ total: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)` })
+        .from(scoreTransactions)
+        .where(eq(scoreTransactions.participantId, verifiedUserId));
+
+      const currentTotalXp = Number(totalRow?.total || 0);
+
       broadcastLeaderboardUpdate({ type: "SCORE_SUBMITTED", teamId: targetTeamId, participantId: verifiedUserId, amount: tx.amount });
+
+      broadcastAdminEvent("XP_AWARDED", {
+        participantId: verifiedUserId,
+        participantName: participant.fullName,
+        amount: tx.amount,
+        reason: tx.reason,
+        totalXp: currentTotalXp,
+      });
 
       return {
         success: true,
         message: `Skor sebesar +${tx.amount} XP berhasil dicatat!`,
-        data: tx,
+        data: {
+          ...tx,
+          totalXp: currentTotalXp,
+        },
       };
     },
     {
@@ -375,6 +391,8 @@ export const scoreRoutes = new Elysia({
       }),
     }
   )
+
+  .use(requireUser)
 
   // GET /api/scores/transactions — Audit trail of score ledger
   .get("/transactions", async ({ query }) => {

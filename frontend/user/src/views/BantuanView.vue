@@ -35,7 +35,7 @@ const gameStore = useGameStore();
           CARA BERMAIN GENIUS
         </h1>
         <p class="font-sans text-[11px] sm:text-xs text-[#c4956a] leading-snug break-words">
-          Jelajahi seluruh gedung kampus UNU dan kumpulkan 18 stempel digital.
+          Jelajahi gedung kampus UNU dan kumpulkan 9 stempel digital.
         </p>
       </div>
 
@@ -58,7 +58,7 @@ const gameStore = useGameStore();
             2
           </div>
           <h3 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-tight break-words">
-            2 Spot Game
+            Pos Misi
           </h3>
           <p class="font-sans text-[9px] sm:text-[10px] text-[#a08060] leading-tight break-words">
             Mainkan TTS, Kuis, Memory.
@@ -70,7 +70,7 @@ const gameStore = useGameStore();
             3
           </div>
           <h3 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-tight break-words">
-            18 Stempel
+            9 Stempel
           </h3>
           <p class="font-sans text-[9px] sm:text-[10px] text-[#a08060] leading-tight break-words">
             Klaim paspor & sertifikat.

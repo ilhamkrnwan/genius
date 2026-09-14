@@ -33,7 +33,6 @@ const navLinks = [
   { href: '/presensi', label: 'Presensi', icon: PhCalendarCheck },
   { href: '/play', label: 'Main', icon: PhGameController },
   { href: '/ormawa', label: 'Ormawa', icon: PhStorefront },
-  { href: '/dashboard', label: 'Dashboard', icon: PhBuildings },
   { href: '/leaderboard', label: 'Peringkat', icon: PhTrophy },
   { href: '/paspor', label: 'Paspor', icon: PhIdentificationBadge },
 ];
@@ -45,7 +44,7 @@ const handleLinkClick = () => {
 
 const isLinkActive = (href: string) => {
   if (href === '/') return route.path === '/';
-  if (href === '/play') return route.path.startsWith('/play') || route.path.startsWith('/booth') || route.path.startsWith('/floor');
+  if (href === '/play') return route.path.startsWith('/play') || route.path.startsWith('/dashboard') || route.path.startsWith('/booth') || route.path.startsWith('/floor');
   return route.path.startsWith(href);
 };
 </script>
@@ -101,13 +100,13 @@ const isLinkActive = (href: string) => {
       <div class="flex items-center gap-1.5 sm:gap-2">
         <!-- Quick Stats (Desktop) -->
         <div class="hidden md:flex items-center gap-2 bg-[#2d1b0e] px-2.5 py-1 border border-[#5a3a18] rounded-md text-[10px] xl:text-[11px] font-pixel shadow-inner">
-          <span class="text-[#f0d060]">{{ completedFloors }}/9 Lt</span>
+          <span class="text-[#f0d060]">{{ completedFloors }}/6 Lt</span>
           <span class="text-[#5a3a18]">•</span>
-          <span class="text-[#7ec850]">{{ totalStamps }}/18 Stempel</span>
+          <span class="text-[#7ec850]">{{ totalStamps }}/9 Stempel</span>
         </div>
 
         <div class="flex">
-          <PixelBadge :variant="completedFloors === 9 ? 'gold' : 'emerald'" size="sm">
+          <PixelBadge :variant="completedFloors >= 6 ? 'gold' : 'emerald'" size="sm">
             {{ currentLevel }}
           </PixelBadge>
         </div>
@@ -204,7 +203,7 @@ const isLinkActive = (href: string) => {
 
         <div class="pt-3 border-t border-[#3d2b1e] flex items-center justify-between text-[11px] font-pixel text-[#a08060]">
           <span>Level: <strong class="text-[#f0d060]">{{ currentLevel }}</strong></span>
-          <span class="text-[#7ec850]">{{ completedFloors }}/9 Lt • {{ totalStamps }}/18 Stempel</span>
+          <span class="text-[#7ec850]">{{ completedFloors }}/6 Lt • {{ totalStamps }}/9 Stempel</span>
         </div>
       </div>
     </div>
