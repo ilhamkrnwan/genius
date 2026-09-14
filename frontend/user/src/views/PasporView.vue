@@ -157,13 +157,17 @@ watch(showCertificate, (val) => {
 <template>
   <div
     class="relative w-full min-h-[100dvh] overflow-y-auto font-pixel text-[#fbf6e9] select-none flex flex-col justify-between py-3 sm:py-5 px-3 sm:px-6"
-    style="
-      background-image: url('/games/background.png');
-      background-size: cover;
-      background-position: center bottom;
-      image-rendering: pixelated;
-    "
   >
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
     <!-- Dark Vignette Overlay -->
     <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
     <CrtScanlines />
