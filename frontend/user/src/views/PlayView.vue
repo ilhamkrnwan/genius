@@ -178,15 +178,19 @@ function openEditProfile() {
 <template>
   <div
     class="relative w-full min-h-[100dvh] h-[100dvh] max-h-[100dvh] overflow-hidden select-none font-pixel flex flex-col justify-between"
-    style="
-      background-image: url('/games/background.png');
-      background-size: cover;
-      background-position: center bottom;
-      image-rendering: pixelated;
-    "
   >
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
     <!-- Dark Vignette / Atmospheric Gradient Overlay -->
-    <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40 pointer-events-none z-0" />
+    <div class="fixed inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40 pointer-events-none z-0" />
 
     <!-- ================================================================= -->
     <!-- TOP HEADER: Clean Institutional Badge (Landing Page Style)        -->
