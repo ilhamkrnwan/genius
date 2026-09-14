@@ -151,6 +151,11 @@ onMounted(async () => {
       onEnterBack: () => {
         activeStep.value = idx;
       },
+      onToggle: (self) => {
+        if (self.isActive) {
+          activeStep.value = idx;
+        }
+      },
     });
     scrollTriggers.push(st);
 
@@ -183,7 +188,7 @@ onUnmounted(() => {
   <section
     id="rewards-section"
     ref="rewardsRootRef"
-    class="relative py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#24160a] text-[#f0e0c0] overflow-hidden"
+    class="relative py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#24160a] text-[#f0e0c0]"
   >
     <!-- Subtle Ambient Glow -->
     <div class="absolute inset-0 pointer-events-none overflow-hidden">
@@ -224,7 +229,7 @@ onUnmounted(() => {
         <!-- ================================================================= -->
         <!-- LEFT COLUMN: STICKY MIMBAR PODIUM (OPEN PRESENTATION)             -->
         <!-- ================================================================= -->
-        <div class="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-24 z-20">
+        <div class="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-24 self-start z-20">
           <div ref="leftPodiumRef" class="flex flex-col items-center select-none">
             <!-- Header Status Mimbar (No Card Border) -->
             <div class="w-full flex items-center justify-between pb-3 mb-2 border-b border-[#5a3a18]/60">

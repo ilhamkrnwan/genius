@@ -1,146 +1,430 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
-  PhInfo,
-  PhSparkle,
-  PhCards,
-  PhLightning,
+  PhArrowLeft,
+  PhBookOpen,
+  PhSpeakerHigh,
+  PhSpeakerSimpleSlash,
+  PhMagnifyingGlass,
+  PhX,
+  PhFootprints,
+  PhSealCheck,
+  PhStorefront,
+  PhCalendarCheck,
   PhShieldCheck,
-  PhMapPin,
-  PhGameController,
-  PhPlay,
+  PhWarningCircle,
+  PhWifiHigh,
+  PhLightbulbFilament,
+  PhMapTrifold,
   PhIdentificationBadge,
 } from '@phosphor-icons/vue';
-import Navbar from '@/components/layout/Navbar.vue';
-import CrtScanlines from '@/components/layout/CrtScanlines.vue';
 import { soundEngine } from '@/lib/sound';
 import { useGameStore } from '@/store/gameStore';
 
 const gameStore = useGameStore();
+const isMuted = ref(!gameStore.soundEnabled);
+
+function safeSound(fn: () => void) {
+  try {
+    if (gameStore.soundEnabled) fn();
+  } catch (_) {}
+}
+
+function toggleSound() {
+  gameStore.soundEnabled = !gameStore.soundEnabled;
+  isMuted.value = !gameStore.soundEnabled;
+  try {
+    soundEngine.setMuted(isMuted.value);
+    if (!isMuted.value) soundEngine.playClick?.();
+  } catch (_) {}
+}
+
+// ─── Segmented Filter & Search ────────────────────────────────────────────────
+type CategoryId = 'ALL' | 'GAME' | 'PASPOR' | 'ORMAWA' | 'FAQ';
+const activeCategoryTab = ref<CategoryId>('ALL');
+const searchQuery = ref('');
+
+const CATEGORY_TABS = [
+  { id: 'ALL' as const, label: 'SEMUA' },
+  { id: 'GAME' as const, label: 'ALUR GAME' },
+  { id: 'PASPOR' as const, label: 'STEMPEL' },
+  { id: 'ORMAWA' as const, label: 'ORMAWA' },
+  { id: 'FAQ' as const, label: 'KENDALA' },
+];
+
+interface GuideItem {
+  id: string;
+  category: 'GAME' | 'PASPOR' | 'ORMAWA' | 'FAQ';
+  categoryLabel: string;
+  icon: any;
+  iconColor: string;
+  title: string;
+  points: string[];
+  tip?: string;
+}
+
+const GUIDE_ITEMS: GuideItem[] = [
+  {
+    id: 'alur-petualangan',
+    category: 'GAME',
+    categoryLabel: 'Alur Petualangan',
+    icon: PhFootprints,
+    iconColor: '#38bdf8',
+    title: 'Penjelajahan 6 Lantai Kampus',
+    points: [
+      'Mahasiswa baru menjelajahi Lantai 1 hingga Lantai 6 Kampus Terpadu UNU Yogyakarta didampingi oleh Kakak Pendamping (Buddy) kelompok masing-masing.',
+      'Setiap lantai mengangkat pilar keilmuan khusus dan diperkenalkan melalui prolog karakter pemandu sebelum memulai misi.',
+      'Gunakan menu Peta Kampus untuk mengetahui tata letak ruangan, jalur tangga darurat, lift, dan toilet di setiap lantai.',
+    ],
+    tip: 'Utamakan menggunakan tangga manual jika berpindah 1–2 lantai agar lift tidak mengalami antrean panjang.',
+  },
+  {
+    id: 'aturan-stempel',
+    category: 'PASPOR',
+    categoryLabel: 'Stempel & Paspor',
+    icon: PhSealCheck,
+    iconColor: '#facc15',
+    title: 'Syarat & Perolehan Stempel Emas',
+    points: [
+      'Terdapat 9 pos misi tantangan interaktif di Lantai 1 hingga Lantai 6, dengan total 9 stempel digital yang harus dikumpulkan di Paspor.',
+      'Batas skor minimal kelulusan adalah 70% pada setiap mini-game untuk berhak mengklaim stempel emas.',
+      'Jika skor belum mencapai 70%, kamu dapat langsung mengulang tantangan di spot tersebut tanpa batas percobaan.',
+      'Setiap stempel yang diraih otomatis tercatat di Paspor Digital dan menambah akumulasi poin kelompok di papan Leaderboard.',
+    ],
+    tip: 'Periksa menu Paspor Digital untuk memantau kelengkapan stempel dan status sertifikat kelulusanmu.',
+  },
+  {
+    id: 'stan-ormawa',
+    category: 'ORMAWA',
+    categoryLabel: 'Ormawa Expo',
+    icon: PhStorefront,
+    iconColor: '#86efac',
+    title: 'Kunjungan Expo Ormawa di Lantai 6',
+    points: [
+      'Seluruh stan UKM, organisasi mahasiswa, dan komunitas kampus berpusat di Hall dan Selasar Lantai 6.',
+      'Buka halaman Ormawa Expo pada menu, lalu pilih tombol "Buka QR Paspor".',
+      'Tunjukkan kode QR Paspor Mahasiswa tersebut kepada petugas stan untuk dipindai (scan) sebagai bukti kunjungan stan.',
+      'Kunjungi minimal 10 stan pilihan untuk melengkapi pencapaian lencana expo ormawa.',
+    ],
+    tip: 'Kamu dapat membaca deskripsi kegiatan, profil, dan kontak tiap organisasi langsung di halaman Ormawa.',
+  },
+  {
+    id: 'presensi-harian',
+    category: 'GAME',
+    categoryLabel: 'Presensi & Kehadiran',
+    icon: PhCalendarCheck,
+    iconColor: '#f472b6',
+    title: 'Alur Presensi & Verifikasi Buddy',
+    points: [
+      'Presensi kehadiran wajib dilakukan 2 kali sehari: Sesi Datang (pagi) dan Sesi Pulang (sore) selama 3 hari rangkaian acara.',
+      'Verifikasi kehadiran dilakukan langsung oleh Kakak Pendamping (Buddy) resmi kelompok masing-masing.',
+      'Setelah presensi terverifikasi, isikan refleksi harian singkat pada formulir di halaman Presensi.',
+    ],
+    tip: 'Selalu berkumpul bersama kelompok Genius-mu tepat waktu sebelum batas sesi presensi berakhir.',
+  },
+  {
+    id: 'tata-tertib',
+    category: 'GAME',
+    categoryLabel: 'Tata Tertib',
+    icon: PhShieldCheck,
+    iconColor: '#a78bfa',
+    title: 'Tata Tertib & Etika di Gedung Kampus',
+    points: [
+      'Wajib mengenakan pakaian sopan, rapi, dan atribut resmi PKKMB UNU Yogyakarta 2026 sesuai ketentuan hari berjalan.',
+      'Menjaga ketertiban dan ketenangan saat melintasi ruang perkuliahan aktif, laboratorium, ruang rapat, dan kantor pengelola.',
+      'Membuang sampah pada tempat yang tersedia serta merawat fasilitas kampus dengan penuh tanggung jawab.',
+    ],
+    tip: 'Tunjukkan keramahan, rasa saling menghargai, dan nilai luhur Aswaja sepanjang kegiatan berlangsung.',
+  },
+  {
+    id: 'kendala-kamera',
+    category: 'FAQ',
+    categoryLabel: 'Kendala Teknis',
+    icon: PhWarningCircle,
+    iconColor: '#fb923c',
+    title: 'Kamera HP Gagal Memindai Barcode',
+    points: [
+      'Pastikan izin akses kamera (Camera Permission) telah diizinkan pada browser smartphone-mu (Chrome atau Safari).',
+      'Jika kamera mengalami kendala buram atau pencahayaan minim, mintalah Kode Cadangan Manual kepada panitia penjaga spot.',
+      'Ketikkan kode manual tersebut pada layar game untuk langsung membuka tantangan spot.',
+    ],
+    tip: 'Bersihkan lensa kamera dari debu/minyak dan hindari bayangan yang menutupi barcode saat memindai.',
+  },
+  {
+    id: 'wifi-baterai',
+    category: 'FAQ',
+    categoryLabel: 'Fasilitas & Posko',
+    icon: PhWifiHigh,
+    iconColor: '#38bdf8',
+    title: 'Koneksi Wi-Fi & Posko Baterai Darurat',
+    points: [
+      'Gedung kampus UNU menyediakan jaringan Wi-Fi publik "UNU-FREE-WIFI" di sepanjang koridor tanpa kata sandi.',
+      'Aplikasi GENIUS dirancang offline-first sehingga data stempel dan progresmu tetap tersimpan aman di perangkat.',
+      'Posko pengisian daya baterai (Charging Station) darurat tersedia di Lantai 1 (Welcome Hall) dan Lantai 5.',
+    ],
+    tip: 'Bila mengalami kendala kesehatan atau kondisi darurat, segera lapor ke Buddy atau Posko Medis di Lantai 1.',
+  },
+];
+
+function getTabCount(tabId: CategoryId): number {
+  if (tabId === 'ALL') return GUIDE_ITEMS.length;
+  return GUIDE_ITEMS.filter((item) => item.category === tabId).length;
+}
+
+const filteredGuides = computed(() => {
+  let list = GUIDE_ITEMS;
+  if (activeCategoryTab.value !== 'ALL') {
+    list = list.filter((item) => item.category === activeCategoryTab.value);
+  }
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase();
+    list = list.filter(
+      (item) =>
+        item.title.toLowerCase().includes(q) ||
+        item.categoryLabel.toLowerCase().includes(q) ||
+        item.points.some((p) => p.toLowerCase().includes(q)) ||
+        (item.tip && item.tip.toLowerCase().includes(q))
+    );
+  }
+  return list;
+});
 </script>
 
 <template>
-  <div class="min-h-[100dvh] h-[100dvh] max-h-[100dvh] flex flex-col bg-[#2d1b0e] text-[#f0e0c0] overflow-hidden">
-    <CrtScanlines />
-    <Navbar />
+  <div
+    class="relative w-full min-h-[100dvh] overflow-y-auto font-pixel text-[#fbf6e9] select-none flex flex-col justify-between py-3 sm:py-5 px-3 sm:px-6"
+    style="
+      background-image: url('/games/background.png');
+      background-size: cover;
+      background-position: center bottom;
+      image-rendering: pixelated;
+    "
+  >
+    <!-- Dark Vignette Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
 
-    <main class="max-w-2xl mx-auto px-2.5 sm:px-6 py-2 sm:py-3 flex-1 flex flex-col justify-between overflow-hidden w-full gap-2">
-      <!-- Simple Header -->
-      <div class="text-center space-y-0.5 shrink-0">
-        <div class="inline-flex items-center gap-1 bg-[#14230f] border border-[#7ec850] rounded-full px-2.5 py-0.5 text-[8px] sm:text-[9px] font-pixel text-[#7ec850]">
-          <PhInfo :size="12" weight="bold" />
-          <span>PANDUAN SINGKAT</span>
-        </div>
-        <h1 class="font-pixel text-sm sm:text-lg font-bold text-[#f0d060] mt-0.5 leading-snug break-words">
-          CARA BERMAIN GENIUS
-        </h1>
-        <p class="font-sans text-[11px] sm:text-xs text-[#c4956a] leading-snug break-words">
-          Jelajahi gedung kampus UNU dan kumpulkan 9 stempel digital.
-        </p>
+    <!-- ================================================================= -->
+    <!-- TOP HEADER: Sesuai Format Halaman Presensi & Ormawa Expo           -->
+    <!-- ================================================================= -->
+    <header class="relative z-20 w-full max-w-xl mx-auto flex items-center justify-between gap-2 pb-2 shrink-0">
+      <!-- Left: Back to Menu -->
+      <RouterLink
+        to="/main"
+        @click="() => safeSound(() => soundEngine.playClick?.())"
+        class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] hover:text-white transition-all text-[9.5px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer active:scale-95 shadow shrink-0"
+        title="Kembali ke Menu Utama"
+      >
+        <PhArrowLeft :size="13" weight="bold" />
+        <span class="font-pixel">MENU</span>
+      </RouterLink>
+
+      <!-- Center: Title Badge -->
+      <div class="px-3 py-1 bg-[#1a110a]/90 backdrop-blur-md border border-[#8b6f4e] rounded-full shadow flex items-center gap-1.5 shrink-0">
+        <PhBookOpen :size="14" weight="fill" class="text-[#facc15]" />
+        <span class="text-[10px] sm:text-xs text-[#facc15] font-bold tracking-wide uppercase">
+          PANDUAN
+        </span>
       </div>
 
-      <!-- 3 Simple Steps Grid -->
-      <div class="grid grid-cols-3 gap-1.5 shrink-0">
-        <div class="bg-[#170f07] p-2 rounded-xl border border-[#5a3a18] space-y-1 text-center">
-          <div class="w-6 h-6 rounded-md bg-[#23160c] border border-[#7ec850] text-[#7ec850] font-pixel text-[10px] font-bold flex items-center justify-center mx-auto">
-            1
-          </div>
-          <h3 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-tight break-words">
-            Prolog Lantai
-          </h3>
-          <p class="font-sans text-[9px] sm:text-[10px] text-[#a08060] leading-tight break-words">
-            Buka tema & misi karakter.
-          </p>
-        </div>
-
-        <div class="bg-[#170f07] p-2 rounded-xl border border-[#5a3a18] space-y-1 text-center">
-          <div class="w-6 h-6 rounded-md bg-[#23160c] border border-[#f0d060] text-[#f0d060] font-pixel text-[10px] font-bold flex items-center justify-center mx-auto">
-            2
-          </div>
-          <h3 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-tight break-words">
-            Pos Misi
-          </h3>
-          <p class="font-sans text-[9px] sm:text-[10px] text-[#a08060] leading-tight break-words">
-            Mainkan TTS, Kuis, Memory.
-          </p>
-        </div>
-
-        <div class="bg-[#170f07] p-2 rounded-xl border border-[#5a3a18] space-y-1 text-center">
-          <div class="w-6 h-6 rounded-md bg-[#23160c] border border-[#60a8d8] text-[#60a8d8] font-pixel text-[10px] font-bold flex items-center justify-center mx-auto">
-            3
-          </div>
-          <h3 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-tight break-words">
-            9 Stempel
-          </h3>
-          <p class="font-sans text-[9px] sm:text-[10px] text-[#a08060] leading-tight break-words">
-            Klaim paspor & sertifikat.
-          </p>
-        </div>
+      <!-- Right: Sound Toggle -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button
+          type="button"
+          @click="toggleSound"
+          class="p-1.5 rounded-lg bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] transition-all cursor-pointer active:scale-95 shadow"
+          :title="isMuted ? 'Nyalakan Suara' : 'Matikan Suara'"
+        >
+          <PhSpeakerHigh v-if="!isMuted" :size="13" weight="bold" />
+          <PhSpeakerSimpleSlash v-else :size="13" weight="bold" />
+        </button>
       </div>
+    </header>
 
-      <!-- 6 Mini-Game Types Compact List -->
-      <div class="flex-1 sdv-card p-2.5 sm:p-3 flex flex-col justify-between overflow-hidden shadow-lg">
-        <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-pixel text-[#f0d060] border-b border-[#5a3a18] pb-1.5 shrink-0">
-          <PhGameController :size="14" weight="bold" />
-          <span>6 TIPE MINI-GAME</span>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[10px] sm:text-xs font-sans py-1">
-          <div class="bg-[#170f07] p-2 rounded-lg border border-[#3d2b1e] flex items-center gap-1.5">
-            <PhSparkle :size="12" weight="fill" class="text-[#7ec850] shrink-0" />
-            <span class="text-[#f0e0c0] leading-tight break-words">TTS Kampus</span>
+    <!-- ================================================================= -->
+    <!-- MAIN CONTENT: Menampilkan Panduan Aja (Fokus, Bersih, Rapi)       -->
+    <!-- ================================================================= -->
+    <main class="relative z-20 w-full max-w-xl mx-auto space-y-2.5 my-auto">
+      <!-- 1. HERO / RINGKASAN PANDUAN -->
+      <section class="bg-[#19110a]/95 backdrop-blur-md border border-[#8b6f4e] rounded-xl p-3 shadow-lg space-y-2 text-left">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-lg bg-[#ca8a04]/20 border border-[#facc15] flex items-center justify-center text-[#facc15] shrink-0 shadow">
+            <PhBookOpen :size="18" weight="fill" />
           </div>
-          <div class="bg-[#170f07] p-2 rounded-lg border border-[#3d2b1e] flex items-center gap-1.5">
-            <PhSparkle :size="12" weight="fill" class="text-[#f0d060] shrink-0" />
-            <span class="text-[#f0e0c0] leading-tight break-words">Tebak Kata</span>
-          </div>
-          <div class="bg-[#170f07] p-2 rounded-lg border border-[#3d2b1e] flex items-center gap-1.5">
-            <PhMapPin :size="12" weight="fill" class="text-[#60a8d8] shrink-0" />
-            <span class="text-[#f0e0c0] leading-tight break-words">Tebak Posisi</span>
-          </div>
-          <div class="bg-[#170f07] p-2 rounded-lg border border-[#3d2b1e] flex items-center gap-1.5">
-            <PhCards :size="12" weight="fill" class="text-[#f0a030] shrink-0" />
-            <span class="text-[#f0e0c0] leading-tight break-words">Memory Match</span>
-          </div>
-          <div class="bg-[#170f07] p-2 rounded-lg border border-[#3d2b1e] flex items-center gap-1.5">
-            <PhLightning :size="12" weight="fill" class="text-[#e0a040] shrink-0" />
-            <span class="text-[#f0e0c0] leading-tight break-words">Kuis Cepat</span>
-          </div>
-          <div class="bg-[#170f07] p-2 rounded-lg border border-[#3d2b1e] flex items-center gap-1.5">
-            <PhShieldCheck :size="12" weight="fill" class="text-[#7ec850] shrink-0" />
-            <span class="text-[#f0e0c0] leading-tight break-words">Benar / Salah</span>
+          <div class="min-w-0 flex-1">
+            <h1 class="text-xs sm:text-sm font-bold text-[#86efac] leading-tight">
+              Panduan Orientasi & Aturan Main
+            </h1>
+            <p class="text-[9px] sm:text-[10px] text-[#c4956a] font-sans leading-tight mt-0.5">
+              Pedoman resmi penjelajahan 6 lantai, 9 pos stempel, dan kegiatan PKKMB UNU 2026.
+            </p>
           </div>
         </div>
 
-        <div class="text-[9px] font-sans text-[#a08060] text-center border-t border-[#3d2b1e] pt-1 shrink-0">
-          Setiap tantangan yang selesai akan otomatis menambahkan stempel & XP!
+        <!-- Mini Highlights Strip -->
+        <div class="grid grid-cols-3 gap-1 pt-1 border-t border-[#4a2e14]/70 text-center font-mono">
+          <div class="bg-[#120a05] p-1.5 rounded-lg border border-[#3d2714]">
+            <span class="text-[7.5px] text-[#a08060] block">Jelajah</span>
+            <span class="text-[9.5px] font-bold text-[#facc15]">6 Lantai</span>
+          </div>
+          <div class="bg-[#120a05] p-1.5 rounded-lg border border-[#3d2714]">
+            <span class="text-[7.5px] text-[#a08060] block">Target Misi</span>
+            <span class="text-[9.5px] font-bold text-[#86efac]">9 Stempel</span>
+          </div>
+          <div class="bg-[#120a05] p-1.5 rounded-lg border border-[#3d2714]">
+            <span class="text-[7.5px] text-[#a08060] block">Kelulusan</span>
+            <span class="text-[9.5px] font-bold text-[#38bdf8]">Min. 70%</span>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Quick Actions CTA -->
-      <div class="flex gap-2 pt-0.5 shrink-0">
-        <RouterLink to="/play" class="flex-1">
+      <!-- 2. SEARCH & SEGMENTED TABS -->
+      <section class="space-y-1.5">
+        <!-- Search Bar -->
+        <div class="relative w-full">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Cari topik panduan (kamera, stempel, ormawa, wifi)..."
+            class="w-full bg-[#140c06]/95 border border-[#5a3a18] focus:border-[#f0d060] rounded-xl pl-8 pr-7 py-1.5 text-xs text-[#fef08a] placeholder-[#8b6f4e] outline-none font-sans"
+          />
+          <PhMagnifyingGlass :size="14" class="text-[#8b6f4e] absolute left-2.5 top-2.5" />
           <button
+            v-if="searchQuery"
             type="button"
-            @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-            class="w-full rpg-btn-primary py-2.5 px-3 text-xs font-pixel font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+            @click="searchQuery = ''; safeSound(() => soundEngine.playClick?.())"
+            class="absolute right-2.5 top-2 text-[#a08060] hover:text-white cursor-pointer"
           >
-            <PhPlay :size="14" weight="fill" />
-            <span>Mulai Main</span>
+            <PhX :size="12" />
           </button>
-        </RouterLink>
+        </div>
 
-        <RouterLink to="/paspor" class="flex-1">
+        <!-- Segmented Category Control -->
+        <div class="grid grid-cols-5 gap-1 bg-[#140c06]/90 p-1 rounded-xl border border-[#5a3a18]">
           <button
+            v-for="tab in CATEGORY_TABS"
+            :key="tab.id"
             type="button"
-            @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-            class="w-full rpg-btn-wood py-2.5 px-3 text-xs font-pixel font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+            @click="() => {
+              safeSound(() => soundEngine.playClick?.());
+              activeCategoryTab = tab.id;
+            }"
+            :class="[
+              'py-1.5 px-0.5 rounded-lg transition-all flex flex-col items-center justify-center text-center cursor-pointer active:scale-95',
+              activeCategoryTab === tab.id
+                ? 'bg-[#38761d] text-white border border-[#f0d060] font-bold shadow'
+                : 'text-[#c4956a] hover:text-[#f0d060]'
+            ]"
           >
-            <PhIdentificationBadge :size="14" weight="bold" />
-            <span>Lihat Paspor</span>
+            <span class="text-[8px] sm:text-[9px] font-pixel leading-tight">{{ tab.label }}</span>
+            <span class="text-[6.5px] sm:text-[7px] opacity-75 font-sans mt-0.5">{{ getTabCount(tab.id) }} Info</span>
           </button>
-        </RouterLink>
+        </div>
+      </section>
+
+      <!-- 3. LIST KARTU PANDUAN -->
+      <section v-if="filteredGuides.length > 0" class="space-y-2">
+        <div
+          v-for="item in filteredGuides"
+          :key="item.id"
+          class="bg-[#18100a]/90 backdrop-blur-md border border-[#4a301a] rounded-xl p-3 shadow-sm text-left space-y-2 transition-all hover:border-[#8b6f4e]"
+        >
+          <!-- Header Item -->
+          <div class="flex items-start gap-2.5">
+            <div
+              class="w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 shadow"
+              :style="{
+                backgroundColor: `${item.iconColor}15`,
+                borderColor: item.iconColor,
+                color: item.iconColor,
+              }"
+            >
+              <component :is="item.icon" :size="16" weight="bold" />
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-1.5 flex-wrap">
+                <h2 class="text-[11px] sm:text-xs font-bold text-white leading-tight">
+                  {{ item.title }}
+                </h2>
+                <span class="text-[7.5px] font-mono px-1.5 py-0.5 rounded bg-[#120a05] border border-[#5a3a18] text-[#c4956a]">
+                  {{ item.categoryLabel }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Points list -->
+          <ul class="space-y-1.5 text-[10px] sm:text-[10.5px] text-[#e6d5bc] font-sans pl-1">
+            <li
+              v-for="(pt, idx) in item.points"
+              :key="idx"
+              class="flex items-start gap-2 leading-relaxed"
+            >
+              <span class="text-[#facc15] font-bold select-none mt-0.5">•</span>
+              <span class="flex-1">{{ pt }}</span>
+            </li>
+          </ul>
+
+          <!-- Tip Box (if available) -->
+          <div
+            v-if="item.tip"
+            class="p-2 rounded-lg bg-[#120a05] border border-[#5a3a18]/60 flex items-start gap-2 text-[9px] sm:text-[9.5px] text-[#c4956a] font-sans"
+          >
+            <PhLightbulbFilament :size="14" weight="fill" class="text-[#facc15] shrink-0 mt-0.5" />
+            <span class="leading-tight"><strong class="text-[#fef08a] font-pixel">TIPS:</strong> {{ item.tip }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Empty State -->
+      <div
+        v-else
+        class="p-8 text-center bg-[#18100a]/90 border border-dashed border-[#5a3a18] rounded-xl space-y-2 font-mono"
+      >
+        <PhBookOpen :size="32" class="text-amber-400 mx-auto opacity-40" />
+        <p class="text-xs text-amber-200">Tidak ada topik panduan yang cocok.</p>
+        <button
+          type="button"
+          @click="searchQuery = ''; activeCategoryTab = 'ALL'; safeSound(() => soundEngine.playClick?.())"
+          class="text-[10px] text-[#facc15] underline cursor-pointer"
+        >
+          Reset Filter & Pencarian
+        </button>
       </div>
     </main>
+
+    <!-- ================================================================= -->
+    <!-- 4. BOTTOM FOOTER NAVIGATION                                       -->
+    <!-- ================================================================= -->
+    <footer class="flex items-center justify-center pt-2 pb-3 shrink-0 relative z-20">
+      <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#120a05]/90 backdrop-blur-md border border-[#5a3a18] text-[9px] text-[#a08060] font-pixel shadow-lg">
+        <RouterLink
+          to="/play"
+          @click="() => safeSound(() => soundEngine.playClick?.())"
+          class="hover:text-[#facc15] flex items-center gap-1 transition-colors"
+        >
+          <span>MENU UTAMA</span>
+        </RouterLink>
+        <span>•</span>
+        <RouterLink
+          to="/peta"
+          @click="() => safeSound(() => soundEngine.playClick?.())"
+          class="hover:text-[#60a5fa] flex items-center gap-1 transition-colors"
+        >
+          <PhMapTrifold :size="12" />
+          <span>PETA KAMPUS</span>
+        </RouterLink>
+        <span>•</span>
+        <RouterLink
+          to="/paspor"
+          @click="() => safeSound(() => soundEngine.playClick?.())"
+          class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
+        >
+          <PhIdentificationBadge :size="12" />
+          <span>PASPOR</span>
+        </RouterLink>
+      </div>
+    </footer>
   </div>
 </template>

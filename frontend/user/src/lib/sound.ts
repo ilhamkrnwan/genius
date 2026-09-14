@@ -18,7 +18,7 @@ class SoundEngine {
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      this.ctx.resume().catch(() => {});
     }
     return this.ctx;
   }
@@ -234,6 +234,85 @@ class SoundEngine {
   public playFanfare() {
     this.playLevelUp();
   }
+
+  public playItemPickup() {
+    this.playSelect();
+  }
+
+  public playSuccess() {
+    this.playCorrect();
+  }
+
+  public playError() {
+    this.playWrong();
+  }
+
+  public playBuzzer() {
+    this.playWrong();
+  }
+
+  public playWin() {
+    this.playLevelUp();
+  }
+
+  public playLose() {
+    this.playWrong();
+  }
+
+  public play(name: string) {
+    switch (name) {
+      case 'click':
+        this.playClick();
+        break;
+      case 'select':
+        this.playSelect();
+        break;
+      case 'correct':
+      case 'success':
+        this.playCorrect();
+        break;
+      case 'wrong':
+      case 'error':
+        this.playWrong();
+        break;
+      case 'stamp':
+        this.playStampSlam();
+        break;
+      case 'levelup':
+      case 'fanfare':
+      case 'win':
+        this.playLevelUp();
+        break;
+      default:
+        this.playSelect();
+        break;
+    }
+  }
 }
 
-export const soundEngine = new SoundEngine();
+const rawSoundEngine = new SoundEngine();
+
+// Safe Proxy wrapper: guarantees that ANY method call on soundEngine (e.g. soundEngine.playSuccess, soundEngine.playAnything)
+// will NEVER throw "TypeError: soundEngine.xxx is not a function" even during rapid HMR or custom game events.
+export const soundEngine: SoundEngine & Record<string, any> = new Proxy(rawSoundEngine, {
+  get(target: any, prop: string | symbol) {
+    if (prop in target) {
+      const val = target[prop];
+      if (typeof val === 'function') {
+        return val.bind(target);
+      }
+      return val;
+    }
+    // Safe fallback function
+    return (..._args: any[]) => {
+      try {
+        if (typeof prop === 'string' && prop.startsWith('play')) {
+          target.playClick();
+        }
+      } catch {
+        // Silently swallow
+      }
+    };
+  },
+});
+

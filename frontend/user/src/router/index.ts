@@ -12,6 +12,7 @@ import LeaderboardView from '@/views/LeaderboardView.vue';
 import BantuanView from '@/views/BantuanView.vue';
 import AttendanceView from '@/views/AttendanceView.vue';
 import OrmawaExpoView from '@/views/OrmawaExpoView.vue';
+import ProfileView from '@/views/ProfileView.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -34,6 +35,10 @@ const routes: Array<RouteRecordRaw> = [
     path: '/floor/2',
     name: 'floor-2',
     component: () => import('@/views/Floor2View.vue'),
+  },
+  {
+    path: '/floor/:floorId',
+    redirect: (to) => `/play/floor/${to.params.floorId || 1}/intro`,
   },
   {
     path: '/play/floor/:floorId/intro',
@@ -69,17 +74,26 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/presensi',
     name: 'presensi',
+    alias: ['/attendance'],
     component: AttendanceView,
   },
   {
     path: '/ormawa',
     name: 'ormawa',
+    alias: ['/expo'],
     component: OrmawaExpoView,
   },
   {
     path: '/bantuan',
     name: 'bantuan',
+    alias: ['/help', '/panduan'],
     component: BantuanView,
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    alias: ['/profil', '/ktm'],
+    component: ProfileView,
   },
   {
     path: '/:catchAll(.*)*',

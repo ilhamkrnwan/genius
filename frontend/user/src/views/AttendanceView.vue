@@ -3,238 +3,197 @@ import { ref, computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   PhCalendarCheck,
-  PhQrCode,
   PhClock,
   PhCheckCircle,
   PhStar,
-  PhChatTeardropDots,
-  PhDoorOpen,
-  PhWarning,
   PhArrowLeft,
   PhSparkle,
   PhShieldCheck,
-  PhHouse,
   PhArrowsClockwise,
   PhHourglass,
-  PhListChecks,
+  PhLockKey,
+  PhSpeakerHigh,
+  PhSpeakerSimpleSlash,
+  PhMapTrifold,
+  PhIdentificationBadge,
+  PhUser,
 } from '@phosphor-icons/vue';
 import confetti from 'canvas-confetti';
 import { useGameStore } from '@/store/gameStore';
-import QrScannerModal from '@/components/common/QrScannerModal.vue';
 import { soundEngine } from '@/lib/sound';
-import { api } from '@/lib/api';
-
-interface AttendanceSession {
-  id: string;
-  title: string;
-  description?: string | null;
-  type: 'CHECK_IN' | 'CHECK_OUT';
-  isActive: boolean;
-  qrToken?: string;
-  xpReward: number;
-  allowLate: boolean;
-  lateTime?: string | null;
-  startTime?: string | null;
-  endTime?: string | null;
-}
-
-interface AttendedLog {
-  sessionId: string;
-  sessionTitle: string;
-  type: 'CHECK_IN' | 'CHECK_OUT';
-  timestamp: string;
-  status: 'ON_TIME' | 'LATE';
-  xpAwarded: number;
-  qrToken: string;
-}
+import { AVATAR_OPTIONS } from '@/data/mockData';
 
 const gameStore = useGameStore();
 
-const activeSession = ref<AttendanceSession | null>(null);
-const isLoadingSession = ref(true);
-const isScannerOpen = ref(false);
-const isSubmittingScan = ref(false);
-const notification = ref<{ type: 'success' | 'error'; message: string } | null>(null);
+const activeDayTab = ref<1 | 2 | 3>(1);
+const isRefreshing = ref(false);
+const isMuted = ref(gameStore.soundEnabled === false);
+const notification = ref<{ type: 'success' | 'info'; message: string } | null>(null);
 
-// Riwayat presensi tersimpan lokal per mahasiswa
-const attendedLogs = ref<AttendedLog[]>([]);
-
-// Form Refleksi
-const isReflectionCardOpen = ref(false);
-const ratingFasilitas = ref(5);
-const ratingMateri = ref(5);
-const ratingBuddy = ref(5);
+// Form Refleksi Singkat
+const rating = ref(5);
 const essayInsight = ref('');
-const isReflectionDone = ref(false);
+const isSubmitting = ref(false);
 
-const ATTENDANCE_LOGS_STORAGE_KEY = computed(() => 
-  `genius_attendance_logs_${gameStore.participant.id || gameStore.participant.nim || 'guest'}`
-);
+// Roster Buddy Resmi per Regu
+const OFFICIAL_BUDDIES_MAP: Record<string, string> = {
+  'Genius 01': 'Agnes Anggraini',
+  'Genius 02': 'Agnesya Putri',
+  'Genius 03': 'Ahmad Fadlil Munajad',
+  'Genius 04': 'Ahmad Ichsan',
+  'Genius 05': 'Aning Gusmi',
+  'Genius 06': 'Arselia Sakina',
+  'Genius 07': 'Asadurrahman M.',
+  'Genius 08': 'Dafa Alif Laguna',
+  'Genius 09': 'Destiya Lintang',
+  'Genius 10': 'Dzulfa Sindi',
+};
 
-const isCurrentSessionAttended = computed(() => {
-  if (!activeSession.value) return false;
-  return attendedLogs.value.some(
-    (log) => log.sessionId === activeSession.value?.id || log.sessionTitle === activeSession.value?.title
+const buddyName = computed(() => {
+  const group = gameStore.participant.groupName || 'Genius 03';
+  return OFFICIAL_BUDDIES_MAP[group] || 'Ahmad Fadlil Munajad';
+});
+
+const avatarData = computed(() => {
+  return (
+    AVATAR_OPTIONS.find((a) => a.id === gameStore.participant.avatar) ||
+    AVATAR_OPTIONS[0]
   );
 });
 
-const currentSessionLog = computed(() => {
-  if (!activeSession.value) return null;
-  return attendedLogs.value.find(
-    (log) => log.sessionId === activeSession.value?.id || log.sessionTitle === activeSession.value?.title
-  ) || null;
+interface SessionDefinition {
+  id: string;
+  day: 1 | 2 | 3;
+  type: 'checkIn' | 'checkOut';
+  title: string;
+  timeRange: string;
+  xpReward: number;
+}
+
+const ALL_SESSIONS: SessionDefinition[] = [
+  {
+    id: 'd1-checkin',
+    day: 1,
+    type: 'checkIn',
+    title: 'Sesi 1: Presensi Masuk Pagi',
+    timeRange: '07:00 - 07:30 WIB',
+    xpReward: 100,
+  },
+  {
+    id: 'd1-checkout',
+    day: 1,
+    type: 'checkOut',
+    title: 'Sesi 2: Presensi Pulang & FGD Niat',
+    timeRange: '16:00 - 16:30 WIB',
+    xpReward: 50,
+  },
+  {
+    id: 'd2-checkin',
+    day: 2,
+    type: 'checkIn',
+    title: 'Sesi 3: Presensi Masuk Campus Quest',
+    timeRange: '07:00 - 07:30 WIB',
+    xpReward: 100,
+  },
+  {
+    id: 'd2-checkout',
+    day: 2,
+    type: 'checkOut',
+    title: 'Sesi 4: Presensi Pulang Quest 9 Lantai',
+    timeRange: '16:00 - 16:30 WIB',
+    xpReward: 50,
+  },
+  {
+    id: 'd3-checkin',
+    day: 3,
+    type: 'checkIn',
+    title: 'Sesi 5: Presensi Ormawa Expo Discovery',
+    timeRange: '07:00 - 07:30 WIB',
+    xpReward: 100,
+  },
+  {
+    id: 'd3-checkout',
+    day: 3,
+    type: 'checkOut',
+    title: 'Sesi 6: Grand Finale & Penutupan',
+    timeRange: '15:00 - 16:00 WIB',
+    xpReward: 50,
+  },
+];
+
+const DAYS = [
+  { day: 1 as const, label: 'HARI 1', date: '22 Sep', subtitle: 'Ke-UNU-an' },
+  { day: 2 as const, label: 'HARI 2', date: '23 Sep', subtitle: 'Campus Quest' },
+  { day: 3 as const, label: 'HARI 3', date: '24 Sep', subtitle: 'Ormawa Expo' },
+];
+
+const attendedCount = computed(() => gameStore.getAttendedSessionsCount());
+const totalXp = computed(() => gameStore.getTotalAttendanceXp());
+
+const currentDayRecord = computed(() => {
+  return gameStore.getAttendanceForDay(activeDayTab.value);
 });
 
-const showNotification = (type: 'success' | 'error', message: string) => {
+const isReflectionDone = computed(() => {
+  return Boolean(currentDayRecord.value?.reflection);
+});
+
+function safeSound(fn: () => void) {
+  try {
+    if (gameStore.soundEnabled) fn();
+  } catch (_) {}
+}
+
+function toggleSound() {
+  gameStore.soundEnabled = !gameStore.soundEnabled;
+  isMuted.value = !gameStore.soundEnabled;
+  try {
+    soundEngine.setMuted(isMuted.value);
+    if (!isMuted.value) soundEngine.playClick?.();
+  } catch (_) {}
+}
+
+function showNotification(type: 'success' | 'info', message: string) {
   notification.value = { type, message };
   setTimeout(() => {
     notification.value = null;
-  }, 5000);
-};
+  }, 3500);
+}
 
-const triggerConfetti = () => {
-  try {
-    confetti({
-      particleCount: 65,
-      spread: 75,
-      origin: { y: 0.6 },
-      colors: ['#f59e0b', '#10b981', '#3b82f6', '#facc15'],
-    });
-  } catch {
-    // Ignore canvas-confetti error
-  }
-};
+function getSessionStatus(session: SessionDefinition) {
+  const dayRecord = gameStore.getAttendanceForDay(session.day);
+  if (!dayRecord) return { state: 'locked', label: 'Belum Dibuka' };
 
-const loadSavedLogs = () => {
-  try {
-    const raw = localStorage.getItem(ATTENDANCE_LOGS_STORAGE_KEY.value);
-    if (raw) {
-      attendedLogs.value = JSON.parse(raw);
-    }
-  } catch (err) {
-    console.warn('Gagal memuat log presensi lokal:', err);
-  }
-};
-
-const saveLogs = () => {
-  try {
-    localStorage.setItem(ATTENDANCE_LOGS_STORAGE_KEY.value, JSON.stringify(attendedLogs.value));
-  } catch (err) {
-    console.warn('Gagal menyimpan log presensi lokal:', err);
-  }
-};
-
-const fetchActiveSession = async () => {
-  isLoadingSession.value = true;
-  try {
-    const res = await api.getActiveAttendanceSession();
-    if (res.success && res.data) {
-      activeSession.value = res.data;
-    } else {
-      activeSession.value = null;
-    }
-  } catch (err) {
-    console.warn('Catatan: Tidak dapat menghubungi server untuk sesi aktif:', err);
-    // Fallback default sesi jika offline
-    activeSession.value = {
-      id: 'default-active-session',
-      title: 'Presensi Masuk Pagi',
-      description: 'Pindai QR Standing Banner di Gerbang Utama Lantai 1',
-      type: 'CHECK_IN',
-      isActive: true,
-      xpReward: 100,
-      allowLate: true,
-      lateTime: '07:30',
-      startTime: '07:00',
-      endTime: '08:30',
-    };
-  } finally {
-    isLoadingSession.value = false;
-  }
-};
-
-const openScanner = () => {
-  if (gameStore.soundEnabled) soundEngine.playClick();
-  isScannerOpen.value = true;
-};
-
-const handleTokenScanned = async (token: string) => {
-  if (!token) return;
-  isSubmittingScan.value = true;
-
-  const targetParticipantId = gameStore.participant.id || gameStore.participant.nim;
-
-  try {
-    const res = await api.scanAttendance(token, targetParticipantId);
-
-    if (res.success) {
-      const awarded = res.data?.xpAwarded || activeSession.value?.xpReward || (activeSession.value?.type === 'CHECK_OUT' ? 50 : 100);
-      const checkInStatus = res.data?.checkInStatus || 'ON_TIME';
-
-      // Update skor peserta
-      gameStore.participant.totalXp += awarded;
-      gameStore.saveToStorage();
-
-      // Catat ke log presensi lokal
-      const newLog: AttendedLog = {
-        sessionId: activeSession.value?.id || 'session-scan',
-        sessionTitle: activeSession.value?.title || (activeSession.value?.type === 'CHECK_OUT' ? 'Presensi Kepulangan' : 'Presensi Kedatangan'),
-        type: activeSession.value?.type || 'CHECK_IN',
-        timestamp: new Date().toISOString(),
-        status: checkInStatus,
-        xpAwarded: awarded,
-        qrToken: token,
+  if (session.type === 'checkIn') {
+    if (dayRecord.checkInAt) {
+      return {
+        state: 'verified',
+        label: 'Terverifikasi Hadir',
+        time: dayRecord.checkInAt,
       };
-
-      attendedLogs.value.unshift(newLog);
-      saveLogs();
-
-      if (gameStore.soundEnabled) soundEngine.playCorrect();
-      triggerConfetti();
-      showNotification('success', res.message || `Presensi berhasil dicatat! (+${awarded} XP)`);
-    } else {
-      const errMsg = res.error?.message || 'Token QR tidak cocok atau sesi telah berakhir.';
-      showNotification('error', errMsg);
-      if (gameStore.soundEnabled) soundEngine.playWrong();
     }
-  } catch (err: any) {
-    const message = err?.message || 'Gagal menghubungi server presensi. Pastikan perangkat terhubung ke internet.';
-    showNotification('error', message);
-    if (gameStore.soundEnabled) soundEngine.playWrong();
-  } finally {
-    isSubmittingScan.value = false;
-  }
-};
-
-const handleSubmitReflection = () => {
-  if (!essayInsight.value.trim()) {
-    showNotification('error', 'Mohon tuliskan pesan atau insight singkat Anda.');
-    return;
+  } else {
+    if (dayRecord.checkOutAt) {
+      return {
+        state: 'verified',
+        label: 'Terverifikasi Pulang',
+        time: dayRecord.checkOutAt,
+      };
+    }
   }
 
-  const xpEarned = 25;
-  gameStore.participant.totalXp += xpEarned;
-  gameStore.saveToStorage();
-  isReflectionDone.value = true;
+  if (session.day === gameStore.activeDay) {
+    return { state: 'in_progress', label: 'Menunggu Buddy' };
+  }
 
-  if (gameStore.soundEnabled) soundEngine.playCorrect();
-  triggerConfetti();
-  showNotification('success', `Kuesioner refleksi berhasil terkirim! (+${xpEarned} XP)`);
+  if (session.day < gameStore.activeDay) {
+    return { state: 'missed', label: 'Selesai' };
+  }
 
-  // Sync to API
-  api.submitReflection({
-    day: 1,
-    ratingFasilitas: ratingFasilitas.value,
-    ratingMateri: ratingMateri.value,
-    ratingBuddy: ratingBuddy.value,
-    essayInsight: essayInsight.value.trim(),
-    participantId: gameStore.participant.id || undefined,
-  }).catch((err) => {
-    console.warn('Catatan refleksi sync:', err);
-  });
-};
+  return { state: 'locked', label: 'Belum Dimulai' };
+}
 
-const formatTime = (isoString?: string | null) => {
+function formatTime(isoString?: string | null) {
   if (!isoString) return '-';
   try {
     const d = new Date(isoString);
@@ -242,475 +201,382 @@ const formatTime = (isoString?: string | null) => {
   } catch {
     return isoString;
   }
-};
+}
 
-const formatDate = (isoString?: string | null) => {
-  if (!isoString) return '-';
+async function refreshAttendance() {
+  safeSound(() => soundEngine.playClick?.());
+  isRefreshing.value = true;
   try {
-    const d = new Date(isoString);
-    return d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
-  } catch {
-    return isoString;
+    await new Promise((r) => setTimeout(r, 450));
+    showNotification('info', 'Status presensi diperbarui.');
+  } finally {
+    isRefreshing.value = false;
   }
-};
+}
+
+function submitReflection() {
+  if (!essayInsight.value.trim()) {
+    showNotification('info', 'Tuliskan sedikit pesan atau kesan Anda.');
+    return;
+  }
+
+  isSubmitting.value = true;
+  try {
+    const res = gameStore.submitReflection(activeDayTab.value, {
+      ratingFasilitas: rating.value,
+      ratingMateri: rating.value,
+      ratingBuddy: rating.value,
+      essayInsight: essayInsight.value.trim(),
+    });
+
+    if (res.success) {
+      safeSound(() => soundEngine.playCorrect?.());
+      try {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      } catch (_) {}
+      showNotification('success', res.message);
+    }
+  } finally {
+    isSubmitting.value = false;
+  }
+}
 
 onMounted(() => {
-  loadSavedLogs();
-  fetchActiveSession();
+  activeDayTab.value = (gameStore.activeDay as 1 | 2 | 3) || 1;
 });
 </script>
 
 <template>
-  <div class="min-h-[100dvh] flex flex-col bg-[#1f140c] text-[#f0e0c0] selection:bg-[#7ec850] selection:text-[#1b120a] pb-14 select-none">
-    <!-- Top Navigation Bar Header -->
-    <header class="sticky top-0 z-30 w-full bg-[#170e08]/95 border-b-2 border-[#5a3a18] backdrop-blur px-3 sm:px-6 py-2 flex items-center justify-between shadow-md">
-      <div class="flex items-center gap-2">
-        <RouterLink
-          to="/"
-          class="h-8 px-2.5 bg-[#2d1b0e] border border-[#784d24] rounded text-xs font-pixel text-[#f0d060] hover:border-[#f0d060] flex items-center gap-1.5 transition-all active:scale-95"
-        >
-          <PhArrowLeft :size="14" weight="bold" />
-          <span class="hidden sm:inline">BERANDA</span>
-        </RouterLink>
+  <div
+    class="relative w-full min-h-[100dvh] overflow-y-auto font-pixel text-[#fbf6e9] select-none flex flex-col justify-between py-3 sm:py-5 px-3 sm:px-6"
+    style="
+      background-image: url('/games/background.png');
+      background-size: cover;
+      background-position: center bottom;
+      image-rendering: pixelated;
+    "
+  >
+    <!-- Dark Vignette Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-b from-black/65 via-black/45 to-black/80 pointer-events-none z-0" />
 
-        <div class="flex flex-col">
-          <h1 class="font-pixel text-xs sm:text-sm text-[#f0d060] leading-none flex items-center gap-1.5">
-            <PhCalendarCheck :size="16" weight="fill" class="text-[#facc15]" />
-            <span>PRESENSI KEGIATAN</span>
-          </h1>
-          <span class="font-mono text-[9px] text-[#a08060] mt-0.5">SISTEM PRESENSI SESI PKKMB UNU 2026</span>
-        </div>
+    <!-- ================================================================= -->
+    <!-- TOP HEADER: Responsive & Clean (No Squishing on Mobile)           -->
+    <!-- ================================================================= -->
+    <header class="relative z-20 w-full max-w-xl mx-auto flex items-center justify-between gap-2 pb-2 shrink-0">
+      <!-- Left: Back to Lobby Button -->
+      <RouterLink
+        to="/play"
+        @click="() => safeSound(() => soundEngine.playClick?.())"
+        class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] hover:text-white transition-all text-[9.5px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer active:scale-95 shadow shrink-0"
+        title="Kembali ke Menu Utama"
+      >
+        <PhArrowLeft :size="13" weight="bold" />
+        <span class="font-pixel">MENU</span>
+      </RouterLink>
+
+      <!-- Center: Title Badge -->
+      <div class="px-3 py-1 bg-[#1a110a]/90 backdrop-blur-md border border-[#8b6f4e] rounded-full shadow flex items-center gap-1.5 shrink-0">
+        <PhCalendarCheck :size="15" weight="fill" class="text-[#facc15]" />
+        <span class="text-[10px] sm:text-xs text-[#facc15] font-bold tracking-wide uppercase">
+          PRESENSI
+        </span>
       </div>
 
-      <!-- Quick Total XP Badge & Refresh -->
-      <div class="flex items-center gap-2">
+      <!-- Right: Sound, Refresh, XP Badge -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <!-- XP Badge -->
+        <div class="bg-[#24170d] border border-[#d97706] px-2 py-0.5 rounded-lg flex items-center gap-1 text-[9.5px] sm:text-[10px] text-[#facc15] font-bold">
+          <PhSparkle :size="11" weight="fill" />
+          <span>+{{ totalXp }} XP</span>
+        </div>
+
+        <!-- Refresh Button -->
         <button
           type="button"
-          @click="fetchActiveSession"
-          title="Segarkan Sesi Presensi"
-          class="p-1.5 bg-[#2d1b0e] hover:bg-[#3d2413] border border-[#784d24] rounded text-[#d4b08c] hover:text-[#facc15] transition-all cursor-pointer"
+          @click="refreshAttendance"
+          title="Segarkan Status"
+          class="p-1.5 rounded-lg bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] transition-all cursor-pointer active:scale-95 shadow"
         >
-          <PhArrowsClockwise :size="15" :class="{ 'animate-spin': isLoadingSession }" />
+          <PhArrowsClockwise :size="13" :class="{ 'animate-spin': isRefreshing }" />
         </button>
 
-        <div class="bg-[#2d1b0e] border border-[#d97706] px-2.5 py-1 rounded flex items-center gap-1.5 shadow-sm">
-          <PhSparkle :size="14" weight="fill" class="text-[#facc15]" />
-          <span class="font-pixel text-[10px] sm:text-xs text-[#facc15]">+{{ gameStore.participant.totalXp }} XP</span>
-        </div>
+        <!-- Sound Toggle -->
+        <button
+          type="button"
+          @click="toggleSound"
+          class="p-1.5 rounded-lg bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] transition-all cursor-pointer active:scale-95 shadow"
+          :title="isMuted ? 'Nyalakan Suara' : 'Matikan Suara'"
+        >
+          <PhSpeakerHigh v-if="!isMuted" :size="13" weight="bold" />
+          <PhSpeakerSimpleSlash v-else :size="13" weight="bold" />
+        </button>
       </div>
     </header>
 
-    <!-- Global Floating Notification Alert -->
-    <div
-      v-if="notification"
-      :class="[
-        'fixed top-14 inset-x-3 sm:inset-x-auto sm:right-6 z-50 p-3 rounded-lg border-2 shadow-2xl font-mono text-xs flex items-center gap-2 max-w-md animate-in slide-in-from-top-2 duration-200',
-        notification.type === 'success'
-          ? 'bg-[#142612] border-[#22c55e] text-[#86efac]'
-          : 'bg-[#2a1010] border-[#ef4444] text-[#fca5a5]'
-      ]"
+    <!-- Global Notification -->
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-2"
     >
-      <PhCheckCircle v-if="notification.type === 'success'" :size="18" weight="bold" class="shrink-0" />
-      <PhWarning v-else :size="18" weight="bold" class="shrink-0" />
-      <span class="leading-tight">{{ notification.message }}</span>
-    </div>
+      <div
+        v-if="notification"
+        class="fixed top-14 inset-x-3 sm:inset-x-auto sm:right-6 z-50 p-2.5 rounded-xl border shadow-xl font-mono text-xs flex items-center gap-2 max-w-sm bg-[#142612] border-[#22c55e] text-[#86efac]"
+      >
+        <PhCheckCircle :size="16" weight="bold" class="shrink-0 text-[#22c55e]" />
+        <span>{{ notification.message }}</span>
+      </div>
+    </Transition>
 
-    <!-- Main Content Container -->
-    <main class="w-full max-w-3xl mx-auto px-3 sm:px-6 py-4 space-y-4 flex-1">
+    <!-- ================================================================= -->
+    <!-- MAIN CONTENT: Simple, Clean & Responsive Layout                   -->
+    <!-- ================================================================= -->
+    <main class="relative z-20 w-full max-w-xl mx-auto space-y-2.5 my-auto">
 
-      <!-- ================= 1. ACTIVE SESSION HERO CARD ================= -->
-      <section class="space-y-2">
-        <div class="flex items-center justify-between">
-          <h2 class="font-pixel text-xs sm:text-sm text-[#facc15] flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-[#22c55e] animate-ping" />
-            <span>STATUS GERBANG SAAT INI</span>
-          </h2>
+      <!-- 1. COMPACT STATUS CARD: Mahasiswa & Buddy (Stacked Rows for Zero Truncation) -->
+      <section class="bg-[#19110a]/95 backdrop-blur-md border border-[#8b6f4e] rounded-xl p-3 shadow-lg space-y-2 text-left">
+        <!-- Row A: Mahasiswa Baru Info -->
+        <div class="flex items-center justify-between gap-2.5 pb-2 border-b border-[#4a2e14]/70">
+          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <div class="w-10 h-10 rounded-lg bg-[#120a05] border border-[#f0d060] overflow-hidden shrink-0 shadow">
+              <img
+                :src="avatarData.avatarImage"
+                :alt="gameStore.participant.name || 'Avatar'"
+                class="w-full h-full object-cover object-top"
+              />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-xs sm:text-sm font-bold text-[#86efac] leading-tight truncate">
+                {{ gameStore.participant.name || 'Mahasiswa Baru' }}
+              </div>
+              <div class="text-[9px] sm:text-[10px] text-[#c4956a] font-sans truncate mt-0.5">
+                {{ gameStore.participant.prodi || 'Informatika' }} • Regu {{ gameStore.participant.groupName || 'Genius 03' }}
+              </div>
+            </div>
+          </div>
 
-          <span
-            v-if="activeSession"
-            :class="[
-              'font-pixel text-[9px] px-2 py-0.5 rounded border uppercase',
-              activeSession.type === 'CHECK_IN'
-                ? 'bg-[#142612] border-[#22c55e] text-[#4ade80]'
-                : 'bg-[#082f49] border-[#0284c7] text-[#38bdf8]'
-            ]"
-          >
-            {{ activeSession.type === 'CHECK_IN' ? 'SESI KEDATANGAN' : 'SESI KEPULANGAN' }}
+          <div class="text-right shrink-0">
+            <span class="text-[8px] text-[#a08060] font-sans block">Kehadiran:</span>
+            <span class="font-pixel text-[10.5px] sm:text-xs text-[#facc15] font-bold">
+              {{ attendedCount }} / 6 Sesi
+            </span>
+          </div>
+        </div>
+
+        <!-- Row B: Kakak Buddy Pendamping Info -->
+        <div class="flex items-center justify-between gap-2 bg-[#120a05]/70 rounded-lg px-2.5 py-1.5 border border-[#5a3a18]/60">
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <div class="w-5 h-5 rounded-md bg-[#0284c7]/20 border border-[#38bdf8] flex items-center justify-center text-[#38bdf8] shrink-0">
+              <PhShieldCheck :size="13" weight="fill" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <span class="text-[7.5px] text-[#a08060] font-sans block leading-none">Kakak Buddy Pendamping:</span>
+              <span class="text-[10px] sm:text-[11px] font-bold text-white block leading-tight truncate mt-0.5">
+                {{ buddyName }}
+              </span>
+            </div>
+          </div>
+
+          <span class="text-[7.5px] font-mono text-[#86efac] px-2 py-0.5 rounded bg-[#22c55e]/15 border border-[#22c55e]/40 shrink-0">
+            Dampingi Regu
           </span>
-        </div>
-
-        <!-- Loading State -->
-        <div
-          v-if="isLoadingSession"
-          class="p-6 bg-[#24160c] border-2 border-[#523e2b] rounded-xl flex items-center justify-center gap-3 text-[#d4b08c] font-mono text-xs"
-        >
-          <PhArrowsClockwise :size="20" class="animate-spin text-[#facc15]" />
-          <span>Menghubungkan ke Gerbang Presensi Kampus...</span>
-        </div>
-
-        <!-- Sesi Aktif Ditemukan -->
-        <div
-          v-else-if="activeSession"
-          :class="[
-            'border-2 rounded-xl p-4 sm:p-5 shadow-xl relative overflow-hidden transition-all',
-            activeSession.type === 'CHECK_IN'
-              ? 'bg-gradient-to-b from-[#24180e] to-[#1c1208] border-[#f59e0b]'
-              : 'bg-gradient-to-b from-[#141e26] to-[#0c141a] border-[#0284c7]'
-          ]"
-        >
-          <!-- Top glowing strip -->
-          <div
-            :class="[
-              'absolute top-0 left-0 right-0 h-1',
-              activeSession.type === 'CHECK_IN' ? 'bg-[#f59e0b]' : 'bg-[#38bdf8]'
-            ]"
-          />
-
-          <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-            <div class="flex items-start gap-3">
-              <div
-                :class="[
-                  'w-11 h-11 rounded-lg border flex items-center justify-center shrink-0 shadow-md',
-                  activeSession.type === 'CHECK_IN'
-                    ? 'bg-[#ca8a04]/20 border-[#f59e0b] text-[#facc15]'
-                    : 'bg-[#0284c7]/20 border-[#38bdf8] text-[#38bdf8]'
-                ]"
-              >
-                <PhDoorOpen v-if="activeSession.type === 'CHECK_IN'" :size="24" weight="bold" />
-                <PhHouse v-else :size="24" weight="bold" />
-              </div>
-
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <h3 class="font-pixel text-sm sm:text-base text-[#f0e0c0] font-bold">
-                    {{ activeSession.title }}
-                  </h3>
-                  <span
-                    :class="[
-                      'text-[9px] font-mono px-1.5 py-0.5 rounded border',
-                      isCurrentSessionAttended
-                        ? 'bg-[#142612] border-[#22c55e] text-[#86efac]'
-                        : 'bg-[#ca8a04]/20 border-[#ca8a04] text-[#facc15]'
-                    ]"
-                  >
-                    {{ isCurrentSessionAttended ? 'SUDAH TERVERIFIKASI' : 'GERBANG TERBUKA' }}
-                  </span>
-                </div>
-
-                <p class="font-sans text-xs text-[#c4956a] mt-1">
-                  {{ activeSession.description || 'Pindai kode QR dinamis yang ditampilkan panitia di layar proyektor gerbang.' }}
-                </p>
-
-                <!-- Session Meta HUD -->
-                <div class="flex items-center gap-3 font-mono text-[10px] sm:text-xs text-[#a08060] mt-2 flex-wrap">
-                  <div class="flex items-center gap-1">
-                    <PhClock :size="13" class="text-[#facc15]" />
-                    <span>Waktu: {{ activeSession.startTime || '-' }} s/d {{ activeSession.endTime || 'Selesai' }}</span>
-                  </div>
-
-                  <span v-if="activeSession.allowLate && activeSession.lateTime" class="text-[#fca5a5]">
-                    • Batas Tepat Waktu: s/d {{ activeSession.lateTime }} WIB
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Reward XP Badge -->
-            <div
-              :class="[
-                'px-3 py-1.5 rounded-lg border text-center shrink-0 self-start sm:self-auto shadow',
-                activeSession.type === 'CHECK_IN'
-                  ? 'bg-[#ca8a04]/15 border-[#f59e0b] text-[#facc15]'
-                  : 'bg-[#0284c7]/15 border-[#38bdf8] text-[#38bdf8]'
-              ]"
-            >
-              <span class="font-mono text-[9px] block text-white/70">REWARD SESI</span>
-              <span class="font-pixel text-xs sm:text-sm font-bold">+{{ activeSession.xpReward }} XP</span>
-            </div>
-          </div>
-
-          <!-- Bottom Action or Completed Verification Card -->
-          <div class="mt-4 pt-4 border-t border-[#3d2413]">
-            <!-- Jika Sudah Presensi di Sesi Ini -->
-            <div
-              v-if="isCurrentSessionAttended"
-              class="bg-[#142612]/80 border border-[#22c55e] rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-            >
-              <div class="space-y-1 font-mono text-xs">
-                <div class="flex items-center gap-1.5 text-[#86efac] font-bold">
-                  <PhShieldCheck :size="18" weight="fill" />
-                  <span>PRESENSI ANDA TELAH TERCATAT!</span>
-                </div>
-                <p class="text-[#bbf7d0] text-[11px]">
-                  Waktu Pemindaian: <strong>{{ formatTime(currentSessionLog?.timestamp) }}</strong>
-                  <span v-if="currentSessionLog?.status === 'ON_TIME'" class="ml-2 text-[#4ade80] font-bold">(Tepat Waktu)</span>
-                  <span v-else-if="currentSessionLog?.status === 'LATE'" class="ml-2 text-[#f87171] font-bold">(Terlambat)</span>
-                </p>
-                <p class="text-[10px] text-[#86efac]/70">
-                  Poin XP telah otomatis ditambahkan ke akun dan peringkat leaderboard kelompok Anda.
-                </p>
-              </div>
-
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  @click="openScanner"
-                  class="px-2.5 py-1.5 bg-[#2d1b0e] hover:bg-[#3d2413] border border-[#784d24] rounded font-pixel text-[10px] text-[#f0d060] cursor-pointer"
-                  title="Pindai ulang jika diperlukan"
-                >
-                  SCAN ULANG
-                </button>
-              </div>
-            </div>
-
-            <!-- Jika Belum Presensi -->
-            <div v-else class="space-y-2">
-              <button
-                type="button"
-                @click="openScanner"
-                :disabled="isSubmittingScan"
-                :class="[
-                  'w-full py-3.5 px-4 rounded-lg font-pixel text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 shadow-xl cursor-pointer active:scale-98 transition-all',
-                  activeSession.type === 'CHECK_IN'
-                    ? 'bg-gradient-to-r from-[#2e7d32] to-[#1b5e20] hover:from-[#388e3c] hover:to-[#2e7d32] border-2 border-[#4ade80] text-white shadow-[#166534]/40'
-                    : 'bg-gradient-to-r from-[#0284c7] to-[#075985] hover:from-[#0369a1] hover:to-[#0284c7] border-2 border-[#38bdf8] text-white shadow-[#0284c7]/40'
-                ]"
-              >
-                <PhQrCode :size="22" weight="bold" />
-                <span>
-                  {{ activeSession.type === 'CHECK_IN' ? 'PINDAI QR GERBANG KEDATANGAN' : 'PINDAI QR GERBANG KEPULANGAN' }}
-                  (+{{ activeSession.xpReward }} XP)
-                </span>
-              </button>
-
-              <p class="font-mono text-[10px] text-center text-[#a08060]">
-                Arahkan kamera ke layar proyektor panitia di gerbang utama untuk memverifikasi kehadiran.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tidak Ada Sesi Aktif -->
-        <div
-          v-else
-          class="p-6 bg-[#1a1008] border-2 border-[#4a301a] rounded-xl text-center space-y-3 shadow-md"
-        >
-          <div class="w-12 h-12 rounded-full bg-[#ca8a04]/10 border border-[#ca8a04]/40 mx-auto flex items-center justify-center text-[#facc15]">
-            <PhHourglass :size="24" weight="bold" />
-          </div>
-          <div>
-            <h3 class="font-pixel text-xs sm:text-sm text-[#facc15]">
-              BELUM ADA SESI PRESENSI AKTIF
-            </h3>
-            <p class="font-sans text-xs text-[#c4956a] max-w-md mx-auto mt-1">
-              Panitia belum membuka gerbang presensi QR saat ini. Tunggu arahan panitia di gerbang atau proyektor utama.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            @click="fetchActiveSession"
-            class="py-2 px-4 bg-[#2d1b0e] hover:bg-[#3d2413] border border-[#784d24] rounded font-pixel text-xs text-[#f0d060] inline-flex items-center gap-2 cursor-pointer transition-all active:scale-95"
-          >
-            <PhArrowsClockwise :size="14" />
-            <span>CEK ULANG STATUS GERBANG</span>
-          </button>
         </div>
       </section>
 
-      <!-- ================= 2. KUESIONER REFLEKSI HARIAN ================= -->
-      <section class="border-2 border-[#523e2b] bg-[#24160c] rounded-xl p-4 sm:p-5 shadow space-y-3">
-        <div class="flex items-center justify-between border-b border-[#4a301a] pb-3">
-          <div class="flex items-center gap-2.5">
-            <div class="h-9 w-9 rounded-lg bg-[#ca8a04]/20 border border-[#f59e0b] flex items-center justify-center text-[#facc15]">
-              <PhChatTeardropDots :size="20" weight="bold" />
-            </div>
-            <div>
-              <h3 class="font-pixel text-xs sm:text-sm text-[#facc15] font-bold">
-                KUESIONER REFLEKSI & MASUKAN
-              </h3>
-              <p class="font-sans text-[11px] text-[#c4956a]">
-                Beri masukan fasilitas dan bagikan insight pembelajaran Anda (+25 XP)
-              </p>
-            </div>
+      <!-- 2. TAB HARI 1 - 3 (Simple Segmented Control) -->
+      <section class="grid grid-cols-3 gap-1.5 bg-[#140c06]/90 p-1 rounded-xl border border-[#5a3a18]">
+        <button
+          v-for="item in DAYS"
+          :key="item.day"
+          type="button"
+          @click="() => {
+            safeSound(() => soundEngine.playSelect?.());
+            activeDayTab = item.day;
+          }"
+          :class="[
+            'py-1.5 px-1.5 rounded-lg transition-all flex flex-col items-center justify-center text-center cursor-pointer active:scale-95',
+            activeDayTab === item.day
+              ? 'bg-[#38761d] text-white border border-[#f0d060] font-bold shadow'
+              : 'text-[#c4956a] hover:text-[#f0d060]'
+          ]"
+        >
+          <div class="flex items-center gap-1 text-[10px]">
+            <span>{{ item.label }}</span>
+            <span v-if="gameStore.isDayCheckedIn(item.day)" class="w-1.5 h-1.5 rounded-full bg-[#86efac]" />
           </div>
+          <span class="text-[7.5px] opacity-80 font-sans">{{ item.date }} • {{ item.subtitle }}</span>
+        </button>
+      </section>
 
-          <span
+      <!-- 3. LIST SESI PRESENSI (Full Title Visibility, No Truncation) -->
+      <section class="space-y-2">
+        <div
+          v-for="session in ALL_SESSIONS.filter((s) => s.day === activeDayTab)"
+          :key="session.id"
+          :class="[
+            'border rounded-xl p-2.5 sm:p-3 transition-all flex items-start gap-2.5 text-left backdrop-blur-md',
+            getSessionStatus(session).state === 'verified'
+              ? 'bg-[#142312]/95 border-[#22c55e]'
+              : getSessionStatus(session).state === 'in_progress'
+              ? 'bg-[#26190e]/95 border-[#f59e0b]'
+              : 'bg-[#18100a]/85 border-[#4a301a] opacity-80'
+          ]"
+        >
+          <!-- Status Icon -->
+          <div
             :class="[
-              'font-pixel text-[9px] px-2 py-0.5 rounded border uppercase shrink-0',
-              isReflectionDone
-                ? 'bg-[#142612] border-[#22c55e] text-[#86efac]'
-                : 'bg-[#2a1b10] border-[#8b6f4e] text-[#d4b08c]'
+              'w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 mt-0.5',
+              getSessionStatus(session).state === 'verified'
+                ? 'bg-[#22c55e]/20 border-[#22c55e] text-[#4ade80]'
+                : getSessionStatus(session).state === 'in_progress'
+                ? 'bg-[#f59e0b]/20 border-[#f59e0b] text-[#facc15]'
+                : 'bg-[#1a110a] border-[#5a3a18] text-[#8a6b52]'
             ]"
           >
-            {{ isReflectionDone ? 'TERKIRIM' : 'BELUM MENGISI' }}
+            <PhCheckCircle v-if="getSessionStatus(session).state === 'verified'" :size="18" weight="fill" />
+            <PhHourglass v-else-if="getSessionStatus(session).state === 'in_progress'" :size="17" weight="bold" class="animate-pulse" />
+            <PhLockKey v-else :size="16" weight="bold" />
+          </div>
+
+          <!-- Session Details (2-Row Design for Zero Truncation) -->
+          <div class="min-w-0 flex-1">
+            <!-- Row 1: Title & Reward XP -->
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] sm:text-xs font-bold text-white leading-tight">
+                {{ session.title }}
+              </span>
+              <span class="text-[10px] sm:text-[11px] font-pixel text-[#facc15] font-bold shrink-0">
+                +{{ session.xpReward }} XP
+              </span>
+            </div>
+
+            <!-- Row 2: Time Schedule & Status Badge -->
+            <div class="flex items-center justify-between gap-2 mt-1.5 flex-wrap">
+              <span class="text-[9px] text-[#a08060] font-sans flex items-center gap-1">
+                <PhClock :size="11" class="text-[#facc15]" />
+                <span>{{ session.timeRange }}</span>
+                <span v-if="getSessionStatus(session).time" class="text-[#86efac] font-mono">
+                  • Hadir: {{ formatTime(getSessionStatus(session).time) }}
+                </span>
+              </span>
+
+              <span
+                :class="[
+                  'text-[7.5px] sm:text-[8px] font-mono px-2 py-0.5 rounded border uppercase font-bold shrink-0',
+                  getSessionStatus(session).state === 'verified'
+                    ? 'bg-[#22c55e]/20 border-[#22c55e] text-[#86efac]'
+                    : getSessionStatus(session).state === 'in_progress'
+                    ? 'bg-[#f59e0b]/20 border-[#f59e0b] text-[#facc15]'
+                    : 'bg-black/40 border-[#5a3a18] text-[#8a6b52]'
+                ]"
+              >
+                {{ getSessionStatus(session).label }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. REFLEKSI HARIAN (Simple & Minimalis) -->
+      <section class="border border-[#8b6f4e] bg-[#19110a]/95 backdrop-blur-md rounded-xl p-3 shadow-lg space-y-2 text-left">
+        <div class="flex items-center justify-between border-b border-[#4d3319] pb-1.5">
+          <span class="text-[11px] sm:text-xs text-[#facc15] font-bold flex items-center gap-1.5">
+            <PhStar :size="13" weight="fill" />
+            <span>Refleksi Hari ke-{{ activeDayTab }}</span>
           </span>
+          <span class="text-[8px] text-[#a08060] font-sans">Klaim bonus +25 XP</span>
         </div>
 
-        <!-- Already Submitted -->
-        <div v-if="isReflectionDone" class="bg-[#1e140b] border border-[#ca8a04]/50 rounded-lg p-3 font-mono text-xs space-y-1.5">
-          <div class="flex items-center justify-between text-[#facc15]">
-            <div class="flex items-center gap-1.5 font-bold">
-              <PhCheckCircle :size="16" weight="bold" />
-              <span>REFLEKSI ANDA TELAH TERSIMPAN</span>
-            </div>
-            <span class="font-pixel text-[10px] text-[#86efac]">+25 XP DITERIMA</span>
+        <!-- Jika Refleksi Sudah Dikirim -->
+        <div v-if="isReflectionDone" class="bg-[#142312] border border-[#22c55e]/50 rounded-lg p-2 font-mono text-[10px] text-[#86efac]">
+          <div class="flex items-center justify-between font-bold">
+            <span class="flex items-center gap-1">
+              <PhCheckCircle :size="13" weight="fill" />
+              <span>Tersimpan (+25 XP)</span>
+            </span>
+            <span class="text-[8px] text-[#a0d870] font-sans">Terima kasih!</span>
           </div>
-          <p class="text-[11px] text-[#d4b08c] italic">
-            "{{ essayInsight || 'Terima kasih atas kontribusi refleksi Anda!' }}"
+          <p class="text-[9.5px] text-[#d4b08c] italic font-sans mt-1">
+            "{{ currentDayRecord?.reflection?.essayInsight || 'Refleksi telah tersimpan.' }}"
           </p>
         </div>
 
-        <!-- Reflection Form -->
-        <form v-else @submit.prevent="handleSubmitReflection" class="space-y-3 font-mono text-xs">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            <!-- Rating Fasilitas -->
-            <div class="bg-[#1c1109] border border-[#523e2b] p-2 rounded space-y-1">
-              <label class="font-pixel text-[9px] text-[#facc15] block">Fasilitas Kampus (1-5)</label>
-              <div class="flex items-center gap-1">
-                <button
-                  v-for="star in 5"
-                  :key="star"
-                  type="button"
-                  @click="ratingFasilitas = star"
-                  class="cursor-pointer text-base hover:scale-110 transition-transform"
-                >
-                  <PhStar :size="16" :weight="star <= ratingFasilitas ? 'fill' : 'regular'" :class="star <= ratingFasilitas ? 'text-[#facc15]' : 'text-gray-500'" />
-                </button>
-              </div>
-            </div>
-
-            <!-- Rating Materi -->
-            <div class="bg-[#1c1109] border border-[#523e2b] p-2 rounded space-y-1">
-              <label class="font-pixel text-[9px] text-[#facc15] block">Materi & Nilai (1-5)</label>
-              <div class="flex items-center gap-1">
-                <button
-                  v-for="star in 5"
-                  :key="star"
-                  type="button"
-                  @click="ratingMateri = star"
-                  class="cursor-pointer text-base hover:scale-110 transition-transform"
-                >
-                  <PhStar :size="16" :weight="star <= ratingMateri ? 'fill' : 'regular'" :class="star <= ratingMateri ? 'text-[#facc15]' : 'text-gray-500'" />
-                </button>
-              </div>
-            </div>
-
-            <!-- Rating Buddy -->
-            <div class="bg-[#1c1109] border border-[#523e2b] p-2 rounded space-y-1">
-              <label class="font-pixel text-[9px] text-[#facc15] block">Peran Buddy (1-5)</label>
-              <div class="flex items-center gap-1">
-                <button
-                  v-for="star in 5"
-                  :key="star"
-                  type="button"
-                  @click="ratingBuddy = star"
-                  class="cursor-pointer text-base hover:scale-110 transition-transform"
-                >
-                  <PhStar :size="16" :weight="star <= ratingBuddy ? 'fill' : 'regular'" :class="star <= ratingBuddy ? 'text-[#facc15]' : 'text-gray-500'" />
-                </button>
-              </div>
+        <!-- Form Refleksi Ringkas -->
+        <form v-else @submit.prevent="submitReflection" class="space-y-2 text-xs">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <span class="text-[9.5px] text-[#c4956a] font-sans">Rating bimbingan &amp; kegiatan:</span>
+            <div class="flex items-center gap-1">
+              <button
+                v-for="star in 5"
+                :key="star"
+                type="button"
+                @click="rating = star"
+                class="cursor-pointer hover:scale-110 transition-transform"
+                :title="`${star} Bintang`"
+              >
+                <PhStar
+                  :size="15"
+                  :weight="star <= rating ? 'fill' : 'regular'"
+                  :class="star <= rating ? 'text-[#facc15]' : 'text-gray-600'"
+                />
+              </button>
             </div>
           </div>
 
-          <!-- Kolom Esai Singkat -->
-          <div class="space-y-1">
-            <label class="text-[11px] text-[#d4b08c] block">
-              Apa inspirasi atau pelajaran terbaik yang Anda peroleh hari ini? *
-            </label>
-            <textarea
-              v-model="essayInsight"
-              rows="2"
-              required
-              placeholder="Tuliskan pengalaman berkesan, pemahaman baru, atau komitmen Anda di kampus..."
-              class="w-full p-2 bg-[#170e07] border border-[#523e2b] rounded text-xs text-[#f0e0c0] placeholder-[#785435] focus:outline-none focus:border-[#f59e0b]"
-            />
-          </div>
+          <textarea
+            v-model="essayInsight"
+            rows="2"
+            required
+            placeholder="Tuliskan kesan atau pesan singkat Anda hari ini..."
+            class="w-full p-2 bg-[#120a05] border border-[#523e2b] focus:border-[#facc15] rounded-lg text-xs text-[#f0e0c0] placeholder-[#785435] focus:outline-none font-sans"
+          />
 
           <button
             type="submit"
-            class="w-full py-2 px-4 bg-[#b45309] hover:bg-[#d97706] border border-[#f59e0b] rounded font-pixel text-xs text-white font-bold flex items-center justify-center gap-1.5 shadow cursor-pointer transition-all active:scale-98"
+            :disabled="isSubmitting"
+            class="w-full py-1.5 px-3 bg-[#b45309] hover:bg-[#d97706] border border-[#fef08a] rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98 shadow"
           >
-            <PhSparkle :size="16" weight="fill" class="text-[#facc15]" />
-            <span>KIRIM REFLEKSI & DAPATKAN (+25 XP)</span>
+            <PhSparkle :size="13" weight="fill" class="text-[#facc15]" />
+            <span>Kirim Refleksi (+25 XP)</span>
           </button>
         </form>
       </section>
 
-      <!-- ================= 3. RIWAYAT PRESENSI MAHASISWA ================= -->
-      <section class="border-2 border-[#523e2b] bg-[#24160c] rounded-xl p-4 sm:p-5 shadow space-y-3">
-        <div class="flex items-center justify-between border-b border-[#4a301a] pb-2.5">
-          <h3 class="font-pixel text-xs sm:text-sm text-[#facc15] flex items-center gap-2">
-            <PhListChecks :size="18" weight="bold" />
-            <span>RIWAYAT PRESENSI ANDA</span>
-          </h3>
-
-          <span class="font-mono text-[10px] text-[#a08060]">
-            {{ attendedLogs.length }} Sesi Tercatat
-          </span>
-        </div>
-
-        <div v-if="attendedLogs.length > 0" class="space-y-2">
-          <div
-            v-for="(log, idx) in attendedLogs"
-            :key="idx"
-            class="bg-[#1a1008] border border-[#4a301a] p-3 rounded-lg flex items-center justify-between gap-2"
+      <!-- 5. FOOTER NAVIGASI SEDERHANA (With Pill Backdrop to prevent signpost overlap) -->
+      <footer class="flex items-center justify-center pt-1 pb-2">
+        <div class="inline-flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-[#120a05]/90 backdrop-blur-md border border-[#5a3a18] text-[8.5px] text-[#a08060] font-pixel shadow">
+          <RouterLink
+            to="/peta"
+            @click="() => safeSound(() => soundEngine.playClick?.())"
+            class="hover:text-[#60a5fa] flex items-center gap-1 transition-colors"
           >
-            <div class="flex items-center gap-2.5">
-              <div
-                :class="[
-                  'w-8 h-8 rounded border flex items-center justify-center shrink-0',
-                  log.type === 'CHECK_IN'
-                    ? 'bg-[#22c55e]/15 border-[#22c55e] text-[#4ade80]'
-                    : 'bg-[#0284c7]/15 border-[#38bdf8] text-[#38bdf8]'
-                ]"
-              >
-                <PhDoorOpen v-if="log.type === 'CHECK_IN'" :size="16" weight="bold" />
-                <PhHouse v-else :size="16" weight="bold" />
-              </div>
-
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="font-pixel text-xs text-[#f0e0c0] font-bold">
-                    {{ log.sessionTitle }}
-                  </span>
-                  <span
-                    :class="[
-                      'font-mono text-[8px] px-1 py-0.2 rounded border',
-                      log.status === 'ON_TIME'
-                        ? 'bg-[#142612] border-[#22c55e] text-[#86efac]'
-                        : 'bg-[#2a1010] border-[#ef4444] text-[#fca5a5]'
-                    ]"
-                  >
-                    {{ log.status === 'ON_TIME' ? 'TEPAT WAKTU' : 'TERLAMBAT' }}
-                  </span>
-                </div>
-                <p class="font-mono text-[10px] text-[#a08060]">
-                  {{ formatDate(log.timestamp) }} • {{ formatTime(log.timestamp) }}
-                </p>
-              </div>
-            </div>
-
-            <div class="px-2 py-1 bg-[#ca8a04]/15 border border-[#ca8a04] rounded font-pixel text-[10px] text-[#facc15] shrink-0">
-              +{{ log.xpAwarded }} XP
-            </div>
-          </div>
+            <PhMapTrifold :size="12" />
+            <span>PETA KAMPUS</span>
+          </RouterLink>
+          <span>•</span>
+          <RouterLink
+            to="/paspor"
+            @click="() => safeSound(() => soundEngine.playClick?.())"
+            class="hover:text-[#facc15] flex items-center gap-1 transition-colors"
+          >
+            <PhIdentificationBadge :size="12" />
+            <span>PASPOR</span>
+          </RouterLink>
+          <span>•</span>
+          <RouterLink
+            to="/profile"
+            @click="() => safeSound(() => soundEngine.playClick?.())"
+            class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
+          >
+            <PhUser :size="12" />
+            <span>PROFIL</span>
+          </RouterLink>
         </div>
-
-        <div v-else class="text-center py-6 text-xs text-[#a08060] font-mono">
-          Belum ada riwayat presensi yang tercatat. Silakan lakukan scan pada gerbang aktif.
-        </div>
-      </section>
+      </footer>
 
     </main>
-
-    <!-- Universal Reusable QR Scanner Modal -->
-    <QrScannerModal
-      v-model="isScannerOpen"
-      :title="activeSession?.type === 'CHECK_OUT' ? 'SCAN GERBANG KEPULANGAN' : 'SCAN GERBANG MASUK'"
-      :subtitle="activeSession?.title || 'Arahkan kamera ke QR Gerbang Resmi Panitia'"
-      :preset-tokens="[]"
-      @scan="handleTokenScanned"
-    />
   </div>
 </template>

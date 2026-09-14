@@ -91,6 +91,25 @@ const executeResetProgress = () => {
   if (gameStore.soundEnabled) soundEngine.playClick();
 };
 
+function getFloorBooths(floor: any) {
+  if (!floor || !floor.boothIds) return [];
+  return floor.boothIds
+    .map((id: string) => BOOTHS_DATA[id])
+    .filter(Boolean);
+}
+
+function getFloorStampsCount(floor: any) {
+  const booths = getFloorBooths(floor);
+  const completed = booths.filter((b: any) => Boolean(gameStore.participant.stamps[b.id])).length;
+  return { completed, total: booths.length };
+}
+
+function isFloorFullyCompleted(floor: any) {
+  const { completed, total } = getFloorStampsCount(floor);
+  return total > 0 && completed === total;
+}
+
+
 onMounted(() => {
   gameStore.syncWithServer();
   animatePageEnter('.paspor-header', { y: 20, duration: 0.45 });
@@ -319,9 +338,7 @@ watch(showCertificate, (val) => {
             :key="floor.number"
             :class="[
               'paspor-floor-card sdv-card p-3.5 sm:p-4',
-              floor.boothIds.every(bId => BOOTHS_DATA[bId] && gameStore.participant.stamps[BOOTHS_DATA[bId].id])
-                ? 'border-[#7ec850] bg-[#1e3321]'
-                : ''
+              isFloorFullyCompleted(floor) ? 'border-[#7ec850] bg-[#1e3321]' : ''
             ]"
           >
             <div class="flex items-center justify-between gap-2 border-b border-[#5a3a18] pb-2 mb-3">
@@ -334,87 +351,87 @@ watch(showCertificate, (val) => {
                 </span>
               </div>
               <PixelBadge
-                v-if="floor.boothIds.every(bId => BOOTHS_DATA[bId] && gameStore.participant.stamps[BOOTHS_DATA[bId].id])"
+                v-if="isFloorFullyCompleted(floor)"
                 variant="emerald"
                 size="sm"
               >
-                <PhCheckCircle :size="12" weight="bold" /> Selesai
+                <PhCheckCircle :size="12" weight="bold" /> {{ getFloorStampsCount(floor).completed }}/{{ getFloorStampsCount(floor).total }} Selesai
               </PixelBadge>
               <span v-else class="font-sans text-xs text-[#a08060]">
-                {{ floor.boothIds.filter(bId => BOOTHS_DATA[bId] && gameStore.participant.stamps[BOOTHS_DATA[bId].id]).length }}/{{ floor.boothIds.length }} Selesai
+                {{ getFloorStampsCount(floor).completed }}/{{ getFloorStampsCount(floor).total }}
               </span>
             </div>
 
             <!-- Dynamic Stamps Grid per Floor -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <template v-for="boothId in floor.boothIds" :key="boothId">
-                <button
-                  v-if="BOOTHS_DATA[boothId]"
-                  type="button"
-                  @click="() => {
-                    if (gameStore.soundEnabled) soundEngine.playSelect();
-                    selectedStampPreview = BOOTHS_DATA[boothId].id;
-                  }"
-                  :class="[
-                    'w-full text-left p-3 rounded-xl border-2 transition-all flex items-center justify-between gap-3 cursor-pointer',
-                    gameStore.participant.stamps[BOOTHS_DATA[boothId].id]
-                      ? 'bg-[#1a2e1a] border-[#7ec850] shadow hover:border-[#f0d060]'
-                      : 'bg-[#170f07]/70 border-dashed border-[#5a3a18] hover:border-[#8b6f4e] opacity-70'
-                  ]"
-                >
-                  <div class="flex items-center gap-3 min-w-0">
-                    <div
+            <div :class="['grid gap-3', getFloorBooths(floor).length === 1 ? 'grid-cols-1 max-w-md' : 'grid-cols-1 sm:grid-cols-2']">
+              <button
+                v-for="booth in getFloorBooths(floor)"
+                :key="booth.id"
+                type="button"
+                @click="() => {
+                  if (gameStore.soundEnabled) soundEngine.playSelect?.();
+                  selectedStampPreview = booth.id;
+                }"
+                :class="[
+                  'w-full text-left p-3 rounded-xl border-2 transition-all flex items-center justify-between gap-3 cursor-pointer',
+                  (gameStore.participant.stamps[booth.id] || gameStore.isBoothCompleted(booth.id))
+                    ? 'bg-[#1a2e1a] border-[#7ec850] shadow hover:border-[#f0d060]'
+                    : 'bg-[#170f07]/70 border-dashed border-[#5a3a18] hover:border-[#8b6f4e] opacity-70'
+                ]"
+              >
+                <div class="flex items-center gap-3 min-w-0">
+                  <div
+                    :class="[
+                      'w-10 h-10 rounded-lg border-2 flex flex-col items-center justify-center shrink-0',
+                      (gameStore.participant.stamps[booth.id] || gameStore.isBoothCompleted(booth.id))
+                        ? 'border-[#f0d060] bg-gradient-to-b from-[#3d7828] to-[#255018]'
+                        : 'border-[#5a3a18] bg-[#23160c] text-[#5a3a18]'
+                    ]"
+                  >
+                    <StampIcon
+                      v-if="gameStore.participant.stamps[booth.id] || gameStore.isBoothCompleted(booth.id)"
+                      :name="booth.stampIcon"
+                      :size="20"
+                      class="text-[#f0d060]"
+                    />
+                    <PhLockKey v-else :size="18" weight="bold" />
+                  </div>
+
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                      <span class="font-pixel text-[9px] bg-[#170f07] px-1.5 py-0.5 rounded text-[#f0d060] border border-[#5a3a18]">
+                        {{ booth.code }}
+                      </span>
+                      <span class="font-sans text-[11px] text-[#c4956a] leading-tight">
+                        {{ booth.badgeTag }}
+                      </span>
+                    </div>
+                    <h4
                       :class="[
-                        'w-10 h-10 rounded-lg border-2 flex flex-col items-center justify-center shrink-0',
-                        gameStore.participant.stamps[BOOTHS_DATA[boothId].id]
-                          ? 'border-[#f0d060] bg-gradient-to-b from-[#3d7828] to-[#255018]'
-                          : 'border-[#5a3a18] bg-[#23160c] text-[#5a3a18]'
+                        'font-pixel text-[9px] sm:text-[10px] leading-normal break-words',
+                        (gameStore.participant.stamps[booth.id] || gameStore.isBoothCompleted(booth.id)) ? 'text-white font-bold' : 'text-[#a08060]'
                       ]"
                     >
-                      <StampIcon
-                        v-if="gameStore.participant.stamps[BOOTHS_DATA[boothId].id]"
-                        :name="BOOTHS_DATA[boothId].stampIcon"
-                        :size="20"
-                        class="text-[#f0d060]"
-                      />
-                      <PhLockKey v-else :size="18" weight="bold" />
-                    </div>
-
-                    <div class="min-w-0 flex-1">
-                      <div class="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                        <span class="font-pixel text-[9px] bg-[#170f07] px-1.5 py-0.5 rounded text-[#f0d060] border border-[#5a3a18]">
-                          {{ BOOTHS_DATA[boothId].code }}
-                        </span>
-                        <span class="font-sans text-[11px] text-[#c4956a] leading-tight">
-                          {{ BOOTHS_DATA[boothId].badgeTag }}
-                        </span>
-                      </div>
-                      <h4
-                        :class="[
-                          'font-pixel text-[9px] sm:text-[10px] leading-normal break-words',
-                          gameStore.participant.stamps[BOOTHS_DATA[boothId].id] ? 'text-white font-bold' : 'text-[#a08060]'
-                        ]"
-                      >
-                        {{ BOOTHS_DATA[boothId].name }}
-                      </h4>
-                    </div>
+                      {{ booth.name }}
+                    </h4>
                   </div>
+                </div>
 
-                  <div class="shrink-0">
-                    <PhCheckCircle
-                      v-if="gameStore.participant.stamps[BOOTHS_DATA[boothId].id]"
-                      :size="18"
-                      weight="fill"
-                      class="text-[#7ec850]"
-                    />
-                    <span v-else class="font-pixel text-[9px] text-[#f0d060] bg-[#2d1b0e] px-2 py-1 rounded border border-[#5a3a18]">
-                      Buka
-                    </span>
-                  </div>
-                </button>
-              </template>
+                <div class="shrink-0">
+                  <PhCheckCircle
+                    v-if="gameStore.participant.stamps[booth.id] || gameStore.isBoothCompleted(booth.id)"
+                    :size="18"
+                    weight="fill"
+                    class="text-[#7ec850]"
+                  />
+                  <span v-else class="font-pixel text-[9px] text-[#f0d060] bg-[#2d1b0e] px-2 py-1 rounded border border-[#5a3a18]">
+                    Buka
+                  </span>
+                </div>
+              </button>
             </div>
           </div>
+
         </div>
       </div>
 

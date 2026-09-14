@@ -226,7 +226,7 @@
             {{ student.totalXp.toLocaleString() }} XP
           </span>
           <span class="text-[8px] text-[#f0d060] font-mono">
-            {{ student.stamps }} Stempel
+            {{ student.stamps }}/9 Stempel
           </span>
         </div>
       </div>

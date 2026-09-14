@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import {
   PhX,
   PhCheck,
@@ -11,6 +11,7 @@ import {
   PhGenderMale,
   PhGenderFemale,
   PhCheckCircle,
+  PhSignOut,
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
 import { AVATAR_OPTIONS, UNU_FACULTIES } from '@/data/mockData';
@@ -31,6 +32,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'close'): void;
   (e: 'complete'): void;
+  (e: 'requestLogout'): void;
 }>();
 
 const gameStore = useGameStore();
@@ -50,13 +52,42 @@ const profileFaculty = ref(gameStore.participant.faculty || UNU_FACULTIES[1].nam
 const profileProdi = ref(gameStore.participant.prodi || 'Informatika');
 const profileAvatar = ref(gameStore.participant.avatar || 'character_cowok');
 
-// If user is already registered, they can close the modal
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (open) {
+      currentStep.value = props.initialStep || 'login';
+      loginNim.value = gameStore.participant.nim || '';
+      loginPassword.value = '';
+      loginError.value = '';
+      profileName.value = gameStore.participant.name || '';
+      profileNim.value = gameStore.participant.nim || '';
+      profileFaculty.value = gameStore.participant.faculty || UNU_FACULTIES[1].name;
+      profileProdi.value = gameStore.participant.prodi || 'Informatika';
+      profileAvatar.value = gameStore.participant.avatar || 'character_cowok';
+    }
+  }
+);
+
+watch(
+  () => props.initialStep,
+  (newStep) => {
+    if (newStep) {
+      currentStep.value = newStep;
+    }
+  }
+);
+
+// If reauthenticate is required, require valid auth before dismiss, otherwise let user close modal
 const canDismiss = computed(() => {
-  return Boolean(
-    gameStore.isLoggedIn &&
-    gameStore.participant?.isRegistered &&
-    gameStore.participant?.name
-  );
+  if (props.reauthenticate) {
+    return Boolean(
+      gameStore.isLoggedIn &&
+      gameStore.participant?.isRegistered &&
+      gameStore.participant?.name
+    );
+  }
+  return true;
 });
 
 const handleFacultyChange = (event: Event) => {
@@ -392,6 +423,17 @@ const selectAvatar = (avId: string) => {
           <!-- Buttons -->
           <div class="flex items-center gap-2 pt-1 font-pixel">
             <button
+              v-if="gameStore.isLoggedIn"
+              type="button"
+              @click="emit('requestLogout')"
+              class="py-2.5 px-3 rounded-lg border-2 border-red-700/60 bg-red-950/50 hover:bg-red-900/60 text-red-300 hover:text-white text-[10px] uppercase flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+              title="Keluar dari akun"
+            >
+              <PhSignOut :size="12" weight="bold" />
+              <span>KELUAR</span>
+            </button>
+            <button
+              v-else
               type="button"
               @click="currentStep = 'login'"
               class="py-2.5 px-3 rounded-lg border-2 border-[#5a3a18] bg-[#1e130a] hover:bg-[#2d1b0e] text-[#c4956a] hover:text-[#f0d060] text-[10px] uppercase flex items-center gap-1 cursor-pointer transition-all active:scale-95"
