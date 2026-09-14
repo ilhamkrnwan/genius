@@ -200,11 +200,12 @@ const handleMiniGameComplete = (score: number, totalQuestions: number) => {
   if (!booth.value) return;
   if (gameStore.soundEnabled) soundEngine.playCorrect();
 
-  const result = gameStore.completeBooth(booth.value.id, score, totalQuestions);
+  const hasServerSession = Boolean(serverSessionId.value && gameSessionStore.status === 'active');
+  const result = gameStore.completeBooth(booth.value.id, score, totalQuestions, hasServerSession);
 
   // Sync complete server session if session is active
-  if (serverSessionId.value && gameSessionStore.status === 'active') {
-    gameSessionStore.completeSession().then((res) => {
+  if (hasServerSession) {
+    gameSessionStore.completeSession([{ score, totalQuestions, action: 'COMPLETE' }]).then((res) => {
       if (res) console.log('[LinearSpotView] Server session completed:', res);
     }).catch((err) => {
       console.warn('[LinearSpotView] Error completing server session:', err);

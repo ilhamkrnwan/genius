@@ -28,6 +28,8 @@ Dokumentasi arsitektur, integrasi alur rundown 3 hari kegiatan, pemodelan MongoD
 - 💻 [**10. Panduan Implementasi Frontend Lengkap**](./docs/10-PANDUAN-IMPLEMENTASI-FRONTEND-LENGKAP.md)
 - 📋 [**11. Sistem Presensi Sesi Dinamis**](./docs/11-SISTEM-PRESENSI-SESI-FLEKSIBEL.md)
 - 🏛️ [**12. Rationale Arsitektur: Mengapa PostgreSQL + Drizzle ORM, Bukan NoSQL/MongoDB?**](./docs/12-RATIONALE-TECH-STACK-POSTGRESQL-VS-MONGODB.md)
+- 🧩 [**13. Pemetaan Kuis Resmi & Core Gameplay dari CSV**](./docs/13-PEMETAAN-QUIZ-DATABASE-DAN-CORE-GAMEPLAY.md)
+- 🌱 [**14. Panduan Eksekusi Seeder & Manajemen CRUD Kuis Admin**](./docs/14-PANDUAN-SEED-DAN-CRUD-ADMIN-KUIS.md)
 
 ---
 
@@ -93,7 +95,22 @@ bun install
 | **Backend API**              | `bun run dev:backend` | `http://localhost:3001` | REST API (Hono)                       |
 | **Jalankan Semua Sekaligus** | `bun run dev`         | -                       | Menjalankan seluruh workspace paralel |
 
-### 3. Build Semua Aplikasi
+### 3. Inisialisasi & Seeding Database
+
+```bash
+# Inisialisasi awal penuh (Admin, 10 Buddy, 100 Maba, 5 Regu, Ormawa, & Kuis Resmi)
+bun run db:seed
+
+# Atau sinkronisasi kuis resmi tanpa menghapus user & riwayat transaksi:
+bun run db:seed:official
+
+# Inspeksi visual database via browser (Drizzle Studio)
+bun run db:studio
+```
+
+> 📖 **Panduan Lengkap Seeder & CRUD Kuis:** Baca [`docs/14-PANDUAN-SEED-DAN-CRUD-ADMIN-KUIS.md`](./docs/14-PANDUAN-SEED-DAN-CRUD-ADMIN-KUIS.md).
+
+### 4. Build Semua Aplikasi
 
 ```bash
 bun run build

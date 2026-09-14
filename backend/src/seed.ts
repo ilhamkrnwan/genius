@@ -384,30 +384,6 @@ async function seed() {
     } else {
       mainRoute = existingRoute;
     }
-
-    for (let fNum = 1; fNum <= 9; fNum++) {
-      const posLoc = createdLocations.find((l) => l.code === `POS-L${fNum}-A`);
-      if (posLoc && mainRoute) {
-        const [existingStop] = await db.select().from(routeStops).where(and(eq(routeStops.routeId, mainRoute.id), eq(routeStops.order, fNum))).limit(1);
-        if (!existingStop) {
-          await db.insert(routeStops).values({ routeId: mainRoute.id, locationId: posLoc.id, order: fNum, isRequired: true, estimatedDurationMin: 15 });
-        }
-        const [existingMission] = await db.select().from(missions).where(eq(missions.locationId, posLoc.id)).limit(1);
-        if (!existingMission) {
-          await db.insert(missions).values({
-            name: `Tantangan Kuis Pos Lantai ${fNum}`,
-            description: `Selesaikan kuis wawasan dan uji kecerdasan tim di ${posLoc.name}`,
-            type: "MAIN",
-            locationId: posLoc.id,
-            stageId: stage1.id,
-            gameId: mainQuizGame.id,
-            order: fNum,
-            timeLimit: 120,
-            status: "ACTIVE",
-          });
-        }
-      }
-    }
   }
 
   // ============================================================
@@ -835,6 +811,18 @@ async function seed() {
   }
   console.log(`  ✅ ${officialOrmawa.length} Official Ormawa Booths seeded (Lantai 3, 4, 5)`);
 
+  // ============================================================
+  // 9. SEED OFFICIAL QUIZ DATABASE (9 Pos dari quiz_database.csv)
+  // ============================================================
+  console.log("🧩 [9/9] Seeding Official 9-Pos Quiz Database from quiz_database.csv...");
+  try {
+    const { seedOfficialQuizDatabase } = await import("../scripts/seed_official_quiz");
+    await seedOfficialQuizDatabase();
+    console.log("  ✅ Official 9-Pos Quiz Database seeded successfully (51 Questions, 9 Locations, 12 Games)");
+  } catch (err: any) {
+    console.warn("  ⚠️ [Seed] Official quiz database seed warning:", err.message);
+  }
+
   console.log("\n========================================================");
   console.log("🎉 GENIUS 2026 DATABASE SEEDING COMPLETED SUCCESSFULLY!");
   console.log("========================================================");
@@ -843,6 +831,7 @@ async function seed() {
   console.log("🎓 MABA (100)  : 26111101 s/d 26111200 (password: genius2026)");
   console.log("🛡️ Kelompok (5): Genius 01 s/d Genius 05 (20 MABA + 2 Buddy/tim)");
   console.log("🎪 Ormawa (19) : 19 Official Booths (Lantai 3, 4, 5)");
+  console.log("🧩 Kuis Resmi  : 9 Pos di 6 Lantai (51 Soal, 100 Poin/pos)");
   console.log("========================================================\n");
 
   process.exit(0);

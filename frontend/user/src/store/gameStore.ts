@@ -475,7 +475,7 @@ export const useGameStore = defineStore('game', {
       };
     },
 
-    completeBooth(boothId: string, score: number, totalQuestions: number) {
+    completeBooth(boothId: string, score: number, totalQuestions: number, isServerSynced = false) {
       const booth = BOOTHS_DATA[boothId];
       if (!booth) {
         return {
@@ -516,7 +516,8 @@ export const useGameStore = defineStore('game', {
         [boothId]: stampRecord,
       };
 
-      const xpEarned = isAlreadyCompleted ? 0 : 150 + score * 50;
+      // Exact score matching quiz_database.csv (up to 100 points per pos)
+      const xpEarned = isAlreadyCompleted ? 0 : Math.min(100, Math.max(0, score));
       const newTotalXp = this.participant.totalXp + xpEarned;
 
       const floor = FLOORS_DATA.find((f) => f.number === booth.floorNumber);
@@ -542,8 +543,8 @@ export const useGameStore = defineStore('game', {
 
       this.saveToStorage();
 
-      // Sync game score to live PostgreSQL point ledger
-      if (!isAlreadyCompleted && xpEarned > 0) {
+      // Sync game score to live PostgreSQL point ledger ONLY if not already synced by server session
+      if (!isAlreadyCompleted && xpEarned > 0 && !isServerSynced) {
         api.submitScore({
           participantId: this.participant.id || this.participant.nim || 'MABA',
           teamId: this.participant.teamId || this.participant.groupId || '',

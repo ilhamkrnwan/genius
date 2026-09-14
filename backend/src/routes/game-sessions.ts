@@ -1,8 +1,8 @@
 import { Elysia, t } from "elysia";
 import { db } from "../db";
-import { gameSessions, games, users, locations, missions, answerSubmissions, teams, teamMembers, scoreTransactions, floors, questions } from "../db/schema";
-import { eq, and, sql, desc, inArray, asc } from "drizzle-orm";
-import { authMiddleware, requireUser, requireBuddyOrAdmin, validateBuddyTeamScope } from "../middleware/auth";
+import { gameSessions, games, users, locations, missions, teams, teamMembers, scoreTransactions, floors, questions } from "../db/schema";
+import { eq, and, sql, desc, inArray, asc, or, ilike } from "drizzle-orm";
+import { authMiddleware, requireUser, requireBuddyOrAdmin, validateBuddyTeamScope, validateParticipantTeamScope } from "../middleware/auth";
 import { GameEngine } from "../engine";
 import { canCancelOrExpireSession, canCompleteSession, canPauseSession, canStartSession, hasSessionTimedOut } from "../lib/session-lifecycle";
 import { AchievementEngine } from "../engine/achievements";
@@ -258,7 +258,7 @@ export const gameSessionRoutes = new Elysia({
       return { success: false, error: { code: "NOT_FOUND", message: "Game session not found" } };
     }
 
-    if (user?.role === "PARTICIPANT" && session.teamId !== user.teamId) {
+    if (user?.role === "PARTICIPANT" && !(await validateParticipantTeamScope(user, session.teamId))) {
       set.status = 403;
       return { success: false, error: { code: "FORBIDDEN", message: "Session does not belong to your team" } };
     }
@@ -313,7 +313,7 @@ export const gameSessionRoutes = new Elysia({
         return { success: false, error: { code: "SESSION_EXPIRED", message: "Waktu permainan telah habis." } };
       }
 
-      if (user?.role === "PARTICIPANT" && session.teamId !== user.teamId) {
+      if (user?.role === "PARTICIPANT" && !(await validateParticipantTeamScope(user, session.teamId))) {
         set.status = 403;
         return { success: false, error: { code: "FORBIDDEN", message: "Session does not belong to your team" } };
       }
@@ -343,7 +343,7 @@ export const gameSessionRoutes = new Elysia({
       const [question] = await db
         .select({ correctAnswer: questions.correctAnswer, options: questions.options, baseScore: questions.baseScore })
         .from(questions)
-        .where(eq(questions.id, body.questionId))
+        .where(eq(questions.id, b.questionId))
         .limit(1);
       if (!question) {
         set.status = 422;
@@ -410,18 +410,40 @@ export const gameSessionRoutes = new Elysia({
         return { success: false, error: { code: "FORBIDDEN", message: "Buddy is not assigned to this team" } };
       }
 
-      const [mission] = await db
-        .select({
-          id: missions.id,
-          name: missions.name,
-          gameId: missions.gameId,
-          locationId: missions.locationId,
-          stageId: missions.stageId,
-          timeLimit: missions.timeLimit,
-        })
-        .from(missions)
-        .where(eq(missions.id, missionId))
-        .limit(1);
+      let mission: any = null;
+      if (isValidUUID(missionId)) {
+        const [found] = await db
+          .select({
+            id: missions.id,
+            name: missions.name,
+            gameId: missions.gameId,
+            locationId: missions.locationId,
+            stageId: missions.stageId,
+            timeLimit: missions.timeLimit,
+          })
+          .from(missions)
+          .where(eq(missions.id, missionId))
+          .limit(1);
+        mission = found;
+      } else {
+        const [found] = await db
+          .select({
+            id: missions.id,
+            name: missions.name,
+            gameId: missions.gameId,
+            locationId: missions.locationId,
+            stageId: missions.stageId,
+            timeLimit: missions.timeLimit,
+          })
+          .from(missions)
+          .innerJoin(locations, eq(missions.locationId, locations.id))
+          .where(or(
+            ilike(locations.code, missionId),
+            ilike(missions.name, `%${missionId}%`)
+          ))
+          .limit(1);
+        mission = found;
+      }
 
       if (!mission || !mission.gameId) {
         set.status = 400;
@@ -438,22 +460,18 @@ export const gameSessionRoutes = new Elysia({
         .select({ id: gameSessions.id, status: gameSessions.status })
         .from(gameSessions)
         .where(and(
-          eq(gameSessions.missionId, missionId),
+          eq(gameSessions.missionId, mission.id),
           eq(gameSessions.teamId, teamId),
           inArray(gameSessions.status, ["READY", "ACTIVE", "PAUSED"]),
         ))
         .limit(1);
       if (existingActiveSession) {
-        // Auto-Start Cerdas: if existing session is READY and game is ACTIVE, auto-promote to ACTIVE
-        if (existingActiveSession.status === "READY" && game.status === "ACTIVE") {
-          const [promoted] = await db
-            .update(gameSessions)
-            .set({ status: "ACTIVE", serverStartAt: new Date(), updatedAt: new Date() })
-            .where(eq(gameSessions.id, existingActiveSession.id))
-            .returning();
+        // If user is participant or buddy, return the existing active/ready/paused session
+        if (["READY", "ACTIVE", "PAUSED"].includes(existingActiveSession.status)) {
+          const [foundSession] = await db.select().from(gameSessions).where(eq(gameSessions.id, existingActiveSession.id)).limit(1);
           return {
             success: true,
-            data: promoted,
+            data: foundSession || existingActiveSession,
           };
         }
         set.status = 409;
@@ -540,9 +558,9 @@ export const gameSessionRoutes = new Elysia({
             locationId: mission.locationId,
             stageId: mission.stageId,
             buddyId: sessionBuddyId,
-            status: (isPractice || game.status === "ACTIVE") ? "ACTIVE" : "READY",
-            serverStartAt: (isPractice || game.status === "ACTIVE") ? new Date() : null,
-            timeLimit: mission.timeLimit || 300,
+            status: isPractice ? "ACTIVE" : "READY",
+            serverStartAt: isPractice ? new Date() : null,
+            timeLimit: mission.timeLimit || 600,
             participants: members,
             metadata: { gamePayload, initialStep: 1, isPractice },
           })
@@ -617,31 +635,51 @@ export const gameSessionRoutes = new Elysia({
         set.status = 403;
         return { success: false, error: { code: "FORBIDDEN", message: "Buddy is not assigned to this team" } };
       }
-      if (session.status === "ACTIVE") {
-        return { success: true, message: "Sesi pos sudah aktif.", data: session };
-      }
-      if (!canStartSession(session.status)) {
-        set.status = 409;
-        return { success: false, error: { code: "INVALID_STATUS", message: "Only ready or paused sessions can start" } };
-      }
-
       const now = new Date();
       const sessionMetadata = (session.metadata && typeof session.metadata === "object" ? session.metadata : {}) as Record<string, any>;
       const pausedAt = sessionMetadata.pausedAt ? new Date(sessionMetadata.pausedAt).getTime() : null;
       const pausedDurationMs = Number(sessionMetadata.pausedDurationMs || 0) + (pausedAt ? Math.max(0, now.getTime() - pausedAt) : 0);
 
       // Configurable duration (e.g. 600s, 720s, 900s)
-      const requestedDuration = body?.timeLimitSeconds ? Number(body.timeLimitSeconds) : undefined;
+      const requestedDuration = (body as any)?.timeLimitSeconds ? Number((body as any).timeLimitSeconds) : undefined;
       const effectiveTimeLimit = requestedDuration && requestedDuration >= 60 && requestedDuration <= 3600
         ? requestedDuration
         : (session.timeLimit || 900);
+
+      if (session.status === "ACTIVE") {
+        if (requestedDuration && (session.timeLimit !== effectiveTimeLimit || !session.serverStartAt)) {
+          const [updated] = await db
+            .update(gameSessions)
+            .set({
+              timeLimit: effectiveTimeLimit,
+              serverStartAt: now,
+              metadata: { ...sessionMetadata, pausedAt: null, pausedDurationMs: 0 },
+              updatedAt: now,
+            })
+            .where(eq(gameSessions.id, params.id))
+            .returning();
+          broadcastGameSessionEvent(updated.id, "SESSION_STARTED", updated);
+          broadcastAdminEvent("GAME_SESSION_STARTED", {
+            sessionId: updated.id,
+            teamId: updated.teamId,
+            timeLimit: effectiveTimeLimit,
+          });
+          return { success: true, message: `Durasi sesi pos diperbarui menjadi ${effectiveTimeLimit / 60} menit.`, data: updated };
+        }
+        return { success: true, message: "Sesi pos sudah aktif.", data: session };
+      }
+
+      if (!canStartSession(session.status)) {
+        set.status = 409;
+        return { success: false, error: { code: "INVALID_STATUS", message: "Only ready or paused sessions can start" } };
+      }
 
       const [updated] = await db
         .update(gameSessions)
         .set({
           status: "ACTIVE",
           timeLimit: effectiveTimeLimit,
-          serverStartAt: session.serverStartAt || now,
+          serverStartAt: session.status === "PAUSED" ? (session.serverStartAt || now) : now,
           metadata: { ...sessionMetadata, pausedAt: null, pausedDurationMs },
           updatedAt: now,
         })
@@ -755,7 +793,7 @@ export const gameSessionRoutes = new Elysia({
         return { success: false, error: { code: "NOT_FOUND", message: "Session not found" } };
       }
 
-      if (user?.role === "PARTICIPANT" && session.teamId !== user.teamId) {
+      if (user?.role === "PARTICIPANT" && !(await validateParticipantTeamScope(user, session.teamId))) {
         set.status = 403;
         return { success: false, error: { code: "FORBIDDEN", message: "Session does not belong to your team" } };
       }
@@ -804,24 +842,32 @@ export const gameSessionRoutes = new Elysia({
       const metadata = (session.metadata && typeof session.metadata === "object" ? session.metadata : {}) as Record<string, any>;
       const storedAnswers = Array.isArray(metadata.answerSubmissions) ? metadata.answerSubmissions : [];
       const b = body as any;
+      const bodySubmissions = Array.isArray(b.submissions) && b.submissions.length > 0 ? b.submissions : [];
       const submittedAnswers = String(game.type) === "QUIZ" || String(game.type) === "TEAM_QUIZ"
         ? (user?.role === "PARTICIPANT"
-          ? storedAnswers
-          : Array.isArray(b.submissions) && b.submissions.length > 0 ? b.submissions : storedAnswers)
-        : (Array.isArray(b.submissions) && b.submissions.length > 0 ? b.submissions : storedAnswers);
-      const participantIds = Array.from(new Set(storedAnswers.map((item: any) => item.participantId).filter(Boolean)));
+          ? (storedAnswers.length > 0 ? storedAnswers : bodySubmissions)
+          : (bodySubmissions.length > 0 ? bodySubmissions : storedAnswers))
+        : (bodySubmissions.length > 0 ? bodySubmissions : storedAnswers);
+
+      const participantIds = Array.from(new Set(submittedAnswers.map((item: any) => item.participantId).filter(Boolean)));
+      const effectiveParticipantIds = participantIds.length > 0 ? participantIds : (user?.userId ? [user.userId] : ["team-player"]);
+
       const engineSubmissions = String(game.type) === "QUIZ" || String(game.type) === "TEAM_QUIZ"
-        ? participantIds.map((participantId) => ({
+        ? effectiveParticipantIds.map((participantId) => ({
             participantId,
             action: "QUIZ_ANSWERS",
+            score: typeof bodySubmissions[0]?.score === "number" ? bodySubmissions[0].score : undefined,
             answer: submittedAnswers
-              .filter((item: any) => item.participantId === participantId)
+              .filter((item: any) => (item.participantId || user?.userId) === participantId)
               .map((item: any) => ({ questionId: item.questionId, selected: item.selected })),
           }))
-        : submittedAnswers.map((item: any) => ({
-            ...item,
-            participantId: item.participantId || user?.userId,
-          }));
+        : (submittedAnswers.length > 0
+            ? submittedAnswers.map((item: any) => ({
+                ...item,
+                participantId: item.participantId || user?.userId || "team-player",
+              }))
+            : [{ participantId: user?.userId || "team-player", action: "COMPLETE", answer: b, score: b.score }]
+          );
 
       // Evaluate via Game Engine
       const evalResult = await GameEngine.evaluateGameSession({

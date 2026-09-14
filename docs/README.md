@@ -23,6 +23,8 @@ Dokumentasi ini disusun secara komprehensif untuk memandu seluruh tahapan pengem
 | **10** | [**10-PANDUAN-IMPLEMENTASI-FRONTEND-LENGKAP.md**](./10-PANDUAN-IMPLEMENTASI-FRONTEND-LENGKAP.md) | **Panduan Implementasi Frontend Lengkap:** Integrasi antarmuka User Maba dan Backoffice Admin dengan tema Retro RPG. |
 | **11** | [**11-SISTEM-PRESENSI-SESI-FLEKSIBEL.md**](./11-SISTEM-PRESENSI-SESI-FLEKSIBEL.md) | **Sistem Presensi Sesi Dinamis:** Arsitektur sesi check-in & check-out fleksibel dengan QR token putar dan anti-titip absen. |
 | **12** | [**12-RATIONALE-TECH-STACK-POSTGRESQL-VS-MONGODB.md**](./12-RATIONALE-TECH-STACK-POSTGRESQL-VS-MONGODB.md) | **Rationale Arsitektur Database & Tech Stack:** Analisis teknis mendalam mengapa proyek menggunakan PostgreSQL + Drizzle ORM + Elysia/Bun daripada NoSQL/MongoDB. |
+| **13** | [**13-PEMETAAN-QUIZ-DATABASE-DAN-CORE-GAMEPLAY.md**](./13-PEMETAAN-QUIZ-DATABASE-DAN-CORE-GAMEPLAY.md) | **Pemetaan Kuis Resmi & Core Gameplay:** Penyelarasan kata-per-kata 51 butir soal dari `quiz_database.csv`, bobot poin presisi (100 Pts/pos), dan integrasi media Google Drive. |
+| **14** | [**14-PANDUAN-SEED-DAN-CRUD-ADMIN-KUIS.md**](./14-PANDUAN-SEED-DAN-CRUD-ADMIN-KUIS.md) | **Panduan Eksekusi Seeder & CRUD Kuis Admin:** Operasional eksekusi seeder (clean-slate vs official), akun default, penyematan iframe Google Drive, dan manajemen bank soal. |
 
 ---
 

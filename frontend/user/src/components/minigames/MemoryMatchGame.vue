@@ -133,24 +133,35 @@ const handleCardClick = (index: number) => {
   }
 };
 
+const currentScore = computed(() => {
+  return pairs.value
+    .filter((p) => matchedPairIds.value.includes(p.id))
+    .reduce((acc, p) => acc + (p.score ?? Math.round(100 / pairs.value.length)), 0);
+});
+
 const finishGame = async () => {
   if (isSubmitting.value) return;
   isSubmitting.value = true;
+  const totalMemoryScore = pairs.value.reduce((acc, p) => acc + (p.score ?? Math.round(100 / pairs.value.length)), 0);
   if (props.serverSessionId) {
     const result = await gameSessionStore.completeSession([
-      { action: 'MEMORY_MATCH', answer: { moves: movesCount.value } },
+      {
+        action: 'MEMORY_MATCH',
+        score: totalMemoryScore,
+        answer: { moves: movesCount.value, matchedPairs: matchedPairIds.value.length },
+      },
     ]);
     if (!result) {
       isSubmitting.value = false;
       return;
     }
-    const evaluation = result.evaluation as { totalTeamScore?: number };
+    const evaluation = result.evaluation as { totalTeamScore?: number; totalScore?: number };
     isFinished.value = true;
-    emit('complete', evaluation.totalTeamScore || 0, pairs.value.length);
+    const finalScore = evaluation.totalTeamScore ?? evaluation.totalScore ?? totalMemoryScore;
+    emit('complete', Math.min(100, Math.max(0, Number(finalScore))), pairs.value.length);
     return;
   }
   isFinished.value = true;
-  const totalMemoryScore = pairs.value.reduce((acc, p) => acc + (p.score ?? Math.round(100 / pairs.value.length)), 0);
   emit('complete', totalMemoryScore, pairs.value.length);
 };
 
@@ -176,6 +187,9 @@ const handleResetGame = () => {
       </div>
 
       <div class="flex items-center gap-1.5">
+        <PixelBadge variant="emerald" size="sm">
+          {{ currentScore }} Pts
+        </PixelBadge>
         <PixelBadge variant="gold" size="sm">
           {{ matchedPairIds.length }}/{{ pairs.length }} Cocok
         </PixelBadge>

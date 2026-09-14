@@ -667,6 +667,14 @@ export async function seedDatabase() {
     ]);
   }
 
+  // 12. Seed Official Quiz Database (9 Pos dari quiz_database.csv)
+  try {
+    const { seedOfficialQuizDatabase } = await import("../../scripts/seed_official_quiz");
+    await seedOfficialQuizDatabase();
+  } catch (err: any) {
+    console.warn("⚠️ [Seed] Official quiz database seed warning:", err.message);
+  }
+
   console.log('✅ [Seed] Database successfully seeded and verified!');
 }
 

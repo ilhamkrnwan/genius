@@ -45,6 +45,25 @@ const isSelectedCorrect = computed(() => {
   return currentItem.value && selectedOptionIndex.value === currentItem.value.correctOptionIndex;
 });
 
+function extractGdriveEmbed(input?: string): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+  if (trimmed.includes('drive.google.com/file/d/')) {
+    const match = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
+  }
+  if (/^[a-zA-Z0-9_-]{20,}$/.test(trimmed)) {
+    return `https://drive.google.com/file/d/${trimmed}/preview`;
+  }
+  return null;
+}
+
+const gdriveEmbedUrl = computed(() => {
+  if (!currentItem.value) return null;
+  const item = currentItem.value as any;
+  return extractGdriveEmbed(item.gdriveId || item.driveUrl || item.imageUrl);
+});
+
 const handleSelectOption = (idx: number) => {
   if (isRoundSubmitted.value) return;
   if (gameStore.soundEnabled) soundEngine.playSelect();
@@ -59,7 +78,8 @@ const handleCheckAnswer = () => {
 
   if (isCorrect) {
     if (gameStore.soundEnabled) soundEngine.playCorrect();
-    totalScore.value += 1;
+    const itemScore = currentItem.value.score ?? Math.round(100 / items.value.length);
+    totalScore.value += itemScore;
   } else {
     if (gameStore.soundEnabled) soundEngine.playWrong();
   }
@@ -93,6 +113,9 @@ const handleNextRound = () => {
       </div>
 
       <div class="flex items-center gap-1.5">
+        <PixelBadge variant="emerald" size="sm">
+          {{ totalScore }} Pts
+        </PixelBadge>
         <PixelBadge variant="cyan" size="sm">
           Soal {{ currentIndex + 1 }}/{{ items.length }}
         </PixelBadge>
@@ -104,10 +127,19 @@ const handleNextRound = () => {
       <div :key="currentIndex" class="flex flex-col flex-1 gap-1.5 sm:gap-2 overflow-hidden">
         <!-- Picture / Visual Motif Card -->
         <div class="sdv-card-elevated overflow-hidden p-2 sm:p-2.5 space-y-1.5 shrink-0 transition-transform">
-          <div class="relative w-full h-24 sm:h-28 rounded-lg overflow-hidden border border-[#8b6f4e] shadow bg-[#120b06] flex items-center justify-center">
+          <div class="relative w-full h-36 sm:h-44 rounded-lg overflow-hidden border border-[#8b6f4e] shadow bg-[#120b06] flex items-center justify-center">
+            <!-- Google Drive Iframe Preview -->
+            <iframe
+              v-if="gdriveEmbedUrl"
+              :src="gdriveEmbedUrl"
+              class="w-full h-full border-0 rounded-lg pointer-events-auto bg-[#1a110a]"
+              allow="autoplay"
+              loading="lazy"
+            ></iframe>
+
             <!-- Real Image if Available -->
             <img
-              v-if="currentItem.imageUrl"
+              v-else-if="currentItem.imageUrl"
               :src="currentItem.imageUrl"
               :alt="currentItem.imageAlt || 'Visual Tantangan'"
               class="w-full h-full object-cover object-center filter brightness-[0.95]"
@@ -196,7 +228,7 @@ const handleNextRound = () => {
         <div class="flex items-center gap-1 font-pixel text-[10px] font-bold">
           <template v-if="isSelectedCorrect">
             <PhCheckCircle :size="14" weight="fill" class="text-[#7ec850]" />
-            <span class="text-[#7ec850]">Jawaban Tepat Sekali!</span>
+            <span class="text-[#7ec850]">Jawaban Tepat Sekali! (+{{ currentItem.score ?? 20 }} Pts)</span>
           </template>
           <template v-else>
             <PhXCircle :size="14" weight="fill" class="text-[#ff8080]" />

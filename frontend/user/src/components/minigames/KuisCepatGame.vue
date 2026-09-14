@@ -116,9 +116,11 @@ const handleCheckAnswer = async () => {
       startTimer();
     } else {
       serverAnswerResult.value = answerResult;
-      waitingForGameMaster.value = true;
+      waitingForGameMaster.value = false;
       if (answerResult.isCorrect) {
         if (gameStore.soundEnabled) soundEngine.playCorrect();
+        const qScore = answerResult.scoreEarned ?? currentQuestion.value.score ?? 12;
+        totalScore.value += qScore;
       } else if (gameStore.soundEnabled) {
         soundEngine.playWrong();
       }
@@ -146,7 +148,8 @@ const startPollingForGameMaster = () => {
       clearInterval(pollInterval);
       pollInterval = null;
       const evaluation = (updatedSession.result || {}) as any;
-      emit('complete', evaluation.score || 0, questions.value.length);
+      const finalScore = evaluation.totalTeamScore ?? evaluation.totalScore ?? evaluation.score ?? totalScore.value;
+      emit('complete', Math.min(100, Math.max(0, Number(finalScore))), questions.value.length);
     } else if (
       updatedSession.metadata &&
       typeof updatedSession.metadata.currentQuestionIndex === 'number' &&
@@ -176,16 +179,18 @@ const handleNextQuestion = async () => {
     serverAnswerResult.value = null;
     isQuestionSubmitted.value = false;
     isTimeUp.value = false;
+    startTimer();
     if (gameStore.soundEnabled) soundEngine.playClick();
   } else {
     if (props.serverSessionId) {
       const result = await gameSessionStore.completeSession();
       if (!result) return;
-      const evaluation = result.evaluation as { totalTeamScore?: number };
-      emit('complete', evaluation.totalTeamScore || 0, questions.value.length);
+      const evaluation = (result.evaluation || {}) as Record<string, any>;
+      const finalScore = evaluation.totalTeamScore ?? evaluation.totalScore ?? evaluation.score ?? totalScore.value;
+      emit('complete', Math.min(100, Math.max(0, Number(finalScore))), questions.value.length);
       return;
     }
-    emit('complete', totalScore.value, questions.value.length);
+    emit('complete', Math.min(100, Math.max(0, totalScore.value)), questions.value.length);
   }
 };
 
@@ -221,6 +226,11 @@ const timerColorClass = computed(() => {
       </div>
 
       <div class="flex items-center gap-2">
+        <!-- Live Score Badge -->
+        <PixelBadge variant="emerald" size="sm">
+          {{ totalScore }} Pts
+        </PixelBadge>
+
         <!-- Timer Display -->
         <div class="flex items-center gap-1 bg-[#170f07] border border-[#5a3a18] px-2 py-0.5 rounded-md text-[10px] font-pixel">
           <PhTimer :size="12" weight="bold" class="text-[#f0d060]" />
@@ -254,9 +264,14 @@ const timerColorClass = computed(() => {
         
         <!-- Question Card -->
         <div class="rpg-card-glass p-3 sm:p-4 rounded-xl shrink-0">
-          <span class="font-pixel text-[8px] text-[#7ec850] uppercase tracking-wider block mb-1.5 drop-shadow-md">
-            SOAL #{{ currentIndex + 1 }}:
-          </span>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-pixel text-[8px] text-[#7ec850] uppercase tracking-wider drop-shadow-md">
+              SOAL #{{ currentIndex + 1 }}:
+            </span>
+            <span class="font-pixel text-[8px] text-[#f0d060]">
+              BOBOT: {{ currentQuestion.score ?? 12 }} POIN
+            </span>
+          </div>
           <h4 class="font-sans text-xs sm:text-sm font-bold text-white leading-relaxed text-justify break-words">
             {{ currentQuestion.text }}
           </h4>
@@ -329,7 +344,7 @@ const timerColorClass = computed(() => {
         </template>
         <template v-else-if="isCurrentCorrect">
           <PhCheckCircle :size="14" weight="fill" class="text-[#7ec850]" />
-          <span class="text-[#7ec850]">Jawaban Tepat!</span>
+          <span class="text-[#7ec850]">Jawaban Tepat! (+{{ currentQuestion.score ?? 12 }} Pts)</span>
         </template>
         <template v-else>
           <PhXCircle :size="14" weight="fill" class="text-[#ff8080]" />
@@ -337,15 +352,15 @@ const timerColorClass = computed(() => {
         </template>
       </div>
       <p class="font-sans text-[10px] sm:text-[11px] leading-relaxed mt-0.5 text-justify break-words">
-        {{ props.serverSessionId ? (isCurrentCorrect ? 'Jawabanmu diterima oleh server.' : 'Jawabanmu sudah dicatat oleh server. Lanjutkan ke soal berikutnya.') : currentQuestion.explanation }}
+        {{ currentQuestion.explanation || (isCurrentCorrect ? 'Pilihan jawaban Anda tepat!' : 'Pilihan jawaban kurang tepat.') }}
       </p>
     </div>
 
     <!-- Footer Actions -->
     <div class="border-t border-[#5a3a18] pt-1.5 flex items-center justify-between gap-2 shrink-0">
       <div class="text-[10px] font-sans text-[#a08060]">
-        <template v-if="waitingForGameMaster">
-          <span class="animate-pulse">Menunggu Game Master...</span>
+        <template v-if="isQuestionSubmitted">
+          <span class="text-[#86efac] font-medium">Jawaban dinilai. Tekan tombol untuk lanjut.</span>
         </template>
         <template v-else>
           {{ selectedOptionIndex !== null ? 'Siap dikirim' : 'Pilih 1 jawaban' }}
@@ -364,7 +379,7 @@ const timerColorClass = computed(() => {
           <span>KIRIM JAWABAN</span>
         </button>
         <button
-          v-else-if="!props.serverSessionId"
+          v-else
           type="button"
           @click="handleNextQuestion"
           class="rpg-btn-primary py-2 px-4 text-[10px] sm:text-xs font-pixel font-bold flex items-center justify-center gap-1.5"

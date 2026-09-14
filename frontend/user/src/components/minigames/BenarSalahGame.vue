@@ -83,9 +83,14 @@ const handleNextStatement = () => {
         </div>
       </div>
 
-      <PixelBadge variant="emerald" size="sm">
-        Pernyataan {{ currentIndex + 1 }}/{{ statements.length }}
-      </PixelBadge>
+      <div class="flex items-center gap-1.5">
+        <PixelBadge variant="emerald" size="sm">
+          {{ totalScore }} Pts
+        </PixelBadge>
+        <PixelBadge variant="gold" size="sm">
+          Pernyataan {{ currentIndex + 1 }}/{{ statements.length }}
+        </PixelBadge>
+      </div>
     </div>
 
     <!-- Statement Card with Transition -->
@@ -144,7 +149,7 @@ const handleNextStatement = () => {
             <template v-if="isUserCorrect">
               <PhCheckCircle :size="16" weight="fill" class="text-[#7ec850] drop-shadow-md" />
               <span class="text-[#7ec850] drop-shadow-md">
-                PILIHAN TEPAT! (Kunci: {{ currentStatement.isCorrect ? 'BENAR' : 'SALAH' }})
+                PILIHAN TEPAT! (+{{ currentStatement.score ?? 20 }} Pts - Kunci: {{ currentStatement.isCorrect ? 'BENAR' : 'SALAH' }})
               </span>
             </template>
             <template v-else>
