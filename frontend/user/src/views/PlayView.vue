@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter, RouterLink } from 'vue-router';
 import { useGameStore } from '@/store/gameStore';
 import { soundEngine } from '@/lib/sound';
+import { api } from '@/lib/api';
 import { FLOORS_DATA, LEVEL_CONFIG, AVATAR_OPTIONS } from '@/data/mockData';
 import {
   PhGameController,
@@ -29,9 +30,8 @@ import MabaAuthModal from '@/components/auth/MabaAuthModal.vue';
 const router = useRouter();
 const gameStore = useGameStore();
 
-onMounted(() => {
-  gameStore.syncWithServer();
-});
+// Team active session tracking from API
+const activeTeamSessionFloor = ref<number | null>(null);
 
 // Full body character image from /mascots folder (clean transparent PNGs)
 const characterFullImage = computed(() => {
@@ -74,12 +74,33 @@ const isProfileModalOpen = ref(false);
 
 // Active Floor determination
 const nextFloor = computed(() => {
+  if (activeTeamSessionFloor.value) {
+    return activeTeamSessionFloor.value;
+  }
   for (const floor of FLOORS_DATA) {
     if (gameStore.getFloorStatus(floor.number) !== 'completed') {
       return floor.number;
     }
   }
   return 1;
+});
+
+onMounted(async () => {
+  gameStore.syncWithServer();
+  if (gameStore.soundEnabled && !isMuted.value) {
+    try {
+      soundEngine.playMenuMusic?.();
+    } catch (_) {}
+  }
+  try {
+    const response = await api.getMyTeamSessions();
+    if (response.success && response.data) {
+      const activeSession = response.data.find((s: any) => s.status !== 'COMPLETED');
+      if (activeSession && activeSession.floorNumber) {
+        activeTeamSessionFloor.value = activeSession.floorNumber;
+      }
+    }
+  } catch (_) {}
 });
 
 const isCheckedInToday = computed(() => gameStore.isDayCheckedIn(gameStore.activeDay || 1));
@@ -158,15 +179,19 @@ function openEditProfile() {
 <template>
   <div
     class="relative w-full min-h-[100dvh] h-[100dvh] max-h-[100dvh] overflow-hidden select-none font-pixel flex flex-col justify-between"
-    style="
-      background-image: url('/games/background.png');
-      background-size: cover;
-      background-position: center bottom;
-      image-rendering: pixelated;
-    "
   >
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
     <!-- Dark Vignette / Atmospheric Gradient Overlay -->
-    <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40 pointer-events-none z-0" />
+    <div class="fixed inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40 pointer-events-none z-0" />
 
     <!-- ================================================================= -->
     <!-- TOP HEADER: Clean Institutional Badge (Landing Page Style)        -->

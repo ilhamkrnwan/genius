@@ -151,14 +151,22 @@ const app = new Elysia()
   .use(reflectionRoutes)
   .use(systemRoutes)
 
+  // Favicon handler to prevent 404 noise
+  .get("/favicon.ico", ({ set }) => {
+    set.status = 204;
+    return;
+  })
+
   // Global Structured Error Handler
   .onError(({ code, error, set, request }) => {
-    console.error(`[API Error] ${code}:`, error);
     const path = new URL(request.url).pathname;
     const timestamp = new Date().toISOString();
 
     if (code === "NOT_FOUND") {
       set.status = 404;
+      if (path !== "/favicon.ico") {
+        console.warn(`[404 Not Found] ${request.method} ${path}`);
+      }
       return {
         success: false,
         error: { code: "NOT_FOUND", message: "Resource tidak ditemukan" },
@@ -166,6 +174,8 @@ const app = new Elysia()
         timestamp,
       };
     }
+
+    console.error(`[API Error] ${code}:`, error);
 
     if (code === "VALIDATION") {
       set.status = 400;

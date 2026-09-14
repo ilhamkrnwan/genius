@@ -12,8 +12,9 @@ import {
   PhListChecks,
   PhFlag,
   PhQrCode,
-  PhSpinner,
+  PhWarning,
   PhHeart,
+  PhBookOpen,
   PhArrowLeft,
   PhSpeakerHigh,
   PhSpeakerSimpleSlash,
@@ -299,13 +300,17 @@ const getCategoryLabel = (category: string) => {
 <template>
   <div
     class="relative w-full min-h-[100dvh] overflow-y-auto font-pixel text-[#fbf6e9] select-none flex flex-col justify-between py-3 sm:py-5 px-3 sm:px-6"
-    style="
-      background-image: url('/games/background.png');
-      background-size: cover;
-      background-position: center bottom;
-      image-rendering: pixelated;
-    "
   >
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
     <!-- Dark Vignette Overlay -->
     <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
 
@@ -361,7 +366,7 @@ const getCategoryLabel = (category: string) => {
     <!-- MAIN CONTENT: Simple, Clean & Focused (Sama Seperti Presensi)     -->
     <!-- ================================================================= -->
     <main class="relative z-20 w-full max-w-xl mx-auto space-y-2.5 my-auto">
-      <!-- API Warning Notice (if any) -->
+      <!-- API Error Notice -->
       <div
         v-if="apiError"
         class="p-2.5 rounded-xl border border-[#f59e0b]/50 bg-[#20150d]/90 text-[10px] font-mono text-amber-300 flex items-center gap-2 shadow"
@@ -413,7 +418,6 @@ const getCategoryLabel = (category: string) => {
               </span>
             </div>
           </div>
->>>>>>> origin/kairav_dev
 
           <button
             type="button"
@@ -439,6 +443,9 @@ const getCategoryLabel = (category: string) => {
           </div>
         </div>
       </section>
+
+      <!-- Stamp Grid Collection -->
+      <OrmawaStampGrid :maxStamps="10" />
 
       <!-- 2. SEGMENTED TABS & SEARCH (Sama Seperti Tab Hari di Presensi) -->
       <section class="space-y-1.5">

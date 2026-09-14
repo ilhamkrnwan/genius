@@ -21,9 +21,8 @@ const routes: Array<RouteRecordRaw> = [
     component: HomeView,
   },
   {
-    path: '/play',
-    alias: ['/dashboard', '/main'],
-    name: 'play',
+    path: '/dashboard',
+    name: 'dashboard',
     component: DashboardView,
   },
   {
@@ -39,6 +38,18 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/floor/:floorId',
     redirect: (to) => `/play/floor/${to.params.floorId || 1}/intro`,
+  },
+  {
+    path: '/peta',
+    name: 'peta',
+    alias: ['/map'],
+    component: () => import('@/views/PetaView.vue'),
+  },
+  {
+    path: '/play',
+    name: 'play',
+    alias: ['/onboard', '/menu', '/main'],
+    component: PlayView,
   },
   {
     path: '/play/floor/:floorId/intro',
@@ -62,8 +73,8 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/paspor',
-    alias: ['/passport', '/passpor', '/stamps', '/stempel'],
     name: 'paspor',
+    alias: ['/passport', '/passpor', '/stamps', '/stempel'],
     component: PasporView,
   },
   {

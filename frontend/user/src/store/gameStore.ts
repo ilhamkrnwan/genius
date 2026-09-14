@@ -119,6 +119,8 @@ function loadInitialState() {
       const loadedParticipant = { ...INITIAL_PARTICIPANT, ...(parsed.participant || {}) } as Participant;
       if (!loadedParticipant.unlockedFloors) loadedParticipant.unlockedFloors = [];
       if (!loadedParticipant.unlockedFloors.includes(1)) loadedParticipant.unlockedFloors.push(1);
+      if (!Array.isArray(loadedParticipant.completedBooths)) loadedParticipant.completedBooths = [];
+      if (!loadedParticipant.stamps || typeof loadedParticipant.stamps !== 'object') loadedParticipant.stamps = {};
       
       const isLoggedIn = Boolean(parsed.isLoggedIn ?? (loadedParticipant.isRegistered && loadedParticipant.name));
       return {
@@ -163,8 +165,9 @@ export const useGameStore = defineStore('game', {
       const floor = FLOORS_DATA.find((f) => f.number === floorNumber);
       if (!floor) return 'not_started';
 
+      const completedBooths = state.participant?.completedBooths || [];
       const completedCount = floor.boothIds.filter((id) =>
-        id ? state.participant.completedBooths.includes(id) : false
+        id ? completedBooths.includes(id) : false
       ).length;
 
       if (completedCount === floor.boothIds.length && completedCount > 0) return 'completed';
@@ -173,14 +176,14 @@ export const useGameStore = defineStore('game', {
     },
 
     getCompletedFloorsCount: (state) => (): number => {
-      const completedBooths = state.participant.completedBooths;
+      const completedBooths = state.participant?.completedBooths || [];
       return FLOORS_DATA.filter((f) =>
         f.boothIds.every((bId) => (bId ? completedBooths.includes(bId) : false))
       ).length;
     },
 
     getCurrentLevel: (state) => (): PlayerLevel => {
-      const completedBooths = state.participant.completedBooths;
+      const completedBooths = state.participant?.completedBooths || [];
       const completedFloors = FLOORS_DATA.filter((f) =>
         f.boothIds.every((bId) => (bId ? completedBooths.includes(bId) : false))
       ).length;
@@ -188,8 +191,9 @@ export const useGameStore = defineStore('game', {
     },
 
     getTotalStampsCount: (state) => (): number => {
+      const completedBooths = state.participant?.completedBooths || [];
       const canonicalSet = new Set(
-        state.participant.completedBooths.map((id) => resolveCanonicalBoothId(id)).filter(Boolean)
+        completedBooths.map((id) => resolveCanonicalBoothId(id)).filter(Boolean)
       );
       return canonicalSet.size;
     },
@@ -197,9 +201,10 @@ export const useGameStore = defineStore('game', {
     isBoothCompleted: (state) => (boothId: string): boolean => {
       if (!boothId) return false;
       const canonical = resolveCanonicalBoothId(boothId);
+      const completedBooths = state.participant?.completedBooths || [];
       return (
-        state.participant.completedBooths.includes(boothId) ||
-        (Boolean(canonical) && state.participant.completedBooths.includes(canonical))
+        completedBooths.includes(boothId) ||
+        (Boolean(canonical) && completedBooths.includes(canonical))
       );
     },
 

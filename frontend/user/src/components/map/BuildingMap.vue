@@ -128,19 +128,19 @@ const getGameTypeLabel = (type: string) => {
 </script>
 
 <template>
-  <div class="w-full h-full max-w-5xl mx-auto px-2.5 sm:px-6 py-2 sm:py-4 flex flex-col justify-between overflow-hidden gap-2">
+  <div class="w-full space-y-2.5">
     <!-- Top Status Bar -->
-    <div class="map-top-bar bg-[#1f140a] border-2 border-[#5a3a18] rounded-xl p-2 sm:p-3 flex items-center justify-between gap-2 shadow-md shrink-0">
-      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-        <div class="w-8 h-8 sm:w-9 sm:h-9 bg-[#2d1b0e] border border-[#8b6f4e] rounded-lg flex items-center justify-center text-[#f0d060] shrink-0">
-          <PhGameController :size="18" weight="bold" />
+    <div class="map-top-bar bg-[#19110a]/95 backdrop-blur-md border border-[#8b6f4e] rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-2 shadow-md shrink-0">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-[#2d1b0e] border border-[#8b6f4e] flex items-center justify-center text-[#f0d060] shrink-0 shadow">
+          <PhGameController :size="16" weight="bold" />
         </div>
         <div class="min-w-0 flex-1">
-          <div class="font-pixel text-[11px] sm:text-xs font-bold text-white leading-tight">
-            PETA EKSPLORASI KAMPUS
+          <div class="font-pixel text-[10px] sm:text-xs font-bold text-[#f0d060] leading-tight">
+            PROGRES EKSPLORASI
           </div>
-          <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-sans text-[#c4956a] flex-wrap">
-            <span>{{ completedFloors }}/6 Lantai Tuntas</span>
+          <div class="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-sans text-[#c4956a] flex-wrap mt-0.5">
+            <span>{{ completedFloors }}/6 Lantai</span>
             <span>•</span>
             <span class="text-[#7ec850]">{{ gameStore.getTotalStampsCount() }}/9 Stempel</span>
             <span>•</span>
@@ -153,33 +153,33 @@ const getGameTypeLabel = (type: string) => {
         <button
           type="button"
           @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-          class="rpg-btn-primary py-1.5 sm:py-2 px-3 text-[10px] sm:text-xs font-pixel font-bold flex items-center gap-1.5"
+          class="rpg-btn-primary py-1.5 px-2.5 text-[9.5px] sm:text-[10px] font-pixel font-bold flex items-center gap-1 shadow"
         >
-          <PhPlay :size="12" weight="fill" />
+          <PhPlay :size="11" weight="fill" />
           <span>Mulai</span>
         </button>
       </RouterLink>
     </div>
 
     <!-- 6 Floors Horizontal Selector -->
-    <div class="bg-[#170f07] p-1.5 sm:p-2 border-2 border-[#5a3a18] rounded-xl shrink-0">
-      <div class="flex items-center justify-between px-1 pb-1">
-        <span class="text-[9px] font-pixel text-[#a08060] uppercase">
+    <div class="bg-[#19110a]/95 backdrop-blur-md p-2 border border-[#8b6f4e] rounded-xl shrink-0 space-y-1.5 shadow">
+      <div class="flex items-center justify-between px-1">
+        <span class="text-[8.5px] font-pixel text-[#a08060] uppercase tracking-wider">
           PILIH LANTAI:
         </span>
-        <span class="text-[9px] font-pixel text-[#f0d060]">
+        <span class="text-[8.5px] font-pixel text-[#f0d060]">
           Lantai Aktif: L{{ selectedFloorNumber }}
         </span>
       </div>
 
-      <div class="grid grid-cols-6 gap-1 sm:gap-2">
+      <div class="grid grid-cols-6 gap-1 sm:gap-1.5">
         <button
           v-for="floor in FLOORS_DATA"
           :key="floor.number"
           type="button"
           @click="handleSelectFloor(floor.number)"
           :class="[
-            'map-floor-btn py-1.5 sm:py-2 px-0.5 rounded-lg text-center border font-pixel text-[9px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center relative',
+            'map-floor-btn py-1.5 px-1 rounded-lg text-center border font-pixel text-[9.5px] sm:text-xs transition-all cursor-pointer flex flex-col items-center justify-center relative',
             selectedFloorNumber === floor.number
               ? 'bg-[#3d7828] border-[#f0d060] text-white font-bold shadow-[0_0_8px_rgba(240,208,96,0.4)] scale-[1.02]'
               : gameStore.getFloorStatus(floor.number) === 'completed'
@@ -197,7 +197,7 @@ const getGameTypeLabel = (type: string) => {
     </div>
 
     <!-- Selected Floor Details Card -->
-    <div class="map-floor-detail flex-1 sdv-card p-3 sm:p-4 flex flex-col justify-between overflow-hidden shadow-lg">
+    <div class="map-floor-detail bg-[#19110a]/95 backdrop-blur-md border border-[#8b6f4e] rounded-xl p-3 sm:p-4 flex flex-col gap-2.5 shadow-lg">
       <!-- Floor Header -->
       <div class="flex items-center justify-between gap-2 border-b border-[#5a3a18] pb-2 shrink-0">
         <div class="min-w-0 flex-1">
@@ -213,17 +213,17 @@ const getGameTypeLabel = (type: string) => {
           <button
             type="button"
             @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-            class="rpg-btn-primary py-1.5 px-3 text-[10px] sm:text-xs font-pixel font-bold flex items-center gap-1.5 shadow"
+            class="rpg-btn-primary py-1.5 px-2.5 text-[9.5px] sm:text-[10px] font-pixel font-bold flex items-center gap-1 shadow"
           >
             <span>Lihat Intro</span>
-            <PhArrowRight :size="12" weight="bold" />
+            <PhArrowRight :size="11" weight="bold" />
           </button>
         </RouterLink>
       </div>
 
       <!-- Spots Grid -->
-      <div class="space-y-2 py-2 flex-1 flex flex-col justify-center">
-        <div class="text-[9px] font-pixel text-[#a08060] uppercase px-0.5">
+      <div class="space-y-2 py-1 flex-1 flex flex-col justify-center">
+        <div class="text-[8.5px] font-pixel text-[#a08060] uppercase px-0.5">
           {{ gameSessionStore.status === 'loading' ? 'Memuat data misi...' : backendBoothsForFloor.length + ' Pos Misi Tersedia' }}
         </div>
 
@@ -264,7 +264,7 @@ const getGameTypeLabel = (type: string) => {
                 <button
                   type="button"
                   @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-                  class="py-1 px-2.5 rounded text-[10px] sm:text-[11px] font-pixel font-bold cursor-pointer transition-all rpg-btn-primary"
+                  class="py-1 px-2.5 rounded text-[9.5px] sm:text-[10px] font-pixel font-bold cursor-pointer transition-all rpg-btn-primary"
                 >
                   Main
                 </button>
@@ -273,7 +273,7 @@ const getGameTypeLabel = (type: string) => {
                 v-else
                 type="button"
                 disabled
-                class="py-1 px-2.5 rounded text-[10px] sm:text-[11px] font-pixel font-bold transition-all bg-[#2d1b0e] text-[#7ec850] border border-[#4a8030] cursor-not-allowed"
+                class="py-1 px-2.5 rounded text-[9.5px] sm:text-[10px] font-pixel font-bold transition-all bg-[#2d1b0e] text-[#7ec850] border border-[#4a8030] cursor-not-allowed"
               >
                 Tuntas
               </button>
@@ -282,7 +282,7 @@ const getGameTypeLabel = (type: string) => {
         </div>
         <div v-else class="border-2 border-dashed border-[#5a3a18] bg-[#1a0f07] p-4 text-center rounded-xl space-y-2">
           <div class="flex justify-center text-[#c4956a]">
-            <PhLock :size="28" weight="bold" />
+            <PhLock :size="24" weight="bold" />
           </div>
           <p class="text-xs text-[#a08060] font-sans">
             Game Master belum membuka akses pos apa pun untuk tim Anda di Lantai {{ selectedFloorNumber }}.

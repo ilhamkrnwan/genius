@@ -74,7 +74,7 @@ export interface TebakKataContent {
 export interface TebakPosisiItem {
   id: string;
   prompt: string;
-  imageUrl: string;
+  imageUrl?: string;
   gdriveId?: string;
   imageAlt: string;
   options: string[];

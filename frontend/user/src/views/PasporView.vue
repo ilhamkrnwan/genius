@@ -8,22 +8,24 @@ import {
   PhSparkle,
   PhCheckCircle,
   PhLockKey,
-  PhArrowRight,
+  PhArrowLeft,
   PhPrinter,
   PhArrowCounterClockwise,
   PhStorefront,
   PhMedal,
   PhQrCode,
-  PhCheck,
   PhWarning,
+  PhSpeakerHigh,
+  PhSpeakerSimpleSlash,
+  PhMapTrifold,
+  PhCalendarCheck,
+  PhUser,
 } from '@phosphor-icons/vue';
 import { FLOORS_DATA, BOOTHS_DATA, LEVEL_CONFIG, AVATAR_OPTIONS } from '@/data/mockData';
 import { ORMAWA_STANDS } from '@/data/ormawaData';
 import { useGameStore } from '@/store/gameStore';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
-import PixelProgress from '@/components/ui/PixelProgress.vue';
 import StampIcon from '@/components/ui/StampIcon.vue';
-import Navbar from '@/components/layout/Navbar.vue';
 import CrtScanlines from '@/components/layout/CrtScanlines.vue';
 import QrScannerModal from '@/components/common/QrScannerModal.vue';
 import { soundEngine } from '@/lib/sound';
@@ -34,6 +36,25 @@ const showCertificate = ref(false);
 const selectedStampPreview = ref<string | null>(null);
 const showOrmawaScanner = ref(false);
 const ormawaScanToast = ref<{ message: string; success: boolean } | null>(null);
+const isMuted = ref(gameStore.soundEnabled === false);
+
+function safeSound(fn: () => void) {
+  try {
+    if (!isMuted.value && gameStore.soundEnabled) {
+      fn();
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function toggleSound() {
+  isMuted.value = !isMuted.value;
+  gameStore.soundEnabled = !isMuted.value;
+  if (!isMuted.value) {
+    soundEngine.playClick();
+  }
+}
 
 const ormawaPresets = computed(() => {
   return ORMAWA_STANDS.map((s) => ({
@@ -74,21 +95,21 @@ const selectedAvatarObj = computed(
 const showResetModal = ref(false);
 
 const handlePrint = () => {
-  if (gameStore.soundEnabled) soundEngine.playClick();
+  safeSound(() => soundEngine.playClick?.());
   if (typeof window !== 'undefined') {
     window.print();
   }
 };
 
 const handleResetConfirm = () => {
-  if (gameStore.soundEnabled) soundEngine.playClick();
+  safeSound(() => soundEngine.playClick?.());
   showResetModal.value = true;
 };
 
 const executeResetProgress = () => {
   gameStore.resetProgress();
   showResetModal.value = false;
-  if (gameStore.soundEnabled) soundEngine.playClick();
+  safeSound(() => soundEngine.playClick?.());
 };
 
 function getFloorBooths(floor: any) {
@@ -109,13 +130,11 @@ function isFloorFullyCompleted(floor: any) {
   return total > 0 && completed === total;
 }
 
-
 onMounted(() => {
   gameStore.syncWithServer();
   animatePageEnter('.paspor-header', { y: 20, duration: 0.45 });
   animatePageEnter('.paspor-id-card', { y: 25, duration: 0.5, delay: 0.1 });
-  animatePageEnter('.paspor-stats-card', { y: 25, duration: 0.5, delay: 0.15 });
-  staggerFadeUp('.paspor-floor-card', 0.05, { delay: 0.2 });
+  staggerFadeUp('.paspor-floor-card', 0.04, { delay: 0.2 });
 });
 
 watch(selectedStampPreview, (val) => {
@@ -136,212 +155,174 @@ watch(showCertificate, (val) => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-[#2d1b0e] text-[#f0e0c0]">
+  <div
+    class="relative w-full min-h-[100dvh] overflow-y-auto font-pixel text-[#fbf6e9] select-none flex flex-col justify-between py-3 sm:py-5 px-3 sm:px-6"
+  >
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
+    <!-- Dark Vignette Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
     <CrtScanlines />
-    <Navbar />
 
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 space-y-6">
-      <!-- Header Title & Actions -->
-      <div class="paspor-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 class="font-pixel text-xl sm:text-2xl font-bold text-[#f0d060] flex items-center gap-2.5">
-            <PhIdentificationBadge :size="28" weight="fill" class="text-[#f0d060]" />
-            <span>Paspor Mahasiswa</span>
-          </h1>
-          <p class="font-sans text-xs sm:text-sm text-[#c4956a] mt-0.5">
-            Catatan perolehan stempel dan progres orientasi kampus.
+    <!-- TOP HEADER: Format standar RPG Presensi & Ormawa Expo -->
+    <header class="relative z-20 w-full max-w-xl mx-auto flex items-center justify-between gap-2 pb-2 shrink-0">
+      <!-- Left: Back to Menu -->
+      <RouterLink
+        to="/play"
+        @click="() => safeSound(() => soundEngine.playClick?.())"
+        class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] hover:text-white transition-all text-[9.5px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer active:scale-95 shadow shrink-0"
+        title="Kembali ke Menu Utama"
+      >
+        <PhArrowLeft :size="13" weight="bold" />
+        <span class="font-pixel">MENU</span>
+      </RouterLink>
+
+      <!-- Center: Title Badge -->
+      <div class="px-3 py-1 bg-[#1a110a]/90 backdrop-blur-md border border-[#8b6f4e] rounded-full shadow flex items-center gap-1.5 shrink-0">
+        <PhIdentificationBadge :size="14" weight="fill" class="text-[#facc15]" />
+        <span class="text-[10px] sm:text-xs text-[#facc15] font-bold tracking-wide uppercase">
+          PASPOR PETUALANG
+        </span>
+      </div>
+
+      <!-- Right: Print & Sound -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button
+          type="button"
+          @click="handlePrint"
+          title="Cetak Paspor"
+          class="p-1.5 rounded-lg bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] transition-all cursor-pointer active:scale-95 shadow"
+        >
+          <PhPrinter :size="13" weight="bold" />
+        </button>
+
+        <button
+          type="button"
+          @click="toggleSound"
+          class="p-1.5 rounded-lg bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] transition-all cursor-pointer active:scale-95 shadow"
+          :title="isMuted ? 'Nyalakan Suara' : 'Matikan Suara'"
+        >
+          <PhSpeakerHigh v-if="!isMuted" :size="13" weight="bold" />
+          <PhSpeakerSimpleSlash v-else :size="13" weight="bold" />
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT: Clean, Centered & Unified Layout -->
+    <main class="relative z-20 w-full max-w-xl mx-auto space-y-3.5 my-auto">
+      <!-- 1. Player ID Card (KTM Paspor HUD) -->
+      <div class="paspor-id-card bg-[#19110a]/95 backdrop-blur-md border-2 border-[#f0d060] rounded-xl p-3.5 sm:p-4 shadow-lg space-y-3">
+        <!-- Header KTM -->
+        <div class="flex items-center justify-between border-b border-[#5a3a18] pb-2.5">
+          <div class="flex items-center gap-2 font-pixel text-xs text-[#f0d060]">
+            <PhSparkle :size="15" weight="fill" />
+            <span>KARTU PASPOR PETUALANG</span>
+          </div>
+          <img
+            src="/unu.png"
+            alt="UNU Logo"
+            width="32"
+            height="32"
+            class="h-5 w-auto object-contain"
+          />
+        </div>
+
+        <!-- Avatar & Basic Info -->
+        <div class="flex items-start gap-3">
+          <div class="w-14 h-14 bg-[#170f07] border-2 border-[#f0d060] rounded-xl overflow-hidden shadow shrink-0 relative">
+            <img
+              :src="selectedAvatarObj.avatarImage"
+              :alt="selectedAvatarObj.name"
+              class="w-full h-full object-cover"
+            />
+          </div>
+          <div class="min-w-0 flex-1 space-y-0.5">
+            <h2 class="font-pixel text-xs sm:text-sm font-bold text-white leading-tight break-words">
+              {{ gameStore.participant.name }}
+            </h2>
+            <p class="font-mono text-[11px] text-[#7ec850]">
+              NIM: {{ gameStore.participant.nim }}
+            </p>
+            <p class="font-sans text-[11px] text-[#f0e0c0] leading-tight break-words">
+              {{ gameStore.participant.prodi }}
+            </p>
+            <p class="font-sans text-[10px] text-[#a08060] leading-tight break-words">
+              {{ gameStore.participant.faculty }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Level & Stats Strip -->
+        <div class="bg-[#120a05] p-2.5 border border-[#5a3a18] rounded-xl space-y-1.5 shadow-inner">
+          <div class="flex items-center justify-between">
+            <span class="font-pixel text-[8.5px] text-[#a08060] uppercase">
+              Pangkat Petualang:
+            </span>
+            <PixelBadge
+              :variant="completedFloors >= 6 ? 'gold' : 'emerald'"
+              size="sm"
+            >
+              {{ currentLevel }}
+            </PixelBadge>
+          </div>
+          <p class="font-sans text-[11px] text-[#c4956a] leading-tight">
+            {{ currentLevelData.description }}
           </p>
+          <div class="flex items-center justify-between text-[10px] font-pixel pt-1 border-t border-[#3d2b1e]">
+            <span class="text-[#f0d060]">{{ gameStore.participant.totalXp }} Total XP</span>
+            <span class="text-[#7ec850]">{{ totalStampsCollected }}/9 Stempel Orientasi</span>
+          </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <!-- Certificate Banner (if completed) -->
+        <div
+          v-if="isAllCompleted"
+          class="bg-[#1f3a2b] border-2 border-[#7ec850] rounded-xl p-3 shadow text-center space-y-2"
+        >
+          <div class="font-pixel text-xs font-bold text-[#f0d060] flex items-center justify-center gap-1.5">
+            <PhTrophy :size="16" weight="fill" class="text-[#f0d060]" />
+            <span>Semua Tantangan 6 Lantai Tuntas!</span>
+          </div>
           <button
             type="button"
-            @click="handlePrint"
-            class="rpg-btn-wood py-2 px-3 text-xs font-pixel font-bold flex items-center gap-2 cursor-pointer"
+            @click="showCertificate = true"
+            class="rpg-btn-primary py-2 px-4 text-xs font-pixel font-bold w-full shadow cursor-pointer"
           >
-            <PhPrinter :size="16" weight="bold" />
-            <span>Cetak</span>
-          </button>
-          <button
-            type="button"
-            @click="handleResetConfirm"
-            class="rpg-btn-danger py-2 px-3 text-xs font-pixel font-bold flex items-center gap-2 cursor-pointer"
-            title="Reset Progres"
-          >
-            <PhArrowCounterClockwise :size="16" weight="bold" />
-            <span>Reset</span>
+            Lihat Sertifikat Kelulusan Resmi
           </button>
         </div>
       </div>
 
-      <!-- Player ID Card & Level HUD -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <!-- Identity Card -->
-        <div class="paspor-id-card lg:col-span-5">
-          <div class="h-full sdv-card-gold p-5 sm:p-6 flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between border-b-2 border-[#5a3a18] pb-3 mb-4">
-                <div class="flex items-center gap-2 font-pixel text-xs text-[#f0d060]">
-                  <PhSparkle :size="16" weight="fill" />
-                  <span>Kartu Mahasiswa</span>
-                </div>
-                <img
-                  src="/unu.png"
-                  alt="UNU Logo"
-                  width="36"
-                  height="36"
-                  class="h-6 w-auto object-contain"
-                />
-              </div>
-
-              <!-- Avatar & Basic Info -->
-              <div class="flex items-start gap-4 mb-4">
-                <div class="w-16 h-16 bg-[#170f07] border-2 border-[#f0d060] rounded-xl overflow-hidden shadow-inner shrink-0 relative">
-                  <img
-                    :src="selectedAvatarObj.avatarImage"
-                    :alt="selectedAvatarObj.name"
-                    class="w-full h-full object-cover"
-                  />
-                </div>
-                <div class="min-w-0 space-y-1 flex-1">
-                  <h2 class="font-pixel text-sm sm:text-base font-bold text-white leading-snug break-words">
-                    {{ gameStore.participant.name }}
-                  </h2>
-                  <p class="font-mono text-xs text-[#7ec850]">
-                    NIM: {{ gameStore.participant.nim }}
-                  </p>
-                  <p class="font-sans text-xs text-[#f0e0c0] leading-tight break-words">
-                    {{ gameStore.participant.prodi }}
-                  </p>
-                  <p class="font-sans text-[11px] text-[#a08060] leading-tight break-words">
-                    {{ gameStore.participant.faculty }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Level Title & Details -->
-              <div class="bg-[#170f07] p-3 border-2 border-[#5a3a18] rounded-xl mb-4 space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="font-pixel text-[9px] text-[#a08060] uppercase">
-                    Pangkat:
-                  </span>
-                  <PixelBadge
-                    :variant="completedFloors >= 6 ? 'gold' : 'emerald'"
-                    size="sm"
-                  >
-                    {{ currentLevel }}
-                  </PixelBadge>
-                </div>
-                <p class="font-sans text-xs text-[#c4956a] leading-relaxed">
-                  {{ currentLevelData.description }}
-                </p>
-              </div>
-            </div>
-
-            <!-- Certificate Unlock Banner if completed -->
-            <div
-              v-if="isAllCompleted"
-              class="bg-[#1f3a2b] border-2 border-[#7ec850] rounded-xl p-3 shadow text-center space-y-2"
-            >
-              <div class="font-pixel text-xs font-bold text-[#f0d060] flex items-center justify-center gap-1.5">
-                <PhTrophy :size="16" weight="fill" class="text-[#f0d060]" />
-                <span>Semua Lantai Selesai!</span>
-              </div>
-              <button
-                type="button"
-                @click="() => {
-                  if (gameStore.soundEnabled) soundEngine.playClick();
-                  showCertificate = true;
-                }"
-                class="w-full rpg-btn-primary py-2.5 px-4 text-xs font-pixel font-bold cursor-pointer"
-              >
-                Buka Sertifikat Kelulusan
-              </button>
-            </div>
-            <div
-              v-else
-              class="bg-[#170f07] p-2.5 border border-[#5a3a18] rounded-lg text-xs font-sans text-[#a08060] text-center"
-            >
-              Selesaikan {{ Math.max(0, 6 - completedFloors) }} lantai lagi untuk membuka sertifikat kelulusan.
-            </div>
-          </div>
-        </div>
-
-        <!-- Stats Overview -->
-        <div class="paspor-stats-card lg:col-span-7">
-          <div class="h-full sdv-card p-5 sm:p-6 flex flex-col justify-between space-y-4">
-            <div class="space-y-4">
-              <div class="flex items-center justify-between border-b-2 border-[#5a3a18] pb-3">
-                <div class="font-pixel text-xs text-[#f0d060]">
-                  Koleksi Stempel
-                </div>
-                <div class="font-pixel text-xs text-[#7ec850]">
-                  {{ totalStampsCollected }} / 9 Stempel
-                </div>
-              </div>
-
-              <!-- Progress bars -->
-              <div class="space-y-3">
-                <PixelProgress
-                  :value="totalStampsCollected"
-                  :max="9"
-                  label="TOTAL STEMPEL"
-                  :sublabel="`${totalStampsCollected} dari 9`"
-                  color="emerald"
-                  height="md"
-                />
-
-                <PixelProgress
-                  :value="completedFloors"
-                  :max="6"
-                  label="LANTAI SELESAI"
-                  :sublabel="`${completedFloors} dari 6`"
-                  color="gold"
-                  height="md"
-                />
-              </div>
-            </div>
-
-            <div class="border-t border-[#5a3a18] pt-3 mt-4 flex items-center justify-between">
-              <span class="font-pixel text-xs text-[#f0d060]">
-                Total: {{ gameStore.participant.totalXp }} XP
-              </span>
-              <RouterLink to="/play">
-                <button
-                  type="button"
-                  @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-                  class="rpg-btn-primary py-2.5 px-4 text-xs font-pixel font-bold flex items-center gap-2 cursor-pointer"
-                >
-                  <span>Mulai Main</span>
-                  <PhArrowRight :size="14" weight="bold" />
-                </button>
-              </RouterLink>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 9-Stamp Grid (6 Floors with 9 Official Pos) -->
-      <div class="space-y-3 pt-2">
+      <!-- 2. 9-Stamp Grid (6 Floors with Official Pos) -->
+      <div class="space-y-2.5">
         <div class="flex items-center justify-between px-1">
           <h3 class="font-pixel text-xs sm:text-sm font-bold text-[#f0d060]">
-            DAFTAR 9 STEMPEL PETUALANG (6 LANTAI)
+            9 STEMPEL PETUALANG (6 LANTAI)
           </h3>
-          <span class="text-[10px] font-pixel text-[#a08060]">
-            KLIK UNTUK DETAIL
+          <span class="text-[9px] font-pixel text-[#a08060]">
+            KLIK KARTU UNTUK DETAIL
           </span>
         </div>
 
-        <div class="space-y-3">
+        <div class="space-y-2.5">
           <div
             v-for="floor in FLOORS_DATA"
             :key="floor.number"
             :class="[
-              'paspor-floor-card sdv-card p-3.5 sm:p-4',
-              isFloorFullyCompleted(floor) ? 'border-[#7ec850] bg-[#1e3321]' : ''
+              'paspor-floor-card bg-[#19110a]/95 backdrop-blur-md border rounded-xl p-3 sm:p-3.5 shadow-md',
+              isFloorFullyCompleted(floor) ? 'border-[#7ec850] bg-[#1a2e1a]/95' : 'border-[#8b6f4e]'
             ]"
           >
-            <div class="flex items-center justify-between gap-2 border-b border-[#5a3a18] pb-2 mb-3">
+            <!-- Floor Header -->
+            <div class="flex items-center justify-between gap-2 border-b border-[#5a3a18] pb-2 mb-2.5">
               <div class="flex items-center gap-2">
                 <span class="font-pixel text-xs font-bold text-[#7ec850]">
                   Lantai {{ floor.number }}:
@@ -363,26 +344,26 @@ watch(showCertificate, (val) => {
             </div>
 
             <!-- Dynamic Stamps Grid per Floor -->
-            <div :class="['grid gap-3', getFloorBooths(floor).length === 1 ? 'grid-cols-1 max-w-md' : 'grid-cols-1 sm:grid-cols-2']">
+            <div :class="['grid gap-2', getFloorBooths(floor).length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2']">
               <button
                 v-for="booth in getFloorBooths(floor)"
                 :key="booth.id"
                 type="button"
                 @click="() => {
-                  if (gameStore.soundEnabled) soundEngine.playSelect?.();
+                  safeSound(() => soundEngine.playSelect?.());
                   selectedStampPreview = booth.id;
                 }"
                 :class="[
-                  'w-full text-left p-3 rounded-xl border-2 transition-all flex items-center justify-between gap-3 cursor-pointer',
+                  'w-full text-left p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2.5 cursor-pointer shadow',
                   (gameStore.participant.stamps[booth.id] || gameStore.isBoothCompleted(booth.id))
-                    ? 'bg-[#1a2e1a] border-[#7ec850] shadow hover:border-[#f0d060]'
-                    : 'bg-[#170f07]/70 border-dashed border-[#5a3a18] hover:border-[#8b6f4e] opacity-70'
+                    ? 'bg-[#1a2e1a] border-[#7ec850] hover:border-[#f0d060]'
+                    : 'bg-[#170f07]/80 border-dashed border-[#5a3a18] hover:border-[#8b6f4e] opacity-75'
                 ]"
               >
-                <div class="flex items-center gap-3 min-w-0">
+                <div class="flex items-center gap-2.5 min-w-0">
                   <div
                     :class="[
-                      'w-10 h-10 rounded-lg border-2 flex flex-col items-center justify-center shrink-0',
+                      'w-9 h-9 rounded-lg border flex flex-col items-center justify-center shrink-0 shadow',
                       (gameStore.participant.stamps[booth.id] || gameStore.isBoothCompleted(booth.id))
                         ? 'border-[#f0d060] bg-gradient-to-b from-[#3d7828] to-[#255018]'
                         : 'border-[#5a3a18] bg-[#23160c] text-[#5a3a18]'
@@ -391,24 +372,24 @@ watch(showCertificate, (val) => {
                     <StampIcon
                       v-if="gameStore.participant.stamps[booth.id] || gameStore.isBoothCompleted(booth.id)"
                       :name="booth.stampIcon"
-                      :size="20"
+                      :size="18"
                       class="text-[#f0d060]"
                     />
-                    <PhLockKey v-else :size="18" weight="bold" />
+                    <PhLockKey v-else :size="16" weight="bold" />
                   </div>
 
                   <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                      <span class="font-pixel text-[9px] bg-[#170f07] px-1.5 py-0.5 rounded text-[#f0d060] border border-[#5a3a18]">
+                    <div class="flex items-center gap-1 mb-0.5 flex-wrap">
+                      <span class="font-pixel text-[8.5px] bg-[#170f07] px-1.5 py-0.5 rounded text-[#f0d060] border border-[#5a3a18]">
                         {{ booth.code }}
                       </span>
-                      <span class="font-sans text-[11px] text-[#c4956a] leading-tight">
+                      <span class="font-sans text-[10px] text-[#c4956a] leading-tight">
                         {{ booth.badgeTag }}
                       </span>
                     </div>
                     <h4
                       :class="[
-                        'font-pixel text-[9px] sm:text-[10px] leading-normal break-words',
+                        'font-pixel text-[9.5px] sm:text-[10px] leading-tight break-words',
                         (gameStore.participant.stamps[booth.id] || gameStore.isBoothCompleted(booth.id)) ? 'text-white font-bold' : 'text-[#a08060]'
                       ]"
                     >
@@ -420,59 +401,58 @@ watch(showCertificate, (val) => {
                 <div class="shrink-0">
                   <PhCheckCircle
                     v-if="gameStore.participant.stamps[booth.id] || gameStore.isBoothCompleted(booth.id)"
-                    :size="18"
+                    :size="16"
                     weight="fill"
                     class="text-[#7ec850]"
                   />
-                  <span v-else class="font-pixel text-[9px] text-[#f0d060] bg-[#2d1b0e] px-2 py-1 rounded border border-[#5a3a18]">
+                  <span v-else class="font-pixel text-[8.5px] text-[#f0d060] bg-[#2d1b0e] px-2 py-0.5 rounded border border-[#5a3a18]">
                     Buka
                   </span>
                 </div>
               </button>
             </div>
           </div>
-
         </div>
       </div>
 
-      <!-- LEMBAR KOLEKSI ORMAWA EXPO (HARI KE-3) -->
-      <div class="space-y-3 pt-4 border-t-2 border-[#5a3a18]">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+      <!-- 3. Lembar Stempel Ormawa Expo (Hari ke-3) -->
+      <div class="bg-[#19110a]/95 backdrop-blur-md border border-[#8b6f4e] rounded-xl p-3.5 sm:p-4 space-y-3 shadow-md">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 class="font-pixel text-xs sm:text-sm font-bold text-[#f0d060] flex items-center gap-2">
-              <PhStorefront :size="16" class="text-[#facc15]" />
+            <h3 class="font-pixel text-xs sm:text-sm font-bold text-[#f0d060] flex items-center gap-1.5">
+              <PhStorefront :size="15" class="text-[#facc15]" />
               <span>LEMBAR STEMPEL ORMAWA EXPO (HARI KE-3)</span>
             </h3>
-            <p class="font-sans text-xs text-[#c4956a]">
-              Selasar Lantai 3, 4, dan 5 UNU Yogyakarta &bull; Perolehan: <strong>{{ gameStore.visitedOrmawaCount }}/10 Stan Terhitung (+{{ gameStore.ormawaXpEarned }} XP)</strong>
+            <p class="font-sans text-[11px] text-[#c4956a] mt-0.5">
+              Perolehan: <strong>{{ gameStore.visitedOrmawaCount }}/10 Stan (+{{ gameStore.ormawaXpEarned }} XP)</strong>
             </p>
           </div>
 
           <button
             type="button"
             @click="() => {
-              if (gameStore.soundEnabled) soundEngine.playClick();
+              safeSound(() => soundEngine.playClick?.());
               showOrmawaScanner = true;
             }"
-            class="rpg-btn-primary py-2 px-3 text-xs font-pixel font-bold flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95"
+            class="rpg-btn-primary py-1.5 px-3 text-[10px] font-pixel font-bold flex items-center gap-1.5 cursor-pointer shadow active:scale-95"
           >
-            <PhQrCode :size="15" weight="bold" />
+            <PhQrCode :size="13" weight="bold" />
             <span>PINDAI QR MEJA STAN</span>
           </button>
         </div>
 
-        <!-- Scan Feedback Alert -->
+        <!-- Scan Feedback Toast -->
         <div
           v-if="ormawaScanToast"
           :class="[
-            'p-2.5 rounded-lg border-2 flex items-center justify-between gap-3 text-xs font-mono shadow-md transition-all',
+            'p-2 rounded-lg border flex items-center justify-between gap-2 text-xs font-sans shadow transition-all',
             ormawaScanToast.success
               ? 'bg-[#142314] border-[#22c55e] text-[#86efac]'
               : 'bg-[#291717] border-[#ef4444] text-[#fca5a5]'
           ]"
         >
-          <div class="flex items-center gap-2">
-            <PhCheckCircle v-if="ormawaScanToast.success" :size="16" weight="fill" class="text-[#4ade80]" />
+          <div class="flex items-center gap-1.5">
+            <PhCheckCircle v-if="ormawaScanToast.success" :size="15" weight="fill" class="text-[#4ade80]" />
             <span>{{ ormawaScanToast.message }}</span>
           </div>
           <button
@@ -485,29 +465,29 @@ watch(showCertificate, (val) => {
         </div>
 
         <!-- Visited Ormawa Badges Grid -->
-        <div v-if="visitedOrmawaStands.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+        <div v-if="visitedOrmawaStands.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <div
             v-for="stand in visitedOrmawaStands"
             :key="stand.id"
-            class="p-2.5 rounded-xl border-2 border-[#7ec850] bg-gradient-to-b from-[#1c2e1c] to-[#121c12] text-center space-y-1 shadow flex flex-col justify-between"
+            class="p-2 rounded-xl border border-[#7ec850] bg-gradient-to-b from-[#1c2e1c] to-[#121c12] text-center space-y-1 shadow flex flex-col justify-between"
           >
-            <div class="w-8 h-8 mx-auto rounded-full bg-[#274b24] border border-[#7ec850] flex items-center justify-center text-[#f0d060] shrink-0">
-              <PhMedal :size="16" weight="fill" />
+            <div class="w-7 h-7 mx-auto rounded-full bg-[#274b24] border border-[#7ec850] flex items-center justify-center text-[#f0d060] shrink-0">
+              <PhMedal :size="14" weight="fill" />
             </div>
             <div>
-              <span class="font-pixel text-[8px] text-[#86efac] block uppercase tracking-wider">
+              <span class="font-pixel text-[8px] text-[#86efac] block uppercase">
                 {{ stand.badgeTitle }}
               </span>
-              <h4 class="font-sans text-[11px] font-bold text-white line-clamp-1 mt-0.5">
+              <h4 class="font-sans text-[10.5px] font-bold text-white line-clamp-1 mt-0.5">
                 {{ stand.shortName }}
               </h4>
-              <span class="text-[9px] text-[#a08060] font-mono block">
+              <span class="text-[8.5px] text-[#a08060] font-mono block">
                 Lt {{ stand.floor }}
               </span>
             </div>
-            <div class="pt-1">
-              <span class="inline-flex items-center gap-1 text-[8px] font-pixel text-[#86efac] bg-[#142314] px-1.5 py-0.5 rounded border border-[#22c55e]/40">
-                <PhCheckCircle :size="9" weight="fill" />
+            <div class="pt-0.5">
+              <span class="inline-flex items-center gap-1 text-[7.5px] font-pixel text-[#86efac] bg-[#142314] px-1 py-0.5 rounded border border-[#22c55e]/40">
+                <PhCheckCircle :size="8" weight="fill" />
                 TERCATAT
               </span>
             </div>
@@ -517,24 +497,68 @@ watch(showCertificate, (val) => {
         <!-- Empty Ormawa State -->
         <div
           v-else
-          class="p-5 text-center bg-[#1c1209] border-2 border-dashed border-[#5a3a18] rounded-xl space-y-2 font-mono"
+          class="p-4 text-center bg-[#170f07] border border-dashed border-[#5a3a18] rounded-xl space-y-1.5"
         >
-          <PhStorefront :size="28" class="text-amber-400 mx-auto opacity-40" />
+          <PhStorefront :size="24" class="text-amber-400 mx-auto opacity-50" />
           <p class="text-xs text-amber-200">Belum ada lencana stan ormawa yang terkumpul.</p>
-          <p class="text-[10px] text-gray-400 max-w-md mx-auto font-sans">
-            Kunjungi selasar lantai 3, 4, dan 5 saat acara Ormawa Expo Hari ke-3 dan pindai QR di stan UKM untuk mengoleksi lencana paspor dan tambahan poin XP.
+          <p class="text-[10px] text-stone-400 max-w-sm mx-auto font-sans leading-relaxed">
+            Kunjungi selasar lantai 3, 4, dan 5 saat acara Ormawa Expo dan pindai QR di stan UKM untuk menambah koleksi dan XP.
           </p>
           <RouterLink to="/ormawa">
             <button
               type="button"
-              @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-              class="rpg-btn-wood py-1.5 px-3 text-[10px] font-pixel text-[#f0d060] mt-1 cursor-pointer"
+              @click="() => safeSound(() => soundEngine.playClick?.())"
+              class="rpg-btn-wood py-1 px-2.5 text-[9.5px] font-pixel text-[#f0d060] mt-1 cursor-pointer"
             >
               Buka Katalog Ormawa
             </button>
           </RouterLink>
         </div>
       </div>
+
+      <!-- 4. Reset Button (Discreet) -->
+      <div class="text-center pt-1">
+        <button
+          type="button"
+          @click="handleResetConfirm"
+          class="text-[9.5px] font-pixel text-[#a08060] hover:text-red-400 transition-colors inline-flex items-center gap-1 cursor-pointer"
+        >
+          <PhArrowCounterClockwise :size="11" />
+          <span>Reset Progres Eksplorasi</span>
+        </button>
+      </div>
+
+      <!-- FOOTER NAV -->
+      <footer class="flex items-center justify-center pt-2 pb-1">
+        <div class="inline-flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-[#120a05]/90 backdrop-blur-md border border-[#5a3a18] text-[8.5px] text-[#a08060] font-pixel shadow">
+          <RouterLink
+            to="/peta"
+            @click="() => safeSound(() => soundEngine.playClick?.())"
+            class="hover:text-[#60a5fa] flex items-center gap-1 transition-colors"
+          >
+            <PhMapTrifold :size="12" />
+            <span>PETA KAMPUS</span>
+          </RouterLink>
+          <span>•</span>
+          <RouterLink
+            to="/presensi"
+            @click="() => safeSound(() => soundEngine.playClick?.())"
+            class="hover:text-[#60a5fa] flex items-center gap-1 transition-colors"
+          >
+            <PhCalendarCheck :size="12" />
+            <span>PRESENSI</span>
+          </RouterLink>
+          <span>•</span>
+          <RouterLink
+            to="/profile"
+            @click="() => safeSound(() => soundEngine.playClick?.())"
+            class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
+          >
+            <PhUser :size="12" />
+            <span>PROFIL</span>
+          </RouterLink>
+        </div>
+      </footer>
     </main>
 
     <!-- Stamp Detail Modal -->
@@ -544,30 +568,30 @@ watch(showCertificate, (val) => {
     >
       <div
         v-if="BOOTHS_DATA[selectedStampPreview]"
-        class="w-full max-w-md sdv-card-gold p-5 sm:p-6 text-center relative"
+        class="w-full max-w-md bg-[#19110a] border-2 border-[#f0d060] rounded-2xl p-5 sm:p-6 text-center relative shadow-2xl"
       >
         <!-- Stamp Graphic -->
         <div class="my-3 flex justify-center">
           <div
             :class="[
-              'paspor-modal-stamp w-24 h-24 border-3 rounded-xl flex flex-col items-center justify-center p-2 rotate-[-2deg]',
+              'paspor-modal-stamp w-20 h-20 border-2 rounded-xl flex flex-col items-center justify-center p-2 rotate-[-2deg] shadow-lg',
               gameStore.participant.stamps[selectedStampPreview]
-                ? 'border-[#f0d060] bg-gradient-to-b from-[#3d7828] to-[#255018] shadow'
+                ? 'border-[#f0d060] bg-gradient-to-b from-[#3d7828] to-[#255018]'
                 : 'border-[#5a3a18] bg-[#170f07] opacity-40'
             ]"
           >
             <StampIcon
               :name="BOOTHS_DATA[selectedStampPreview].stampIcon"
-              :size="28"
+              :size="24"
               :class="gameStore.participant.stamps[selectedStampPreview] ? 'text-[#f0d060]' : 'text-[#8b6f4e]'"
             />
-            <span class="font-pixel text-[8px] text-[#f0d060] font-bold uppercase mt-1">
+            <span class="font-pixel text-[7.5px] text-[#f0d060] font-bold uppercase mt-1">
               {{ BOOTHS_DATA[selectedStampPreview].stampTitle }}
             </span>
           </div>
         </div>
 
-        <h3 class="font-pixel text-sm font-bold text-white mb-1">
+        <h3 class="font-pixel text-xs sm:text-sm font-bold text-white mb-1">
           {{ BOOTHS_DATA[selectedStampPreview].name }}
         </h3>
         <p class="font-sans text-xs text-[#c4956a] mb-4 leading-relaxed">
@@ -576,20 +600,20 @@ watch(showCertificate, (val) => {
 
         <div
           v-if="gameStore.participant.stamps[selectedStampPreview]"
-          class="bg-[#170f07] p-2.5 border border-[#4a8030] rounded-lg mb-4 space-y-1 text-xs"
+          class="bg-[#120a05] p-2.5 border border-[#4a8030] rounded-lg mb-4 space-y-0.5 text-xs"
         >
-          <div class="text-[#7ec850] font-pixel text-[9px]">
+          <div class="text-[#7ec850] font-pixel text-[8.5px]">
             STATUS: RESMI DISTEMPEL
           </div>
-          <div class="text-[#f0d060] font-sans">
+          <div class="text-[#f0d060] font-sans text-[11px]">
             Skor: {{ gameStore.participant.stamps[selectedStampPreview]?.score }}/{{ gameStore.participant.stamps[selectedStampPreview]?.totalQuestions }} Benar
           </div>
         </div>
         <div
           v-else
-          class="bg-[#170f07] p-2.5 border border-[#5a3a18] rounded-lg mb-4 text-xs font-sans text-[#a08060]"
+          class="bg-[#120a05] p-2.5 border border-[#5a3a18] rounded-lg mb-4 text-xs font-sans text-[#a08060]"
         >
-          Kunjungi spot ini di Lantai {{ BOOTHS_DATA[selectedStampPreview].floorNumber }} untuk menyelesaikan tantangan.
+          Kunjungi pos ini di Lantai {{ BOOTHS_DATA[selectedStampPreview].floorNumber }} untuk menyelesaikan tantangan.
         </div>
 
         <div class="flex gap-2">
@@ -599,8 +623,8 @@ watch(showCertificate, (val) => {
           >
             <button
               type="button"
-              @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-              class="rpg-btn-primary py-2.5 px-4 text-xs font-pixel font-bold w-full"
+              @click="() => safeSound(() => soundEngine.playClick?.())"
+              class="rpg-btn-primary py-2 px-3 text-xs font-pixel font-bold w-full shadow"
             >
               {{ gameStore.participant.stamps[selectedStampPreview] ? 'Main Ulang' : 'Mainkan' }}
             </button>
@@ -608,10 +632,10 @@ watch(showCertificate, (val) => {
           <button
             type="button"
             @click="() => {
-              if (gameStore.soundEnabled) soundEngine.playClick();
+              safeSound(() => soundEngine.playClick?.());
               selectedStampPreview = null;
             }"
-            class="rpg-btn-wood py-2.5 px-4 text-xs font-pixel font-bold w-full cursor-pointer"
+            class="rpg-btn-wood py-2 px-3 text-xs font-pixel font-bold w-full cursor-pointer shadow"
           >
             Kembali
           </button>
@@ -624,23 +648,23 @@ watch(showCertificate, (val) => {
       v-if="showCertificate"
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a0604]/90 backdrop-blur-md animate-in fade-in duration-200"
     >
-      <div class="paspor-certificate-card w-full max-w-2xl bg-gradient-to-b from-[#2d1b0e] to-[#170f07] border-[4px] border-[#f0d060] rounded-2xl p-6 sm:p-8 text-center relative shadow-2xl">
-        <div class="border-2 border-[#8b6f4e] rounded-xl p-6 sm:p-8 bg-[#170f07]/90 space-y-4 shadow-inner">
-          <div class="flex items-center justify-center gap-3">
+      <div class="paspor-certificate-card w-full max-w-lg bg-gradient-to-b from-[#2d1b0e] to-[#170f07] border-4 border-[#f0d060] rounded-2xl p-5 sm:p-6 text-center relative shadow-2xl">
+        <div class="border-2 border-[#8b6f4e] rounded-xl p-5 sm:p-6 bg-[#170f07]/90 space-y-3 shadow-inner">
+          <div class="flex items-center justify-center gap-2">
             <img
               src="/unu.png"
               alt="UNU Logo"
-              width="56"
-              height="56"
-              class="h-12 w-auto object-contain"
+              width="48"
+              height="48"
+              class="h-10 w-auto object-contain"
             />
           </div>
 
-          <div class="font-pixel text-[10px] sm:text-xs text-[#7ec850] tracking-widest uppercase">
+          <div class="font-pixel text-[9px] sm:text-[10px] text-[#7ec850] tracking-widest uppercase">
             UNIVERSITAS NAHDLATUL ULAMA YOGYAKARTA
           </div>
 
-          <h2 class="font-pixel text-lg sm:text-2xl font-bold text-[#f0d060]">
+          <h2 class="font-pixel text-base sm:text-xl font-bold text-[#f0d060]">
             SERTIFIKAT KELULUSAN ORIENTASI
           </h2>
 
@@ -648,7 +672,7 @@ watch(showCertificate, (val) => {
             Menyatakan bahwa:
           </p>
 
-          <div class="text-lg sm:text-xl font-pixel font-bold text-white border-b-2 border-dashed border-[#f0d060] pb-2 max-w-md mx-auto">
+          <div class="text-base sm:text-lg font-pixel font-bold text-white border-b-2 border-dashed border-[#f0d060] pb-1.5 max-w-sm mx-auto">
             {{ gameStore.participant.name }}
           </div>
 
@@ -656,26 +680,26 @@ watch(showCertificate, (val) => {
             NIM: {{ gameStore.participant.nim }} • {{ gameStore.participant.prodi }}
           </div>
 
-          <p class="font-sans text-xs sm:text-sm text-[#f0e6d2] max-w-lg mx-auto leading-relaxed">
+          <p class="font-sans text-xs text-[#f0e6d2] max-w-md mx-auto leading-relaxed">
             Telah berhasil menyelesaikan seluruh rangkaian eksplorasi 6 lantai kampus dan mengumpulkan seluruh 9 stempel orientasi resmi.
           </p>
 
-          <div class="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5">
             <button
               type="button"
               @click="handlePrint"
-              class="rpg-btn-primary py-3 px-6 text-xs font-pixel font-bold flex items-center justify-center gap-2 cursor-pointer"
+              class="rpg-btn-primary py-2 px-5 text-xs font-pixel font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow"
             >
-              <PhPrinter :size="18" weight="bold" />
+              <PhPrinter :size="15" weight="bold" />
               <span>Cetak Sertifikat</span>
             </button>
             <button
               type="button"
               @click="() => {
-                if (gameStore.soundEnabled) soundEngine.playClick();
+                safeSound(() => soundEngine.playClick?.());
                 showCertificate = false;
               }"
-              class="rpg-btn-wood py-3 px-6 text-xs font-pixel font-bold cursor-pointer"
+              class="rpg-btn-wood py-2 px-5 text-xs font-pixel font-bold cursor-pointer shadow"
             >
               Kembali
             </button>

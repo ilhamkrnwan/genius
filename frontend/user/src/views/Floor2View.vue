@@ -55,11 +55,23 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
 </script>
 
 <template>
-  <div class="min-h-[100dvh] flex flex-col bg-[#2d1b0e] text-[#f0e0c0] font-sans">
+  <div class="relative min-h-[100dvh] flex flex-col text-[#f0e0c0] font-sans">
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
+    <!-- Dark Vignette Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
     <CrtScanlines />
-    <Navbar />
+    <Navbar class="relative z-10" />
 
-    <main class="flex-1 flex flex-col w-full max-w-2xl mx-auto px-4 pb-10 pt-3 z-10 overflow-y-auto animate-fade-in">
+    <main class="relative z-10 flex-1 flex flex-col w-full max-w-2xl mx-auto px-4 pb-10 pt-3 overflow-y-auto animate-fade-in">
       
       <!-- Breadcrumb -->
       <div class="flex items-center justify-between mb-4 shrink-0">

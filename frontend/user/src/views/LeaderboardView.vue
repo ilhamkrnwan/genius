@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   PhTrophy,
   PhUsersThree,
   PhUser,
   PhMagnifyingGlass,
-  PhArrowRight,
+  PhArrowLeft,
+  PhArrowsClockwise,
+  PhSpeakerHigh,
+  PhSpeakerSimpleSlash,
   PhCaretDown,
   PhCaretUp,
+  PhMapTrifold,
+  PhIdentificationBadge,
+  PhCalendarCheck,
 } from '@phosphor-icons/vue';
-import Navbar from '@/components/layout/Navbar.vue';
 import CrtScanlines from '@/components/layout/CrtScanlines.vue';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
 import { useGameStore } from '@/store/gameStore';
@@ -21,7 +26,6 @@ import {
 } from '@/data/mockData';
 import { soundEngine } from '@/lib/sound';
 import { LeaderboardUser, LeaderboardGroup } from '@/types/game';
-import { onMounted, watch, nextTick } from 'vue';
 import { api } from '@/lib/api';
 import { animatePageEnter, staggerFadeUp, bouncePop } from '@/lib/gsap';
 
@@ -31,6 +35,57 @@ const activeTab = ref<'individu' | 'kelompok'>('individu');
 const searchQuery = ref<string>('');
 const expandedGroupId = ref<string | null>('group-03');
 const liveLeaderboard = ref<any>(null);
+const isMuted = ref(gameStore.soundEnabled === false);
+const isRefreshing = ref(false);
+
+function safeSound(fn: () => void) {
+  try {
+    if (!isMuted.value && gameStore.soundEnabled) {
+      fn();
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function toggleSound() {
+  isMuted.value = !isMuted.value;
+  gameStore.soundEnabled = !isMuted.value;
+  if (!isMuted.value) {
+    soundEngine.playClick();
+  }
+}
+
+async function refreshLeaderboard() {
+  if (isRefreshing.value) return;
+  isRefreshing.value = true;
+  safeSound(() => soundEngine.playClick?.());
+  try {
+    gameStore.syncWithServer();
+    const res = await api.getLeaderboard(50);
+    if (res.success && res.data) {
+      liveLeaderboard.value = res.data;
+      const myEntry = res.data.participantLeaderboard?.find(
+        (p: any) => p.username === gameStore.participant?.nim || p.participantId === gameStore.participant?.id
+      );
+      if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > (gameStore.participant?.totalXp || 0)) {
+        if (gameStore.participant) {
+          gameStore.participant.totalXp = myEntry.totalScore;
+          gameStore.saveToStorage();
+        }
+      }
+      nextTick(() => {
+        staggerFadeUp('.lb-item-card', 0.03);
+      });
+    }
+  } catch (err) {
+    console.warn('[LeaderboardView] refresh error:', err);
+  } finally {
+    setTimeout(() => {
+      isRefreshing.value = false;
+    }, 600);
+  }
+}
 
 onMounted(async () => {
   animatePageEnter('.lb-header', { y: 20, duration: 0.4 });
@@ -45,11 +100,13 @@ onMounted(async () => {
     if (res.success && res.data) {
       liveLeaderboard.value = res.data;
       const myEntry = res.data.participantLeaderboard?.find(
-        (p: any) => p.username === gameStore.participant.nim || p.participantId === gameStore.participant.id
+        (p: any) => p.username === gameStore.participant?.nim || p.participantId === gameStore.participant?.id
       );
-      if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > gameStore.participant.totalXp) {
-        gameStore.participant.totalXp = myEntry.totalScore;
-        gameStore.saveToStorage();
+      if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > (gameStore.participant?.totalXp || 0)) {
+        if (gameStore.participant) {
+          gameStore.participant.totalXp = myEntry.totalScore;
+          gameStore.saveToStorage();
+        }
       }
       nextTick(() => {
         staggerFadeUp('.lb-item-card', 0.03);
@@ -85,7 +142,7 @@ const individualList = computed<LeaderboardUser[]>(() => {
       totalXp: item.totalScore || 0,
       stampsCount: Math.min(item.transactionCount || 0, 9),
       completedFloors: Math.min(Math.floor((item.transactionCount || 0) / 1.5), 6),
-      isCurrentUser: item.username === gameStore.participant.nim || item.participantId === gameStore.participant.id,
+      isCurrentUser: item.username === gameStore.participant?.nim || item.participantId === gameStore.participant?.id,
       groupId: item.teamId || 'group-01',
       groupName: item.teamName || 'Genius 01',
     }));
@@ -94,90 +151,113 @@ const individualList = computed<LeaderboardUser[]>(() => {
   const currentUserEntry: LeaderboardUser = {
     id: 'current-user',
     rank: 0,
-    name: `${gameStore.participant.name} (Kamu)`,
-    nim: gameStore.participant.nim,
-    faculty: gameStore.participant.faculty,
-    prodi: gameStore.participant.prodi,
-    avatar: gameStore.participant.avatar,
-    totalXp: gameStore.participant.totalXp,
-    stampsCount: gameStore.participant.completedBooths.length,
-    completedFloors: Math.floor(gameStore.participant.completedBooths.length / 2),
+    name: `${gameStore.participant?.name || 'Mahasiswa Baru'} (Kamu)`,
+    nim: gameStore.participant?.nim || '',
+    faculty: gameStore.participant?.faculty || 'UNU Yogyakarta',
+    prodi: gameStore.participant?.prodi || 'Informatika',
+    avatar: gameStore.participant?.avatar || 'character_cowok',
+    totalXp: gameStore.participant?.totalXp || 0,
+    stampsCount: gameStore.getTotalStampsCount?.() || 0,
+    completedFloors: gameStore.getCompletedFloorsCount?.() || 0,
     isCurrentUser: true,
-    groupId: gameStore.participant.groupId || 'group-03',
+    groupId: 'group-03',
     groupName: 'Genius 03',
   };
 
-  const others = INITIAL_LEADERBOARD_USERS.filter((u) => u.nim !== gameStore.participant.nim);
-  const combined = [...others, currentUserEntry];
-  combined.sort((a, b) => b.totalXp - a.totalXp);
+  const others = INITIAL_LEADERBOARD_USERS.filter((u) => !u.isCurrentUser);
+  const all = [...others, currentUserEntry];
 
-  return combined.map((item, index) => ({
-    ...item,
-    rank: index + 1,
+  all.sort((a, b) => {
+    if (b.totalXp !== a.totalXp) return b.totalXp - a.totalXp;
+    return b.stampsCount - a.stampsCount;
+  });
+
+  return all.map((user, idx) => ({
+    ...user,
+    rank: idx + 1,
   }));
+});
+
+const filteredIndividuals = computed(() => {
+  if (!searchQuery.value.trim()) return individualList.value;
+  const q = searchQuery.value.toLowerCase().trim();
+  return individualList.value.filter(
+    (u) =>
+      u.name.toLowerCase().includes(q) ||
+      u.nim.toLowerCase().includes(q) ||
+      u.prodi.toLowerCase().includes(q)
+  );
 });
 
 // Compute live group leaderboard
 const groupList = computed<LeaderboardGroup[]>(() => {
   if (liveLeaderboard.value?.teamLeaderboard?.length > 0) {
-    return liveLeaderboard.value.teamLeaderboard.map((t: any, index: number) => ({
-      id: t.teamId,
-      rank: t.rank || index + 1,
-      name: t.teamName,
-      code: t.teamCode,
-      totalXp: t.totalScore || 0,
-      avgXp: t.totalScore || 0,
-      totalStampsAvg: 0,
-      assignedFloor: 1,
-      members: [],
-    }));
-  }
-  const groups = INITIAL_LEADERBOARD_GROUPS.map((group) => {
-    const updatedMembers = group.members.map((member) => {
-      if (member.isCurrentUser || member.nim === gameStore.participant.nim) {
-        return {
-          ...member,
-          name: `${gameStore.participant.name} (Kamu)`,
-          nim: gameStore.participant.nim,
-          totalXp: gameStore.participant.totalXp,
-          stampsCount: gameStore.participant.completedBooths.length,
-          avatar: gameStore.participant.avatar,
-          isCurrentUser: true,
-        };
-      }
-      return member;
+    return liveLeaderboard.value.teamLeaderboard.map((team: any, index: number) => {
+      const myTeamName = gameStore.participant?.groupName || 'Genius 03';
+      const isMyTeam = team.teamName === myTeamName;
+
+      return {
+        id: team.teamId,
+        rank: team.rank || index + 1,
+        name: team.teamName,
+        totalXp: team.totalScore || 0,
+        avgXp: team.avgScore || Math.round(team.totalScore / Math.max(team.memberCount || 1, 1)),
+        stampsCount: Math.min(team.stampsCollected || 0, 9),
+        members: isMyTeam
+          ? [
+              {
+                id: 'my-user',
+                name: `${gameStore.participant?.name || 'Mahasiswa Baru'} (Kamu)`,
+                avatar: gameStore.participant?.avatar || 'character_cowok',
+                totalXp: gameStore.participant?.totalXp || 0,
+                stampsCount: gameStore.getTotalStampsCount?.() || 0,
+                isCurrentUser: true,
+                prodi: gameStore.participant?.prodi || 'Informatika',
+              },
+            ]
+          : [
+              {
+                id: `member-${team.teamId}-1`,
+                name: 'Peserta Regu',
+                avatar: 'character_cowok',
+                totalXp: team.avgScore || 0,
+                stampsCount: 5,
+                isCurrentUser: false,
+                prodi: 'UNU Yogyakarta',
+              },
+            ],
+      };
     });
+  }
 
-    const totalXp = updatedMembers.reduce((acc, m) => acc + m.totalXp, 0);
-    const avgXp = Math.round(totalXp / updatedMembers.length);
-    const totalStamps = updatedMembers.reduce((acc, m) => acc + m.stampsCount, 0);
-    const totalStampsAvg = Number((totalStamps / updatedMembers.length).toFixed(1));
+  return INITIAL_LEADERBOARD_GROUPS.map((group) => {
+    if (group.id === 'group-03') {
+      const updatedMembers = group.members.map((m) => {
+        if (m.isCurrentUser) {
+          return {
+            ...m,
+            name: `${gameStore.participant?.name || 'Mahasiswa Baru'} (Kamu)`,
+            avatar: gameStore.participant?.avatar || 'character_cowok',
+            totalXp: gameStore.participant?.totalXp || 0,
+            stampsCount: gameStore.getTotalStampsCount?.() || 0,
+            prodi: gameStore.participant?.prodi || 'Informatika',
+          };
+        }
+        return m;
+      });
 
-    return {
-      ...group,
-      members: updatedMembers,
-      totalXp,
-      avgXp,
-      totalStampsAvg,
-    };
-  });
+      const totalXp = updatedMembers.reduce((sum, m) => sum + m.totalXp, 0);
+      const avgXp = Math.round(totalXp / updatedMembers.length);
 
-  groups.sort((a, b) => b.avgXp - a.avgXp);
-  return groups.map((g, index) => ({
-    ...g,
-    rank: index + 1,
-  }));
-});
-
-const filteredIndividuals = computed(() => {
-  const query = searchQuery.value.toLowerCase();
-  return individualList.value.filter(
-    (user) =>
-      user.name.toLowerCase().includes(query) ||
-      user.nim.toLowerCase().includes(query) ||
-      user.prodi.toLowerCase().includes(query) ||
-      user.faculty.toLowerCase().includes(query)
-  );
+      return {
+        ...group,
+        totalXp,
+        avgXp,
+        members: updatedMembers,
+      };
+    }
+    return group;
+  }).sort((a, b) => b.avgXp - a.avgXp).map((g, idx) => ({ ...g, rank: idx + 1 }));
 });
 
 const currentUserRankInfo = computed(() => {
@@ -186,99 +266,128 @@ const currentUserRankInfo = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-[#2d1b0e] text-[#f0e0c0] w-full overflow-x-hidden">
+  <div
+    class="relative w-full min-h-[100dvh] overflow-y-auto font-pixel text-[#fbf6e9] select-none flex flex-col justify-between py-3 sm:py-5 px-3 sm:px-6"
+  >
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
+    <!-- Dark Vignette Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
     <CrtScanlines />
-    <Navbar />
 
-    <main class="w-full max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-6 flex-1 space-y-4 overflow-x-hidden">
-      <!-- Simple Header -->
-      <div class="lb-header flex items-center justify-between gap-3">
-        <div>
-          <h1 class="font-pixel text-lg sm:text-2xl font-bold text-[#f0d060] flex items-center gap-2">
-            <PhTrophy :size="24" weight="fill" class="text-[#f0d060] shrink-0" />
-            <span>Papan Peringkat</span>
-          </h1>
-          <p class="font-sans text-xs text-[#c4956a] mt-0.5">
-            Peringkat perolehan poin orientasi kampus.
-          </p>
-        </div>
+    <!-- TOP HEADER: Format standar RPG Presensi & Ormawa Expo -->
+    <header class="relative z-20 w-full max-w-xl mx-auto flex items-center justify-between gap-2 pb-2 shrink-0">
+      <!-- Left: Back to Menu -->
+      <RouterLink
+        to="/play"
+        @click="() => safeSound(() => soundEngine.playClick?.())"
+        class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] hover:text-white transition-all text-[9.5px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer active:scale-95 shadow shrink-0"
+        title="Kembali ke Menu Utama"
+      >
+        <PhArrowLeft :size="13" weight="bold" />
+        <span class="font-pixel">MENU</span>
+      </RouterLink>
 
-        <RouterLink to="/play" class="shrink-0">
-          <button
-            type="button"
-            @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-            class="rpg-btn-primary py-2 px-3 text-xs font-pixel font-bold flex items-center gap-1.5"
-          >
-            <span>Main</span>
-            <PhArrowRight :size="14" weight="bold" />
-          </button>
-        </RouterLink>
+      <!-- Center: Title Badge -->
+      <div class="px-3 py-1 bg-[#1a110a]/90 backdrop-blur-md border border-[#8b6f4e] rounded-full shadow flex items-center gap-1.5 shrink-0">
+        <PhTrophy :size="14" weight="fill" class="text-[#facc15]" />
+        <span class="text-[10px] sm:text-xs text-[#facc15] font-bold tracking-wide uppercase">
+          PAPAN PERINGKAT
+        </span>
       </div>
 
-      <!-- Current User Highlight Card -->
+      <!-- Right: Refresh & Sound -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button
+          type="button"
+          @click="refreshLeaderboard"
+          title="Segarkan Papan Peringkat"
+          class="p-1.5 rounded-lg bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] transition-all cursor-pointer active:scale-95 shadow"
+        >
+          <PhArrowsClockwise :size="13" :class="{ 'animate-spin': isRefreshing }" />
+        </button>
+
+        <button
+          type="button"
+          @click="toggleSound"
+          class="p-1.5 rounded-lg bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] transition-all cursor-pointer active:scale-95 shadow"
+          :title="isMuted ? 'Nyalakan Suara' : 'Matikan Suara'"
+        >
+          <PhSpeakerHigh v-if="!isMuted" :size="13" weight="bold" />
+          <PhSpeakerSimpleSlash v-else :size="13" weight="bold" />
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT: Clean, Centered & Unified Layout -->
+    <main class="relative z-20 w-full max-w-xl mx-auto space-y-2.5 my-auto">
+      <!-- Current User Highlight Banner -->
       <div
         v-if="currentUserRankInfo"
-        class="lb-user-banner sdv-card-gold p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        class="lb-user-banner bg-[#19110a]/95 backdrop-blur-md border-2 border-[#f0d060] rounded-xl p-3 sm:p-3.5 shadow-lg flex items-center justify-between gap-3"
       >
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-12 h-12 rounded-lg overflow-hidden bg-[#170f07] border-2 border-[#f0d060] shrink-0 relative">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-11 h-11 rounded-lg overflow-hidden bg-[#170f07] border border-[#f0d060] shrink-0 relative shadow">
             <img
-              :src="getAvatarImage(gameStore.participant.avatar)"
+              :src="getAvatarImage(gameStore.participant?.avatar || 'character_cowok')"
               alt="Avatar"
               class="w-full h-full object-cover"
             />
           </div>
           <div class="min-w-0">
-            <div class="flex items-center gap-1.5">
-              <span class="font-pixel text-[9px] text-[#7ec850] uppercase">
+            <div class="flex items-center gap-1.5 mb-0.5">
+              <span class="font-pixel text-[8.5px] text-[#7ec850] uppercase">
                 Posisi Kamu:
               </span>
               <PixelBadge variant="gold" size="sm">
                 #{{ currentUserRankInfo.rank }}
               </PixelBadge>
             </div>
-            <h3 class="font-pixel text-xs sm:text-sm font-bold text-white leading-snug break-words">
-              {{ gameStore.participant.name }}
+            <h3 class="font-pixel text-[11px] sm:text-xs font-bold text-white leading-tight break-words">
+              {{ gameStore.participant?.name || 'Mahasiswa Baru' }}
             </h3>
-            <p class="font-sans text-[11px] text-[#c4956a] leading-tight break-words">
-              {{ gameStore.participant.nim }} • {{ gameStore.participant.prodi }}
+            <p class="font-sans text-[10px] text-[#c4956a] leading-tight break-words">
+              {{ gameStore.participant?.nim || '-' }} • {{ gameStore.participant?.prodi || 'UNU Yogyakarta' }}
             </p>
           </div>
         </div>
 
-        <div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 sm:border-l border-[#5a3a18] pt-2 sm:pt-0 sm:pl-4">
-          <div class="text-center">
+        <div class="flex items-center gap-2.5 border-l border-[#5a3a18] pl-3 shrink-0 text-right">
+          <div>
             <div class="font-pixel text-xs text-[#f0d060] font-bold">
-              {{ gameStore.participant.totalXp }} XP
+              {{ gameStore.participant?.totalXp || 0 }} XP
             </div>
-            <div class="text-[9px] font-sans text-[#a08060]">Poin</div>
-          </div>
-          <div class="w-[1px] h-6 bg-[#5a3a18]" />
-          <div class="text-center">
-            <div class="font-pixel text-xs text-[#7ec850] font-bold">
-              {{ gameStore.participant.completedBooths.length }}/9
+            <div class="text-[9px] font-sans text-[#7ec850]">
+              {{ gameStore.getTotalStampsCount?.() || 0 }}/9 Stempel
             </div>
-            <div class="text-[9px] font-sans text-[#a08060]">Stempel</div>
           </div>
         </div>
       </div>
 
-      <!-- Tab Selector -->
-      <div class="grid grid-cols-2 gap-2 w-full">
+      <!-- Tab Switcher -->
+      <div class="grid grid-cols-2 gap-1.5 w-full">
         <button
           type="button"
           @click="() => {
             activeTab = 'individu';
-            if (gameStore.soundEnabled) soundEngine.playSelect();
+            safeSound(() => soundEngine.playSelect?.());
           }"
           :class="[
-            'w-full py-2.5 px-3 rounded-lg font-pixel text-xs font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer',
+            'w-full py-2 px-3 rounded-xl font-pixel text-[10px] sm:text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow',
             activeTab === 'individu'
-              ? 'bg-[#3d7828] text-[#f0d060] border-[#f0d060] shadow'
-              : 'bg-[#170f07] text-[#a08060] border-[#5a3a18] hover:border-[#8b6f4e]'
+              ? 'bg-[#3d7828] text-[#f0d060] border-[#f0d060]'
+              : 'bg-[#19110a]/90 text-[#a08060] border-[#5a3a18] hover:border-[#8b6f4e]'
           ]"
         >
-          <PhUser :size="16" weight="bold" />
+          <PhUser :size="14" weight="bold" />
           <span>Individu</span>
         </button>
 
@@ -286,77 +395,77 @@ const currentUserRankInfo = computed(() => {
           type="button"
           @click="() => {
             activeTab = 'kelompok';
-            if (gameStore.soundEnabled) soundEngine.playSelect();
+            safeSound(() => soundEngine.playSelect?.());
           }"
           :class="[
-            'w-full py-2.5 px-3 rounded-lg font-pixel text-xs font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer',
+            'w-full py-2 px-3 rounded-xl font-pixel text-[10px] sm:text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow',
             activeTab === 'kelompok'
-              ? 'bg-[#3d7828] text-[#f0d060] border-[#f0d060] shadow'
-              : 'bg-[#170f07] text-[#a08060] border-[#5a3a18] hover:border-[#8b6f4e]'
+              ? 'bg-[#3d7828] text-[#f0d060] border-[#f0d060]'
+              : 'bg-[#19110a]/90 text-[#a08060] border-[#5a3a18] hover:border-[#8b6f4e]'
           ]"
         >
-          <PhUsersThree :size="16" weight="bold" />
+          <PhUsersThree :size="14" weight="bold" />
           <span>Kelompok</span>
         </button>
       </div>
 
       <!-- TAB 1: INDIVIDU -->
-      <div v-if="activeTab === 'individu'" class="space-y-3 w-full">
+      <div v-if="activeTab === 'individu'" class="space-y-2 w-full">
         <!-- Search Bar -->
         <div class="relative w-full">
           <input
             type="text"
             v-model="searchQuery"
             placeholder="Cari nama, NIM, prodi..."
-            class="w-full bg-[#170f07] border border-[#5a3a18] focus:border-[#f0d060] rounded-lg px-3 py-2 pl-9 text-xs text-white font-sans outline-none"
+            class="w-full bg-[#19110a]/95 backdrop-blur-md border border-[#5a3a18] focus:border-[#f0d060] rounded-xl px-3 py-2 pl-8 text-xs text-white font-sans outline-none placeholder-[#785435] shadow"
           />
           <PhMagnifyingGlass
-            :size="16"
+            :size="14"
             weight="bold"
-            class="absolute left-3 top-2.5 text-[#8b6f4e]"
+            class="absolute left-2.5 top-2.5 text-[#8b6f4e]"
           />
         </div>
 
         <!-- List Cards -->
-        <div class="space-y-2 w-full">
+        <div class="space-y-1.5 w-full max-h-[48vh] sm:max-h-[52vh] overflow-y-auto pr-0.5">
           <div
             v-for="user in filteredIndividuals"
             :key="user.id"
             :class="[
-              'lb-item-card p-3 rounded-xl border flex items-center justify-between gap-2.5 transition-all w-full',
+              'lb-item-card p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-2.5 transition-all w-full shadow',
               user.isCurrentUser
-                ? 'bg-[#1f3a2b] border-[#f0d060] shadow'
-                : 'bg-[#170f07] border-[#3d2b1e] hover:border-[#5a3a18]'
+                ? 'bg-[#1f3a2b]/95 border-[#f0d060]'
+                : 'bg-[#19110a]/90 border-[#5a3a18] hover:border-[#8b6f4e]'
             ]"
           >
             <!-- Left: Rank & Avatar & Info -->
             <div class="flex items-center gap-2.5 min-w-0">
               <span
                 v-if="user.rank === 1"
-                class="w-7 h-7 rounded-md bg-[#f0d060] text-[#1b120a] flex items-center justify-center font-pixel text-xs font-black shrink-0"
+                class="w-7 h-7 rounded-lg bg-[#f0d060] text-[#1b120a] flex items-center justify-center font-pixel text-xs font-black shrink-0 shadow"
               >
                 1
               </span>
               <span
                 v-else-if="user.rank === 2"
-                class="w-7 h-7 rounded-md bg-[#d4d4d8] text-[#18181b] flex items-center justify-center font-pixel text-xs font-black shrink-0"
+                class="w-7 h-7 rounded-lg bg-[#d4d4d8] text-[#18181b] flex items-center justify-center font-pixel text-xs font-black shrink-0 shadow"
               >
                 2
               </span>
               <span
                 v-else-if="user.rank === 3"
-                class="w-7 h-7 rounded-md bg-[#d97706] text-white flex items-center justify-center font-pixel text-xs font-black shrink-0"
+                class="w-7 h-7 rounded-lg bg-[#d97706] text-white flex items-center justify-center font-pixel text-xs font-black shrink-0 shadow"
               >
                 3
               </span>
               <span
                 v-else
-                class="w-7 h-7 rounded-md bg-[#170f07] text-[#a08060] border border-[#5a3a18] flex items-center justify-center font-pixel text-xs font-bold shrink-0"
+                class="w-7 h-7 rounded-lg bg-[#23160c] text-[#a08060] border border-[#5a3a18] flex items-center justify-center font-pixel text-[11px] font-bold shrink-0"
               >
                 {{ user.rank }}
               </span>
 
-              <div class="w-9 h-9 rounded-lg overflow-hidden bg-[#281c12] border border-[#8b6f4e] shrink-0 relative">
+              <div class="w-8 h-8 rounded-lg overflow-hidden bg-[#281c12] border border-[#8b6f4e] shrink-0 relative shadow">
                 <img
                   :src="getAvatarImage(user.avatar)"
                   :alt="user.name"
@@ -368,7 +477,7 @@ const currentUserRankInfo = computed(() => {
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <h4
                     :class="[
-                      'font-pixel text-[10px] sm:text-xs font-bold leading-normal break-words',
+                      'font-pixel text-[10px] sm:text-xs font-bold leading-tight break-words',
                       user.isCurrentUser ? 'text-white' : 'text-[#f0e0c0]'
                     ]"
                   >
@@ -378,7 +487,7 @@ const currentUserRankInfo = computed(() => {
                     KAMU
                   </PixelBadge>
                 </div>
-                <p class="font-sans text-[10px] text-[#a08060] leading-tight break-words">
+                <p class="font-sans text-[10px] text-[#a08060] leading-tight break-words mt-0.5">
                   {{ user.prodi }}
                 </p>
               </div>
@@ -386,10 +495,10 @@ const currentUserRankInfo = computed(() => {
 
             <!-- Right: Points & Stamp count -->
             <div class="text-right shrink-0">
-              <div class="font-pixel text-xs text-[#f0d060] font-bold">
+              <div class="font-pixel text-[11px] sm:text-xs text-[#f0d060] font-bold">
                 {{ user.totalXp }} XP
               </div>
-              <div class="font-sans text-[10px] text-[#7ec850]">
+              <div class="font-sans text-[9.5px] text-[#7ec850]">
                 {{ user.stampsCount }}/9 Stempel
               </div>
             </div>
@@ -397,7 +506,7 @@ const currentUserRankInfo = computed(() => {
 
           <div
             v-if="filteredIndividuals.length === 0"
-            class="p-6 text-center bg-[#170f07] border border-[#5a3a18] rounded-xl font-sans text-xs text-[#a08060]"
+            class="p-6 text-center bg-[#19110a]/90 border border-[#5a3a18] rounded-xl font-sans text-xs text-[#a08060]"
           >
             Tidak ada peserta yang cocok.
           </div>
@@ -405,13 +514,13 @@ const currentUserRankInfo = computed(() => {
       </div>
 
       <!-- TAB 2: KELOMPOK -->
-      <div v-if="activeTab === 'kelompok'" class="space-y-2.5 w-full">
+      <div v-if="activeTab === 'kelompok'" class="space-y-2 w-full max-h-[52vh] overflow-y-auto pr-0.5">
         <div
           v-for="group in groupList"
           :key="group.id"
           :class="[
-            'lb-item-card sdv-card transition-all overflow-hidden w-full',
-            group.members.some((m) => m.isCurrentUser) ? 'border-[#f0d060]' : ''
+            'lb-item-card bg-[#19110a]/95 backdrop-blur-md border rounded-xl transition-all overflow-hidden w-full shadow',
+            group.members.some((m) => m.isCurrentUser) ? 'border-[#f0d060]' : 'border-[#5a3a18]'
           ]"
         >
           <!-- Accordion Header -->
@@ -419,32 +528,32 @@ const currentUserRankInfo = computed(() => {
             type="button"
             @click="() => {
               expandedGroupId = expandedGroupId === group.id ? null : group.id;
-              if (gameStore.soundEnabled) soundEngine.playSelect();
+              safeSound(() => soundEngine.playSelect?.());
             }"
-            class="w-full p-3 sm:p-4 flex items-center justify-between gap-3 text-left cursor-pointer"
+            class="w-full p-2.5 sm:p-3 flex items-center justify-between gap-2.5 text-left cursor-pointer"
           >
             <div class="flex items-center gap-2.5 min-w-0 flex-1">
               <span
                 v-if="group.rank === 1"
-                class="w-7 h-7 rounded-md bg-[#f0d060] text-[#1b120a] flex items-center justify-center font-pixel text-xs font-black shrink-0"
+                class="w-7 h-7 rounded-lg bg-[#f0d060] text-[#1b120a] flex items-center justify-center font-pixel text-xs font-black shrink-0 shadow"
               >
                 1
               </span>
               <span
                 v-else-if="group.rank === 2"
-                class="w-7 h-7 rounded-md bg-[#d4d4d8] text-[#18181b] flex items-center justify-center font-pixel text-xs font-black shrink-0"
+                class="w-7 h-7 rounded-lg bg-[#d4d4d8] text-[#18181b] flex items-center justify-center font-pixel text-xs font-black shrink-0 shadow"
               >
                 2
               </span>
               <span
                 v-else-if="group.rank === 3"
-                class="w-7 h-7 rounded-md bg-[#d97706] text-white flex items-center justify-center font-pixel text-xs font-black shrink-0"
+                class="w-7 h-7 rounded-lg bg-[#d97706] text-white flex items-center justify-center font-pixel text-xs font-black shrink-0 shadow"
               >
                 3
               </span>
               <span
                 v-else
-                class="w-7 h-7 rounded-md bg-[#170f07] text-[#a08060] border border-[#5a3a18] flex items-center justify-center font-pixel text-xs font-bold shrink-0"
+                class="w-7 h-7 rounded-lg bg-[#23160c] text-[#a08060] border border-[#5a3a18] flex items-center justify-center font-pixel text-[11px] font-bold shrink-0"
               >
                 {{ group.rank }}
               </span>
@@ -458,16 +567,16 @@ const currentUserRankInfo = computed(() => {
                     KAMU
                   </PixelBadge>
                 </div>
-                <p class="font-sans text-[11px] text-[#a08060]">
+                <p class="font-sans text-[10px] text-[#a08060] mt-0.5">
                   {{ group.members.length }} Anggota
                 </p>
               </div>
             </div>
 
             <!-- Right Stats & Expand Icon -->
-            <div class="flex items-center gap-3 shrink-0">
+            <div class="flex items-center gap-2.5 shrink-0">
               <div class="text-right">
-                <div class="font-pixel text-xs font-bold text-[#f0d060]">
+                <div class="font-pixel text-[11px] sm:text-xs font-bold text-[#f0d060]">
                   {{ group.avgXp }} XP
                 </div>
                 <div class="font-sans text-[9px] text-[#7ec850]">
@@ -475,9 +584,9 @@ const currentUserRankInfo = computed(() => {
                 </div>
               </div>
 
-              <div class="p-1 bg-[#170f07] border border-[#5a3a18] rounded text-[#f0d060]">
-                <PhCaretUp v-if="expandedGroupId === group.id" :size="14" weight="bold" />
-                <PhCaretDown v-else :size="14" weight="bold" />
+              <div class="p-1 bg-[#23160c] border border-[#5a3a18] rounded text-[#f0d060]">
+                <PhCaretUp v-if="expandedGroupId === group.id" :size="13" weight="bold" />
+                <PhCaretDown v-else :size="13" weight="bold" />
               </div>
             </div>
           </button>
@@ -485,25 +594,25 @@ const currentUserRankInfo = computed(() => {
           <!-- Accordion Content -->
           <div
             v-if="expandedGroupId === group.id"
-            class="bg-[#170f07] border-t border-[#5a3a18] p-3 space-y-2 animate-in fade-in"
+            class="bg-[#120a05]/95 border-t border-[#5a3a18] p-2.5 space-y-1.5 animate-in fade-in"
           >
-            <div class="text-[9px] font-pixel text-[#a08060] uppercase border-b border-[#3d2b1e] pb-1">
+            <div class="text-[8.5px] font-pixel text-[#a08060] uppercase border-b border-[#3d2b1e] pb-1">
               Anggota Kelompok:
             </div>
 
-            <div class="space-y-1.5">
+            <div class="space-y-1">
               <div
                 v-for="member in group.members"
                 :key="member.id"
                 :class="[
-                  'p-2 rounded-lg border flex items-center justify-between gap-2',
+                  'p-1.5 rounded-lg border flex items-center justify-between gap-2',
                   member.isCurrentUser
                     ? 'bg-[#1f3a2b] border-[#7ec850] text-[#f0ffd0]'
-                    : 'bg-[#23160c] border-[#3d2b1e] text-[#e0d0b0]'
+                    : 'bg-[#19110a] border-[#3d2b1e] text-[#e0d0b0]'
                 ]"
               >
                 <div class="flex items-center gap-2 min-w-0 flex-1">
-                  <div class="w-7 h-7 rounded-md overflow-hidden bg-[#170f07] border border-[#8b6f4e] shrink-0 relative">
+                  <div class="w-6 h-6 rounded-md overflow-hidden bg-[#170f07] border border-[#8b6f4e] shrink-0 relative">
                     <img
                       :src="getAvatarImage(member.avatar)"
                       :alt="member.name"
@@ -511,20 +620,20 @@ const currentUserRankInfo = computed(() => {
                     />
                   </div>
                   <div class="min-w-0 flex-1">
-                    <div class="font-pixel text-[9px] sm:text-[10px] font-bold leading-normal break-words">
+                    <div class="font-pixel text-[9px] sm:text-[10px] font-bold leading-tight break-words">
                       {{ member.name }}
                     </div>
-                    <div class="font-sans text-[9px] text-[#a08060] leading-tight break-words">
+                    <div class="font-sans text-[8.5px] text-[#a08060] leading-tight break-words">
                       {{ member.prodi }}
                     </div>
                   </div>
                 </div>
 
                 <div class="text-right shrink-0">
-                  <div class="font-pixel text-[10px] text-[#f0d060] font-bold">
+                  <div class="font-pixel text-[9.5px] text-[#f0d060] font-bold">
                     {{ member.totalXp }} XP
                   </div>
-                  <div class="font-sans text-[9px] text-[#7ec850]">
+                  <div class="font-sans text-[8.5px] text-[#7ec850]">
                     {{ member.stampsCount }} Stempel
                   </div>
                 </div>
@@ -533,6 +642,38 @@ const currentUserRankInfo = computed(() => {
           </div>
         </div>
       </div>
+
+      <!-- FOOTER NAV -->
+      <footer class="flex items-center justify-center pt-2 pb-1">
+        <div class="inline-flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-[#120a05]/90 backdrop-blur-md border border-[#5a3a18] text-[8.5px] text-[#a08060] font-pixel shadow">
+          <RouterLink
+            to="/peta"
+            @click="() => safeSound(() => soundEngine.playClick?.())"
+            class="hover:text-[#60a5fa] flex items-center gap-1 transition-colors"
+          >
+            <PhMapTrifold :size="12" />
+            <span>PETA KAMPUS</span>
+          </RouterLink>
+          <span>•</span>
+          <RouterLink
+            to="/paspor"
+            @click="() => safeSound(() => soundEngine.playClick?.())"
+            class="hover:text-[#facc15] flex items-center gap-1 transition-colors"
+          >
+            <PhIdentificationBadge :size="12" />
+            <span>PASPOR</span>
+          </RouterLink>
+          <span>•</span>
+          <RouterLink
+            to="/profile"
+            @click="() => safeSound(() => soundEngine.playClick?.())"
+            class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
+          >
+            <PhUser :size="12" />
+            <span>PROFIL</span>
+          </RouterLink>
+        </div>
+      </footer>
     </main>
   </div>
 </template>
