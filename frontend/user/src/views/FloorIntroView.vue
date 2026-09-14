@@ -195,7 +195,7 @@ onMounted(() => {
               :key="b.id"
               :class="[
                 'floor-intro-spot p-2 rounded-xl border transition-all',
-                gameStore.participant.completedBooths.includes(b.id) || gameStore.participant.completedBooths.includes(b.code)
+                (gameStore.isBoothCompleted(b.id) || gameStore.isBoothCompleted(b.code))
                   ? 'bg-[#1a2e1a] border-[#7ec850]'
                   : 'bg-[#170f07] border-[#5a3a18]'
               ]"
@@ -205,13 +205,13 @@ onMounted(() => {
                   <div class="w-6 h-6 rounded-md bg-[#281c12] border border-[#f0d060] flex items-center justify-center shrink-0">
                     <StampIcon :name="b.stampIcon" :size="14" class="text-[#f0d060]" />
                   </div>
-                  <span :class="['font-pixel text-[8px] font-bold', (gameStore.participant.completedBooths.includes(b.id) || gameStore.participant.completedBooths.includes(b.code)) ? 'text-[#7ec850]' : 'text-[#f0d060]']">
+                  <span :class="['font-pixel text-[8px] font-bold', (gameStore.isBoothCompleted(b.id) || gameStore.isBoothCompleted(b.code)) ? 'text-[#7ec850]' : 'text-[#f0d060]']">
                     {{ b.code }}
                   </span>
                 </div>
 
                 <PhCheckCircle
-                  v-if="gameStore.participant.completedBooths.includes(b.id) || gameStore.participant.completedBooths.includes(b.code)"
+                  v-if="gameStore.isBoothCompleted(b.id) || gameStore.isBoothCompleted(b.code)"
                   :size="14"
                   weight="fill"
                   class="text-[#7ec850] shrink-0"

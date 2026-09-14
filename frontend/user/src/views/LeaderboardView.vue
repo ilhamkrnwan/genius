@@ -66,11 +66,13 @@ async function refreshLeaderboard() {
     if (res.success && res.data) {
       liveLeaderboard.value = res.data;
       const myEntry = res.data.participantLeaderboard?.find(
-        (p: any) => p.username === gameStore.participant.nim || p.participantId === gameStore.participant.id
+        (p: any) => p.username === gameStore.participant?.nim || p.participantId === gameStore.participant?.id
       );
-      if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > gameStore.participant.totalXp) {
-        gameStore.participant.totalXp = myEntry.totalScore;
-        gameStore.saveToStorage();
+      if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > (gameStore.participant?.totalXp || 0)) {
+        if (gameStore.participant) {
+          gameStore.participant.totalXp = myEntry.totalScore;
+          gameStore.saveToStorage();
+        }
       }
       nextTick(() => {
         staggerFadeUp('.lb-item-card', 0.03);
@@ -98,11 +100,13 @@ onMounted(async () => {
     if (res.success && res.data) {
       liveLeaderboard.value = res.data;
       const myEntry = res.data.participantLeaderboard?.find(
-        (p: any) => p.username === gameStore.participant.nim || p.participantId === gameStore.participant.id
+        (p: any) => p.username === gameStore.participant?.nim || p.participantId === gameStore.participant?.id
       );
-      if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > gameStore.participant.totalXp) {
-        gameStore.participant.totalXp = myEntry.totalScore;
-        gameStore.saveToStorage();
+      if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > (gameStore.participant?.totalXp || 0)) {
+        if (gameStore.participant) {
+          gameStore.participant.totalXp = myEntry.totalScore;
+          gameStore.saveToStorage();
+        }
       }
       nextTick(() => {
         staggerFadeUp('.lb-item-card', 0.03);
@@ -138,7 +142,7 @@ const individualList = computed<LeaderboardUser[]>(() => {
       totalXp: item.totalScore || 0,
       stampsCount: Math.min(item.transactionCount || 0, 9),
       completedFloors: Math.min(Math.floor((item.transactionCount || 0) / 1.5), 6),
-      isCurrentUser: item.username === gameStore.participant.nim || item.participantId === gameStore.participant.id,
+      isCurrentUser: item.username === gameStore.participant?.nim || item.participantId === gameStore.participant?.id,
       groupId: item.teamId || 'group-01',
       groupName: item.teamName || 'Genius 01',
     }));
@@ -147,14 +151,14 @@ const individualList = computed<LeaderboardUser[]>(() => {
   const currentUserEntry: LeaderboardUser = {
     id: 'current-user',
     rank: 0,
-    name: `${gameStore.participant.name} (Kamu)`,
-    nim: gameStore.participant.nim,
-    faculty: gameStore.participant.faculty,
-    prodi: gameStore.participant.prodi,
-    avatar: gameStore.participant.avatar,
-    totalXp: gameStore.participant.totalXp,
-    stampsCount: gameStore.participant.completedBooths.length,
-    completedFloors: gameStore.participant.completedFloors.length,
+    name: `${gameStore.participant?.name || 'Mahasiswa Baru'} (Kamu)`,
+    nim: gameStore.participant?.nim || '',
+    faculty: gameStore.participant?.faculty || 'UNU Yogyakarta',
+    prodi: gameStore.participant?.prodi || 'Informatika',
+    avatar: gameStore.participant?.avatar || 'character_cowok',
+    totalXp: gameStore.participant?.totalXp || 0,
+    stampsCount: gameStore.getTotalStampsCount?.() || 0,
+    completedFloors: gameStore.getCompletedFloorsCount?.() || 0,
     isCurrentUser: true,
     groupId: 'group-03',
     groupName: 'Genius 03',
@@ -189,7 +193,7 @@ const filteredIndividuals = computed(() => {
 const groupList = computed<LeaderboardGroup[]>(() => {
   if (liveLeaderboard.value?.teamLeaderboard?.length > 0) {
     return liveLeaderboard.value.teamLeaderboard.map((team: any, index: number) => {
-      const myTeamName = gameStore.participant.groupName || 'Genius 03';
+      const myTeamName = gameStore.participant?.groupName || 'Genius 03';
       const isMyTeam = team.teamName === myTeamName;
 
       return {
@@ -203,12 +207,12 @@ const groupList = computed<LeaderboardGroup[]>(() => {
           ? [
               {
                 id: 'my-user',
-                name: `${gameStore.participant.name} (Kamu)`,
-                avatar: gameStore.participant.avatar,
-                totalXp: gameStore.participant.totalXp,
-                stampsCount: gameStore.participant.completedBooths.length,
+                name: `${gameStore.participant?.name || 'Mahasiswa Baru'} (Kamu)`,
+                avatar: gameStore.participant?.avatar || 'character_cowok',
+                totalXp: gameStore.participant?.totalXp || 0,
+                stampsCount: gameStore.getTotalStampsCount?.() || 0,
                 isCurrentUser: true,
-                prodi: gameStore.participant.prodi,
+                prodi: gameStore.participant?.prodi || 'Informatika',
               },
             ]
           : [
@@ -232,11 +236,11 @@ const groupList = computed<LeaderboardGroup[]>(() => {
         if (m.isCurrentUser) {
           return {
             ...m,
-            name: `${gameStore.participant.name} (Kamu)`,
-            avatar: gameStore.participant.avatar,
-            totalXp: gameStore.participant.totalXp,
-            stampsCount: gameStore.participant.completedBooths.length,
-            prodi: gameStore.participant.prodi,
+            name: `${gameStore.participant?.name || 'Mahasiswa Baru'} (Kamu)`,
+            avatar: gameStore.participant?.avatar || 'character_cowok',
+            totalXp: gameStore.participant?.totalXp || 0,
+            stampsCount: gameStore.getTotalStampsCount?.() || 0,
+            prodi: gameStore.participant?.prodi || 'Informatika',
           };
         }
         return m;
@@ -329,7 +333,7 @@ const currentUserRankInfo = computed(() => {
         <div class="flex items-center gap-2.5 min-w-0">
           <div class="w-11 h-11 rounded-lg overflow-hidden bg-[#170f07] border border-[#f0d060] shrink-0 relative shadow">
             <img
-              :src="getAvatarImage(gameStore.participant.avatar)"
+              :src="getAvatarImage(gameStore.participant?.avatar || 'character_cowok')"
               alt="Avatar"
               class="w-full h-full object-cover"
             />
@@ -344,10 +348,10 @@ const currentUserRankInfo = computed(() => {
               </PixelBadge>
             </div>
             <h3 class="font-pixel text-[11px] sm:text-xs font-bold text-white leading-tight break-words">
-              {{ gameStore.participant.name }}
+              {{ gameStore.participant?.name || 'Mahasiswa Baru' }}
             </h3>
             <p class="font-sans text-[10px] text-[#c4956a] leading-tight break-words">
-              {{ gameStore.participant.nim }} • {{ gameStore.participant.prodi }}
+              {{ gameStore.participant?.nim || '-' }} • {{ gameStore.participant?.prodi || 'UNU Yogyakarta' }}
             </p>
           </div>
         </div>
@@ -355,10 +359,10 @@ const currentUserRankInfo = computed(() => {
         <div class="flex items-center gap-2.5 border-l border-[#5a3a18] pl-3 shrink-0 text-right">
           <div>
             <div class="font-pixel text-xs text-[#f0d060] font-bold">
-              {{ gameStore.participant.totalXp }} XP
+              {{ gameStore.participant?.totalXp || 0 }} XP
             </div>
             <div class="text-[9px] font-sans text-[#7ec850]">
-              {{ gameStore.participant.completedBooths.length }}/9 Stempel
+              {{ gameStore.getTotalStampsCount?.() || 0 }}/9 Stempel
             </div>
           </div>
         </div>
