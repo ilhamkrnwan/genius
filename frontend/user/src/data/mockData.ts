@@ -533,26 +533,31 @@ export const BOOTHS_DATA: Record<string, Booth> = {
     benarSalahContent: {
       statements: [
         {
+          id: 'bs-1',
           statement: 'Menolak kerja kelompok karena merasa mampu mengerjakan semuanya sendiri menunjukkan sikap mandiri.',
           isCorrect: false,
-          explanation: 'Sikap mandiri bukan berarti anti sosial atau menolak kerjasama. Mandiri berarti bertanggung jawab atas proses belajar sendiri, sementara kerja kelompok mengasah gotong royong.',
+          explanation: 'Salah. Mandiri berarti mampu mengurus diri sendiri dan bertanggung jawab, tetapi tetap bersedia berkolaborasi (Gotong Royong) dengan orang lain. Menolak kerja kelompok justru menunjukkan sikap individualis, bukan mandiri.',
         },
         {
+          id: 'bs-2',
           statement: 'Mengikuti budaya asing tanpa mempertimbangkan kesesuaiannya dengan nilai yang diyakini merupakan bentuk berkebhinnekaan global.',
           isCorrect: false,
-          explanation: 'Berkebhinnekaan global berarti mempertahankan budaya luhur lokalitas sekaligus berpikiran terbuka terhadap budaya lain, bukan menerimanya secara buta.',
+          explanation: 'Salah. Berkebhinnekaan global berarti berpikiran terbuka dan menghargai keragaman budaya dunia, TANPA kehilangan identitas budaya lokal dan nilai kebaikan. Mengadopsi budaya asing secara membabi-buta bertentangan dengan prinsip ini.',
         },
         {
+          id: 'bs-3',
           statement: 'Menjalankan ibadah dengan baik tetapi merendahkan pemeluk agama lain bertentangan dengan karakter berakhlak mulia.',
           isCorrect: true,
           explanation: 'Karakter beriman dan bertakwa tidak hanya vertikal kepada Tuhan, tetapi juga horizontal dalam bentuk toleransi dan penghormatan kepada sesama manusia.',
         },
         {
+          id: 'bs-4',
           statement: 'Menerima kritik tanpa mengevaluasi kebenarannya bukan merupakan bentuk berpikir kritis.',
           isCorrect: true,
           explanation: 'Bernalar kritis berarti mampu secara objektif memproses informasi, mengevaluasi argumen, dan mengambil keputusan, termasuk saat menerima kritik.',
         },
         {
+          id: 'bs-5',
           statement: 'Kelompok yang membagi tugas secara adil tetapi menggunakan cara lama tanpa mencoba memperbaikinya sudah menunjukkan gotong royong, tetapi belum tentu menunjukkan kreativitas.',
           isCorrect: true,
           explanation: 'Gotong royong terlihat dari pembagian kerja, namun kreativitas membutuhkan inovasi dan gagasan baru yang orisinal untuk menyelesaikan masalah.',
