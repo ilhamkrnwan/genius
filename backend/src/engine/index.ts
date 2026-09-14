@@ -91,13 +91,24 @@ export class GameEngine {
       }
 
       case "MEMORY_MATCH": {
+        // If the game config already has predefined pairs (like in mockData), use them!
+        if (config.pairs && Array.isArray(config.pairs) && config.pairs.length > 0) {
+          return { pairs: config.pairs };
+        }
+        
+        // Otherwise generate fallback pairs using symbols
         const pairCount = config.pairCount || 6;
         const symbols = ["🛡️", "🔮", "🏹", "🧪", "🗡️", "📜", "⚡", "⚙️"];
         const chosen = symbols.slice(0, pairCount);
-        const cards = [...chosen, ...chosen].sort(() => Math.random() - 0.5);
+        const pairs = chosen.map((symbol, idx) => ({
+          id: `mm-auto-${idx}`,
+          labelA: symbol,
+          labelB: symbol,
+          tag: 'Symbol',
+        }));
+        
         return {
-          pairCount,
-          cards,
+          pairs,
         };
       }
 
@@ -133,12 +144,17 @@ export class GameEngine {
     let totalTeamScore = 0;
     let isPerfect = true;
 
+    // Normalize submissions: if empty, provide a fallback player entry
+    const rawSubmissions = input.submissions.length > 0
+      ? input.submissions
+      : [{ participantId: "team-player" }];
+
     switch (input.gameType) {
       case "TEAM_QUIZ":
       case "QUIZ": {
         // Collect question IDs
         const questionIds: string[] = [];
-        input.submissions.forEach((s) => {
+        rawSubmissions.forEach((s) => {
           if (Array.isArray(s.answer)) {
             s.answer.forEach((ans: any) => {
               if (ans.questionId) questionIds.push(ans.questionId);
@@ -153,12 +169,16 @@ export class GameEngine {
         }
         const qMap = new Map(qRecords.map((q) => [q.id, q]));
 
-        participantScores = input.submissions.map((sub) => {
+        participantScores = rawSubmissions.map((sub: any) => {
           let base = 0;
           let correctCount = 0;
           let totalCount = 0;
 
-          if (Array.isArray(sub.answer)) {
+          if (typeof sub.score === "number") {
+            base = Math.min(100, Math.max(0, sub.score));
+            correctCount = sub.totalQuestions ? Math.round((base / 100) * sub.totalQuestions) : 8;
+            totalCount = sub.totalQuestions || 8;
+          } else if (Array.isArray(sub.answer)) {
             totalCount = sub.answer.length;
             sub.answer.forEach((ans: any) => {
               const qRecord = qMap.get(ans.questionId);
@@ -171,28 +191,25 @@ export class GameEngine {
                 String(selectedOption ?? "").trim().toLowerCase() === correct
               );
               if (isCorrect) {
-                base += qRecord.baseScore || 10;
+                base += qRecord?.baseScore || 10;
                 correctCount++;
               } else {
                 isPerfect = false;
               }
             });
+          } else {
+            base = Math.min(100, input.gameConfig.baseScore || input.gameConfig.maxScore || 100);
           }
 
-          // Speed bonus if completed under half time limit
-          const speedBonus = elapsedMs < timeLimitMs / 2 ? Math.round(base * 0.25) : 0;
-
-          // RPG Stat Multiplier Boost (e.g. 1.4x for Tier 2, 2.0x for Tier 3)
-          const multiplier = sub.statMultiplier || 1.0;
-          const subtotal = base + speedBonus;
-          const statBoostBonus = Math.round(subtotal * (multiplier - 1.0));
-          const finalScore = subtotal + statBoostBonus;
+          // Exact score strictly adhering to question weights in quiz_database.csv (max 100 pts per pos)
+          const finalScore = Math.min(100, Math.max(0, base));
+          if (finalScore < 100) isPerfect = false;
 
           return {
             participantId: sub.participantId,
-            baseScore: base,
-            speedBonus,
-            statBoostBonus,
+            baseScore: finalScore,
+            speedBonus: 0,
+            statBoostBonus: 0,
             penalty: 0,
             finalScore,
             details: { correctCount, totalCount, accuracy: totalCount > 0 ? (correctCount / totalCount) * 100 : 0 },
@@ -201,74 +218,62 @@ export class GameEngine {
         break;
       }
 
-      case "SPEED_REACTION": {
-        participantScores = input.submissions.map((sub) => {
-          const reactionTimeMs = Number(sub.timestampMs || 1000);
-          let base = 50;
-          if (reactionTimeMs < 250) base = 100;
-          else if (reactionTimeMs < 350) base = 80;
-          else if (reactionTimeMs < 500) base = 65;
-
-          const multiplier = sub.statMultiplier || 1.0;
-          const statBoostBonus = Math.round(base * (multiplier - 1.0));
-          const finalScore = base + statBoostBonus;
-
+      case "MEMORY_MATCH": {
+        participantScores = rawSubmissions.map((sub: any) => {
+          let base = 100;
+          if (typeof sub.score === "number") {
+            base = Math.min(100, Math.max(0, sub.score));
+          } else if (sub.answer?.matchedPairs !== undefined) {
+            const pairScores = [15, 20, 25, 15, 25];
+            const matched = Math.min(5, Math.max(0, Number(sub.answer.matchedPairs)));
+            base = pairScores.slice(0, matched).reduce((a, b) => a + b, 0);
+          } else if (sub.answer?.moves !== undefined) {
+            base = 100;
+          }
+          const finalScore = Math.min(100, Math.max(0, base));
+          if (finalScore < 100) isPerfect = false;
           return {
             participantId: sub.participantId,
-            baseScore: base,
-            speedBonus: reactionTimeMs < 300 ? 20 : 0,
-            statBoostBonus,
+            baseScore: finalScore,
+            speedBonus: 0,
+            statBoostBonus: 0,
             penalty: 0,
             finalScore,
-            details: { reactionTimeMs },
-          };
-        });
-        break;
-      }
-
-      case "MEMORY_MATCH": {
-        const moves = input.submissions[0]?.answer?.moves || 15;
-        let base = Math.max(20, 100 - (moves - 6) * 5);
-        const speedBonus = elapsedMs < 60000 ? 30 : 10;
-
-        participantScores = input.submissions.map((sub) => {
-          const multiplier = sub.statMultiplier || 1.0;
-          const subtotal = base + speedBonus;
-          const statBoostBonus = Math.round(subtotal * (multiplier - 1.0));
-          return {
-            participantId: sub.participantId,
-            baseScore: base,
-            speedBonus,
-            statBoostBonus,
-            penalty: 0,
-            finalScore: subtotal + statBoostBonus,
-            details: { moves, elapsedMs },
+            details: { moves: sub.answer?.moves || 0, elapsedMs },
           };
         });
         break;
       }
 
       default: {
-        // Generic fallback calculation
-        const base = input.gameConfig.baseScore || 50;
-        participantScores = input.submissions.map((sub) => {
-          const multiplier = sub.statMultiplier || 1.0;
-          const statBoostBonus = Math.round(base * (multiplier - 1.0));
+        // PUZZLE (TTS), WORD_GAME (Tebak Kata), LOGIC (Benar/Salah & Tebak Posisi), IMAGE_GUESS (Tebak Gambar & Teks Blur)
+        participantScores = rawSubmissions.map((sub: any) => {
+          let base = 100;
+          if (typeof sub.score === "number") {
+            base = Math.min(100, Math.max(0, sub.score));
+          } else if (typeof sub.answer?.score === "number") {
+            base = Math.min(100, Math.max(0, sub.answer.score));
+          } else {
+            base = Math.min(100, Math.max(0, Number(input.gameConfig.maxScore || input.gameConfig.baseScore || 100)));
+          }
+          const finalScore = Math.min(100, Math.max(0, base));
+          if (finalScore < 100) isPerfect = false;
           return {
             participantId: sub.participantId,
-            baseScore: base,
+            baseScore: finalScore,
             speedBonus: 0,
-            statBoostBonus,
+            statBoostBonus: 0,
             penalty: 0,
-            finalScore: base + statBoostBonus,
-            details: {},
+            finalScore,
+            details: { ...sub.answer },
           };
         });
         break;
       }
     }
 
-    totalTeamScore = participantScores.reduce((sum, p) => sum + p.finalScore, 0);
+    // Team score for this pos session strictly capped at 100
+    totalTeamScore = Math.min(100, Math.max(...participantScores.map((p) => p.finalScore), 0));
 
     return {
       success: true,

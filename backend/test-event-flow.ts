@@ -1,7 +1,7 @@
-/**
- * Test Otomatis Integrasi End-to-End: Ormawa Expo, Refleksi Harian, & System Settings
- * Run: bun run backend/test-event-flow.ts
- */
+//**
+ * Test Otomatis Integrasi End - to - End: Ormawa Expo, Refleksi Harian, & System Settings
+  * Run: bun run backend / test - event - flow.ts
+    */
 
 const BASE_URL = "http://localhost:3001/api";
 

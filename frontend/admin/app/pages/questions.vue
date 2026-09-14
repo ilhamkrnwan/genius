@@ -187,6 +187,13 @@
                 <span>{{ q.options?.length || 4 }} Pilihan Jawaban</span>
                 <span>•</span>
                 <span class="text-[#4ade80]">+{{ q.points || 10 }} pts</span>
+                <span
+                  v-if="getGdriveTag(q)"
+                  class="px-1.5 py-0.2 rounded text-[8px] font-pixel border border-sky-500 bg-sky-950/80 text-sky-300"
+                  :title="`Google Drive File ID: ${getGdriveTag(q)}`"
+                >
+                  📁 GDRIVE IFRAME
+                </span>
               </div>
             </td>
 
@@ -289,6 +296,15 @@
                 v-model="form.category"
                 class="w-full h-8 px-2 bg-[#271d15] border border-[#523e2b] text-foreground focus:outline-none focus:border-[#f59e0b]"
               >
+                <option value="Anti Korupsi dan Terorisme">Pos 1: Anti Korupsi & Terorisme</option>
+                <option value="Leadership">Pos 2: Leadership</option>
+                <option value="Media Sosial dan Komunikasi">Pos 6: Media Sosial & Komunikasi</option>
+                <option value="Profil Pelajar Pancasila">Pos 3: Profil Pelajar Pancasila</option>
+                <option value="Anti Narkoba">Pos 4: Anti Narkoba</option>
+                <option value="Anti Plagiarisme">Pos 5: Anti Plagiarisme</option>
+                <option value="Ingat Aku - Tulisan">Pos 9: Ingat Aku (Teks Blur)</option>
+                <option value="Ingat Aku - Posisi">Pos 8: Ingat Aku (Tebak Posisi)</option>
+                <option value="Fun Pos">Pos 7: Fun Pos (Tebak Gambar)</option>
                 <option value="Kampus UNU">Wawasan Kampus UNU</option>
                 <option value="Sains & AI">Sains & AI</option>
                 <option value="Logika">Logika Komputasi</option>
@@ -307,6 +323,22 @@
                 <option value="HARD">Sulit (Hard)</option>
               </select>
             </div>
+          </div>
+
+          <!-- Google Drive File ID / URL input -->
+          <div class="space-y-1">
+            <Label class="text-xs font-semibold flex items-center justify-between">
+              <span>Google Drive File ID / Link (Opsional):</span>
+              <span class="text-[9px] text-[#38bdf8] font-mono">Untuk Soal Bergambar/Audio</span>
+            </Label>
+            <input
+              v-model="form.gdriveId"
+              placeholder="Contoh: 1S0ZOeETjD1l9xPpoE6KnvIC-_L32vlzL atau URL drive lengkap"
+              class="w-full h-8 px-2 bg-[#15100c] border border-[#523e2b] text-foreground text-xs focus:outline-none focus:border-[#f59e0b]"
+            />
+            <p class="text-[9.5px] text-gray-400">
+              *Jika diisi, pada aplikasi peserta akan otomatis ditampilkan iframe preview gambar/audio langsung dari Google Drive.
+            </p>
           </div>
 
           <!-- Options A, B, C, D -->
@@ -539,6 +571,9 @@ const availableCategories = computed(() => {
     "Anti Korupsi dan Terorisme",
     "Anti Narkoba",
     "Anti Plagiarisme",
+    "Leadership",
+    "Media Sosial dan Komunikasi",
+    "Fun Pos",
     "Ingat Aku - Posisi",
     "Ingat Aku - Tulisan",
     "Kampus UNU",
@@ -564,12 +599,20 @@ const isEditing = ref(false);
 const form = ref({
   id: "",
   questionText: "",
-  category: "Kampus UNU",
+  category: "Anti Korupsi dan Terorisme",
   difficulty: "MEDIUM",
   options: ["", "", "", ""],
   correctOptionIndex: 0,
   points: 10,
+  gdriveId: "",
+  tags: [] as string[],
 });
+
+function getGdriveTag(q: any): string | null {
+  if (!q.tags || !Array.isArray(q.tags)) return null;
+  const tag = q.tags.find((t: string) => typeof t === "string" && t.startsWith("gdrive:"));
+  return tag ? tag.replace("gdrive:", "") : null;
+}
 
 const filteredQuestions = computed(() => {
   let list = questions.value;
@@ -638,25 +681,31 @@ function openCreateModal() {
   form.value = {
     id: "",
     questionText: "",
-    category: "Kampus UNU",
+    category: "Anti Korupsi dan Terorisme",
     difficulty: "MEDIUM",
     options: ["", "", "", ""],
     correctOptionIndex: 0,
     points: 10,
+    gdriveId: "",
+    tags: [],
   };
   showQuestionModal.value = true;
 }
 
 function openEditModal(q: any) {
   isEditing.value = true;
+  const existingTags = Array.isArray(q.tags) ? [...q.tags] : [];
+  const foundGdrive = existingTags.find((t: string) => typeof t === "string" && t.startsWith("gdrive:"));
   form.value = {
     id: q.id,
     questionText: q.questionText,
-    category: q.category || "Kampus UNU",
+    category: q.category || "Anti Korupsi dan Terorisme",
     difficulty: q.difficulty || "MEDIUM",
     options: Array.isArray(q.options) ? [...q.options] : ["", "", "", ""],
     correctOptionIndex: Number(q.correctOptionIndex) || 0,
-    points: q.points || 10,
+    points: q.baseScore || q.points || 10,
+    gdriveId: foundGdrive ? foundGdrive.replace("gdrive:", "") : "",
+    tags: existingTags,
   };
   showQuestionModal.value = true;
 }
@@ -664,25 +713,28 @@ function openEditModal(q: any) {
 async function submitQuestionForm() {
   saving.value = true;
   try {
+    const activeTags = (form.value.tags || []).filter((t: string) => !t.startsWith("gdrive:"));
+    if (form.value.gdriveId?.trim()) {
+      activeTags.push(`gdrive:${form.value.gdriveId.trim()}`);
+    }
+
+    const payload = {
+      questionText: form.value.questionText,
+      category: form.value.category,
+      difficulty: form.value.difficulty,
+      options: form.value.options,
+      correctOptionIndex: form.value.correctOptionIndex,
+      correctAnswer: form.value.options[form.value.correctOptionIndex] || form.value.options[0] || "A",
+      baseScore: form.value.points,
+      points: form.value.points,
+      tags: activeTags,
+    };
+
     if (isEditing.value) {
-      await api.put(`/api/questions/${form.value.id}`, {
-        questionText: form.value.questionText,
-        category: form.value.category,
-        difficulty: form.value.difficulty,
-        options: form.value.options,
-        correctOptionIndex: form.value.correctOptionIndex,
-        points: form.value.points,
-      });
+      await api.put(`/api/questions/${form.value.id}`, payload);
       toast.success("Soal kuis berhasil diperbarui.");
     } else {
-      await api.post("/api/questions", {
-        questionText: form.value.questionText,
-        category: form.value.category,
-        difficulty: form.value.difficulty,
-        options: form.value.options,
-        correctOptionIndex: form.value.correctOptionIndex,
-        points: form.value.points,
-      });
+      await api.post("/api/questions", payload);
       toast.success("Soal kuis baru berhasil ditambahkan.");
     }
     showQuestionModal.value = false;

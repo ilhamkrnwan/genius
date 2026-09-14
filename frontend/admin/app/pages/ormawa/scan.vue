@@ -22,22 +22,6 @@
       </p>
     </div>
 
-    <!-- ⚠️ BACKLOG NOTICE -->
-    <div class="mx-4 md:mx-6 mt-3 p-3 border border-[#f59e0b]/50 bg-[#201a08] rounded-lg">
-      <div class="flex items-start gap-2 text-xs font-mono">
-        <AlertTriangle class="h-4 w-4 text-[#f59e0b] shrink-0 mt-0.5" />
-        <div class="space-y-1">
-          <p class="text-[#fef08a] font-bold">BACKLOG — Menunggu Integrasi Backend</p>
-          <p class="text-amber-300/80 leading-relaxed">
-            Endpoint <code class="text-[#86efac]">POST /api/ormawa/scan-maba</code> belum tersedia.
-            Halaman ini sudah siap secara UI. Fungsionalitas scan akan aktif setelah tim Backend selesai 
-            mengimplementasikan role <code class="text-[#86efac]">ORMAWA_PIC</code> dan endpoint terkait.
-            Lihat detail di <code class="text-[#86efac]">BACKLOG.md</code>.
-          </p>
-        </div>
-      </div>
-    </div>
-
     <!-- Main Content -->
     <div class="p-4 md:p-6 space-y-5 flex-1 overflow-y-auto custom-scrollbar">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -217,11 +201,15 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue';
 import {
   QrCode, Store, CheckCircle2, XCircle, AlertTriangle,
   ArrowLeft, Star, Users, ScanLine, Check, Loader2,
 } from 'lucide-vue-next';
 import TopbarActions from '~/components/TopbarActions.vue';
+import { useApi } from '~/composables/useApi';
+
+const api = useApi();
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const isScannerActive = ref(false);
@@ -229,16 +217,23 @@ const manualNim = ref('');
 const isProcessing = ref(false);
 const lastScanResult = ref<{ success: boolean; message: string; xpEarned: number } | null>(null);
 
-// Placeholder — akan diganti dengan data real dari useAuth() / API setelah backend siap
 const activeBooth = ref<{ name: string; category: string; floorNumber: number } | null>(null);
 
-// Riwayat scan lokal sesi ini (akan diganti oleh data dari API)
 const todayScans = ref<Array<{ id: string; fullName: string; nim: string; time: string; xpEarned: number }>>([]);
+
+onMounted(async () => {
+  try {
+    const res = await api.get('/ormawa/my-booth');
+    if (res.success && res.data) {
+      activeBooth.value = res.data;
+    }
+  } catch (err) {
+    console.error('Failed to load active booth', err);
+  }
+});
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
 const toggleScanner = () => {
-  // TODO: Integrasikan dengan library QR scanner (html5-qrcode / zxing)
-  // setelah endpoint POST /api/ormawa/scan-maba tersedia dari Backend.
   isScannerActive.value = !isScannerActive.value;
 };
 
@@ -250,33 +245,29 @@ const submitManualScan = async () => {
   lastScanResult.value = null;
 
   try {
-    // TODO: Ganti endpoint ini ke '/ormawa/scan-maba' dengan payload { mabaNim: nim }
-    // setelah Backend selesai mengimplementasikan. Saat ini endpoint ini belum ada.
-    // const api = useApi();
-    // const res = await api.post('/ormawa/scan-maba', { mabaNim: nim });
-
-    // Simulasi respons untuk keperluan UI demo
-    await new Promise((r) => setTimeout(r, 800));
-    const isSuccess = nim.length >= 5; // simulasi validasi sederhana
-
-    if (isSuccess) {
+    const res = await api.post('/ormawa/scan-maba', { mabaNim: nim });
+    
+    if (res.success) {
       lastScanResult.value = {
         success: true,
-        message: `Kunjungan mahasiswa NIM ${nim} berhasil dicatat! (Demo Mode)`,
-        xpEarned: 75,
+        message: res.message || `Kunjungan mahasiswa berhasil dicatat!`,
+        xpEarned: res.data?.xpEarned || 0,
       };
+      
+      const mabaName = res.data?.maba?.fullName || `Mahasiswa (${nim})`;
+      
       todayScans.value.unshift({
         id: Date.now().toString(),
-        fullName: `Mahasiswa (NIM: ${nim})`,
+        fullName: mabaName,
         nim,
         time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-        xpEarned: 75,
+        xpEarned: res.data?.xpEarned || 0,
       });
       manualNim.value = '';
     } else {
       lastScanResult.value = {
         success: false,
-        message: `NIM "${nim}" tidak ditemukan dalam sistem. Pastikan NIM valid.`,
+        message: res.error?.message || `Gagal mencatat kunjungan.`,
         xpEarned: 0,
       };
     }

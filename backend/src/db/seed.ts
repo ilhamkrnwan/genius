@@ -16,10 +16,10 @@ import { hashPassword } from "../lib/password";
 import { eq } from "drizzle-orm";
 
 export async function seedDatabase() {
-  console.log("🌱 [Seed] Starting GENIUS 2026 Database Seeding...");
+  console.log("ðŸŒ± [Seed] Starting GENIUS 2026 Database Seeding...");
 
   // 1. Seed Floors (Lantai 1 - Lantai 9 Gedung Terpadu UNU Yogyakarta)
-  console.log("🏢 Seeding 9 Floors of UNU Yogyakarta...");
+  console.log("ðŸ¢ Seeding 9 Floors of UNU Yogyakarta...");
   const floorData = [
     { number: 1, name: "Lantai 1: Lobby Utama & Student Center", description: "Pusat informasi, registrasi, dan aula penerimaan mahasiswa baru" },
     { number: 2, name: "Lantai 2: Perpustakaan & Digital Learning", description: "Pusat literasi, ruang baca modern, dan e-library" },
@@ -38,7 +38,7 @@ export async function seedDatabase() {
   }
 
   // 2. Seed Locations with QR Tokens
-  console.log("📍 Seeding Pos Lokasi & QR Code Tokens...");
+  console.log("ðŸ“ Seeding Pos Lokasi & QR Code Tokens...");
   let createdLocations = await db.select().from(locations);
   if (createdLocations.length === 0) {
     const locationInserts: any[] = [];
@@ -70,7 +70,7 @@ export async function seedDatabase() {
   }
 
   // 3. Seed Stages
-  console.log("🚩 Seeding 5 Stages Event GENIUS 2026...");
+  console.log("ðŸš© Seeding 5 Stages Event GENIUS 2026...");
   let createdStages = await db.select().from(stages);
   if (createdStages.length === 0) {
     const stageData = [
@@ -84,7 +84,7 @@ export async function seedDatabase() {
   }
 
   // 4. Seed Games
-  console.log("🎮 Seeding 5 Mini Games Engine...");
+  console.log("ðŸŽ® Seeding 5 Mini Games Engine...");
   let createdGames = await db.select().from(games);
   if (createdGames.length === 0) {
     const gameData = [
@@ -123,7 +123,7 @@ export async function seedDatabase() {
   }
 
   // 5. Seed Missions
-  console.log("🎯 Seeding Campus Missions...");
+  console.log("ðŸŽ¯ Seeding Campus Missions...");
   const existingMissions = await db.select().from(missions);
   if (existingMissions.length === 0 && createdLocations.length > 0 && createdStages.length > 0 && createdGames.length > 0) {
     const missionInserts: any[] = [];
@@ -146,7 +146,7 @@ export async function seedDatabase() {
   }
 
   // 6. Seed Achievements (Titles & Badges)
-  console.log("🏆 Seeding RPG Achievements & Title Upgrades...");
+  console.log("ðŸ† Seeding RPG Achievements & Title Upgrades...");
   const existingAchievements = await db.select().from(achievements);
   if (existingAchievements.length === 0) {
     const achievementData = [
@@ -190,7 +190,7 @@ export async function seedDatabase() {
   }
 
   // 7. Seed Question Bank
-  console.log("❓ Seeding Question Bank...");
+  console.log("â“ Seeding Question Bank...");
   const existingQuestions = await db.select().from(questions);
   if (existingQuestions.length === 0) {
     const questionData = [
@@ -249,7 +249,7 @@ export async function seedDatabase() {
   }
 
   // 8. Seed Core Users (Admin, Buddies, Teams, Participants)
-  console.log("👥 Seeding Core System Users & RPG Characters...");
+  console.log("ðŸ‘¥ Seeding Core System Users & RPG Characters...");
   const adminPasswordHash = await hashPassword("admin2026");
   const buddyPasswordHash = await hashPassword("buddy2026");
   const userPasswordHash = await hashPassword("genius2026");
@@ -274,7 +274,7 @@ export async function seedDatabase() {
   }
 
   // Buddies
-  const existingBuddy1 = await db.select().from(users).where(eq(users.username, "buddy_ahmad"));
+  const existingBuddy1 = await db.select().from(users).where(eq(users.username, "buddy_budi"));
   if (existingBuddy1.length === 0) {
     await db.insert(users).values([
       {
@@ -324,163 +324,358 @@ export async function seedDatabase() {
     ]);
   }
 
-  // 7. Seed Ormawa / UKM Expo Booths (Lantai 3, 4, 5)
-  console.log("🎪 Seeding Ormawa / UKM Expo Booths...");
+  // 7. Seed Ormawa / UKM Expo Booths & PICs
+  console.log("ðŸŽª Seeding Ormawa / UKM Expo Booths & PICs...");
   const existingBooths = await db.select().from(ormawaBooths);
   if (existingBooths.length === 0) {
     const fl3 = createdFloors.find((f) => f.number === 3)?.id;
     const fl4 = createdFloors.find((f) => f.number === 4)?.id;
     const fl5 = createdFloors.find((f) => f.number === 5)?.id;
 
+    // Seed PICs
+    const picPasswordHash = await hashPassword("genius2026");
+    const picInserts = [
+      {
+        username: "pic-pagar-nusa",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC PSNU Pagar Nusa",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+      {
+        username: "pic-robotika-iot",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC Robotics & AI",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+      {
+        username: "pic-gita-nusantara",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC PSM Gita Nusantara",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+      {
+        username: "pic-teater-titiknol",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC Teater Titik Nol",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+      {
+        username: "pic-ksr-pmi",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC KSR PMI UNU",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+      {
+        username: "pic-mapala-cakrawala",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC MAPALA Cakrawala",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+      {
+        username: "pic-futsal-unu",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC Futsal & Football Club",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+      {
+        username: "pic-badminton-unu",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC Badminton Club",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+      {
+        username: "pic-lpim-jurnalistik",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC LPM Poros",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+      {
+        username: "pic-forum-riset",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC Forum Riset Kampus",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+      {
+        username: "pic-pmii-rayon",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC PMII Rayon UNU",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+      {
+        username: "pic-english-debate",
+        passwordHash: picPasswordHash,
+        role: "ORMAWA_PIC" as const,
+        fullName: "PIC UNU English Club",
+        gender: "MALE" as const,
+        characterClass: "CYBER_KNIGHT" as const,
+        characterTitle: "Ormawa PIC",
+        characterTier: 1,
+      },
+    ];
+    const createdPics = await db.insert(users).values(picInserts).returning();
+
+    // Link PIC to booths and seed booths
     await db.insert(ormawaBooths).values([
       {
-        code: "ORMAWA-SILAT",
-        name: "Pagar Nusa & Pencak Silat UNU Jogja",
-        shortName: "Silat UNU",
-        category: "Olahraga & Seni Beladiri",
+        code: "ORMAWA-PAGAR-NUSA",
+        name: "Pencak Silat Nahdlatul Ulama Pagar Nusa",
+        shortName: "PSNU Pagar Nusa",
+        category: "BELA_DIRI",
         floorId: fl3,
         boothNumber: "E3-01",
-        description: "Wadah pengembangan minat seni beladiri tradisional, kebugaran jasmani, dan nilai ksatria Nahdlatul Ulama.",
-        qrCode: "ORMAWA-QR-SILAT-UNU2026",
+        description: "Wadah penggemblengan mental, spiritual, dan fisik pesilat berakhlak mulia berlandaskan ajaran Ahlussunnah wal Jamaah An-Nahdliyyah.",
+        qrCode: "UNU-ORMAWA-PAGAR-NUSA-2026",
         xpReward: 75,
         badgeIcon: "Shield",
-        badgeColor: "#16a34a",
-        contactPerson: "Zaki (+6281399887766)",
-        instagram: "@silat_unujogja",
+        badgeColor: "#166534",
+        contactPerson: "Kang Hasan (0812-3456-7890)",
+        instagram: "@pagarnusa.unuyogya",
+        picUserId: createdPics[0].id,
         isActive: true,
       },
       {
-        code: "ORMAWA-ROBOTIK",
-        name: "UKM Robotika & IoT Inovasi",
-        shortName: "Robotika UNU",
-        category: "Penalaran & Sains Teknologi",
+        code: "ORMAWA-ROBOTIKA-IOT",
+        name: "Genius Robotics & AI Club",
+        shortName: "Robotics & AI",
+        category: "TEKNOLOGI",
         floorId: fl3,
         boothNumber: "E3-02",
-        description: "Komunitas riset perancangan robot, Internet of Things, dan automasi cerdas masa depan.",
-        qrCode: "ORMAWA-QR-ROBOTIK-UNU2026",
+        description: "Komunitas riset robotika, otomatisasi sistem, embedded electronics, dan penerapan machine learning untuk kompetisi nasional KRI & Gemastik.",
+        qrCode: "UNU-ORMAWA-ROBOTIKA-2026",
         xpReward: 75,
         badgeIcon: "Cpu",
-        badgeColor: "#2563eb",
-        contactPerson: "Farhan (+6281233445566)",
-        instagram: "@robotika_unujogja",
+        badgeColor: "#0284c7",
+        contactPerson: "Mas Farhan (0813-8899-1122)",
+        instagram: "@robotics.unu",
+        picUserId: createdPics[1].id,
         isActive: true,
       },
       {
-        code: "ORMAWA-LPM",
-        name: "Lembaga Pers Mahasiswa (LPM) Dialektika",
-        shortName: "LPM Dialektika",
-        category: "Penalaran & Jurnalistik",
+        code: "ORMAWA-GITA-NUSANTARA",
+        name: "Paduan Suara Mahasiswa Gita Nusantara",
+        shortName: "PSM Gita Nusantara",
+        category: "SENI_BUDAYA",
         floorId: fl3,
         boothNumber: "E3-03",
-        description: "Media literasi kritis, jurnalisme investigatif kampus, dan wadah kepenulisan kreatif mahasiswa.",
-        qrCode: "ORMAWA-QR-LPM-UNU2026",
+        description: "Paduan suara resmi universitas yang membawakan lagu-lagu nasional, shalawat kontemporer, dan folklore Nusantara.",
+        qrCode: "UNU-ORMAWA-GITA-NUSANTARA-2026",
         xpReward: 75,
-        badgeIcon: "Newspaper",
+        badgeIcon: "MusicNotes",
         badgeColor: "#d97706",
-        contactPerson: "Nabila (+6285711223344)",
-        instagram: "@lpm_dialektika_unu",
+        contactPerson: "Mbak Cindy (0856-7788-9900)",
+        instagram: "@psm.gitanusantara",
+        picUserId: createdPics[2].id,
         isActive: true,
       },
       {
-        code: "ORMAWA-MAPALA",
-        name: "Mahasiswa Pecinta Alam (MAPALA) An-Nahdlah",
-        shortName: "Mapala UNU",
-        category: "Kepedulian Lingkungan & Petualangan",
+        code: "ORMAWA-TEATER-TITIKNOL",
+        name: "Sanggar Teater Titik Nol",
+        shortName: "Teater Titik Nol",
+        category: "SENI_BUDAYA",
+        floorId: fl3,
+        boothNumber: "E3-04",
+        description: "Eksplorasi seni peran, monolog, tata artistik panggung, penulisan naskah drama, dan sastra kritis santri.",
+        qrCode: "UNU-ORMAWA-TEATER-2026",
+        xpReward: 75,
+        badgeIcon: "MasksTheater",
+        badgeColor: "#7c3aed",
+        contactPerson: "Bung Bayu (0878-1122-3344)",
+        instagram: "@teatertitiknol.unu",
+        picUserId: createdPics[3].id,
+        isActive: true,
+      },
+      {
+        code: "ORMAWA-KSR-PMI",
+        name: "Korps Sukarela Palang Merah Indonesia Unit UNU",
+        shortName: "KSR PMI UNU",
+        category: "SOSIAL_KEMANUSIAAN",
         floorId: fl4,
         boothNumber: "E4-01",
-        description: "Eksplorasi alam liar, konservasi hutan, pendakian gunung, dan mitigasi kebencanaan.",
-        qrCode: "ORMAWA-QR-MAPALA-UNU2026",
-        xpReward: 75,
-        badgeIcon: "Mountains",
-        badgeColor: "#15803d",
-        contactPerson: "Bima (+6287766554433)",
-        instagram: "@mapala_annahdlah",
-        isActive: true,
-      },
-      {
-        code: "ORMAWA-KSR",
-        name: "KSR Palang Merah Indonesia Unit UNU",
-        shortName: "KSR PMI UNU",
-        category: "Kemanusiaan & Kesehatan",
-        floorId: fl4,
-        boothNumber: "E4-02",
-        description: "Korps sukarela kemanusiaan, pertolongan pertama gawat darurat, dan aksi donor darah rutin.",
-        qrCode: "ORMAWA-QR-KSR-UNU2026",
+        description: "Unit pertolongan pertama, penanggulangan darurat bencana, donor darah sukarela kampus, dan pengabdian medis masyarakat.",
+        qrCode: "UNU-ORMAWA-KSR-PMI-2026",
         xpReward: 75,
         badgeIcon: "FirstAid",
         badgeColor: "#dc2626",
-        contactPerson: "Annisa (+6289988776655)",
-        instagram: "@ksrpmi_unujogja",
+        contactPerson: "Nadia (0821-4455-6677)",
+        instagram: "@ksrpmi.unu",
+        picUserId: createdPics[4].id,
         isActive: true,
       },
       {
-        code: "ORMAWA-CHOIR",
-        name: "Paduan Suara Mahasiswa Gita Swara UNU",
-        shortName: "Gita Swara",
-        category: "Seni Suara & Musik",
+        code: "ORMAWA-MAPALA-CAKRAWALA",
+        name: "Mahasiswa Pecinta Alam Cakrawala UNU",
+        shortName: "MAPALA Cakrawala",
+        category: "SOSIAL_KEMANUSIAAN",
+        floorId: fl4,
+        boothNumber: "E4-02",
+        description: "Organisasi penggiat alam bebas, konservasi lingkungan hidup, caving, panjat tebing, dan navigasi darat rimba gunung.",
+        qrCode: "UNU-ORMAWA-MAPALA-2026",
+        xpReward: 75,
+        badgeIcon: "Mountains",
+        badgeColor: "#15803d",
+        contactPerson: "Komo Cakrawala (0899-5566-7788)",
+        instagram: "@mapala.cakrawala",
+        picUserId: createdPics[5].id,
+        isActive: true,
+      },
+      {
+        code: "ORMAWA-FUTSAL-UNU",
+        name: "UKM Futsal & Sepakbola UNU Yogyakarta",
+        shortName: "Futsal & Football Club",
+        category: "OLAHRAGA",
         floorId: fl4,
         boothNumber: "E4-03",
-        description: "Paduan suara harmoni vokal, konser musik akbar kampus, dan pengisi lagu seremoni wisuda.",
-        qrCode: "ORMAWA-QR-CHOIR-UNU2026",
-        xpReward: 75,
-        badgeIcon: "MusicNotes",
-        badgeColor: "#7c3aed",
-        contactPerson: "Tiara (+6282133221100)",
-        instagram: "@gitaswara_unu",
-        isActive: true,
-      },
-      {
-        code: "ORMAWA-TEATER",
-        name: "Teater & Seni Sastra Kampus Hijau",
-        shortName: "Teater Hijau",
-        category: "Seni Peran & Pertunjukan",
-        floorId: fl5,
-        boothNumber: "E5-01",
-        description: "Eksplorasi ekspresi seni peran panggung, drama monolog, tata artistik, dan puisi sastra.",
-        qrCode: "ORMAWA-QR-TEATER-UNU2026",
-        xpReward: 75,
-        badgeIcon: "MasksTheater",
-        badgeColor: "#9333ea",
-        contactPerson: "Dimas (+6285644332211)",
-        instagram: "@teaterhijau_unu",
-        isActive: true,
-      },
-      {
-        code: "ORMAWA-FUTSAL",
-        name: "UKM Futsal & Sepakbola Kampus",
-        shortName: "Futsal UNU",
-        category: "Olahraga Prestasi",
-        floorId: fl5,
-        boothNumber: "E5-02",
-        description: "Kompetisi futsal antarkampus, turnamen liga mahasiswa, dan pembinaan atlet sepakbola.",
-        qrCode: "ORMAWA-QR-FUTSAL-UNU2026",
+        description: "Wadah pengembangan bakat dan taktik olahraga futsal mahasiswa untuk kejuaraan antar perguruan tinggi se-DIY dan nasional.",
+        qrCode: "UNU-ORMAWA-FUTSAL-2026",
         xpReward: 75,
         badgeIcon: "SoccerBall",
-        badgeColor: "#0284c7",
-        contactPerson: "Rian (+6281809988776)",
-        instagram: "@futsal_unujogja",
+        badgeColor: "#ea580c",
+        contactPerson: "Kapten Dimas (0812-9988-7766)",
+        instagram: "@futsalunu.official",
+        picUserId: createdPics[6].id,
         isActive: true,
       },
       {
-        code: "ORMAWA-SHALAWAT",
-        name: "Jam'iyyah Shalawat & Hadroh Mahasiswa",
-        shortName: "Hadroh UNU",
-        category: "Keagamaan & Syiar Seni Islam",
+        code: "ORMAWA-BADMINTON-UNU",
+        name: "Badminton Club UNU Yogyakarta",
+        shortName: "Badminton Club",
+        category: "OLAHRAGA",
+        floorId: fl4,
+        boothNumber: "E4-04",
+        description: "Klub bulutangkis santai dan prestasi untuk kategori tunggal maupun ganda putra, putri, dan campuran.",
+        qrCode: "UNU-ORMAWA-BADMINTON-2026",
+        xpReward: 75,
+        badgeIcon: "Ticket",
+        badgeColor: "#059669",
+        contactPerson: "Iqbal (0822-3344-5566)",
+        instagram: "@badminton.unuyk",
+        picUserId: createdPics[7].id,
+        isActive: true,
+      },
+      {
+        code: "ORMAWA-LPIM-JURNALISTIK",
+        name: "Lembaga Pers & Jurnalistik Mahasiswa UNU",
+        shortName: "LPM Poros",
+        category: "PENALARAN_KEISLAMAN",
+        floorId: fl5,
+        boothNumber: "E5-01",
+        description: "Pers mahasiswa independen penyedia berita investigasi kampus, majalah digital, podcast santri, dan fotografi jurnalistik.",
+        qrCode: "UNU-ORMAWA-PERS-2026",
+        xpReward: 75,
+        badgeIcon: "Newspaper",
+        badgeColor: "#0891b2",
+        contactPerson: "Redaktur Arif (0857-4433-2211)",
+        instagram: "@lpmporos.unu",
+        picUserId: createdPics[8].id,
+        isActive: true,
+      },
+      {
+        code: "ORMAWA-FORUM-RISET",
+        name: "Forum Riset & Sains Santri Cendekia",
+        shortName: "Forum Riset Kampus",
+        category: "PENALARAN_KEISLAMAN",
+        floorId: fl5,
+        boothNumber: "E5-02",
+        description: "Komunitas bimbingan intensif Program Kreativitas Mahasiswa (PKM), penulisan karya tulis ilmiah, dan jurnal scopus.",
+        qrCode: "UNU-ORMAWA-RISET-2026",
+        xpReward: 75,
+        badgeIcon: "FlaskConical",
+        badgeColor: "#4338ca",
+        contactPerson: "Dr. Ilham (0811-2233-4455)",
+        instagram: "@riset.unu",
+        picUserId: createdPics[9].id,
+        isActive: true,
+      },
+      {
+        code: "ORMAWA-PMII-RAYON",
+        name: "Pergerakan Mahasiswa Islam Indonesia (PMII) Rayon UNU",
+        shortName: "PMII Rayon UNU",
+        category: "PENALARAN_KEISLAMAN",
         floorId: fl5,
         boothNumber: "E5-03",
-        description: "Pelestarian seni terbang hadroh klasik, banjari modern, shalawat simtudduror, dan syiar islam rahmatan lil alamin.",
-        qrCode: "ORMAWA-QR-SHALAWAT-UNU2026",
+        description: "Gerakan mahasiswa kaderisasi Aswaja An-Nahdliyyah, intelektualitas pergerakan, dan advokasi sosial kemasyarakatan.",
+        qrCode: "UNU-ORMAWA-PMII-2026",
         xpReward: 75,
-        badgeIcon: "Moon",
-        badgeColor: "#059669",
-        contactPerson: "Habib (+6287811223399)",
-        instagram: "@hadroh_unujogja",
+        badgeIcon: "Flag",
+        badgeColor: "#1e3a8a",
+        contactPerson: "Sahabat Ridwan (0877-6655-4433)",
+        instagram: "@pmii.unuyogya",
+        picUserId: createdPics[10].id,
+        isActive: true,
+      },
+      {
+        code: "ORMAWA-ENGLISH-DEBATE",
+        name: "English Debate & MUN Society",
+        shortName: "UNU English Club",
+        category: "PENALARAN_KEISLAMAN",
+        floorId: fl5,
+        boothNumber: "E5-04",
+        description: "Klub debat parlementer bahasa Inggris, Model United Nations (MUN), public speaking, dan workshop IELTS santri.",
+        qrCode: "UNU-ORMAWA-ENGLISH-2026",
+        xpReward: 75,
+        badgeIcon: "Globe",
+        badgeColor: "#b45309",
+        contactPerson: "Mbak Sarah (0819-2244-6688)",
+        instagram: "@unuec.society",
+        picUserId: createdPics[11].id,
         isActive: true,
       },
     ]);
   }
 
-  console.log("✅ [Seed] Database successfully seeded and verified!");
+  // 12. Seed Official Quiz Database (9 Pos dari quiz_database.csv)
+  try {
+    const { seedOfficialQuizDatabase } = await import("../../scripts/seed_official_quiz");
+    await seedOfficialQuizDatabase();
+  } catch (err: any) {
+    console.warn("⚠️ [Seed] Official quiz database seed warning:", err.message);
+  }
+
+  console.log('✅ [Seed] Database successfully seeded and verified!');
 }
 
 // Run standalone if executed directly via bun
@@ -488,7 +683,7 @@ if (import.meta.main) {
   seedDatabase()
     .then(() => process.exit(0))
     .catch((err) => {
-      console.error("❌ [Seed] Error seeding database:", err);
+      console.error('❌ [Seed] Error seeding database:', err);
       process.exit(1);
     });
 }

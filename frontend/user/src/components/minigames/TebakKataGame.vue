@@ -159,6 +159,9 @@ const handleUseHint = () => {
       </div>
 
       <div class="flex items-center gap-1.5">
+        <PixelBadge variant="emerald" size="sm">
+          {{ totalScore }} Pts
+        </PixelBadge>
         <PixelBadge variant="gold" size="sm">
           Kata {{ currentIndex + 1 }}/{{ items.length }}
         </PixelBadge>
@@ -268,7 +271,7 @@ const handleUseHint = () => {
         <template v-if="isRoundCorrect">
           <PhCheckCircle :size="14" weight="fill" class="text-[#7ec850]" />
           <span class="text-[#7ec850]">
-            TEPAT! KATA: {{ currentItem.targetWord }}
+            TEPAT! (+{{ currentItem.score ?? 20 }} Pts) KATA: {{ currentItem.targetWord }}
           </span>
         </template>
         <template v-else>

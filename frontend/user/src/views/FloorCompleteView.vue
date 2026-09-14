@@ -24,6 +24,12 @@ const gameStore = useGameStore();
 const floorNumber = computed(() => parseInt((route.params.floorId as string) || '1', 10) || 1);
 const floor = computed(() => FLOORS_DATA.find((f) => f.number === floorNumber.value) || FLOORS_DATA[0]);
 const floorBooths = computed(() => (floor.value.boothIds || []).map(id => BOOTHS_DATA[id]).filter(Boolean));
+const floorStamps = computed(() => {
+  return floorBooths.value.map(booth => ({
+    booth,
+    stamp: gameStore.participant.stamps[booth.id]
+  }));
+});
 
 const currentLevel = computed(() => gameStore.getCurrentLevel());
 const completedFloors = computed(() => gameStore.getCompletedFloorsCount());
@@ -98,24 +104,20 @@ const handleNextAction = () => {
         </div>
 
         <!-- Collected Stamps Showcase -->
-        <div :class="['grid gap-2 my-1', floorBooths.length === 1 ? 'grid-cols-1 max-w-md mx-auto w-full' : 'grid-cols-2']">
-          <div
-            v-for="b in floorBooths"
-            :key="b.id"
-            class="complete-stamp-item bg-[#170f07] p-2 rounded-xl border-2 border-[#7ec850] flex items-center gap-2 shadow-inner"
-          >
+        <div :class="['grid gap-2 my-1', floorStamps.length === 1 ? 'grid-cols-1 max-w-md mx-auto w-full' : 'grid-cols-2']">
+          <div v-for="{ booth, stamp } in floorStamps" :key="booth.id" class="complete-stamp-item bg-[#170f07] p-2 rounded-xl border-2 border-[#7ec850] flex items-center gap-2 shadow-inner">
             <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-b from-[#3d7828] to-[#255018] border border-[#f0d060] flex items-center justify-center shrink-0 shadow">
-              <StampIcon :name="b.stampIcon" :size="16" class="text-[#f0d060]" />
+              <StampIcon :name="booth.stampIcon" :size="16" class="text-[#f0d060]" />
             </div>
             <div class="text-left min-w-0 flex-1">
-              <span class="font-pixel text-[7px] text-[#7ec850] uppercase block">
-                {{ b.code }} • Stempel
+              <span class="font-pixel text-[7px] text-[#7ec850] uppercase block truncate">
+                {{ booth.code }} • Stempel
               </span>
-              <h4 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-normal break-words mt-0.5">
-                {{ b.name }}
+              <h4 class="font-pixel text-[9px] sm:text-[10px] font-bold text-white leading-normal break-words mt-0.5 line-clamp-2">
+                {{ booth.name }}
               </h4>
               <span class="font-mono text-[9px] text-[#f0d060] block mt-0.5">
-                Status: {{ gameStore.isBoothCompleted(b.id) ? 'Tuntas (+100 Poin)' : 'Tuntas' }}
+                {{ stamp?.totalQuestions ? `Skor: ${stamp.score}/${stamp.totalQuestions} Benar` : 'Status: Tuntas (+100 Poin)' }}
               </span>
             </div>
           </div>

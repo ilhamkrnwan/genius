@@ -6,6 +6,7 @@ import CrtScanlines from '@/components/layout/CrtScanlines.vue';
 import { useGameStore } from '@/store/gameStore';
 import { PhLockKey, PhCheckCircle, PhUser, PhArrowRight, PhStar, PhTrophy, PhHourglass } from '@phosphor-icons/vue';
 import { LEVEL_CONFIG } from '@/data/mockData';
+import BuildingMap from '@/components/map/BuildingMap.vue';
 
 const router = useRouter();
 
@@ -32,65 +33,7 @@ const avatarImage = computed(() => {
   return '/character-cowok-avatar.png';
 });
 
-// Assuming we have 9 floors based on the game design
-const floors = Array.from({ length: 9 }, (_, i) => i + 1);
 
-const isFloorUnlocked = (floorNumber: number) => {
-  return participant.value.unlockedFloors?.includes(floorNumber) ?? false;
-};
-
-const getFloorStatus = (floorNumber: number) => {
-  return gameStore.getFloorStatus(floorNumber);
-};
-
-const getFloorCardClass = (floor: number) => {
-  if (!isFloorUnlocked(floor)) {
-    return 'bg-[#1b120a] border-[#3a2818] shadow-[0_4px_0_#0a0704] sm:shadow-[0_6px_0_#0a0704] opacity-90 cursor-not-allowed';
-  }
-  const status = getFloorStatus(floor);
-  if (status === 'completed') {
-    return 'bg-[#38761d] border-[#7ec850] shadow-[0_4px_0_#1e3d0f] sm:shadow-[0_6px_0_#1e3d0f] hover:-translate-y-1 hover:shadow-[0_8px_0_#1e3d0f] active:translate-y-2 active:shadow-[0_0px_0_#1e3d0f] cursor-pointer z-10';
-  } else if (status === 'partial') {
-    return 'bg-[#a16207] border-[#facc15] shadow-[0_4px_0_#713f12] sm:shadow-[0_6px_0_#713f12] hover:-translate-y-1 hover:shadow-[0_8px_0_#713f12] active:translate-y-2 active:shadow-[0_0px_0_#713f12] cursor-pointer z-10';
-  } else {
-    // Unlocked but not started
-    return 'bg-[#2d1b0e] border-[#a89078] shadow-[0_4px_0_#1b120a] sm:shadow-[0_6px_0_#1b120a] hover:-translate-y-1 hover:shadow-[0_8px_0_#1b120a] active:translate-y-2 active:shadow-[0_0px_0_#1b120a] cursor-pointer z-10';
-  }
-};
-
-const getFloorIconColor = (floor: number) => {
-  if (!isFloorUnlocked(floor)) return 'bg-[#2d1b0e] border-[#5c4033]';
-  const status = getFloorStatus(floor);
-  if (status === 'completed') return 'bg-[#7ec850]/20 border-[#7ec850]';
-  if (status === 'partial') return 'bg-[#facc15]/20 border-[#facc15]';
-  return 'bg-[#a89078]/20 border-[#a89078]';
-};
-
-const getFloorTextColor = (floor: number) => {
-  if (!isFloorUnlocked(floor)) return 'text-[#5c4033]';
-  const status = getFloorStatus(floor);
-  if (status === 'completed') return 'text-[#a4f075]';
-  if (status === 'partial') return 'text-[#fef08a]';
-  return 'text-[#d6c3ae]';
-};
-
-const getFloorStatusText = (floor: number) => {
-  if (!isFloorUnlocked(floor)) return 'TERKUNCI';
-  const status = getFloorStatus(floor);
-  if (status === 'completed') return 'SELESAI';
-  if (status === 'partial') return 'PROGRES';
-  return 'TERBUKA';
-};
-
-const handleFloorClick = (floorNumber: number) => {
-  if (!isFloorUnlocked(floorNumber)) return;
-  // Only floor 1 has a dedicated page for now
-  if (floorNumber === 1) {
-    router.push('/floor/1');
-  } else {
-    router.push(`/play/floor/${floorNumber}/intro`);
-  }
-};
 </script>
 
 <template>
@@ -160,55 +103,9 @@ const handleFloorClick = (floorNumber: number) => {
         </div>
       </section>
 
-      <!-- Floors Grid Section -->
-      <section>
-        <div class="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-6 gap-3">
-          <h2 class="text-lg sm:text-2xl font-bold text-[#fbf6e9] flex items-center gap-3 font-pixel text-shadow">
-            <span class="w-2 sm:w-3 h-5 sm:h-6 bg-[#7ec850] border-2 border-[#1e3d0f] shadow-[2px_2px_0_#1b120a]"></span>
-            Eksplorasi Lantai
-          </h2>
-          <p class="text-[8px] sm:text-[10px] text-[#a89078] font-pixel px-3 py-1.5 bg-[#1b120a] rounded border-2 border-[#3a2818] uppercase tracking-wider shadow-[0_2px_0_#0a0704]">Misi Utama</p>
-        </div>
-        
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 pb-8">
-          <div 
-            v-for="floor in floors" 
-            :key="floor"
-            class="relative overflow-hidden rounded-xl border-4 transition-all duration-150 transform"
-            :class="getFloorCardClass(floor)"
-            @click="handleFloorClick(floor)"
-          >
-            <div class="p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 sm:gap-4 min-h-[120px] sm:min-h-[140px]">
-              <div class="w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center border-2 transition-colors" 
-                :class="getFloorIconColor(floor)">
-                <PhLockKey v-if="!isFloorUnlocked(floor)" :size="24" class="text-[#8a6b52] sm:w-8 sm:h-8" weight="fill" />
-                <PhCheckCircle v-else-if="getFloorStatus(floor) === 'completed'" :size="24" class="text-[#7ec850] drop-shadow-md sm:w-8 sm:h-8" weight="fill" />
-                <PhHourglass v-else-if="getFloorStatus(floor) === 'partial'" :size="24" class="text-[#facc15] drop-shadow-md sm:w-8 sm:h-8" weight="fill" />
-                <PhArrowRight v-else :size="24" class="text-[#a89078] drop-shadow-md sm:w-8 sm:h-8" weight="bold" />
-              </div>
-              
-              <div class="flex flex-col gap-1">
-                <h3 class="font-bold text-[11px] sm:text-[14px] font-pixel" :class="isFloorUnlocked(floor) ? 'text-white text-shadow' : 'text-[#8a6b52]'">
-                  Lantai {{ floor }}
-                </h3>
-                <span class="text-[8px] sm:text-[9px] uppercase tracking-widest font-pixel" 
-                  :class="getFloorTextColor(floor)">
-                  {{ getFloorStatusText(floor) }}
-                </span>
-              </div>
-
-              <!-- Arrow hint for unlocked but not completed -->
-              <div v-if="isFloorUnlocked(floor) && getFloorStatus(floor) !== 'completed'" 
-                   class="flex items-center gap-1 mt-1 px-2 py-1 rounded-sm bg-black/20" 
-                   :class="getFloorStatus(floor) === 'partial' ? 'text-[#facc15]' : 'text-[#a89078]'">
-                <span class="font-pixel text-[8px] sm:text-[9px] tracking-widest">{{ getFloorStatus(floor) === 'partial' ? 'LANJUTKAN' : 'MASUK' }}</span>
-              </div>
-            </div>
-            
-            <!-- Scanline overlay (CSS based instead of image) -->
-            <div class="absolute inset-0 pointer-events-none opacity-5 bg-[repeating-linear-gradient(transparent,transparent_2px,#000_2px,#000_4px)] mix-blend-overlay"></div>
-          </div>
-        </div>
+      <!-- Interactive Peta Section (BuildingMap) -->
+      <section class="flex-1 min-h-[400px]">
+        <BuildingMap />
       </section>
 
     </main>

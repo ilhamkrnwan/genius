@@ -246,6 +246,17 @@ export const api = {
     return this.request('/ormawa/my-badges/' + encodeURIComponent(participantId));
   },
 
+  async submitOrmawaInterest(payload: { boothId: string; phoneNumber: string; motivation?: string; experience?: string }) {
+    return this.request('/ormawa/interest', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getMyOrmawaInterests(participantId: string) {
+    return this.request('/ormawa/my-interests/' + encodeURIComponent(participantId));
+  },
+
   async createGameSession(payload: { missionId: string; teamId: string; allowReplay?: boolean }) {
     return this.request<GameSession>('/game-sessions/create', {
       method: 'POST',
@@ -259,6 +270,10 @@ export const api = {
 
   async getActiveGameSession() {
     return this.request<GameSession | null>('/game-sessions/active');
+  },
+
+  async getMyTeamSessions() {
+    return this.request<GameSession[]>('/game-sessions/my-team');
   },
 
   async startGameSession(sessionId: string) {

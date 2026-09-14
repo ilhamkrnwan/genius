@@ -220,26 +220,17 @@ const currentSession = ref<any>(null);
 const actionLoading = ref(false);
 const statusFeedback = ref<string | null>(null);
 
-// Standard 18 Booths / Missions Fallback
+// Standard 9 Official Campus Quest Pos Fallback
 const defaultBooths = [
-  { id: "b1-a", label: "Lantai 1 - Pos B1-A: Galeri Nilai Aswaja" },
-  { id: "b1-b", label: "Lantai 1 - Pos B1-B: Jejak Sejarah UNU" },
-  { id: "b2-a", label: "Lantai 2 - Pos B2-A: Perpustakaan & Integritas" },
-  { id: "b2-b", label: "Lantai 2 - Pos B2-B: Literasi Digital Aswaja" },
-  { id: "b3-a", label: "Lantai 3 - Pos B3-A: Laboratorium Komputer" },
-  { id: "b3-b", label: "Lantai 3 - Pos B3-B: Cyber Security Santri" },
-  { id: "b4-a", label: "Lantai 4 - Pos B4-A: Ruang Microteaching" },
-  { id: "b4-b", label: "Lantai 4 - Pos B4-B: Wawasan Karakter Guru" },
-  { id: "b5-a", label: "Lantai 5 - Pos B5-A: Inkubator Bisnis Halal" },
-  { id: "b5-b", label: "Lantai 5 - Pos B5-B: Startup & Kewirausahaan" },
-  { id: "b6-a", label: "Lantai 6 - Pos B6-A: Studio Media Kreatif" },
-  { id: "b6-b", label: "Lantai 6 - Pos B6-B: Podcast Aswaja Masa Depan" },
-  { id: "b7-a", label: "Lantai 7 - Pos B7-A: Laboratorium Robotika" },
-  { id: "b7-b", label: "Lantai 7 - Pos B7-B: Rekayasa Sains Hijau" },
-  { id: "b8-a", label: "Lantai 8 - Pos B8-A: Galeri Riset Pascasarjana" },
-  { id: "b8-b", label: "Lantai 8 - Pos B8-B: Publikasi Ilmiah Global" },
-  { id: "b9-a", label: "Lantai 9 - Pos B9-A: Convention Hall Utama" },
-  { id: "b9-b", label: "Lantai 9 - Pos B9-B: Master Transformation Quiz" },
+  { id: "POS-L1-1", label: "Lantai 1 — Pos 1: Anti Korupsi & Terorisme (Pilihan Ganda)" },
+  { id: "POS-L2-2", label: "Lantai 2 — Pos 2: Leadership & Problem Solving (Memory Match)" },
+  { id: "POS-L2-6", label: "Lantai 2 — Pos 6: Media Sosial & Komunikasi (Kuis Cepat)" },
+  { id: "POS-L3-3", label: "Lantai 3 — Pos 3: Profil Pelajar Pancasila (Benar/Salah)" },
+  { id: "POS-L4-4", label: "Lantai 4 — Pos 4: Kampus Bersinar Bebas Narkoba (Teka-Teki Silang)" },
+  { id: "POS-L4-9", label: "Lantai 4 — Pos 9: Ingat Aku: Teks Blur & 3 Tokoh NU (Tebak Gambar)" },
+  { id: "POS-L5-5", label: "Lantai 5 — Pos 5: Anti Plagiarisme & Integritas (Tebak Kata)" },
+  { id: "POS-L6-7", label: "Lantai 6 — Pos 7: Fun Pos Tebak Gambar & Audio (Observasi)" },
+  { id: "POS-L6-8", label: "Lantai 6 — Pos 8: Ingat Aku: Tebak Lokasi Lantai Gedung (Tebak Posisi)" },
 ];
 
 const missionOptions = ref<{ id: string; label: string }[]>(defaultBooths);

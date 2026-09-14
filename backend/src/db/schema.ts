@@ -17,7 +17,7 @@ import { sql } from "drizzle-orm";
 // Enums
 // ============================================================
 
-export const userRoleEnum = pgEnum("user_role", ["ADMIN", "BUDDY", "PARTICIPANT"]);
+export const userRoleEnum = pgEnum("user_role", ["ADMIN", "BUDDY", "PARTICIPANT", "ORMAWA_PIC"]);
 export const userStatusEnum = pgEnum("user_status", ["ACTIVE", "INACTIVE"]);
 export const buddyRoleEnum = pgEnum("buddy_role", ["PRIMARY", "ASSISTANT"]);
 export const stageStatusEnum = pgEnum("stage_status", ["UPCOMING", "ACTIVE", "COMPLETED"]);
@@ -378,6 +378,8 @@ export const ormawaBooths = pgTable("ormawa_booths", {
   badgeColor: varchar("badge_color", { length: 50 }).default("#16a34a"),
   contactPerson: varchar("contact_person", { length: 255 }),
   instagram: varchar("instagram", { length: 100 }),
+  logoUrl: text("logo_url"),
+  picUserId: uuid("pic_user_id").references(() => users.id),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -393,6 +395,22 @@ export const ormawaScans = pgTable("ormawa_scans", {
   uniqueIndex("ormawa_scans_unique").on(table.participantId, table.boothId),
   index("ormawa_scans_participant_idx").on(table.participantId),
   index("ormawa_scans_booth_idx").on(table.boothId),
+]);
+
+// --- Ormawa Interests (Pendaftaran Minat Bergabung Maba ke Ormawa/UKM) ---
+export const ormawaInterests = pgTable("ormawa_interests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  participantId: uuid("participant_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  boothId: uuid("booth_id").notNull().references(() => ormawaBooths.id, { onDelete: "cascade" }),
+  phoneNumber: varchar("phone_number", { length: 30 }).notNull(),
+  motivation: text("motivation"),
+  experience: text("experience"),
+  xpBonusEarned: integer("xp_bonus_earned").notNull().default(25),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("ormawa_interest_unique").on(table.participantId, table.boothId),
+  index("ormawa_interest_participant_idx").on(table.participantId),
+  index("ormawa_interest_booth_idx").on(table.boothId),
 ]);
 
 // --- Daily Reflections (Kuesioner Refleksi & Evaluasi Harian) ---

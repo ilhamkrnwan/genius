@@ -9,6 +9,7 @@ export const useGameSessionStore = defineStore('gameSession', () => {
   const availableMissions = ref<PlayableMission[]>([]);
   const selectedMission = ref<PlayableMission | null>(null);
   const session = ref<GameSession | null>(null);
+  const mySessions = ref<GameSession[]>([]);
   const status = ref<SessionStatus>('idle');
   const error = ref<{ code?: string; message: string } | null>(null);
   const lastAnswer = ref<{ isCorrect?: boolean; scoreEarned?: number } | null>(null);
@@ -123,6 +124,21 @@ export const useGameSessionStore = defineStore('gameSession', () => {
     return response.data;
   }
 
+  async function fetchMyTeamSessions() {
+    status.value = 'loading';
+    error.value = null;
+    const response = await api.getMyTeamSessions();
+    if (response.success && response.data) {
+      mySessions.value = response.data;
+      status.value = 'ready';
+    } else {
+      mySessions.value = [];
+      error.value = { code: response.error?.code || 'FETCH_ERROR', message: response.error?.message || 'Gagal memuat sesi tim' };
+      status.value = 'error';
+    }
+    return response.data || [];
+  }
+
   async function submitAnswer(submission: AnswerSubmission) {
     if (!session.value) {
       error.value = { code: 'NO_SESSION', message: 'Belum ada sesi permainan.' };
@@ -207,6 +223,7 @@ export const useGameSessionStore = defineStore('gameSession', () => {
     availableMissions,
     selectedMission,
     session,
+    mySessions,
     status,
     error,
     lastAnswer,
@@ -219,6 +236,7 @@ export const useGameSessionStore = defineStore('gameSession', () => {
     createSession,
     startSession,
     refreshSession,
+    fetchMyTeamSessions,
     submitAnswer,
     completeSession,
     restoreSession,

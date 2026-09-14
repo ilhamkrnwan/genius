@@ -70,12 +70,16 @@ function loadInitialState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      const participant = { ...INITIAL_PARTICIPANT, ...(parsed.participant || {}) } as Participant;
-      const isLoggedIn = Boolean(parsed.isLoggedIn ?? (participant.isRegistered && participant.name));
+      const loadedParticipant = { ...INITIAL_PARTICIPANT, ...(parsed.participant || {}) } as Participant;
+      if (!loadedParticipant.unlockedFloors) loadedParticipant.unlockedFloors = [];
+      if (!loadedParticipant.unlockedFloors.includes(1)) loadedParticipant.unlockedFloors.push(1);
+      
+      const isLoggedIn = Boolean(parsed.isLoggedIn ?? (loadedParticipant.isRegistered && loadedParticipant.name));
       return {
-        participant,
+        participant: loadedParticipant,
         attendance: { ...DEFAULT_ATTENDANCE, ...(parsed.attendance || {}) } as AttendanceStoreMap,
         visitedOrmawa: (parsed.visitedOrmawa || []) as string[],
+        ormawaInterests: (parsed.ormawaInterests || []) as string[],
         isLoggedIn,
       };
     }
@@ -87,6 +91,7 @@ function loadInitialState() {
     participant: { ...INITIAL_PARTICIPANT } as Participant,
     attendance: { ...DEFAULT_ATTENDANCE },
     visitedOrmawa: [] as string[],
+    ormawaInterests: [] as string[],
     isLoggedIn: false,
   };
 }
@@ -98,6 +103,7 @@ export const useGameStore = defineStore('game', {
     participant: saved.participant,
     attendance: saved.attendance,
     visitedOrmawa: saved.visitedOrmawa as string[],
+    ormawaInterests: saved.ormawaInterests as string[],
     isLoggedIn: saved.isLoggedIn,
     soundEnabled: true,
     crtEffect: false,
@@ -115,8 +121,8 @@ export const useGameStore = defineStore('game', {
         id ? state.participant.completedBooths.includes(id) : false
       ).length;
 
-      if (completedCount === 2) return 'completed';
-      if (completedCount === 1) return 'partial';
+      if (completedCount === floor.boothIds.length && completedCount > 0) return 'completed';
+      if (completedCount > 0) return 'partial';
       return 'not_started';
     },
 
@@ -180,6 +186,16 @@ export const useGameStore = defineStore('game', {
 
     isStandVisited: (state) => (standId: string): boolean => {
       return state.visitedOrmawa.includes(standId);
+    },
+
+    interestCount: (state) => state.ormawaInterests.length,
+
+    interestXpEarned: (state) => Math.min(state.ormawaInterests.length, 3) * 25,
+
+    isInterestCapped: (state) => state.ormawaInterests.length >= 3,
+
+    isStandInterested: (state) => (standId: string): boolean => {
+      return state.ormawaInterests.includes(standId);
     },
   },
 
@@ -468,7 +484,7 @@ export const useGameStore = defineStore('game', {
       };
     },
 
-    completeBooth(boothId: string, score: number, totalQuestions: number) {
+    completeBooth(boothId: string, score: number, totalQuestions: number, isServerSynced = false) {
       const booth = BOOTHS_DATA[boothId];
       if (!booth) {
         return {
@@ -509,7 +525,8 @@ export const useGameStore = defineStore('game', {
         [boothId]: stampRecord,
       };
 
-      const xpEarned = isAlreadyCompleted ? 0 : 150 + score * 50;
+      // Exact score matching quiz_database.csv (up to 100 points per pos)
+      const xpEarned = isAlreadyCompleted ? 0 : Math.min(100, Math.max(0, score));
       const newTotalXp = this.participant.totalXp + xpEarned;
 
       const floor = FLOORS_DATA.find((f) => f.number === booth.floorNumber);
@@ -535,8 +552,8 @@ export const useGameStore = defineStore('game', {
 
       this.saveToStorage();
 
-      // Sync game score to live PostgreSQL point ledger
-      if (!isAlreadyCompleted && xpEarned > 0) {
+      // Sync game score to live PostgreSQL point ledger ONLY if not already synced by server session
+      if (!isAlreadyCompleted && xpEarned > 0 && !isServerSynced) {
         api.submitScore({
           participantId: this.participant.id || this.participant.nim || 'MABA',
           teamId: this.participant.teamId || this.participant.groupId || '',
@@ -630,6 +647,50 @@ export const useGameStore = defineStore('game', {
         stand,
         isCapped: this.visitedOrmawa.length >= 10,
       };
+    },
+
+    async submitInterest(boothId: string, payload: { phoneNumber: string; motivation?: string; experience?: string }) {
+      if (this.ormawaInterests.includes(boothId)) {
+        return { success: false, message: 'Anda sudah mendaftar minat pada ormawa ini.' };
+      }
+
+      const isCapped = this.ormawaInterests.length >= 3;
+      const xpBonusEarned = isCapped ? 0 : 25;
+
+      try {
+        // Optimistic update
+        this.ormawaInterests.push(boothId);
+        if (xpBonusEarned > 0) {
+          this.participant.totalXp += xpBonusEarned;
+        }
+        this.saveToStorage();
+
+        // Sync with API
+        const res = await api.submitOrmawaInterest({
+          boothId,
+          phoneNumber: payload.phoneNumber,
+          motivation: payload.motivation,
+          experience: payload.experience,
+        });
+
+        if (this.soundEnabled) soundEngine.playCorrect();
+
+        return {
+          success: true,
+          message: isCapped 
+            ? 'Minat bergabung dicatat! (Batas 3 ormawa tercapai, +0 XP)'
+            : `Minat bergabung berhasil dicatat! (+${xpBonusEarned} XP)`,
+          xpBonusEarned
+        };
+      } catch (err: any) {
+        // Rollback on failure
+        this.ormawaInterests = this.ormawaInterests.filter(id => id !== boothId);
+        if (xpBonusEarned > 0) {
+          this.participant.totalXp -= xpBonusEarned;
+        }
+        this.saveToStorage();
+        return { success: false, message: err?.message || 'Gagal menyimpan data minat. Coba lagi.' };
+      }
     },
 
     resetProgress() {

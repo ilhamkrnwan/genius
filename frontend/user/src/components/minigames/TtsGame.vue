@@ -131,6 +131,11 @@ const handleFillSampleHint = () => {
   showHint.value = true;
   if (gameStore.soundEnabled) soundEngine.playSelect();
 };
+const currentScore = computed(() => {
+  return clues.value
+    .filter((c) => correctClueIds.value.includes(c.id))
+    .reduce((acc, c) => acc + (c.score ?? 20), 0);
+});
 </script>
 
 <template>
@@ -148,9 +153,14 @@ const handleFillSampleHint = () => {
         </div>
       </div>
 
-      <PixelBadge variant="emerald" size="sm">
-        {{ clues.length }} Kata Kunci
-      </PixelBadge>
+      <div class="flex items-center gap-1.5">
+        <PixelBadge variant="emerald" size="sm">
+          {{ currentScore }} Pts
+        </PixelBadge>
+        <PixelBadge variant="gold" size="sm">
+          {{ correctClueIds.length }}/{{ clues.length }} Kata
+        </PixelBadge>
+      </div>
     </div>
 
     <!-- Main Interactive Grid -->

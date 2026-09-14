@@ -21,10 +21,15 @@ import {
   PhCalendarCheck,
   PhMapTrifold,
   PhIdentificationBadge,
+  PhHeart,
+  PhBookOpen,
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
 import { ORMAWA_STANDS } from '@/data/ormawaData';
 import { OrmawaStand } from '@/types/ormawa';
+import OrmawaQrModal from '@/components/ormawa/OrmawaQrModal.vue';
+import OrmawaInterestModal from '@/components/ormawa/OrmawaInterestModal.vue';
+import OrmawaStampGrid from '@/components/ormawa/OrmawaStampGrid.vue';
 import { soundEngine } from '@/lib/sound';
 import { api } from '@/lib/api';
 import { AVATAR_OPTIONS } from '@/data/mockData';
@@ -64,6 +69,10 @@ const avatarData = computed(() => {
     AVATAR_OPTIONS[0]
   );
 });
+
+// Modal State
+const isQrModalOpen = ref(false);
+const isInterestModalOpen = ref(false);
 
 // QR Code Maba — menampilkan NIM sebagai QR agar bisa di-scan PIC Ormawa
 const mabaQrValue = computed(() => {
@@ -248,6 +257,27 @@ const openStandDetail = (stand: OrmawaStand) => {
   activeStandDetail.value = stand;
 };
 
+const openQrModal = () => {
+  if (gameStore.soundEnabled) soundEngine.playSelect();
+  isQrModalOpen.value = true;
+};
+
+const openInterestModal = () => {
+  if (gameStore.soundEnabled) soundEngine.playSelect();
+  isInterestModalOpen.value = true;
+};
+
+const submitInterestHandler = async (payload: { phoneNumber: string; motivation?: string; experience?: string }) => {
+  if (!activeStandDetail.value) return;
+  const res = await gameStore.submitInterest(activeStandDetail.value.id, payload);
+  if (res.success) {
+    isInterestModalOpen.value = false;
+    alert(res.message); // can use toast in real app
+  } else {
+    alert(res.message);
+  }
+};
+
 const closeStandDetail = () => {
   safeSound(() => soundEngine.playClick?.());
   activeStandDetail.value = null;
@@ -335,7 +365,7 @@ const getCategoryLabel = (category: string) => {
     <!-- MAIN CONTENT: Simple, Clean & Focused (Sama Seperti Presensi)     -->
     <!-- ================================================================= -->
     <main class="relative z-20 w-full max-w-xl mx-auto space-y-2.5 my-auto">
-      <!-- API Warning Notice (if any) -->
+      <!-- API Error Notice -->
       <div
         v-if="apiError"
         class="p-2.5 rounded-xl border border-[#f59e0b]/50 bg-[#20150d]/90 text-[10px] font-mono text-amber-300 flex items-center gap-2 shadow"
@@ -412,6 +442,9 @@ const getCategoryLabel = (category: string) => {
           </div>
         </div>
       </section>
+
+      <!-- Stamp Grid Collection -->
+      <OrmawaStampGrid :maxStamps="10" />
 
       <!-- 2. SEGMENTED TABS & SEARCH (Sama Seperti Tab Hari di Presensi) -->
       <section class="space-y-1.5">
@@ -751,15 +784,48 @@ const getCategoryLabel = (category: string) => {
           <p class="text-[10.5px] text-[#facc15]/80 font-mono text-center">
             Datangi stan ini di Hall Lantai 6 & tunjukkan QR Code paspormu ke petugas untuk klaim lencana!
           </p>
-          <button
-            type="button"
-            @click="closeStandDetail"
-            class="w-full py-2 bg-[#2a1a0e] hover:bg-[#3d2714] text-[#facc15] font-pixel text-xs rounded-xl border border-[#8b6f4e] cursor-pointer transition-all active:scale-98 shadow"
-          >
-            TUTUP
-          </button>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              v-if="!gameStore.isStandInterested(activeStandDetail.id)"
+              type="button"
+              @click="openInterestModal"
+              class="w-full h-9 bg-gradient-to-r from-[#166534] to-[#14532d] hover:from-[#14532d] hover:to-[#064e3b] text-[#86efac] font-pixel text-[10px] rounded border border-[#166534] shadow-[2px_2px_0px_#064e3b] active:translate-y-0.5 active:shadow-none cursor-pointer transition-all flex items-center justify-center gap-1"
+            >
+              <PhHeart weight="fill" :size="14" />
+              <span>BERMINAT GABUNG</span>
+            </button>
+            <div 
+              v-else 
+              class="w-full h-9 bg-[#142314] text-[#86efac] font-pixel text-[10px] rounded border border-[#22c55e] flex items-center justify-center gap-1 cursor-not-allowed opacity-80"
+            >
+              <PhCheckCircle :size="14" weight="fill" />
+              <span>SUDAH BERMINAT</span>
+            </div>
+
+            <button
+              type="button"
+              @click="closeStandDetail"
+              class="w-full h-9 bg-[#2a1d12] hover:bg-[#3d2919] text-amber-200 font-pixel text-[10px] rounded border border-[#6b4724] shadow-[2px_2px_0px_#1a1109] active:translate-y-0.5 active:shadow-none cursor-pointer transition-all"
+            >
+              TUTUP
+            </button>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Modals -->
+    <OrmawaQrModal 
+      v-model="isQrModalOpen"
+      :standName="'Ormawa Pilihan'" 
+    />
+
+    <OrmawaInterestModal
+      v-if="activeStandDetail"
+      v-model="isInterestModalOpen"
+      :standId="activeStandDetail.id"
+      :standName="activeStandDetail.name"
+      @submit="submitInterestHandler"
+    />
   </div>
 </template>

@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter, RouterLink } from 'vue-router';
 import { useGameStore } from '@/store/gameStore';
 import { soundEngine } from '@/lib/sound';
+import { api } from '@/lib/api';
 import { FLOORS_DATA, LEVEL_CONFIG, AVATAR_OPTIONS } from '@/data/mockData';
 import {
   PhGameController,
@@ -28,6 +29,9 @@ import MabaAuthModal from '@/components/auth/MabaAuthModal.vue';
 
 const router = useRouter();
 const gameStore = useGameStore();
+
+// Team active session tracking from API
+const activeTeamSessionFloor = ref<number | null>(null);
 
 // Full body character image from /mascots folder (clean transparent PNGs)
 const characterFullImage = computed(() => {
@@ -70,12 +74,32 @@ const isProfileModalOpen = ref(false);
 
 // Active Floor determination
 const nextFloor = computed(() => {
+  if (activeTeamSessionFloor.value) {
+    return activeTeamSessionFloor.value;
+  }
   for (const floor of FLOORS_DATA) {
     if (gameStore.getFloorStatus(floor.number) !== 'completed') {
       return floor.number;
     }
   }
   return 1;
+});
+
+onMounted(async () => {
+  if (gameStore.soundEnabled && !isMuted.value) {
+    try {
+      soundEngine.playMenuMusic?.();
+    } catch (_) {}
+  }
+  try {
+    const response = await api.getMyTeamSessions();
+    if (response.success && response.data) {
+      const activeSession = response.data.find((s: any) => s.status !== 'COMPLETED');
+      if (activeSession && activeSession.floorNumber) {
+        activeTeamSessionFloor.value = activeSession.floorNumber;
+      }
+    }
+  } catch (_) {}
 });
 
 const isCheckedInToday = computed(() => gameStore.isDayCheckedIn(gameStore.activeDay || 1));

@@ -75,6 +75,7 @@ export interface TebakPosisiItem {
   id: string;
   prompt: string;
   imageUrl: string;
+  gdriveId?: string;
   imageAlt: string;
   options: string[];
   correctOptionIndex: number;
@@ -92,6 +93,7 @@ export interface TebakGambarItem {
   id: string;
   imageIcon?: string;
   imageUrl?: string;
+  gdriveId?: string;
   imageAlt?: string;
   prompt: string;
   options: string[];
@@ -219,7 +221,7 @@ export interface Floor {
   description: string;
   icon: string;
   accentColor: string;
-  boothIds: [string, string?] | string[];
+  boothIds: string[];
   storyIntro?: FloorStoryIntro;
 }
 

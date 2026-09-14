@@ -86,7 +86,6 @@ function buildContent(game: ApiPlayableMission['game'], renderer: RendererKey) {
       },
     };
   }
-
   return { questions };
 }
 

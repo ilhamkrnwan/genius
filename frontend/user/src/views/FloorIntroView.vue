@@ -37,6 +37,8 @@ const handleStartSpot1 = () => {
   if (gameStore.soundEnabled) soundEngine.playClick();
   if (firstBooth.value) {
     router.push(`/play/floor/${floor.value.number}/spot/${firstBooth.value.id}`);
+  } else {
+    router.push(`/dashboard?floor=${floor.value.number}`);
   }
 };
 
@@ -176,14 +178,14 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Spots Grid Preview -->
+        <!-- Dynamic Spots Grid Preview -->
         <div class="space-y-1.5 text-left py-1">
           <div class="flex items-center justify-between px-1">
             <span class="font-pixel text-[8px] sm:text-[9px] text-[#a08060] uppercase">
               Tantangan di Lantai Ini:
             </span>
             <span class="font-pixel text-[8px] sm:text-[9px] text-[#7ec850]">
-              Total: +{{ floorBooths.length * 100 }} Poin & {{ floorBooths.length }} Stempel
+              Total: +{{ floorBooths.length * 250 }} XP & {{ floorBooths.length }} Stempel
             </span>
           </div>
 
@@ -203,7 +205,7 @@ onMounted(() => {
                   <div class="w-6 h-6 rounded-md bg-[#281c12] border border-[#f0d060] flex items-center justify-center shrink-0">
                     <StampIcon :name="b.stampIcon" :size="14" class="text-[#f0d060]" />
                   </div>
-                  <span class="font-pixel text-[8px] text-[#7ec850] font-bold">
+                  <span :class="['font-pixel text-[8px] font-bold', (gameStore.participant.completedBooths.includes(b.id) || gameStore.participant.completedBooths.includes(b.code)) ? 'text-[#7ec850]' : 'text-[#f0d060]']">
                     {{ b.code }}
                   </span>
                 </div>
@@ -215,7 +217,7 @@ onMounted(() => {
                   class="text-[#7ec850] shrink-0"
                 />
                 <span v-else class="text-[8px] font-pixel text-[#f0d060] bg-[#281c12] px-1 py-0.5 rounded border border-[#5a3a18]">
-                  +100 Poin
+                  +250 XP
                 </span>
               </div>
 
@@ -230,16 +232,23 @@ onMounted(() => {
         </div>
 
         <!-- Action CTA Button -->
-        <div v-if="firstBooth" class="pt-1 shrink-0">
+        <div v-if="firstBooth" class="pt-1 shrink-0 flex flex-col sm:flex-row gap-2">
           <button
             type="button"
             @click="handleStartSpot1"
-            class="w-full rpg-btn-primary py-2.5 sm:py-3.5 px-4 text-xs sm:text-sm font-pixel font-bold flex items-center justify-center gap-2 shadow-xl cursor-pointer"
+            class="flex-1 rpg-btn-primary py-2.5 sm:py-3 px-3 text-xs sm:text-sm font-pixel font-bold flex items-center justify-center gap-2 shadow-xl cursor-pointer"
           >
             <PhPlay :size="16" weight="fill" />
             <span>MASUK KE {{ firstBooth.code }}</span>
             <PhArrowRight :size="16" weight="bold" />
           </button>
+          <RouterLink
+            :to="`/dashboard?floor=${floor.number}`"
+            class="py-2.5 sm:py-3 px-3 text-xs font-pixel font-bold flex items-center justify-center gap-1.5 rounded-lg border border-[#5a3a18] bg-[#1a0f07] text-[#c4956a] hover:text-[#f0d060] transition-colors"
+          >
+            <PhArrowLeft :size="14" weight="bold" />
+            <span>Peta Pos</span>
+          </RouterLink>
         </div>
       </div>
     </main>

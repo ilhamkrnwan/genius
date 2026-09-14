@@ -31,7 +31,18 @@ export const authMiddleware = new Elysia({ name: "auth-middleware" })
 
     try {
       const payload = await verifyToken(token);
-      return { user: payload as TokenPayload | null };
+      let user = payload as TokenPayload | null;
+      if (user && !user.teamId && user.role === "PARTICIPANT" && user.userId) {
+        const [membership] = await db
+          .select({ teamId: teamMembers.teamId })
+          .from(teamMembers)
+          .where(eq(teamMembers.userId, user.userId))
+          .limit(1);
+        if (membership?.teamId) {
+          user = { ...user, teamId: membership.teamId };
+        }
+      }
+      return { user };
     } catch {
       return { user: null as TokenPayload | null };
     }
@@ -109,3 +120,40 @@ export async function validateBuddyTeamScope(user: TokenPayload | null, targetTe
 
   return Boolean(membership && membership.teamId === targetTeamId);
 }
+
+/**
+ * Validates that a Participant belongs to the given teamId.
+ * Checks user.teamId first, and falls back to teamMembers table query for freshness.
+ */
+export async function validateParticipantTeamScope(user: TokenPayload | null, targetTeamId: string): Promise<boolean> {
+  if (!user) return false;
+  if (user.role === "ADMIN" || user.role === "BUDDY") return true;
+  if (user.role !== "PARTICIPANT") return false;
+  if (user.teamId && user.teamId === targetTeamId) return true;
+  if (!user.userId) return false;
+
+  const [membership] = await db
+    .select({ teamId: teamMembers.teamId })
+    .from(teamMembers)
+    .where(eq(teamMembers.userId, user.userId))
+    .limit(1);
+
+  return Boolean(membership && membership.teamId === targetTeamId);
+}
+
+/**
+ * Restricts access to ORMAWA_PIC or ADMIN roles.
+ * Used for endpoints like POST /api/ormawa/scan-maba where PIC scans maba QR.
+ */
+export const requireOrmawaOrAdmin = new Elysia({ name: "require-ormawa-or-admin" })
+  .use(authMiddleware)
+  .onBeforeHandle(({ user, set }) => {
+    if (!user) {
+      set.status = 401;
+      return { success: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } };
+    }
+    if (user.role !== "ADMIN" && user.role !== "ORMAWA_PIC") {
+      set.status = 403;
+      return { success: false, error: { code: "FORBIDDEN", message: "Ormawa PIC or Admin permission required" } };
+    }
+  });

@@ -2,7 +2,6 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import HomeView from '@/views/HomeView.vue';
 import DashboardView from '@/views/DashboardView.vue';
 import Floor1View from '@/views/Floor1View.vue';
-import PetaView from '@/views/PetaView.vue';
 import PlayView from '@/views/PlayView.vue';
 import FloorIntroView from '@/views/FloorIntroView.vue';
 import LinearSpotView from '@/views/LinearSpotView.vue';
@@ -32,6 +31,11 @@ const routes: Array<RouteRecordRaw> = [
     component: Floor1View,
   },
   {
+    path: '/floor/2',
+    name: 'floor-2',
+    component: () => import('@/views/Floor2View.vue'),
+  },
+  {
     path: '/floor/:floorId',
     redirect: (to) => `/play/floor/${to.params.floorId || 1}/intro`,
   },
@@ -39,7 +43,7 @@ const routes: Array<RouteRecordRaw> = [
     path: '/peta',
     name: 'peta',
     alias: ['/map'],
-    component: PetaView,
+    component: () => import('@/views/PetaView.vue'),
   },
   {
     path: '/play',

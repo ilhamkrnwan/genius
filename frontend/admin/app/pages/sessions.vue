@@ -15,6 +15,15 @@
       </div>
 
       <button
+        class="pixel-btn h-8 px-3 bg-emerald-700 text-white border-emerald-500 flex items-center justify-center hover:bg-emerald-600 font-pixel text-[10px] gap-1"
+        @click="openCreateModal"
+        title="Buka Akses Sesi Baru"
+      >
+        <Plus class="h-3.5 w-3.5" />
+        <span>BUKA SESI</span>
+      </button>
+
+      <button
         class="pixel-btn h-8 w-8 bg-[#271d15] text-[#f59e0b] border-[#523e2b] flex items-center justify-center hover:bg-[#3d2d1e]"
         @click="() => fetchSessions()"
         :disabled="loading"
@@ -242,6 +251,14 @@
           <!-- Active Controls -->
           <template v-if="s.status === 'ACTIVE'">
             <button
+              @click="$router.push(`/sessions/${s.id}`)"
+              class="pixel-btn h-7 px-2 bg-blue-600 text-white border-blue-400 font-bold flex items-center gap-1 hover:bg-blue-500"
+              title="Buka Control Panel Game Master"
+            >
+              <Gamepad2 class="h-3 w-3" />
+              <span>Kontrol</span>
+            </button>
+            <button
               @click="pauseSession(s.id)"
               class="pixel-btn h-7 px-2 bg-yellow-600 text-[#16110d] border-yellow-400 font-bold flex items-center gap-1 hover:bg-yellow-500"
             >
@@ -270,6 +287,14 @@
 
           <!-- Ready Controls -->
           <template v-else-if="s.status === 'READY'">
+            <button
+              @click="$router.push(`/sessions/${s.id}`)"
+              class="pixel-btn h-7 px-2 bg-blue-600 text-white border-blue-400 font-bold flex items-center gap-1 hover:bg-blue-500"
+              title="Buka Control Panel Game Master"
+            >
+              <Gamepad2 class="h-3 w-3" />
+              <span>Kontrol</span>
+            </button>
             <button
               @click="startSession(s.id)"
               class="pixel-btn h-7 px-2 bg-cyan-600 text-white border-cyan-400 font-bold flex items-center gap-1 hover:bg-cyan-500"
@@ -303,6 +328,50 @@
         </div>
       </div>
     </div>
+
+    <!-- Create Session Modal -->
+    <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div class="pixel-card w-full max-w-md p-5 bg-[#16110d] border-[#f59e0b]">
+        <div class="flex items-center justify-between border-b border-[#3a291c] pb-3 mb-4">
+          <h3 class="font-pixel text-sm text-[#facc15]">BUKA AKSES SESI BARU</h3>
+          <button @click="showCreateModal = false" class="text-muted-foreground hover:text-white">
+            <XCircle class="h-5 w-5" />
+          </button>
+        </div>
+
+        <form @submit.prevent="submitCreateSession" class="space-y-4 font-mono text-xs">
+          <div class="space-y-1.5">
+            <label class="text-muted-foreground">1. Pilih Tim Peserta</label>
+            <select v-model="newSessionForm.teamId" required class="w-full h-9 bg-[#1d1611] border border-[#523e2b] px-3 text-foreground focus:outline-none focus:border-[#f59e0b]">
+              <option value="" disabled>-- Pilih Tim --</option>
+              <option v-for="team in allTeams" :key="team.id" :value="team.id">
+                [{{ team.code }}] {{ team.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-muted-foreground">2. Pilih Pos Misi (Lokasi)</label>
+            <select v-model="newSessionForm.missionId" required class="w-full h-9 bg-[#1d1611] border border-[#523e2b] px-3 text-foreground focus:outline-none focus:border-[#f59e0b]">
+              <option value="" disabled>-- Pilih Pos Misi --</option>
+              <option v-for="mission in allMissions" :key="mission.id" :value="mission.id">
+                Lt.{{ mission.floorNumber }} - {{ mission.locationName }} ({{ mission.name }})
+              </option>
+            </select>
+          </div>
+
+          <div class="pt-2">
+            <button
+              type="submit"
+              :disabled="creatingSession"
+              class="w-full pixel-btn h-10 bg-emerald-700 text-white border-emerald-500 font-bold hover:bg-emerald-600 disabled:opacity-50"
+            >
+              {{ creatingSession ? 'MEMBUKA AKSES...' : 'BUKA AKSES TIM' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -319,6 +388,7 @@ import {
   Pause,
   CheckCircle2,
   XCircle,
+  Plus,
 } from "lucide-vue-next";
 import { useApi } from "~/composables/useApi";
 import { useToast } from "~/composables/useToast";
@@ -339,6 +409,13 @@ const monitoringStats = ref<any | null>(null);
 const lastSyncedAt = ref<string | null>(null);
 const loadError = ref<string | null>(null);
 let refreshTimer: any = null;
+
+// Create Modal State
+const showCreateModal = ref(false);
+const creatingSession = ref(false);
+const newSessionForm = ref({ missionId: "", teamId: "" });
+const allTeams = ref<any[]>([]);
+const allMissions = ref<any[]>([]);
 
 onMounted(async () => {
   await fetchSessions();
@@ -495,6 +572,45 @@ async function expireSession(id: string) {
     }
   } catch (err: any) {
     toast.error("Gagal Expire Sesi", err?.data?.error?.message || err.message || "Terjadi kesalahan.");
+  }
+}
+
+async function fetchDropdownData() {
+  if (allTeams.value.length === 0) {
+    const res = await api.get('/teams?pageSize=200');
+    if (res?.success) allTeams.value = res.data || [];
+  }
+  if (allMissions.value.length === 0) {
+    const res = await api.get('/missions?pageSize=100');
+    if (res?.success) allMissions.value = res.data || [];
+  }
+}
+
+async function openCreateModal() {
+  showCreateModal.value = true;
+  await fetchDropdownData();
+}
+
+async function submitCreateSession() {
+  if (!newSessionForm.value.missionId || !newSessionForm.value.teamId) {
+    return alert("Pilih Tim dan Pos Misi terlebih dahulu!");
+  }
+  creatingSession.value = true;
+  try {
+    const res = await api.post('/game-sessions/create', {
+      missionId: newSessionForm.value.missionId,
+      teamId: newSessionForm.value.teamId,
+      allowReplay: false
+    });
+    if (res?.success) {
+       showCreateModal.value = false;
+       newSessionForm.value = { missionId: '', teamId: '' };
+       await fetchSessions(true);
+    }
+  } catch (err: any) {
+    alert("Gagal membuat sesi: " + (err?.data?.error?.message || err.message));
+  } finally {
+    creatingSession.value = false;
   }
 }
 </script>

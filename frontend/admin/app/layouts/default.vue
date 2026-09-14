@@ -65,4 +65,10 @@ const { isBuddy } = useAuth();
 const isBuddyView = computed(() => {
   return isBuddy.value || route.path.startsWith("/buddy");
 });
+
+useHead(() => ({
+  title: isBuddyView.value
+    ? "GENIUS 2026 — Buddy Portal"
+    : "GENIUS 2026 — Admin Control Center",
+}));
 </script>

@@ -83,80 +83,88 @@ const handleNextStatement = () => {
         </div>
       </div>
 
-      <PixelBadge variant="emerald" size="sm">
-        Pernyataan {{ currentIndex + 1 }}/{{ statements.length }}
-      </PixelBadge>
+      <div class="flex items-center gap-1.5">
+        <PixelBadge variant="emerald" size="sm">
+          {{ totalScore }} Pts
+        </PixelBadge>
+        <PixelBadge variant="gold" size="sm">
+          Pernyataan {{ currentIndex + 1 }}/{{ statements.length }}
+        </PixelBadge>
+      </div>
     </div>
 
-    <!-- Statement Card -->
-    <div class="sdv-card-elevated p-3 sm:p-4 space-y-2 flex-1 flex flex-col justify-center text-center">
-      <div class="flex items-center justify-between border-b border-[#5a3a18] pb-1">
-        <span class="font-pixel text-[8px] text-[#7ec850] uppercase tracking-wider">
-          PERNYATAAN #{{ currentIndex + 1 }}
-        </span>
-        <span class="font-pixel text-[8px] text-[#f0d060]">
-          PILIH BENAR / SALAH
-        </span>
-      </div>
-
-      <div class="bg-[#170f07] p-3 sm:p-4 border border-[#5a3a18] rounded-xl shadow-inner my-auto">
-        <p class="font-sans text-xs sm:text-sm font-semibold text-white leading-relaxed text-justify break-words">
-          &ldquo;{{ currentStatement?.statement || 'Memuat butir pernyataan...' }}&rdquo;
-        </p>
-      </div>
-
-      <!-- Dual Action Buttons -->
-      <div v-if="!isRoundSubmitted" class="grid grid-cols-2 gap-2 pt-1">
-        <!-- BENAR Button -->
-        <button
-          type="button"
-          @click="handleAnswer(true)"
-          class="py-3 px-4 rounded-xl border-2 border-[#7ec850] bg-gradient-to-b from-[#3d7828] to-[#255018] text-white font-pixel text-xs sm:text-sm font-bold shadow-[0_3px_#122808] hover:translate-y-[-1px] active:translate-y-[1px] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-        >
-          <PhCheck :size="18" weight="bold" class="text-[#f0d060]" />
-          <span>BENAR</span>
-        </button>
-
-        <!-- SALAH Button -->
-        <button
-          type="button"
-          @click="handleAnswer(false)"
-          class="py-3 px-4 rounded-xl border-2 border-[#d44040] bg-gradient-to-b from-[#8b3a2b] to-[#5a1e14] text-white font-pixel text-xs sm:text-sm font-bold shadow-[0_3px_#2d0a06] hover:translate-y-[-1px] active:translate-y-[1px] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-        >
-          <PhX :size="18" weight="bold" class="text-white" />
-          <span>SALAH</span>
-        </button>
-      </div>
-
-      <!-- Feedback Card -->
-      <div
-        v-else
-        :class="[
-          'p-2.5 rounded-xl border text-left space-y-1 animate-in fade-in',
-          isUserCorrect
-            ? 'bg-[#14230f] border-[#7ec850] text-[#e0f0d0]'
-            : 'bg-[#2d1210] border-[#d44040] text-[#ffd0d0]'
-        ]"
-      >
-        <div class="flex items-center gap-1.5 font-pixel text-[10px] font-bold">
-          <template v-if="isUserCorrect">
-            <PhCheckCircle :size="14" weight="fill" class="text-[#7ec850]" />
-            <span class="text-[#7ec850]">
-              PILIHAN TEPAT! (Kunci: {{ currentStatement.isCorrect ? 'BENAR' : 'SALAH' }})
-            </span>
-          </template>
-          <template v-else>
-            <PhXCircle :size="14" weight="fill" class="text-[#ff8080]" />
-            <span class="text-[#ff8080]">
-              Kurang Tepat (Kunci: {{ currentStatement.isCorrect ? 'BENAR' : 'SALAH' }})
-            </span>
-          </template>
+    <!-- Statement Card with Transition -->
+    <Transition name="slide-fade" mode="out-in">
+      <div :key="currentStatement.statement" class="sdv-card-elevated p-3 sm:p-4 space-y-2 flex-1 flex flex-col justify-center text-center">
+        <div class="flex items-center justify-between border-b border-[#5a3a18] pb-1">
+          <span class="font-pixel text-[8px] text-[#7ec850] uppercase tracking-wider drop-shadow-md">
+            PERNYATAAN #{{ currentIndex + 1 }}
+          </span>
+          <span class="font-pixel text-[8px] text-[#f0d060]">
+            PILIH BENAR / SALAH
+          </span>
         </div>
-        <p class="font-sans text-[10px] sm:text-[11px] leading-relaxed text-justify break-words">
-          {{ currentStatement.explanation }}
-        </p>
+
+        <div class="bg-[#170f07] p-3 sm:p-4 border-2 border-[#5a3a18] rounded-xl shadow-inner my-auto relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-transparent pointer-events-none"></div>
+          <p class="font-sans text-xs sm:text-sm font-semibold text-white leading-relaxed text-justify break-words drop-shadow-md relative z-10">
+            &ldquo;{{ currentStatement?.statement || 'Memuat butir pernyataan...' }}&rdquo;
+          </p>
+        </div>
+
+        <!-- Dual Action Buttons -->
+        <div v-if="!isRoundSubmitted" class="grid grid-cols-2 gap-3 pt-2">
+          <!-- BENAR Button -->
+          <button
+            type="button"
+            @click="handleAnswer(true)"
+            class="btn-pushable py-3.5 px-4 rounded-xl border-2 border-[#7ec850] bg-gradient-to-b from-[#3d7828] to-[#255018] text-white font-pixel text-xs sm:text-sm font-bold shadow-[0_6px_0_#122808,0_10px_20px_rgba(61,120,40,0.4)] hover:brightness-110 flex items-center justify-center gap-1.5 cursor-pointer focus:outline-none"
+          >
+            <PhCheck :size="18" weight="bold" class="text-[#f0d060] drop-shadow-md" />
+            <span class="drop-shadow-md">BENAR</span>
+          </button>
+
+          <!-- SALAH Button -->
+          <button
+            type="button"
+            @click="handleAnswer(false)"
+            class="btn-pushable py-3.5 px-4 rounded-xl border-2 border-[#d44040] bg-gradient-to-b from-[#8b3a2b] to-[#5a1e14] text-white font-pixel text-xs sm:text-sm font-bold shadow-[0_6px_0_#2d0a06,0_10px_20px_rgba(212,64,64,0.4)] hover:brightness-110 flex items-center justify-center gap-1.5 cursor-pointer focus:outline-none"
+          >
+            <PhX :size="18" weight="bold" class="text-white drop-shadow-md" />
+            <span class="drop-shadow-md">SALAH</span>
+          </button>
+        </div>
+
+        <!-- Feedback Card -->
+        <div
+          v-else
+          :class="[
+            'p-3 rounded-xl border-2 text-left space-y-1.5 animate-pop shadow-lg',
+            isUserCorrect
+              ? 'bg-gradient-to-b from-[#1f3a2b] to-[#142318] border-[#7ec850] text-[#e0f0d0] shadow-[0_0_15px_rgba(126,200,80,0.3)]'
+              : 'bg-gradient-to-b from-[#3a1814] to-[#2d1210] border-[#d44040] text-[#ffd0d0] shadow-[0_0_15px_rgba(212,64,64,0.3)] animate-shake'
+          ]"
+        >
+          <div class="flex items-center gap-1.5 font-pixel text-[10px] font-bold">
+            <template v-if="isUserCorrect">
+              <PhCheckCircle :size="16" weight="fill" class="text-[#7ec850] drop-shadow-md" />
+              <span class="text-[#7ec850] drop-shadow-md">
+                PILIHAN TEPAT! (+{{ currentStatement.score ?? 20 }} Pts - Kunci: {{ currentStatement.isCorrect ? 'BENAR' : 'SALAH' }})
+              </span>
+            </template>
+            <template v-else>
+              <PhXCircle :size="16" weight="fill" class="text-[#ff8080] drop-shadow-md" />
+              <span class="text-[#ff8080] drop-shadow-md">
+                Kurang Tepat (Kunci: {{ currentStatement.isCorrect ? 'BENAR' : 'SALAH' }})
+              </span>
+            </template>
+          </div>
+          <p class="font-sans text-[11px] sm:text-xs leading-relaxed text-justify break-words mt-1 drop-shadow-sm opacity-90">
+            {{ currentStatement.explanation }}
+          </p>
+        </div>
       </div>
-    </div>
+    </Transition>
 
     <!-- Footer Navigation -->
     <div class="border-t border-[#5a3a18] pt-1.5 flex items-center justify-between gap-2 shrink-0">
