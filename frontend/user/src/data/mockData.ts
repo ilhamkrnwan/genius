@@ -1233,16 +1233,20 @@ export const UNU_FACULTIES = [
 ];
 
 export const GENIUS_GROUPS = [
-  { id: 'group-01', name: 'Genius 01' },
-  { id: 'group-02', name: 'Genius 02' },
-  { id: 'group-03', name: 'Genius 03' },
-  { id: 'group-04', name: 'Genius 04' },
-  { id: 'group-05', name: 'Genius 05' },
-  { id: 'group-06', name: 'Genius 06' },
-  { id: 'group-07', name: 'Genius 07' },
-  { id: 'group-08', name: 'Genius 08' },
-  { id: 'group-09', name: 'Genius 09' },
-  { id: 'group-10', name: 'Genius 10' },
+  { id: 'group-01', name: 'Jabu' },
+  { id: 'group-02', name: 'Bolon' },
+  { id: 'group-03', name: 'Gadang' },
+  { id: 'group-04', name: 'Limas' },
+  { id: 'group-05', name: 'Lontik' },
+  { id: 'group-06', name: 'Kajang' }, { id: 'group-07', name: 'Bubung' }, { id: 'group-08', name: 'Panggung' }, { id: 'group-09', name: 'Nuwo' }, { id: 'group-10', name: 'Baduy' },
+  { id: 'group-11', name: 'Gudang' }, { id: 'group-12', name: 'Bapang' }, { id: 'group-13', name: 'Joglo' }, { id: 'group-14', name: 'Kampung' }, { id: 'group-15', name: 'Panggang' },
+  { id: 'group-16', name: 'Jompongan' }, { id: 'group-17', name: 'Jolopong' }, { id: 'group-18', name: 'Julang' }, { id: 'group-19', name: 'Tagog' }, { id: 'group-20', name: 'Badak' },
+  { id: 'group-21', name: 'Capit' }, { id: 'group-22', name: 'Jubleg' }, { id: 'group-23', name: 'Tikel' }, { id: 'group-24', name: 'Baresan' }, { id: 'group-25', name: 'Crocogan' },
+  { id: 'group-26', name: 'Tengger' }, { id: 'group-27', name: 'Bale' }, { id: 'group-28', name: 'Lumbung' }, { id: 'group-29', name: 'Uma' }, { id: 'group-30', name: 'Omo' },
+  { id: 'group-31', name: 'Sebua' }, { id: 'group-32', name: 'Hada' }, { id: 'group-33', name: 'Betang' }, { id: 'group-34', name: 'Lamin' }, { id: 'group-35', name: 'Baloy' },
+  { id: 'group-36', name: 'Banjar' }, { id: 'group-37', name: 'Tambi' }, { id: 'group-38', name: 'Laika' }, { id: 'group-39', name: 'Boyang' }, { id: 'group-40', name: 'Buton' },
+  { id: 'group-41', name: 'Lego' }, { id: 'group-42', name: 'Lopo' }, { id: 'group-43', name: 'Mbaru' }, { id: 'group-44', name: 'Sao' }, { id: 'group-45', name: 'Musalaki' },
+  { id: 'group-46', name: 'Uma' }, { id: 'group-47', name: 'Honai' }, { id: 'group-48', name: 'Lopo' }, { id: 'group-49', name: 'Baileo' }, { id: 'group-50', name: 'Sasadu' },
 ];
 
 export const INITIAL_PARTICIPANT: Participant = {

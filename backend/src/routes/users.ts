@@ -239,6 +239,24 @@ export const userRoutes = new Elysia({
       .from(attendances)
       .where(eq(attendances.participantId, user.id));
 
+    // Fetch assigned buddy for this participant's team
+    let buddyInfo: { id: string; fullName: string; username: string } | null = null;
+    if (user.teamId) {
+      const [b] = await db
+        .select({
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+        })
+        .from(teamMembers)
+        .innerJoin(users, eq(teamMembers.userId, users.id))
+        .where(and(eq(teamMembers.teamId, user.teamId), eq(users.role, "BUDDY")))
+        .limit(1);
+      if (b) {
+        buddyInfo = b;
+      }
+    }
+
     return {
       success: true,
       data: {
@@ -250,6 +268,8 @@ export const userRoutes = new Elysia({
         bonusAwardsGiven,
         assignedSquadMembers,
         attendances: userAttendances,
+        buddy: buddyInfo,
+        buddyName: buddyInfo?.fullName || null,
       },
     };
   })

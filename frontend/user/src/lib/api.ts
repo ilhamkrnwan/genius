@@ -327,7 +327,10 @@ export const api = {
       teamId?: string;
       teamName?: string;
       teamCode?: string;
+      buddyName?: string;
+      buddy?: any;
       scoreHistory?: any[];
+      attendances?: any[];
     }>(`/users/${encodeURIComponent(idOrNim)}`);
   },
 
