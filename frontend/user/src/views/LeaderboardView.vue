@@ -649,7 +649,7 @@ const currentUserRankInfo = computed(() => {
           </RouterLink>
           <span>•</span>
           <RouterLink
-            to="/paspor"
+            to="/profile"
             @click="() => safeSound(() => soundEngine.playClick?.())"
             class="hover:text-[#facc15] flex items-center gap-1 transition-colors"
           >
@@ -658,12 +658,12 @@ const currentUserRankInfo = computed(() => {
           </RouterLink>
           <span>•</span>
           <RouterLink
-            to="/profile"
+            to="/team"
             @click="() => safeSound(() => soundEngine.playClick?.())"
-            class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
+            class="hover:text-[#38bdf8] flex items-center gap-1 transition-colors"
           >
             <PhUser :size="12" />
-            <span>KTM & AKUN</span>
+            <span>REGU</span>
           </RouterLink>
         </div>
       </footer>

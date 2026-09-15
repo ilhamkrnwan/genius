@@ -535,10 +535,10 @@ function openEditProfile() {
                 <span class="text-[7.5px] text-[#94a3b8] block mt-0.5 font-sans">Stan UKM</span>
               </button>
 
-              <!-- 4. Profil Digital -->
+              <!-- 4. Profil Digital & Stempel -->
               <button
                 type="button"
-                @click="navigateTo('/paspor')"
+                @click="navigateTo('/profile')"
                 class="p-2 sm:p-2.5 rounded-xl bg-[#23170e] hover:bg-[#322013] border border-[#5a3a18] hover:border-[#facc15] transition-all flex flex-col items-center justify-center text-center group cursor-pointer shadow active:scale-95"
               >
                 <PhIdentificationBadge :size="22" weight="bold" class="text-[#facc15] group-hover:scale-110 transition-transform mb-1" />

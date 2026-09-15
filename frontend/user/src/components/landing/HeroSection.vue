@@ -611,7 +611,7 @@ onUnmounted(() => {
 
         <!-- 4. Profil Digital Box -->
         <RouterLink
-          to="/paspor"
+          to="/profile"
           @click="() => gameStore.soundEnabled && soundEngine.playClick()"
           class="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-[#22160d] border border-[#5c3e23] hover:border-[#facc15] hover:bg-[#322013] transition-all flex items-center justify-center shrink-0 group cursor-pointer shadow-sm active:scale-95"
           title="Profil Petualang & Stempel Corner"

@@ -47,7 +47,7 @@ const navLinks = [
   { href: '/', label: 'Beranda', icon: PhHouse },
   { href: '/play', label: 'Main', icon: PhGameController },
   { href: '/team', label: 'Regu', icon: PhUsersThree },
-  { href: '/paspor', label: 'Profil', icon: PhIdentificationBadge },
+  { href: '/profile', label: 'Profil', icon: PhIdentificationBadge },
   { href: '/presensi', label: 'Presensi', icon: PhCalendarCheck },
   { href: '/ormawa', label: 'Ormawa', icon: PhStorefront },
   { href: '/leaderboard', label: 'Peringkat', icon: PhTrophy },
@@ -75,11 +75,14 @@ const isLinkActive = (href: string) => {
       route.path.startsWith('/kelompok')
     );
   }
-  if (href === '/paspor') {
+  if (href === '/profile') {
     return (
+      route.path.startsWith('/profile') ||
+      route.path.startsWith('/profil') ||
       route.path.startsWith('/paspor') ||
       route.path.startsWith('/passport') ||
-      route.path.startsWith('/stamps')
+      route.path.startsWith('/stamps') ||
+      route.path.startsWith('/ktm')
     );
   }
   if (href === '/presensi') {
@@ -202,14 +205,6 @@ const isLinkActive = (href: string) => {
           </span>
         </div>
 
-        <!-- Total XP Badge (XL Screens) -->
-        <div
-          class="hidden xl:flex items-center gap-1 bg-[#24170d] px-2 py-1 rounded-lg border border-[#8b6f4e] text-[10px] font-pixel text-[#facc15] font-bold shadow-sm"
-        >
-          <PhSparkle :size="12" weight="fill" />
-          <span>+{{ currentXp }} XP</span>
-        </div>
-
         <!-- Audio Toggle Button -->
         <button
           type="button"
@@ -327,7 +322,6 @@ const isLinkActive = (href: string) => {
         <div class="pt-2.5 border-t border-[#3d2b1e] flex items-center justify-between text-[10px] font-pixel text-[#a08060]">
           <span class="text-[#f0d060]">✦ {{ completedFloors }}/6 Lantai</span>
           <span class="text-[#86efac]">✦ {{ totalStamps }}/9 Stempel</span>
-          <span class="text-[#facc15]">✦ {{ currentXp }} XP</span>
         </div>
       </div>
     </div>

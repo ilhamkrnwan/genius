@@ -23,7 +23,7 @@ const navigationLinks = [
   { label: 'Dashboard Petualang', to: '/dashboard' },
   { label: 'Peta Interaktif', to: '/peta' },
   { label: 'Ormawa Expo', to: '/ormawa' },
-  { label: 'Profil & Stempel', to: '/paspor' },
+  { label: 'Profil & Stempel', to: '/profile' },
   { label: 'Papan Peringkat', to: '/leaderboard' },
   { label: 'Presensi Harian', to: '/presensi' },
   { label: 'Pusat Bantuan', to: '/bantuan' },

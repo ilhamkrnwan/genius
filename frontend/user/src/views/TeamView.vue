@@ -522,11 +522,11 @@ onMounted(() => {
           <span>•</span>
           <button
             type="button"
-            @click="() => { if (gameStore.soundEnabled) soundEngine.playClick(); router.push('/paspor'); }"
+            @click="() => { if (gameStore.soundEnabled) soundEngine.playClick(); router.push('/profile'); }"
             class="hover:text-[#facc15] flex items-center gap-1 transition-colors cursor-pointer"
           >
             <PhIdentificationBadge :size="12" />
-            <span>PASPOR</span>
+            <span>PROFIL</span>
           </button>
           <span>•</span>
           <button

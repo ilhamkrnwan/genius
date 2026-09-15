@@ -7,7 +7,6 @@ import FloorIntroView from '@/views/FloorIntroView.vue';
 import LinearSpotView from '@/views/LinearSpotView.vue';
 import FloorCompleteView from '@/views/FloorCompleteView.vue';
 import BoothDetailView from '@/views/BoothDetailView.vue';
-import PasporView from '@/views/PasporView.vue';
 import LeaderboardView from '@/views/LeaderboardView.vue';
 import BantuanView from '@/views/BantuanView.vue';
 import AttendanceView from '@/views/AttendanceView.vue';
@@ -72,12 +71,6 @@ const routes: Array<RouteRecordRaw> = [
     component: BoothDetailView,
   },
   {
-    path: '/paspor',
-    name: 'paspor',
-    alias: ['/passport', '/passpor', '/stamps', '/stempel'],
-    component: PasporView,
-  },
-  {
     path: '/leaderboard',
     name: 'leaderboard',
     component: LeaderboardView,
@@ -103,7 +96,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/profile',
     name: 'profile',
-    alias: ['/profil', '/ktm'],
+    alias: ['/profil', '/paspor', '/passport', '/passpor', '/stamps', '/stempel', '/ktm'],
     component: ProfileView,
   },
   {

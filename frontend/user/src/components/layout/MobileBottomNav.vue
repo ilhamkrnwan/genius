@@ -27,7 +27,7 @@ const bottomNavLinks = [
   { href: '/', label: 'Beranda', icon: PhHouse },
   { href: '/play', label: 'Main', icon: PhGameController },
   { href: '/team', label: 'Regu', icon: PhUsersThree },
-  { href: '/paspor', label: 'Profil', icon: PhIdentificationBadge },
+  { href: '/profile', label: 'Profil', icon: PhIdentificationBadge },
 ];
 
 const handleLinkClick = () => {
@@ -44,7 +44,7 @@ const isLinkActive = (href: string) => {
   if (href === '/') return route.path === '/';
   if (href === '/play') return route.path.startsWith('/play') || route.path.startsWith('/dashboard') || route.path.startsWith('/booth') || route.path.startsWith('/floor');
   if (href === '/team') return route.path.startsWith('/team') || route.path.startsWith('/regu') || route.path.startsWith('/kelompok');
-  if (href === '/paspor') return route.path.startsWith('/paspor') || route.path.startsWith('/passport') || route.path.startsWith('/passpor');
+  if (href === '/profile') return route.path.startsWith('/profile') || route.path.startsWith('/profil') || route.path.startsWith('/paspor') || route.path.startsWith('/passport') || route.path.startsWith('/stamps') || route.path.startsWith('/ktm');
   return false;
 };
 </script>

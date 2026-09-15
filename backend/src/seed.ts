@@ -809,7 +809,37 @@ async function seed() {
     },
   ];
 
+  const ormawaPassword = await hashPassword("ormawa2026");
+
   for (const ob of officialOrmawa) {
+    const picUsername = `pic_${ob.code.toLowerCase().replace('ormawa-', '').replace(/[^a-z0-9]/g, '_')}`;
+
+    let [picUser] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, picUsername))
+      .limit(1);
+
+    if (!picUser) {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          username: picUsername,
+          passwordHash: ormawaPassword,
+          fullName: `PIC ${ob.name}`,
+          role: "ORMAWA_PIC",
+          status: "ACTIVE",
+          characterTitle: "Penjaga Stan Ormawa",
+        })
+        .returning();
+      picUser = newUser;
+    }
+
+    const boothData = {
+      ...ob,
+      picUserId: picUser.id,
+    };
+
     const [existing] = await db
       .select()
       .from(ormawaBooths)
@@ -817,12 +847,12 @@ async function seed() {
       .limit(1);
 
     if (!existing) {
-      await db.insert(ormawaBooths).values(ob);
+      await db.insert(ormawaBooths).values(boothData);
     } else {
-      await db.update(ormawaBooths).set(ob).where(eq(ormawaBooths.id, existing.id));
+      await db.update(ormawaBooths).set(boothData).where(eq(ormawaBooths.id, existing.id));
     }
   }
-  console.log(`  ✅ ${officialOrmawa.length} Official Ormawa Booths seeded (Lantai 3, 4, 5)`);
+  console.log(`  ✅ ${officialOrmawa.length} Official Ormawa Booths & PIC accounts seeded (Lantai 3, 4, 5)`);
 
   // ============================================================
   // 9. SEED OFFICIAL QUIZ DATABASE (9 Pos dari quiz_database.csv)

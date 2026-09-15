@@ -421,7 +421,7 @@ const filteredGuides = computed(() => {
         </RouterLink>
         <span>•</span>
         <RouterLink
-          to="/paspor"
+          to="/profile"
           @click="() => safeSound(() => soundEngine.playClick?.())"
           class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
         >
