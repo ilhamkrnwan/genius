@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import {
   PhSparkle,
   PhCheckCircle,
@@ -13,6 +13,7 @@ import { TebakPosisiContent } from '@/types/game';
 import { soundEngine } from '@/lib/sound';
 import { useGameStore } from '@/store/gameStore';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
+import { shuffleQuestions } from '@/lib/shuffle-questions';
 
 interface Props {
   content?: TebakPosisiContent;
@@ -29,6 +30,7 @@ const emit = defineEmits<{
 
 const gameStore = useGameStore();
 const items = computed(() => props.content?.items || []);
+const shuffledItems = ref(shuffleQuestions(items.value));
 
 const currentIndex = ref<number>(0);
 const selectedOptionIndex = ref<number | null>(null);
@@ -36,9 +38,14 @@ const isRoundSubmitted = ref<boolean>(false);
 const totalScore = ref<number>(0);
 
 const currentItem = computed(() => items.value[currentIndex.value]);
+const activeItem = computed(() => shuffledItems.value[currentIndex.value]);
+
+watch(items, (value) => {
+  shuffledItems.value = shuffleQuestions(value);
+}, { immediate: true });
 
 const isSelectedCorrect = computed(() => {
-  return currentItem.value && selectedOptionIndex.value === currentItem.value.correctOptionIndex;
+  return activeItem.value && selectedOptionIndex.value === activeItem.value.correctOptionIndex;
 });
 
 function extractGdriveEmbed(input?: string): string | null {
@@ -69,7 +76,7 @@ const handleSelectOption = (idx: number) => {
 const handleCheckAnswer = () => {
   if (selectedOptionIndex.value === null || !currentItem.value) return;
 
-  const isCorrect = selectedOptionIndex.value === currentItem.value.correctOptionIndex;
+  const isCorrect = selectedOptionIndex.value === activeItem.value.correctOptionIndex;
   isRoundSubmitted.value = true;
 
   if (isCorrect) {
@@ -149,7 +156,7 @@ const handleNextRound = () => {
     <!-- Multiple Choice Options (2x2 grid) -->
     <div class="grid grid-cols-2 gap-1.5 flex-1 overflow-y-auto py-0.5">
       <button
-        v-for="(option, optIdx) in currentItem.options"
+        v-for="(option, optIdx) in activeItem.options"
         :key="optIdx"
         type="button"
         @click="handleSelectOption(optIdx)"
@@ -157,7 +164,7 @@ const handleNextRound = () => {
         :class="[
           'p-2 sm:p-2.5 rounded-lg border text-left transition-all flex items-center gap-1.5 cursor-pointer',
           isRoundSubmitted
-            ? optIdx === currentItem.correctOptionIndex
+            ? optIdx === activeItem.correctOptionIndex
               ? 'bg-[#1f3a2b] border-[#7ec850] text-[#e0f0d0] shadow-md font-medium'
               : selectedOptionIndex === optIdx && !isSelectedCorrect
               ? 'bg-[#3a1814] border-[#d44040] text-[#ffd0d0] shadow-md'
@@ -174,7 +181,7 @@ const handleNextRound = () => {
           {{ option }}
         </span>
         <PhCheckCircle
-          v-if="isRoundSubmitted && optIdx === currentItem.correctOptionIndex"
+          v-if="isRoundSubmitted && optIdx === activeItem.correctOptionIndex"
           :size="16"
           weight="fill"
           class="text-[#7ec850] shrink-0"
