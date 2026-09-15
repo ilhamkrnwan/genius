@@ -1247,11 +1247,6 @@ export const GENIUS_GROUPS = [
   { id: 'group-36', name: 'Banjar' }, { id: 'group-37', name: 'Tambi' }, { id: 'group-38', name: 'Laika' }, { id: 'group-39', name: 'Boyang' }, { id: 'group-40', name: 'Buton' },
   { id: 'group-41', name: 'Lego' }, { id: 'group-42', name: 'Lopo' }, { id: 'group-43', name: 'Mbaru' }, { id: 'group-44', name: 'Sao' }, { id: 'group-45', name: 'Musalaki' },
   { id: 'group-46', name: 'Uma' }, { id: 'group-47', name: 'Honai' }, { id: 'group-48', name: 'Lopo' }, { id: 'group-49', name: 'Baileo' }, { id: 'group-50', name: 'Sasadu' },
-  { id: 'group-06', name: 'Genius 06' },
-  { id: 'group-07', name: 'Genius 07' },
-  { id: 'group-08', name: 'Genius 08' },
-  { id: 'group-09', name: 'Genius 09' },
-  { id: 'group-10', name: 'Genius 10' },
 ];
 
 export const INITIAL_PARTICIPANT: Participant = {
