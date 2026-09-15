@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import {
   PhCheck,
   PhArrowCounterClockwise,
@@ -43,11 +43,43 @@ const isRoundSubmitted = ref<boolean>(false);
 const isRoundCorrect = ref<boolean>(false);
 const totalScore = ref<number>(0);
 const showHint = ref<boolean>(false);
+const shuffledLetters = ref<{ char: string; sourceIndex: number }[]>([]);
 
 const currentItem = computed(() => items.value[currentIndex.value]);
 const cleanTargetWord = computed(() => (currentItem.value?.targetWord || '').replace(/\s+/g, '').toUpperCase());
 const targetLength = computed(() => cleanTargetWord.value.length);
 const currentWordAttempt = computed(() => selectedLetters.value.map((l) => l.char).join(''));
+
+const shuffleCurrentLetters = () => {
+  shuffledLetters.value = currentItem.value?.scrambledLetters.map((char, sourceIndex) => ({
+    char,
+    sourceIndex,
+  })) || [];
+
+  for (let index = shuffledLetters.value.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [shuffledLetters.value[index], shuffledLetters.value[randomIndex]] = [
+      shuffledLetters.value[randomIndex],
+      shuffledLetters.value[index],
+    ];
+  }
+
+  if (
+    shuffledLetters.value.length > targetLength.value &&
+    shuffledLetters.value
+      .slice(0, targetLength.value)
+      .map(({ char }) => char)
+      .join('')
+      .toUpperCase() === cleanTargetWord.value
+  ) {
+    [shuffledLetters.value[0], shuffledLetters.value[targetLength.value]] = [
+      shuffledLetters.value[targetLength.value],
+      shuffledLetters.value[0],
+    ];
+  }
+};
+
+watch(currentIndex, shuffleCurrentLetters, { immediate: true });
 
 const wordGroups = computed(() => {
   if (!currentItem.value) return [];
@@ -218,10 +250,10 @@ const handleUseHint = () => {
     <div v-if="!isRoundSubmitted" class="space-y-1.5 text-center bg-[#170f07] p-2 rounded-xl border border-[#5a3a18] shrink-0">
       <div class="flex flex-wrap items-center justify-center gap-1.5">
         <button
-          v-for="(char, tileIdx) in currentItem.scrambledLetters"
-          :key="`${char}-${tileIdx}`"
+          v-for="(tile, tileIdx) in shuffledLetters"
+          :key="tile.sourceIndex"
           type="button"
-          @click="handleSelectPoolTile(char, tileIdx)"
+          @click="handleSelectPoolTile(tile.char, tileIdx)"
           :disabled="usedTileIndices.includes(tileIdx)"
           :class="[
             'w-7 h-8 sm:w-9 sm:h-10 rounded-lg border font-pixel text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center cursor-pointer',
@@ -230,7 +262,7 @@ const handleUseHint = () => {
               : 'bg-[#281c12] border-[#8b6f4e] hover:border-[#f0d060] text-[#f0e0c0] hover:text-[#f0d060] active:scale-95 shadow-sm'
           ]"
         >
-          {{ char }}
+          {{ tile.char }}
         </button>
       </div>
 
