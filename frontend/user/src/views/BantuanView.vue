@@ -82,17 +82,17 @@ const GUIDE_ITEMS: GuideItem[] = [
   {
     id: 'aturan-stempel',
     category: 'PASPOR',
-    categoryLabel: 'Stempel & Paspor',
+    categoryLabel: 'Stempel & Profil',
     icon: PhSealCheck,
     iconColor: '#facc15',
     title: 'Syarat & Perolehan Stempel Emas',
     points: [
-      'Terdapat 9 pos misi tantangan interaktif di Lantai 1 hingga Lantai 6, dengan total 9 stempel digital yang harus dikumpulkan di Paspor.',
+      'Terdapat 9 pos misi tantangan interaktif di Lantai 1 hingga Lantai 6, dengan total 9 stempel digital yang harus dikumpulkan di Profil.',
       'Batas skor minimal kelulusan adalah 70% pada setiap mini-game untuk berhak mengklaim stempel emas.',
       'Jika skor belum mencapai 70%, kamu dapat langsung mengulang tantangan di spot tersebut tanpa batas percobaan.',
-      'Setiap stempel yang diraih otomatis tercatat di Paspor Digital dan menambah akumulasi poin kelompok di papan Leaderboard.',
+      'Setiap stempel yang diraih otomatis tercatat di Profil Digital dan menambah akumulasi poin kelompok di papan Leaderboard.',
     ],
-    tip: 'Periksa menu Paspor Digital untuk memantau kelengkapan stempel dan status sertifikat kelulusanmu.',
+    tip: 'Periksa menu Profil Digital untuk memantau kelengkapan stempel dan status sertifikat kelulusanmu.',
   },
   {
     id: 'stan-ormawa',
@@ -103,8 +103,8 @@ const GUIDE_ITEMS: GuideItem[] = [
     title: 'Kunjungan Expo Ormawa di Lantai 6',
     points: [
       'Seluruh stan UKM, organisasi mahasiswa, dan komunitas kampus berpusat di Hall dan Selasar Lantai 6.',
-      'Buka halaman Ormawa Expo pada menu, lalu pilih tombol "Buka QR Paspor".',
-      'Tunjukkan kode QR Paspor Mahasiswa tersebut kepada petugas stan untuk dipindai (scan) sebagai bukti kunjungan stan.',
+      'Buka halaman Ormawa Expo pada menu, lalu pilih tombol "Buka QR Profil".',
+      'Tunjukkan kode QR Profil Mahasiswa tersebut kepada petugas stan untuk dipindai (scan) sebagai bukti kunjungan stan.',
       'Kunjungi minimal 10 stan pilihan untuk melengkapi pencapaian lencana expo ormawa.',
     ],
     tip: 'Kamu dapat membaca deskripsi kegiatan, profil, dan kontak tiap organisasi langsung di halaman Ormawa.',
@@ -426,7 +426,7 @@ const filteredGuides = computed(() => {
           class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
         >
           <PhIdentificationBadge :size="12" />
-          <span>PASPOR</span>
+          <span>PROFIL</span>
         </RouterLink>
       </div>
     </footer>

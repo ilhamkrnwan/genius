@@ -163,7 +163,7 @@ const handleNextAction = () => {
             class="flex-1 rpg-btn-primary py-2.5 sm:py-3 px-4 text-xs font-pixel font-bold flex items-center justify-center gap-2 shadow-xl cursor-pointer"
           >
             <span>
-              {{ hasNextFloor ? `Lanjut L${nextFloorNumber}` : 'Buka Paspor' }}
+              {{ hasNextFloor ? `Lanjut L${nextFloorNumber}` : 'Buka Profil' }}
             </span>
             <PhArrowRight :size="14" weight="bold" />
           </button>

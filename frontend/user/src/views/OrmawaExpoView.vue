@@ -375,7 +375,7 @@ const getCategoryLabel = (category: string) => {
         <span>{{ apiError }}</span>
       </div>
 
-      <!-- 1. STATUS CARD MAHASISWA & PASPOR EXPO (Format Sama Persis Presensi) -->
+      <!-- 1. STATUS CARD MAHASISWA & PROFIL EXPO (Format Sama Persis Presensi) -->
       <section class="bg-[#19110a]/95 backdrop-blur-md border border-[#8b6f4e] rounded-xl p-3 shadow-lg space-y-2 text-left">
         <!-- Row A: Mahasiswa Info & Total Kunjungan -->
         <div class="flex items-center justify-between gap-2.5 pb-2 border-b border-[#4a2e14]/70">
@@ -405,14 +405,14 @@ const getCategoryLabel = (category: string) => {
           </div>
         </div>
 
-        <!-- Row B: Action Strip Buka QR Paspor -->
+        <!-- Row B: Action Strip Buka QR Profil -->
         <div class="flex items-center justify-between gap-2 bg-[#120a05]/70 rounded-lg px-2.5 py-1.5 border border-[#5a3a18]/60">
           <div class="flex items-center gap-2 min-w-0 flex-1">
             <div class="w-5 h-5 rounded-md bg-[#ca8a04]/20 border border-[#facc15] flex items-center justify-center text-[#facc15] shrink-0">
               <PhQrCode :size="13" weight="bold" />
             </div>
             <div class="min-w-0 flex-1">
-              <span class="text-[7.5px] text-[#a08060] font-sans block leading-none">Paspor Digital Mahasiswa:</span>
+              <span class="text-[7.5px] text-[#a08060] font-sans block leading-none">Profil Digital Mahasiswa:</span>
               <span class="text-[10px] sm:text-[11px] font-bold text-white block leading-tight truncate mt-0.5">
                 Tunjukkan QR ke Petugas Stan
               </span>
@@ -425,7 +425,7 @@ const getCategoryLabel = (category: string) => {
             class="text-[8px] sm:text-[8.5px] font-pixel text-[#140e08] font-bold bg-[#facc15] hover:bg-white px-2.5 py-1 rounded-lg transition-all cursor-pointer active:scale-95 shadow flex items-center gap-1 shrink-0"
           >
             <PhQrCode :size="11" weight="bold" />
-            <span>BUKA QR PASPOR</span>
+            <span>BUKA QR PROFIL</span>
           </button>
         </div>
 
@@ -606,7 +606,7 @@ const getCategoryLabel = (category: string) => {
           class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
         >
           <PhIdentificationBadge :size="12" />
-          <span>PASPOR</span>
+          <span>PROFIL</span>
         </RouterLink>
       </div>
     </footer>
@@ -623,7 +623,7 @@ const getCategoryLabel = (category: string) => {
         <div class="flex items-center justify-between border-b border-[#3d2714] pb-2.5">
           <div class="flex items-center gap-1.5 text-xs font-pixel text-[#facc15]">
             <PhQrCode :size="16" weight="fill" />
-            <span>PASPOR QR MAHASISWA</span>
+            <span>QR PROFIL MAHASISWA</span>
           </div>
           <button
             type="button"
@@ -653,7 +653,7 @@ const getCategoryLabel = (category: string) => {
         </div>
 
         <p class="text-xs text-[#e6d5bc]/90 font-sans leading-relaxed">
-          Tunjukkan QR Code ini ke petugas stan Ormawa/UKM Lantai 6 untuk dipindai (scan) agar lencana dan bonus XP langsung tercatat di paspormu!
+          Tunjukkan QR Code ini ke petugas stan Ormawa/UKM Lantai 6 untuk dipindai (scan) agar lencana dan bonus XP langsung tercatat di profilmu!
         </p>
 
         <button
@@ -709,7 +709,7 @@ const getCategoryLabel = (category: string) => {
           class="flex items-center gap-2 p-2.5 bg-[#142314] border border-[#22c55e] rounded-xl text-xs font-mono text-[#86efac]"
         >
           <PhCheckCircle :size="16" weight="fill" class="text-[#4ade80] shrink-0" />
-          <span>Kamu sudah mengunjungi stan ini! Lencana sudah tercatat di paspor.</span>
+          <span>Kamu sudah mengunjungi stan ini! Lencana sudah tercatat di profil.</span>
         </div>
 
         <!-- Location -->
@@ -783,7 +783,7 @@ const getCategoryLabel = (category: string) => {
         <!-- CTA: Petunjuk Cara Mendapat Lencana & Berminat -->
         <div class="pt-2 border-t border-[#3d2714] space-y-2">
           <p class="text-[10.5px] text-[#facc15]/80 font-mono text-center">
-            Datangi stan ini di Hall Lantai 6 & tunjukkan QR Code paspormu ke petugas untuk klaim lencana!
+            Datangi stan ini di Hall Lantai 6 & tunjukkan QR Code profilmu ke petugas untuk klaim lencana!
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button

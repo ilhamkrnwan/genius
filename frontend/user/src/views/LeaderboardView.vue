@@ -661,7 +661,7 @@ const currentUserRankInfo = computed(() => {
             class="hover:text-[#facc15] flex items-center gap-1 transition-colors"
           >
             <PhIdentificationBadge :size="12" />
-            <span>PASPOR</span>
+            <span>PROFIL & STEMPEL</span>
           </RouterLink>
           <span>•</span>
           <RouterLink
@@ -670,7 +670,7 @@ const currentUserRankInfo = computed(() => {
             class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
           >
             <PhUser :size="12" />
-            <span>PROFIL</span>
+            <span>KTM & AKUN</span>
           </RouterLink>
         </div>
       </footer>

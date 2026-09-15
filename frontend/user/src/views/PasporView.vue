@@ -189,7 +189,7 @@ watch(showCertificate, (val) => {
       <div class="px-3 py-1 bg-[#1a110a]/90 backdrop-blur-md border border-[#8b6f4e] rounded-full shadow flex items-center gap-1.5 shrink-0">
         <PhIdentificationBadge :size="14" weight="fill" class="text-[#facc15]" />
         <span class="text-[10px] sm:text-xs text-[#facc15] font-bold tracking-wide uppercase">
-          PASPOR PETUALANG
+          PROFIL PETUALANG
         </span>
       </div>
 
@@ -198,7 +198,7 @@ watch(showCertificate, (val) => {
         <button
           type="button"
           @click="handlePrint"
-          title="Cetak Paspor"
+          title="Cetak Profil"
           class="p-1.5 rounded-lg bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] transition-all cursor-pointer active:scale-95 shadow"
         >
           <PhPrinter :size="13" weight="bold" />
@@ -224,7 +224,7 @@ watch(showCertificate, (val) => {
         <div class="flex items-center justify-between border-b border-[#5a3a18] pb-2.5">
           <div class="flex items-center gap-2 font-pixel text-xs text-[#f0d060]">
             <PhSparkle :size="15" weight="fill" />
-            <span>KARTU PASPOR PETUALANG</span>
+            <span>KARTU PROFIL PETUALANG</span>
           </div>
           <img
             src="/unu.png"
@@ -555,7 +555,7 @@ watch(showCertificate, (val) => {
             class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
           >
             <PhUser :size="12" />
-            <span>PROFIL</span>
+            <span>KTM & AKUN</span>
           </RouterLink>
         </div>
       </footer>
@@ -737,7 +737,7 @@ watch(showCertificate, (val) => {
           </div>
         </div>
         <p class="font-sans text-xs text-stone-300/90 leading-relaxed">
-          Apakah kamu yakin ingin mereset seluruh progres stempel dan perolehan kartu paspor? Tindakan ini permanen dan tidak dapat dibatalkan.
+          Apakah kamu yakin ingin mereset seluruh progres stempel dan perolehan kartu profil? Tindakan ini permanen dan tidak dapat dibatalkan.
         </p>
         <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-red-900/30">
           <button

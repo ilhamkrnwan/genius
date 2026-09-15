@@ -631,7 +631,7 @@ export const ormawaRoutes = new Elysia({
 
       const message = xpEarned > 0
         ? `Selamat! Kunjungan ke stan ${booth.name} berhasil. Anda memperoleh +${xpEarned} XP dan lencana stan!`
-        : `Kunjungan ke stan ${booth.name} berhasil dicatat di paspor! (Kuota XP maksimal 10 stan / 750 XP telah tercapai).`;
+        : `Kunjungan ke stan ${booth.name} berhasil dicatat di profil! (Kuota XP maksimal 10 stan / 750 XP telah tercapai).`;
 
       return {
         success: true,
@@ -655,7 +655,7 @@ export const ormawaRoutes = new Elysia({
     {
       detail: {
         summary: "Scan QR stan UKM oleh mahasiswa (+75 XP capped 10 stan)",
-        description: "Mencatat kunjungan stan ke paspor digital, memberikan reward +75 XP (maksimal 10 stan = 750 XP), dan mencegah scan ganda.",
+        description: "Mencatat kunjungan stan ke profil digital, memberikan reward +75 XP (maksimal 10 stan = 750 XP), dan mencegah scan ganda.",
       },
       body: t.Object({
         participantId: t.Optional(t.String()),
@@ -704,7 +704,7 @@ export const ormawaRoutes = new Elysia({
     },
     {
       detail: {
-        summary: "Paspor lencana stan UKM mahasiswa",
+        summary: "Profil lencana stan UKM mahasiswa",
         description: "Menampilkan koleksi lencana stan UKM yang telah dikunjungi dan total perolehan XP expo.",
       },
       params: t.Object({

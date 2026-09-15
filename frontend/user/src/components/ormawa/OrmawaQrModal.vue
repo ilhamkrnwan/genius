@@ -27,7 +27,7 @@
         </div>
 
         <h3 class="font-pixel text-[#2d1b0e] text-base font-bold tracking-wide">
-          QR PASPOR ANDA
+          QR PROFIL ANDA
         </h3>
 
         <p class="text-xs font-sans text-[#5c4033] leading-relaxed">

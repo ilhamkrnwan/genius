@@ -25,7 +25,7 @@ const showMoreMenu = ref(false);
 const bottomNavLinks = [
   { href: '/', label: 'Beranda', icon: PhHouse },
   { href: '/play', label: 'Main', icon: PhGameController },
-  { href: '/paspor', label: 'Paspor', icon: PhIdentificationBadge },
+  { href: '/paspor', label: 'Profil', icon: PhIdentificationBadge },
 ];
 
 const handleLinkClick = () => {

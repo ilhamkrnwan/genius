@@ -34,7 +34,7 @@ const navLinks = [
   { href: '/play', label: 'Main', icon: PhGameController },
   { href: '/ormawa', label: 'Ormawa', icon: PhStorefront },
   { href: '/leaderboard', label: 'Peringkat', icon: PhTrophy },
-  { href: '/paspor', label: 'Paspor', icon: PhIdentificationBadge },
+  { href: '/paspor', label: 'Profil', icon: PhIdentificationBadge },
 ];
 
 const handleLinkClick = () => {
