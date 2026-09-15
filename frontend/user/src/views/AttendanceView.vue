@@ -35,7 +35,7 @@ const rating = ref(5);
 const essayInsight = ref('');
 const isSubmitting = ref(false);
 
-// Roster Buddy Resmi per Regu
+// Roster Buddy Resmi per Regu (Fallback jika offline)
 const OFFICIAL_BUDDIES_MAP: Record<string, string> = {
   'Genius 01': 'Agnes Anggraini',
   'Genius 02': 'Agnesya Putri',
@@ -47,11 +47,22 @@ const OFFICIAL_BUDDIES_MAP: Record<string, string> = {
   'Genius 08': 'Dafa Alif Laguna',
   'Genius 09': 'Destiya Lintang',
   'Genius 10': 'Dzulfa Sindi',
+  'Genius 11': 'Fajar Nugraha',
+  'Genius 12': 'Farah Diba',
+  'Genius 13': 'Fathi Rizqy Ramadhan',
+  'Genius 14': 'Fitria Nur Azizah',
+  'Genius 15': 'Galih Prasetyo',
+  'Genius 16': 'Hani Amalia',
+  'Genius 17': 'Ilham Maulana',
+  'Genius 18': 'Indah Permatasari',
 };
 
 const buddyName = computed(() => {
-  const group = gameStore.participant.groupName || 'Genius 03';
-  return OFFICIAL_BUDDIES_MAP[group] || 'Ahmad Fadlil Munajad';
+  if (gameStore.participant.buddyName) {
+    return gameStore.participant.buddyName;
+  }
+  const group = gameStore.participant.groupName || 'Genius 01';
+  return OFFICIAL_BUDDIES_MAP[group] || 'Kakak Buddy Pendamping';
 });
 
 const avatarData = computed(() => {

@@ -289,8 +289,14 @@ export const useGameStore = defineStore('game', {
           if (res.data.id && !this.participant.id) {
             this.participant.id = res.data.id;
           }
-          if (res.data.teamId && !this.participant.teamId) {
+          if (res.data.teamId) {
             this.participant.teamId = res.data.teamId;
+          }
+          if (res.data.teamName) {
+            this.participant.groupName = res.data.teamName;
+          }
+          if (res.data.buddyName) {
+            this.participant.buddyName = res.data.buddyName;
           }
 
           // Sync completed game missions to local stamps & completedBooths

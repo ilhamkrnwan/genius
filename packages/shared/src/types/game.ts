@@ -252,6 +252,7 @@ export interface Participant {
   groupId?: string;
   groupName?: string;
   teamId?: string;
+  buddyName?: string;
   isRegistered?: boolean;
 }
 
