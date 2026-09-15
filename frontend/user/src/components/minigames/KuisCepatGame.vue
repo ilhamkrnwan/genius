@@ -13,6 +13,7 @@ import { soundEngine } from '@/lib/sound';
 import { useGameStore } from '@/store/gameStore';
 import { useGameSessionStore } from '@/store/gameSessionStore';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
+import { shuffleQuestions } from '@/lib/shuffle-questions';
 
 interface Props {
   content?: KuisCepatContent;
@@ -32,6 +33,7 @@ const emit = defineEmits<{
 const gameStore = useGameStore();
 const gameSessionStore = useGameSessionStore();
 const questions = computed(() => props.content?.questions || props.fallbackQuestions || []);
+const shuffledQuestions = ref(shuffleQuestions(questions.value));
 const timeLimit = computed(() => props.content?.timeLimitSeconds || 18);
 
 const currentIndex = ref<number>(0);
@@ -47,6 +49,11 @@ let timerInterval: any = null;
 let pollInterval: any = null;
 
 const currentQuestion = computed(() => questions.value[currentIndex.value]);
+const activeQuestion = computed(() => shuffledQuestions.value[currentIndex.value]);
+
+watch(questions, (value) => {
+  shuffledQuestions.value = shuffleQuestions(value);
+}, { immediate: true });
 
 const clearTimer = () => {
   if (timerInterval) {
@@ -108,7 +115,7 @@ const handleCheckAnswer = async () => {
   if (props.serverSessionId) {
     const answerResult = await gameSessionStore.submitAnswer({
       questionId: currentQuestion.value.id,
-      answer: selectedOptionIndex.value,
+      answer: activeQuestion.value.originalOptionIndexes[selectedOptionIndex.value],
       elapsedMs: Math.max(0, (timeLimit.value - timeLeft.value) * 1000),
     });
     if (!answerResult) {
@@ -128,7 +135,7 @@ const handleCheckAnswer = async () => {
     return;
   }
 
-  const isCorrect = selectedOptionIndex.value === currentQuestion.value.correctAnswerIndex;
+  const isCorrect = selectedOptionIndex.value === activeQuestion.value.correctAnswerIndex;
   if (isCorrect) {
     if (gameStore.soundEnabled) soundEngine.playCorrect();
     const qScore = currentQuestion.value.score ?? Math.round(100 / questions.value.length);
@@ -280,7 +287,7 @@ const timerColorClass = computed(() => {
         <!-- Multiple Choice Options -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 flex-1 overflow-y-auto py-1 px-0.5">
           <button
-            v-for="(option, optIdx) in currentQuestion.options"
+            v-for="(option, optIdx) in activeQuestion.options"
             :key="optIdx"
             type="button"
             @click="handleSelectOption(optIdx)"
@@ -294,7 +301,7 @@ const timerColorClass = computed(() => {
                       ? 'bg-gradient-to-b from-[#1f3a2b] to-[#142318] border-[#7ec850] text-[#f0ffd0] shadow-[0_4px_12px_rgba(126,200,80,0.3)] font-medium animate-pop'
                       : 'bg-gradient-to-b from-[#3a1814] to-[#2d1210] border-[#d44040] text-[#ffd0d0] shadow-[0_4px_12px_rgba(212,64,64,0.3)] animate-shake'
                     : 'bg-[#170f07] border-[#5a3a18] text-[#a08060] opacity-70'
-                  : optIdx === currentQuestion.correctAnswerIndex
+                  : optIdx === activeQuestion.correctAnswerIndex
                     ? 'bg-gradient-to-b from-[#1f3a2b] to-[#142318] border-[#7ec850] text-[#f0ffd0] shadow-[0_4px_12px_rgba(126,200,80,0.3)] font-medium animate-pop'
                     : selectedOptionIndex === optIdx && !isCurrentCorrect
                     ? 'bg-gradient-to-b from-[#3a1814] to-[#2d1210] border-[#d44040] text-[#ffd0d0] shadow-[0_4px_12px_rgba(212,64,64,0.3)] animate-shake'
@@ -311,7 +318,7 @@ const timerColorClass = computed(() => {
               {{ option }}
             </span>
             <PhCheckCircle
-              v-if="(isQuestionSubmitted || isTimeUp) && ((props.serverSessionId && selectedOptionIndex === optIdx && isCurrentCorrect) || (!props.serverSessionId && optIdx === currentQuestion.correctAnswerIndex))"
+              v-if="(isQuestionSubmitted || isTimeUp) && ((props.serverSessionId && selectedOptionIndex === optIdx && isCurrentCorrect) || (!props.serverSessionId && optIdx === activeQuestion.correctAnswerIndex))"
               :size="20"
               weight="fill"
               class="text-[#7ec850] shrink-0 drop-shadow-[0_0_4px_rgba(126,200,80,0.6)]"
