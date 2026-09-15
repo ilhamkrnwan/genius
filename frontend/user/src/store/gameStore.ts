@@ -331,10 +331,48 @@ export const useGameStore = defineStore('game', {
             this.participant.stamps = stamps;
           }
 
+          // Sync attendances from server
+          const serverAttendances = (res.data as any).attendances;
+          if (Array.isArray(serverAttendances)) {
+            for (const att of serverAttendances) {
+              const d = Number(att.day);
+              if (d && this.attendance[d]) {
+                if (att.checkInAt) this.attendance[d].checkInAt = new Date(att.checkInAt).toISOString();
+                if (att.checkInStatus) this.attendance[d].checkInStatus = att.checkInStatus;
+                if (att.checkOutAt) this.attendance[d].checkOutAt = new Date(att.checkOutAt).toISOString();
+                if (att.xpAwarded != null) this.attendance[d].xpAwarded = Number(att.xpAwarded);
+              }
+            }
+          }
+
           this.saveToStorage();
         }
       } catch (err) {
         console.warn('[gameStore] Server sync note:', err);
+      }
+    },
+
+    async syncAttendanceFromServer() {
+      const target = this.participant.id || this.participant.nim;
+      if (!target) return;
+      try {
+        const res = await api.getAttendanceStatus(target);
+        if (res.success && res.data) {
+          const daysMap = res.data.days || {};
+          for (const d of [1, 2, 3]) {
+            const rec = daysMap[d];
+            if (rec && this.attendance[d]) {
+              if (rec.checkInAt) this.attendance[d].checkInAt = new Date(rec.checkInAt).toISOString();
+              if (rec.checkInStatus) this.attendance[d].checkInStatus = rec.checkInStatus;
+              if (rec.checkOutAt) this.attendance[d].checkOutAt = new Date(rec.checkOutAt).toISOString();
+              if (rec.xpAwarded != null) this.attendance[d].xpAwarded = Number(rec.xpAwarded);
+            }
+          }
+          this.saveToStorage();
+        }
+        await this.syncWithServer();
+      } catch (err) {
+        console.warn('[gameStore] syncAttendanceFromServer note:', err);
       }
     },
 

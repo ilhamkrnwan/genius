@@ -229,6 +229,20 @@ export const api = {
     });
   },
 
+  async getAttendanceStatus(participantId: string, day?: number) {
+    const q = day ? `?day=${day}` : '';
+    return this.request<{
+      days?: Record<number, any>;
+      records?: any[];
+      hasCheckedIn?: boolean;
+      hasCheckedOut?: boolean;
+      checkInAt?: string;
+      checkOutAt?: string;
+      checkInStatus?: string;
+      xpAwarded?: number;
+    }>(`/attendance/status/${encodeURIComponent(participantId)}${q}`);
+  },
+
   async getOrmawaBooths(category?: string) {
     const query = category ? '?category=' + encodeURIComponent(category) : '';
     return this.request('/ormawa/booths' + query);

@@ -675,12 +675,12 @@ export const attendanceRoutes = new Elysia({
     }
   )
 
-  // POST /api/attendance/check-in — Mahasiswa scan QR kedatangan pagi
+  // POST /api/attendance/check-in — Mahasiswa scan QR kedatangan pagi / Buddy presensi masuk manual
   .post(
     "/check-in",
     async ({ body, user, set }) => {
       const participantId = body.participantId || user?.userId;
-      const { day, qrToken } = body;
+      const { day, qrToken, status: customStatus } = body;
 
       if (!participantId) {
         set.status = 400;
@@ -716,13 +716,18 @@ export const attendanceRoutes = new Elysia({
         if (defaultTeam) targetTeamId = defaultTeam.id;
       }
 
-      // 3. Validasi token QR gerbang
-      const upperToken = qrToken.trim().toUpperCase();
+      // 3. Validasi token QR gerbang (Panitia/Buddy bebas token atau token manual)
+      const isStaff = user && (user.role === "ADMIN" || user.role === "BUDDY");
+      const effectiveToken = qrToken?.trim() || (isStaff ? `MANUAL-BUDDY-H${day}` : "");
+      const upperToken = effectiveToken.toUpperCase();
       const isValidToken =
+        isStaff ||
         upperToken.includes("PRESENSI") ||
         upperToken.includes(`H${day}`) ||
         upperToken.startsWith("QR-PRESENSI") ||
-        upperToken.includes("GATE");
+        upperToken.includes("GATE") ||
+        upperToken.includes("BUDDY") ||
+        upperToken.includes("MANUAL");
 
       if (!isValidToken) {
         set.status = 400;
@@ -753,13 +758,19 @@ export const attendanceRoutes = new Elysia({
         };
       }
 
-      // 5. Kalkulasi status ketepatan waktu (Batas standar: 07:30 WIB)
+      // 5. Kalkulasi status ketepatan waktu (Batas standar: 07:30 WIB atau override manual oleh Buddy)
       const now = new Date();
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const isLate = hours > 7 || (hours === 7 && minutes > 30);
-      const checkInStatus = isLate ? "LATE" : "ON_TIME";
-      const xpAwarded = 100;
+      let checkInStatus: "ON_TIME" | "LATE" = "ON_TIME";
+      if (customStatus === "LATE" || customStatus === "ON_TIME") {
+        checkInStatus = customStatus;
+      } else {
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const isLate = hours > 7 || (hours === 7 && minutes > 30);
+        checkInStatus = isLate ? "LATE" : "ON_TIME";
+      }
+
+      const xpAwarded = checkInStatus === "LATE" ? 50 : 100;
       const dateStr = now.toISOString().split("T")[0];
 
       // 6. Simpan atau perbarui record attendances
@@ -770,7 +781,7 @@ export const attendanceRoutes = new Elysia({
           .set({
             checkInAt: now,
             checkInStatus,
-            checkInQrToken: qrToken,
+            checkInQrToken: effectiveToken,
             xpAwarded: (existing.xpAwarded || 0) + xpAwarded,
           })
           .where(eq(attendances.id, existing.id))
@@ -784,13 +795,13 @@ export const attendanceRoutes = new Elysia({
             date: dateStr,
             checkInAt: now,
             checkInStatus,
-            checkInQrToken: qrToken,
+            checkInQrToken: effectiveToken,
             xpAwarded,
           })
           .returning();
       }
 
-      // 7. Catat transaksi skor +100 XP ke ledger jika memiliki tim valid
+      // 7. Catat transaksi skor XP ke ledger
       if (targetTeamId) {
         await db.insert(scoreTransactions).values({
           participantId,
@@ -802,7 +813,14 @@ export const attendanceRoutes = new Elysia({
         });
       }
 
-      // 8. Broadcast pembaruan live skor ke WebSocket
+      // 8. Hitung total XP akumulatif peserta terkini
+      const [totalRow] = await db
+        .select({ total: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)` })
+        .from(scoreTransactions)
+        .where(eq(scoreTransactions.participantId, participantId));
+      const currentTotalXp = Number(totalRow?.total || 0);
+
+      // 9. Broadcast pembaruan live skor ke WebSocket
       broadcastLeaderboardUpdate({
         type: "ATTENDANCE_CHECK_IN",
         participantId,
@@ -822,8 +840,13 @@ export const attendanceRoutes = new Elysia({
 
       return {
         success: true,
-        message: `Presensi masuk Hari ${day} berhasil! Anda memperoleh +${xpAwarded} XP (${checkInStatus}).`,
-        data: attendanceRecord,
+        message: `Presensi masuk Hari ${day} berhasil! Anda memperoleh +${xpAwarded} XP (${checkInStatus === "ON_TIME" ? "Tepat Waktu" : "Terlambat"}).`,
+        data: {
+          ...attendanceRecord,
+          totalXp: currentTotalXp,
+          xpAwarded,
+          checkInStatus,
+        },
       };
     },
     {
@@ -834,12 +857,13 @@ export const attendanceRoutes = new Elysia({
       body: t.Object({
         participantId: t.Optional(t.String()),
         day: t.Number({ minimum: 1, maximum: 3 }),
-        qrToken: t.String({ minLength: 3 }),
+        qrToken: t.Optional(t.String()),
+        status: t.Optional(t.String()),
       }),
     }
   )
 
-  // POST /api/attendance/check-out — Mahasiswa scan QR kepulangan sore
+  // POST /api/attendance/check-out — Mahasiswa scan QR kepulangan sore / Buddy presensi pulang manual
   .post(
     "/check-out",
     async ({ body, user, set }) => {
@@ -851,20 +875,91 @@ export const attendanceRoutes = new Elysia({
         return { success: false, error: { code: "MISSING_PARTICIPANT", message: "ID Peserta wajib disertakan" } };
       }
 
-      // 1. Cek riwayat presensi masuk
-      const [existing] = await db
+      // 1. Verifikasi eksistensi pengguna
+      const [participant] = await db
+        .select({
+          id: users.id,
+          fullName: users.fullName,
+          role: users.role,
+        })
+        .from(users)
+        .where(eq(users.id, participantId))
+        .limit(1);
+
+      if (!participant) {
+        set.status = 404;
+        return { success: false, error: { code: "USER_NOT_FOUND", message: "Data mahasiswa tidak ditemukan" } };
+      }
+
+      // 2. Ambil kelompok
+      const [membership] = await db
+        .select({ teamId: teamMembers.teamId })
+        .from(teamMembers)
+        .where(eq(teamMembers.userId, participantId))
+        .limit(1);
+
+      let targetTeamId = membership?.teamId;
+      if (!targetTeamId) {
+        const [defaultTeam] = await db.select({ id: teams.id }).from(teams).limit(1);
+        if (defaultTeam) targetTeamId = defaultTeam.id;
+      }
+
+      // 3. Cek riwayat presensi masuk
+      const isStaff = user && (user.role === "ADMIN" || user.role === "BUDDY");
+      let [existing] = await db
         .select()
         .from(attendances)
         .where(and(eq(attendances.participantId, participantId), eq(attendances.day, day)))
         .limit(1);
 
-      if (!existing || !existing.checkInAt) {
+      const now = new Date();
+      const dateStr = now.toISOString().split("T")[0];
+
+      // Jika panitia/buddy memverifikasi kepulangan maba yang belum presensi masuk, otomatis hadirkan sesi masuk dulu
+      if ((!existing || !existing.checkInAt) && isStaff) {
+        if (existing) {
+          [existing] = await db
+            .update(attendances)
+            .set({
+              checkInAt: now,
+              checkInStatus: "ON_TIME",
+              checkInQrToken: `AUTO-CHECKIN-H${day}`,
+              xpAwarded: (existing.xpAwarded || 0) + 100,
+            })
+            .where(eq(attendances.id, existing.id))
+            .returning();
+        } else {
+          [existing] = await db
+            .insert(attendances)
+            .values({
+              participantId,
+              day,
+              date: dateStr,
+              checkInAt: now,
+              checkInStatus: "ON_TIME",
+              checkInQrToken: `AUTO-CHECKIN-H${day}`,
+              xpAwarded: 100,
+            })
+            .returning();
+        }
+
+        if (targetTeamId) {
+          await db.insert(scoreTransactions).values({
+            participantId,
+            teamId: targetTeamId,
+            amount: 100,
+            sourceType: "BONUS",
+            reason: `Presensi Masuk Hari ${day} (Tepat Waktu)`,
+            createdBy: user?.userId || participantId,
+          });
+        }
+      } else if (!existing || !existing.checkInAt) {
         set.status = 400;
         return {
           success: false,
           error: {
             code: "NOT_CHECKED_IN",
-            message: `Mahasiswa belum melakukan presensi masuk pada Hari ke-${day}.`,
+            message: `Mahasiswa belum melakukan presensi masuk pada Hari ke-${day}. Silakan lakukan presensi masuk terlebih dahulu.`,
           },
         };
       }
@@ -880,13 +975,17 @@ export const attendanceRoutes = new Elysia({
         };
       }
 
-      // 2. Validasi token QR gerbang kepulangan
-      const upperToken = qrToken.trim().toUpperCase();
+      // 4. Validasi token QR gerbang kepulangan
+      const effectiveToken = qrToken?.trim() || (isStaff ? `MANUAL-BUDDY-PULANG-H${day}` : "");
+      const upperToken = effectiveToken.toUpperCase();
       const isValidToken =
+        isStaff ||
         upperToken.includes("PRESENSI") ||
         upperToken.includes(`H${day}`) ||
         upperToken.includes("CHECKOUT") ||
         upperToken.includes("PULANG") ||
+        upperToken.includes("BUDDY") ||
+        upperToken.includes("MANUAL") ||
         upperToken.startsWith("QR-PRESENSI");
 
       if (!isValidToken) {
@@ -900,34 +999,20 @@ export const attendanceRoutes = new Elysia({
         };
       }
 
-      // 3. Ambil kelompok
-      const [membership] = await db
-        .select({ teamId: teamMembers.teamId })
-        .from(teamMembers)
-        .where(eq(teamMembers.userId, participantId))
-        .limit(1);
-
-      let targetTeamId = membership?.teamId;
-      if (!targetTeamId) {
-        const [defaultTeam] = await db.select({ id: teams.id }).from(teams).limit(1);
-        if (defaultTeam) targetTeamId = defaultTeam.id;
-      }
-
-      const now = new Date();
       const xpAwarded = 50;
 
-      // 3. Update waktu pulang
+      // 5. Update waktu pulang & xpAwarded
       const [updatedRecord] = await db
         .update(attendances)
         .set({
           checkOutAt: now,
-          checkOutQrToken: qrToken,
+          checkOutQrToken: effectiveToken,
           xpAwarded: (existing.xpAwarded || 0) + xpAwarded,
         })
         .where(eq(attendances.id, existing.id))
         .returning();
 
-      // 4. Catat transaksi skor +50 XP
+      // 6. Catat transaksi skor +50 XP
       if (targetTeamId) {
         await db.insert(scoreTransactions).values({
           participantId,
@@ -939,7 +1024,14 @@ export const attendanceRoutes = new Elysia({
         });
       }
 
-      // 5. Broadcast live update
+      // 7. Hitung total XP akumulatif peserta terkini
+      const [totalRow] = await db
+        .select({ total: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)` })
+        .from(scoreTransactions)
+        .where(eq(scoreTransactions.participantId, participantId));
+      const currentTotalXp = Number(totalRow?.total || 0);
+
+      // 8. Broadcast live update
       broadcastLeaderboardUpdate({
         type: "ATTENDANCE_CHECK_OUT",
         participantId,
@@ -948,10 +1040,21 @@ export const attendanceRoutes = new Elysia({
         xpAwarded,
       });
 
+      broadcastAdminEvent("ATTENDANCE_CHECK_OUT", {
+        participantId,
+        participantName: participant.fullName,
+        day,
+        time: now.toISOString(),
+      });
+
       return {
         success: true,
-        message: `Presensi pulang Hari ${day} berhasil! Anda memperoleh bonus kepulangan +${xpAwarded} XP.`,
-        data: updatedRecord,
+        message: `Presensi pulang Hari ${day} berhasil! Mahasiswa memperoleh bonus kepulangan +${xpAwarded} XP.`,
+        data: {
+          ...updatedRecord,
+          totalXp: currentTotalXp,
+          xpAwarded,
+        },
       };
     },
     {
@@ -962,52 +1065,73 @@ export const attendanceRoutes = new Elysia({
       body: t.Object({
         participantId: t.Optional(t.String()),
         day: t.Number({ minimum: 1, maximum: 3 }),
-        qrToken: t.String({ minLength: 3 }),
+        qrToken: t.Optional(t.String()),
       }),
     }
   )
 
-  // GET /api/attendance/status/:participantId — Cek status presensi hari ini
+  // GET /api/attendance/status/:participantId — Cek status presensi seluruh hari atau hari tertentu
   .get(
     "/status/:participantId",
     async ({ params, query }) => {
       const { participantId } = params;
-      const day = query.day ? Number(query.day) : 1;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(participantId);
 
-      const [record] = await db
+      let resolvedUserId = participantId;
+      if (!isUuid) {
+        const [u] = await db.select({ id: users.id }).from(users).where(eq(users.username, participantId)).limit(1);
+        if (u) resolvedUserId = u.id;
+      }
+
+      const records = await db
         .select()
         .from(attendances)
-        .where(and(eq(attendances.participantId, participantId), eq(attendances.day, day)))
-        .limit(1);
+        .where(eq(attendances.participantId, resolvedUserId));
 
-      if (!record) {
-        return {
-          success: true,
-          data: {
-            day,
+      const daysMap: Record<number, any> = {};
+      for (const d of [1, 2, 3]) {
+        const found = records.find((r) => r.day === d);
+        if (found) {
+          daysMap[d] = {
+            ...found,
+            hasCheckedIn: !!found.checkInAt,
+            hasCheckedOut: !!found.checkOutAt,
+          };
+        } else {
+          daysMap[d] = {
+            day: d,
             hasCheckedIn: false,
             hasCheckedOut: false,
             checkInAt: null,
             checkOutAt: null,
-            status: "ABSENT",
+            checkInStatus: "ABSENT",
             reflectionSubmitted: false,
-          },
+            xpAwarded: 0,
+          };
+        }
+      }
+
+      if (query.day) {
+        const day = Number(query.day);
+        const record = daysMap[day];
+        return {
+          success: true,
+          data: record,
         };
       }
 
       return {
         success: true,
         data: {
-          ...record,
-          hasCheckedIn: !!record.checkInAt,
-          hasCheckedOut: !!record.checkOutAt,
+          days: daysMap,
+          records,
         },
       };
     },
     {
       detail: {
         summary: "Cek status presensi harian mahasiswa",
-        description: "Mengembalikan detail status presensi masuk dan pulang mahasiswa pada hari yang diminta.",
+        description: "Mengembalikan detail status presensi masuk dan pulang mahasiswa pada hari yang diminta atau seluruh hari.",
       },
       params: t.Object({ participantId: t.String() }),
       query: t.Object({ day: t.Optional(t.String()) }),
@@ -1030,15 +1154,15 @@ export const attendanceRoutes = new Elysia({
         return rest;
       };
 
-      const targetSessionId = query.sessionId || (activeSession ? activeSession.id : null);
       const day = query.day ? Number(query.day) : 1;
+      const targetSessionId = query.sessionId || null;
 
-      // Filter condition: prioritas sessionId jika ada, fallback ke day
+      // Filter condition: jika query.sessionId diberikan secara eksplisit, gunakan targetSessionId. Jika tidak, filter berdasarkan day!
       const filterCondition = targetSessionId
         ? eq(attendances.sessionId, targetSessionId)
         : eq(attendances.day, day);
 
-      // Agregasi jumlah status
+      // Agregasi jumlah status check-in
       const stats = await db
         .select({
           status: attendances.checkInStatus,
@@ -1047,6 +1171,13 @@ export const attendanceRoutes = new Elysia({
         .from(attendances)
         .where(filterCondition)
         .groupBy(attendances.checkInStatus);
+
+      // Hitung total maba yang sudah checkout pulang
+      const checkedOutCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(attendances)
+        .where(and(filterCondition, sql`${attendances.checkOutAt} IS NOT NULL`));
+      const totalCheckedOut = Number(checkedOutCount[0]?.count || 0);
 
       // Daftar presensi terakhir
       const list = await db
@@ -1091,6 +1222,7 @@ export const attendanceRoutes = new Elysia({
           sessions: allSessions.map(sanitizeSession),
           summary: {
             totalCheckedIn: Number(totalCheckedIn),
+            totalCheckedOut,
             onTime: Number(onTimeCount),
             late: Number(lateCount),
           },
@@ -1100,8 +1232,8 @@ export const attendanceRoutes = new Elysia({
     },
     {
       detail: {
-        summary: "Rekapitulasi kehadiran panitia & buddy per sesi aktif",
-        description: "Menghasilkan statistik jumlah kehadiran (tepat waktu, terlambat) dan daftar mahasiswa yang telah hadir.",
+        summary: "Rekapitulasi kehadiran panitia & buddy per sesi aktif atau per hari",
+        description: "Menghasilkan statistik jumlah kehadiran (tepat waktu, terlambat, checkout) dan daftar mahasiswa yang telah hadir.",
       },
       query: t.Object({
         day: t.Optional(t.String()),
@@ -1113,7 +1245,7 @@ export const attendanceRoutes = new Elysia({
   // POST /api/attendance/batch-check-in — Batch check-in for participants
   .post(
     "/batch-check-in",
-    async ({ body }) => {
+    async ({ body, user }) => {
       const { participantIds, day = 1, sessionId, status = "ON_TIME" } = body;
       if (!participantIds || participantIds.length === 0) {
         return { success: true, count: 0 };
@@ -1129,7 +1261,7 @@ export const attendanceRoutes = new Elysia({
 
       const now = new Date();
       const dateStr = now.toISOString().split("T")[0];
-      const xpAwarded = session?.xpReward || 100;
+      const xpAwarded = status === "LATE" ? 50 : (session?.xpReward || 100);
       const targetSessionId = session?.id || sessionId || null;
 
       for (const participantId of participantIds) {
@@ -1143,13 +1275,15 @@ export const attendanceRoutes = new Elysia({
           .where(queryCondition)
           .limit(1);
 
+        const hadCheckedIn = Boolean(existing?.checkInAt);
+
         if (existing) {
           await db
             .update(attendances)
             .set({
-              checkInAt: now,
+              checkInAt: existing.checkInAt || now,
               checkInStatus: status as any,
-              xpAwarded: (existing.xpAwarded || 0) + (existing.checkInAt ? 0 : xpAwarded),
+              xpAwarded: (existing.xpAwarded || 0) + (hadCheckedIn ? 0 : xpAwarded),
             })
             .where(eq(attendances.id, existing.id));
         } else {
@@ -1163,7 +1297,49 @@ export const attendanceRoutes = new Elysia({
             xpAwarded,
           });
         }
+
+        // Catat XP ke ledger jika baru pertama kali check-in
+        if (!hadCheckedIn) {
+          const [membership] = await db
+            .select({ teamId: teamMembers.teamId })
+            .from(teamMembers)
+            .where(eq(teamMembers.userId, participantId))
+            .limit(1);
+
+          let teamId = membership?.teamId;
+          if (!teamId) {
+            const [defaultTeam] = await db.select({ id: teams.id }).from(teams).limit(1);
+            if (defaultTeam) teamId = defaultTeam.id;
+          }
+
+          if (teamId) {
+            await db.insert(scoreTransactions).values({
+              participantId,
+              teamId,
+              amount: xpAwarded,
+              sourceType: "BONUS",
+              reason: `Presensi Masuk Hari ${day} (${status === "ON_TIME" ? "Tepat Waktu" : "Terlambat"})`,
+              createdBy: user?.userId || participantId,
+            });
+
+            broadcastLeaderboardUpdate({
+              type: "ATTENDANCE_CHECK_IN",
+              participantId,
+              teamId,
+              day,
+              status,
+              xpAwarded,
+            });
+          }
+        }
       }
+
+      broadcastAdminEvent("ATTENDANCE_BATCH_CHECK_IN", {
+        count: participantIds.length,
+        day,
+        status,
+        time: now.toISOString(),
+      });
 
       return {
         success: true,
@@ -1184,21 +1360,131 @@ export const attendanceRoutes = new Elysia({
   // POST /api/attendance/batch-check-out — Batch check-out for participants
   .post(
     "/batch-check-out",
-    async ({ body }) => {
+    async ({ body, user }) => {
       const { participantIds, day = 1, sessionId } = body;
       if (!participantIds || participantIds.length === 0) {
         return { success: true, count: 0 };
       }
       const now = new Date();
+      const dateStr = now.toISOString().split("T")[0];
+      const xpAwarded = 50;
 
-      const condition = sessionId
-        ? and(inArray(attendances.participantId, participantIds), eq(attendances.sessionId, sessionId))
-        : and(inArray(attendances.participantId, participantIds), eq(attendances.day, day));
+      for (const participantId of participantIds) {
+        const condition = sessionId
+          ? and(eq(attendances.participantId, participantId), eq(attendances.sessionId, sessionId))
+          : and(eq(attendances.participantId, participantId), eq(attendances.day, day));
 
-      await db
-        .update(attendances)
-        .set({ checkOutAt: now })
-        .where(condition);
+        let [existing] = await db
+          .select()
+          .from(attendances)
+          .where(condition)
+          .limit(1);
+
+        // Jika belum check-in sama sekali, auto-checkin dulu
+        if (!existing || !existing.checkInAt) {
+          if (existing) {
+            [existing] = await db
+              .update(attendances)
+              .set({
+                checkInAt: now,
+                checkInStatus: "ON_TIME",
+                checkOutAt: now,
+                xpAwarded: (existing.xpAwarded || 0) + 150,
+              })
+              .where(eq(attendances.id, existing.id))
+              .returning();
+          } else {
+            [existing] = await db
+              .insert(attendances)
+              .values({
+                participantId,
+                day,
+                date: dateStr,
+                checkInAt: now,
+                checkInStatus: "ON_TIME",
+                checkOutAt: now,
+                xpAwarded: 150,
+              })
+              .returning();
+          }
+
+          const [membership] = await db
+            .select({ teamId: teamMembers.teamId })
+            .from(teamMembers)
+            .where(eq(teamMembers.userId, participantId))
+            .limit(1);
+
+          let teamId = membership?.teamId;
+          if (!teamId) {
+            const [defaultTeam] = await db.select({ id: teams.id }).from(teams).limit(1);
+            if (defaultTeam) teamId = defaultTeam.id;
+          }
+
+          if (teamId) {
+            await db.insert(scoreTransactions).values({
+              participantId,
+              teamId,
+              amount: 100,
+              sourceType: "BONUS",
+              reason: `Presensi Masuk Hari ${day} (Auto Check-In)`,
+              createdBy: user?.userId || participantId,
+            });
+            await db.insert(scoreTransactions).values({
+              participantId,
+              teamId,
+              amount: 50,
+              sourceType: "BONUS",
+              reason: `Presensi Pulang Hari ${day}`,
+              createdBy: user?.userId || participantId,
+            });
+          }
+        } else if (!existing.checkOutAt) {
+          // Hanya jika belum check-out
+          await db
+            .update(attendances)
+            .set({
+              checkOutAt: now,
+              xpAwarded: (existing.xpAwarded || 0) + xpAwarded,
+            })
+            .where(eq(attendances.id, existing.id));
+
+          const [membership] = await db
+            .select({ teamId: teamMembers.teamId })
+            .from(teamMembers)
+            .where(eq(teamMembers.userId, participantId))
+            .limit(1);
+
+          let teamId = membership?.teamId;
+          if (!teamId) {
+            const [defaultTeam] = await db.select({ id: teams.id }).from(teams).limit(1);
+            if (defaultTeam) teamId = defaultTeam.id;
+          }
+
+          if (teamId) {
+            await db.insert(scoreTransactions).values({
+              participantId,
+              teamId,
+              amount: xpAwarded,
+              sourceType: "BONUS",
+              reason: `Presensi Pulang Hari ${day}`,
+              createdBy: user?.userId || participantId,
+            });
+          }
+        }
+
+        broadcastLeaderboardUpdate({
+          type: "ATTENDANCE_CHECK_OUT",
+          participantId,
+          day,
+          xpAwarded,
+        });
+      }
+
+      broadcastAdminEvent("ATTENDANCE_BATCH_CHECK_OUT", {
+        count: participantIds.length,
+        day,
+        time: now.toISOString(),
+      });
 
       return {
         success: true,

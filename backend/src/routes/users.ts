@@ -233,6 +233,12 @@ export const userRoutes = new Elysia({
 
     const bonusSpent = bonusAwardsGiven.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
+    // Fetch attendances for this participant
+    const userAttendances = await db
+      .select()
+      .from(attendances)
+      .where(eq(attendances.participantId, user.id));
+
     return {
       success: true,
       data: {
@@ -243,6 +249,7 @@ export const userRoutes = new Elysia({
         completedSessions,
         bonusAwardsGiven,
         assignedSquadMembers,
+        attendances: userAttendances,
       },
     };
   })

@@ -207,7 +207,9 @@ async function refreshAttendance() {
   safeSound(() => soundEngine.playClick?.());
   isRefreshing.value = true;
   try {
-    await new Promise((r) => setTimeout(r, 450));
+    await gameStore.syncAttendanceFromServer();
+    showNotification('info', 'Status presensi dan total skor diperbarui dari server.');
+  } catch (_) {
     showNotification('info', 'Status presensi diperbarui.');
   } finally {
     isRefreshing.value = false;
@@ -241,8 +243,9 @@ function submitReflection() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   activeDayTab.value = (gameStore.activeDay as 1 | 2 | 3) || 1;
+  await gameStore.syncAttendanceFromServer();
 });
 </script>
 
