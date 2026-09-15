@@ -24,6 +24,7 @@ import {
   PhShieldCheck,
   PhUser,
   PhBookOpen,
+  PhUsersThree,
 } from '@phosphor-icons/vue';
 import MabaAuthModal from '@/components/auth/MabaAuthModal.vue';
 import LogoutConfirmModal from '@/components/auth/LogoutConfirmModal.vue';
@@ -279,12 +280,21 @@ function handleLogout() {
               </div>
 
               <!-- Kelompok Buddy -->
-              <div class="p-2 rounded-lg bg-[#191009] border border-[#4a2e14]">
-                <div class="text-[7.5px] text-[#a89279]">Kelompok Pendamping:</div>
-                <div class="text-[#fbf6e9] font-bold mt-0.5 truncate">
-                  {{ gameStore.participant.groupName || 'Genius 03' }}
+              <RouterLink
+                to="/team"
+                @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+                class="p-2 rounded-lg bg-[#191009] hover:bg-[#25180e] border border-[#4a2e14] hover:border-[#f0d060] transition-colors group/team block cursor-pointer"
+                title="Buka Halaman Tim & Daftar Anggota"
+              >
+                <div class="text-[7.5px] text-[#a89279] flex items-center justify-between">
+                  <span>Kelompok Pendamping:</span>
+                  <span class="text-[7px] text-[#86efac] group-hover/team:text-[#fde047] font-pixel">Buka Tim →</span>
                 </div>
-              </div>
+                <div class="text-[#fbf6e9] group-hover/team:text-[#f0d060] font-bold mt-0.5 truncate flex items-center gap-1.5">
+                  <PhUsersThree :size="13" weight="fill" class="text-[#f0d060] shrink-0" />
+                  <span>{{ gameStore.participant.groupName || 'Genius 01' }}</span>
+                </div>
+              </RouterLink>
 
               <!-- Fakultas -->
               <div class="p-2 rounded-lg bg-[#191009] border border-[#4a2e14]">
@@ -350,7 +360,7 @@ function handleLogout() {
       <!-- ------------------------------------------------------------- -->
       <!-- SECTION 2: PORTAL PROGRES & STATISTIK ORIENTASI               -->
       <!-- ------------------------------------------------------------- -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <!-- Card 1: Paspor Stempel Pos -->
         <RouterLink
           to="/paspor"
@@ -405,6 +415,25 @@ function handleLogout() {
           <div class="text-[8px] text-[#d8b4fe] mt-1 font-sans flex items-center justify-between">
             <span>Eksplorasi Ormawa</span>
             <span class="group-hover:translate-x-1 transition-transform">Buka Stand →</span>
+          </div>
+        </RouterLink>
+
+        <!-- Card 4: Tim & Buddy -->
+        <RouterLink
+          to="/team"
+          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+          class="p-3 rounded-xl bg-[#23150b]/90 hover:bg-[#321e10] border border-[#8b6f4e] hover:border-[#38bdf8] transition-all flex flex-col justify-between group shadow cursor-pointer"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[8px] text-[#38bdf8] font-bold uppercase">REGU & BUDDY</span>
+            <PhUsersThree :size="18" weight="fill" class="text-[#38bdf8] group-hover:scale-110 transition-transform" />
+          </div>
+          <div class="text-lg font-bold text-white font-mono truncate">
+            {{ gameStore.participant.groupName || 'Genius 01' }}
+          </div>
+          <div class="text-[8px] text-[#7dd3fc] mt-1 font-sans flex items-center justify-between">
+            <span>Kakak Buddy & Maba</span>
+            <span class="group-hover:translate-x-1 transition-transform">Lihat Tim →</span>
           </div>
         </RouterLink>
       </div>

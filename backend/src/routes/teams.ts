@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { db } from "../db";
 import { teams, teamMembers, users, routes, scoreTransactions, gameSessions, fgdEvaluations } from "../db/schema";
 import { eq, sql, desc, inArray, or, ilike, and } from "drizzle-orm";
-import { requireAdmin, requireBuddyOrAdmin } from "../middleware/auth";
+import { authMiddleware, requireAdmin, requireBuddyOrAdmin } from "../middleware/auth";
 
 /**
  * Cascading deletion helper for teams to prevent Foreign Key Constraint errors
@@ -51,10 +51,14 @@ export const teamRoutes = new Elysia({
     tags: ["Teams & Regu"],
   },
 })
-  .use(requireBuddyOrAdmin)
+  .use(authMiddleware)
 
   // GET /api/teams — List all teams with route, buddy list, and participant counts
-  .get("/", async ({ query }) => {
+  .get("/", async ({ query, user, set }) => {
+    if (!user || (user.role !== "ADMIN" && user.role !== "BUDDY")) {
+      set.status = 403;
+      return { success: false, error: { code: "FORBIDDEN", message: "Hanya Admin atau Buddy yang dapat melihat seluruh daftar tim" } };
+    }
     const page = Number(query.page) || 1;
     const pageSize = Number(query.pageSize) || 100;
     const offset = (page - 1) * pageSize;
@@ -166,6 +170,127 @@ export const teamRoutes = new Elysia({
     };
   })
 
+  // Helper: Fetch complete team details with buddies and members
+  // (Declared as internal function)
+  // GET /api/teams/my-team — Current logged in user's team details, buddies, and members
+  .get("/my-team", async ({ user, set }) => {
+    if (!user || !user.userId) {
+      set.status = 401;
+      return { success: false, error: { code: "UNAUTHORIZED", message: "Autentikasi diperlukan. Silakan masuk terlebih dahulu." } };
+    }
+
+    let teamId = user.teamId;
+    if (!teamId) {
+      const [membership] = await db
+        .select({ teamId: teamMembers.teamId })
+        .from(teamMembers)
+        .where(eq(teamMembers.userId, user.userId))
+        .limit(1);
+      teamId = membership?.teamId;
+    }
+
+    if (!teamId) {
+      set.status = 404;
+      return { success: false, error: { code: "NO_TEAM", message: "Anda belum terdaftar ke dalam kelompok manapun." } };
+    }
+
+    const [team] = await db
+      .select({
+        id: teams.id,
+        name: teams.name,
+        code: teams.code,
+        captainId: teams.captainId,
+        routeId: teams.routeId,
+        routeName: routes.name,
+        status: teams.status,
+        createdAt: teams.createdAt,
+        updatedAt: teams.updatedAt,
+      })
+      .from(teams)
+      .leftJoin(routes, eq(teams.routeId, routes.id))
+      .where(eq(teams.id, teamId))
+      .limit(1);
+
+    if (!team) {
+      set.status = 404;
+      return { success: false, error: { code: "NOT_FOUND", message: "Kelompok tidak ditemukan di sistem." } };
+    }
+
+    // Get team members (Buddies and Participants)
+    const members = await db
+      .select({
+        id: teamMembers.id,
+        userId: users.id,
+        username: users.username,
+        fullName: users.fullName,
+        role: users.role,
+        gender: users.gender,
+        faculty: users.faculty,
+        prodi: users.prodi,
+        characterClass: users.characterClass,
+        characterTitle: users.characterTitle,
+        characterTier: users.characterTier,
+        unlockedTitles: users.unlockedTitles,
+        avatarUrl: users.avatarUrl,
+        isCaptain: teamMembers.isCaptain,
+        buddyRole: teamMembers.buddyRole,
+        joinedAt: teamMembers.joinedAt,
+      })
+      .from(teamMembers)
+      .innerJoin(users, eq(teamMembers.userId, users.id))
+      .where(eq(teamMembers.teamId, teamId));
+
+    // Calculate individual participant scores
+    const memberUserIds = members.map((m) => m.userId);
+    let memberScoresMap = new Map<string, number>();
+    if (memberUserIds.length > 0) {
+      const memberScoreRows = await db
+        .select({
+          participantId: scoreTransactions.participantId,
+          score: sql<number>`coalesce(sum(${scoreTransactions.amount}), 0)`,
+        })
+        .from(scoreTransactions)
+        .where(inArray(scoreTransactions.participantId, memberUserIds))
+        .groupBy(scoreTransactions.participantId);
+
+      memberScoreRows.forEach((r) => {
+        if (r.participantId) memberScoresMap.set(r.participantId, Number(r.score));
+      });
+    }
+
+    const enrichedMembers = members.map((m) => ({
+      ...m,
+      name: m.fullName,
+      nim: m.username,
+      scoreContribution: memberScoresMap.get(m.userId) || 0,
+      totalScore: memberScoresMap.get(m.userId) || 0,
+    }));
+
+    // Calculate total score from ledger (team transactions or sum of members)
+    const [scoreRow] = await db
+      .select({ totalScore: sql<number>`coalesce(sum(${scoreTransactions.amount}), 0)` })
+      .from(scoreTransactions)
+      .where(or(eq(scoreTransactions.teamId, teamId), memberUserIds.length > 0 ? inArray(scoreTransactions.participantId, memberUserIds) : sql`1=0`));
+
+    // Recent score history for team
+    const scoreHistory = await db
+      .select()
+      .from(scoreTransactions)
+      .where(or(eq(scoreTransactions.teamId, teamId), memberUserIds.length > 0 ? inArray(scoreTransactions.participantId, memberUserIds) : sql`1=0`))
+      .orderBy(desc(scoreTransactions.createdAt))
+      .limit(30);
+
+    return {
+      success: true,
+      data: {
+        ...team,
+        totalScore: Number(scoreRow?.totalScore || 0),
+        members: enrichedMembers,
+        scoreHistory,
+      },
+    };
+  })
+
   // GET /api/teams/:id — Single team with full roster and total score
   .get("/:id", async ({ params, set }) => {
     const [team] = await db
@@ -199,6 +324,8 @@ export const teamRoutes = new Elysia({
         fullName: users.fullName,
         role: users.role,
         gender: users.gender,
+        faculty: users.faculty,
+        prodi: users.prodi,
         characterClass: users.characterClass,
         characterTitle: users.characterTitle,
         characterTier: users.characterTier,
@@ -232,6 +359,9 @@ export const teamRoutes = new Elysia({
 
     const enrichedMembers = members.map((m) => ({
       ...m,
+      name: m.fullName,
+      nim: m.username,
+      scoreContribution: memberScoresMap.get(m.userId) || 0,
       totalScore: memberScoresMap.get(m.userId) || 0,
     }));
 

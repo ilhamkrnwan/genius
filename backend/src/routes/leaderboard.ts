@@ -14,12 +14,11 @@ export const leaderboardRoutes = new Elysia({
   },
 })
   .use(authMiddleware)
-  .use(requireUser)
 
   // GET /api/leaderboard — Combined team & participant leaderboard + recent ledger
   .get("/", async ({ query, user }) => {
     const stageId = query.stageId || "";
-    const limit = Number(query.limit) || 20;
+    const limit = Number(query.limit) || 50;
 
     const settings = getSystemSettings();
     const isFrozenForUser = settings.isLeaderboardFrozen && settings.frozenAt && user?.role !== "ADMIN";
@@ -45,46 +44,46 @@ export const leaderboardRoutes = new Elysia({
       .orderBy(desc(sql`total_score`))
       .limit(limit);
 
-    // 2. Participant Leaderboard
+    // 2. Participant Leaderboard (Real database participants)
+    const scoreConditions = [eq(users.id, scoreTransactions.participantId)];
+    if (stageId) scoreConditions.push(eq(scoreTransactions.stageId, stageId));
+    if (freezeCutoff) scoreConditions.push(lte(scoreTransactions.createdAt, freezeCutoff));
+    const scoreJoinCondition = and(...scoreConditions);
+
     let participantQuery = db
       .select({
-        participantId: scoreTransactions.participantId,
+        participantId: users.id,
         participantName: users.fullName,
         username: users.username,
         gender: users.gender,
         characterClass: users.characterClass,
         characterTitle: users.characterTitle,
         characterTier: users.characterTier,
-        teamId: scoreTransactions.teamId,
+        teamId: teams.id,
         teamName: teams.name,
         totalScore: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)`.as("total_score"),
         transactionCount: sql<number>`COUNT(${scoreTransactions.id})`.as("transaction_count"),
       })
-      .from(scoreTransactions)
-      .innerJoin(users, eq(scoreTransactions.participantId, users.id))
-      .leftJoin(teams, eq(scoreTransactions.teamId, teams.id))
+      .from(users)
+      .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
+      .leftJoin(teams, eq(teamMembers.teamId, teams.id))
+      .leftJoin(scoreTransactions, scoreJoinCondition)
+      .where(eq(users.role, "PARTICIPANT"))
       .$dynamic();
-
-    if (stageId) {
-      participantQuery = participantQuery.where(eq(scoreTransactions.stageId, stageId));
-    }
-    if (freezeCutoff) {
-      participantQuery = participantQuery.where(lte(scoreTransactions.createdAt, freezeCutoff));
-    }
 
     const topParticipants = await participantQuery
       .groupBy(
-        scoreTransactions.participantId,
+        users.id,
         users.fullName,
         users.username,
         users.gender,
         users.characterClass,
         users.characterTitle,
         users.characterTier,
-        scoreTransactions.teamId,
+        teams.id,
         teams.name
       )
-      .orderBy(desc(sql`total_score`))
+      .orderBy(desc(sql`total_score`), users.username)
       .limit(limit);
 
     // 3. Recent Transactions
@@ -160,45 +159,45 @@ export const leaderboardRoutes = new Elysia({
     const isFrozenForUser = settings.isLeaderboardFrozen && settings.frozenAt && user?.role !== "ADMIN";
     const freezeCutoff = isFrozenForUser && settings.frozenAt ? new Date(settings.frozenAt) : null;
 
+    const scoreConditions = [eq(users.id, scoreTransactions.participantId)];
+    if (stageId) scoreConditions.push(eq(scoreTransactions.stageId, stageId));
+    if (freezeCutoff) scoreConditions.push(lte(scoreTransactions.createdAt, freezeCutoff));
+    const scoreJoinCondition = and(...scoreConditions);
+
     let participantQuery = db
       .select({
-        participantId: scoreTransactions.participantId,
+        participantId: users.id,
         participantName: users.fullName,
         username: users.username,
         gender: users.gender,
         characterClass: users.characterClass,
         characterTitle: users.characterTitle,
         characterTier: users.characterTier,
-        teamId: scoreTransactions.teamId,
+        teamId: teams.id,
         teamName: teams.name,
         totalScore: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)`.as("total_score"),
         transactionCount: sql<number>`COUNT(${scoreTransactions.id})`.as("transaction_count"),
       })
-      .from(scoreTransactions)
-      .innerJoin(users, eq(scoreTransactions.participantId, users.id))
-      .leftJoin(teams, eq(scoreTransactions.teamId, teams.id))
+      .from(users)
+      .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
+      .leftJoin(teams, eq(teamMembers.teamId, teams.id))
+      .leftJoin(scoreTransactions, scoreJoinCondition)
+      .where(eq(users.role, "PARTICIPANT"))
       .$dynamic();
-
-    if (stageId) {
-      participantQuery = participantQuery.where(eq(scoreTransactions.stageId, stageId));
-    }
-    if (freezeCutoff) {
-      participantQuery = participantQuery.where(lte(scoreTransactions.createdAt, freezeCutoff));
-    }
 
     const topParticipants = await participantQuery
       .groupBy(
-        scoreTransactions.participantId,
+        users.id,
         users.fullName,
         users.username,
         users.gender,
         users.characterClass,
         users.characterTitle,
         users.characterTier,
-        scoreTransactions.teamId,
+        teams.id,
         teams.name
       )
-      .orderBy(desc(sql`total_score`))
+      .orderBy(desc(sql`total_score`), users.username)
       .limit(limit);
 
     // If current user is a participant, get their specific position
@@ -349,7 +348,12 @@ export const leaderboardRoutes = new Elysia({
         return { success: false, error: { message: "Hanya role ADMIN yang berhak melakukan penyesuaian skor" } };
       }
 
-      const { teamId, amount, reason, participantId } = body;
+      const { teamId, amount, reason, participantId } = body as {
+        teamId: string;
+        amount: number;
+        reason: string;
+        participantId?: string;
+      };
 
       // Find any participant in this team if participantId is not supplied
       let targetParticipantId = participantId;

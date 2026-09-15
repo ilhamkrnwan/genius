@@ -374,6 +374,71 @@ export const api = {
     });
   },
 
+  // Team & Regu Roster
+  async getMyTeam() {
+    return this.request<{
+      id: string;
+      name: string;
+      code: string;
+      captainId: string | null;
+      routeId: string | null;
+      routeName: string | null;
+      status: string;
+      totalScore: number;
+      members: Array<{
+        id: string;
+        userId: string;
+        username: string;
+        fullName: string;
+        role: 'BUDDY' | 'PARTICIPANT' | 'ADMIN';
+        gender: string;
+        faculty?: string;
+        prodi?: string;
+        characterClass?: string;
+        characterTitle?: string;
+        characterTier?: number;
+        unlockedTitles?: string[];
+        avatarUrl?: string;
+        isCaptain: boolean;
+        buddyRole?: 'PRIMARY' | 'ASSISTANT' | null;
+        totalScore: number;
+      }>;
+      scoreHistory: any[];
+    }>('/teams/my-team');
+  },
+
+  async getTeamById(id: string) {
+    return this.request<{
+      id: string;
+      name: string;
+      code: string;
+      captainId: string | null;
+      routeId: string | null;
+      routeName: string | null;
+      status: string;
+      totalScore: number;
+      members: Array<{
+        id: string;
+        userId: string;
+        username: string;
+        fullName: string;
+        role: 'BUDDY' | 'PARTICIPANT' | 'ADMIN';
+        gender: string;
+        faculty?: string;
+        prodi?: string;
+        characterClass?: string;
+        characterTitle?: string;
+        characterTier?: number;
+        unlockedTitles?: string[];
+        avatarUrl?: string;
+        isCaptain: boolean;
+        buddyRole?: 'PRIMARY' | 'ASSISTANT' | null;
+        totalScore: number;
+      }>;
+      scoreHistory: any[];
+    }>(`/teams/${encodeURIComponent(id)}`);
+  },
+
   // Health check
   async checkHealth() {
     try {

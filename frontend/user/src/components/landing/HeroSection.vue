@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import AmbientEffects from '@/components/ambient/AmbientEffects.vue';
 import {
   PhSparkle,
@@ -31,6 +31,7 @@ import { soundEngine } from '@/lib/sound';
 import { gsap, floatElement } from '@/lib/gsap';
 
 const router = useRouter();
+const route = useRoute();
 const gameStore = useGameStore();
 
 const completedFloors = computed(() => gameStore.getCompletedFloorsCount());
@@ -89,9 +90,40 @@ const handleStartJourney = () => {
   }
 };
 
+const checkAuthParam = () => {
+  if (route.query.auth === 'required' || route.query.login === 'required' || route.query.login === 'true') {
+    if (!gameStore.isLoggedIn) {
+      authInitialStep.value = 'login';
+      isAuthModalOpen.value = true;
+    }
+  }
+};
+
+watch(
+  () => route.query.auth,
+  () => {
+    checkAuthParam();
+  }
+);
+
+const handleCloseAuthModal = () => {
+  isAuthModalOpen.value = false;
+  if (gameStore.soundEnabled) soundEngine.playClick();
+  // Bersihkan query string dari URL bar agar kembali bersih ('/')
+  if (route.query.auth || route.query.redirect || route.query.login) {
+    router.replace({ path: route.path, query: {} });
+  }
+};
+
 const handleAuthComplete = () => {
   isAuthModalOpen.value = false;
-  router.push('/play');
+  const redirectTarget =
+    typeof route.query.redirect === 'string' &&
+    route.query.redirect.startsWith('/') &&
+    route.query.redirect !== '/'
+      ? route.query.redirect
+      : '/play';
+  router.push(redirectTarget);
 };
 
 const handleSelectQuickAvatar = (avatarId: string) => {
@@ -157,6 +189,7 @@ const handleMouseLeave = () => {
 };
 
 onMounted(() => {
+  checkAuthParam();
   heroCtx = gsap.context(() => {
     // 1. Initial entrance animation
     const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
@@ -626,7 +659,7 @@ onUnmounted(() => {
     <MabaAuthModal
       :isOpen="isAuthModalOpen"
       :initialStep="authInitialStep"
-      @close="isAuthModalOpen = false"
+      @close="handleCloseAuthModal"
       @complete="handleAuthComplete"
     />
   </div>

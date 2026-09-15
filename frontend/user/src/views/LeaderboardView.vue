@@ -20,8 +20,6 @@ import CrtScanlines from '@/components/layout/CrtScanlines.vue';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
 import { useGameStore } from '@/store/gameStore';
 import {
-  INITIAL_LEADERBOARD_USERS,
-  INITIAL_LEADERBOARD_GROUPS,
   AVATAR_OPTIONS,
 } from '@/data/mockData';
 import { soundEngine } from '@/lib/sound';
@@ -44,7 +42,7 @@ function safeSound(fn: () => void) {
       fn();
     }
   } catch {
-    // ignore
+    // Ignore audio autoplay restrictions
   }
 }
 
@@ -128,10 +126,10 @@ const getAvatarImage = (avatarId: string) => {
   return opt ? opt.avatarImage : '/character-cowok-avatar.png';
 };
 
-// Compute live individual leaderboard including current user
+// Compute live individual leaderboard including current user from real database
 const individualList = computed<LeaderboardUser[]>(() => {
   if (liveLeaderboard.value?.participantLeaderboard?.length > 0) {
-    return liveLeaderboard.value.participantLeaderboard.map((item: any, index: number) => ({
+    const list: LeaderboardUser[] = liveLeaderboard.value.participantLeaderboard.map((item: any, index: number) => ({
       id: item.participantId,
       rank: item.rank || index + 1,
       name: item.participantName || item.username,
@@ -146,36 +144,51 @@ const individualList = computed<LeaderboardUser[]>(() => {
       groupId: item.teamId || 'group-01',
       groupName: item.teamName || 'Genius 01',
     }));
+
+    const hasCurrentUser = list.some((u) => u.isCurrentUser);
+    if (!hasCurrentUser && gameStore.participant?.nim) {
+      list.push({
+        id: gameStore.participant.id || 'current-user',
+        rank: list.length + 1,
+        name: `${gameStore.participant.name || 'Mahasiswa Baru'} (Kamu)`,
+        nim: gameStore.participant.nim,
+        faculty: gameStore.participant.faculty || 'UNU Yogyakarta',
+        prodi: gameStore.participant.prodi || 'Informatika',
+        avatar: gameStore.participant.avatar || 'character_cowok',
+        totalXp: gameStore.participant.totalXp || 0,
+        stampsCount: gameStore.getTotalStampsCount?.() || 0,
+        completedFloors: gameStore.getCompletedFloorsCount?.() || 0,
+        isCurrentUser: true,
+        groupId: gameStore.participant.groupId || 'group-01',
+        groupName: gameStore.participant.groupName || 'Genius 01',
+      });
+    }
+
+    return list;
   }
 
-  const currentUserEntry: LeaderboardUser = {
-    id: 'current-user',
-    rank: 0,
-    name: `${gameStore.participant?.name || 'Mahasiswa Baru'} (Kamu)`,
-    nim: gameStore.participant?.nim || '',
-    faculty: gameStore.participant?.faculty || 'UNU Yogyakarta',
-    prodi: gameStore.participant?.prodi || 'Informatika',
-    avatar: gameStore.participant?.avatar || 'character_cowok',
-    totalXp: gameStore.participant?.totalXp || 0,
-    stampsCount: gameStore.getTotalStampsCount?.() || 0,
-    completedFloors: gameStore.getCompletedFloorsCount?.() || 0,
-    isCurrentUser: true,
-    groupId: 'group-03',
-    groupName: 'Genius 03',
-  };
+  // If no backend list loaded yet, only show current user entry if logged in
+  if (gameStore.participant?.nim) {
+    return [
+      {
+        id: 'current-user',
+        rank: 1,
+        name: `${gameStore.participant?.name || 'Mahasiswa Baru'} (Kamu)`,
+        nim: gameStore.participant?.nim || '',
+        faculty: gameStore.participant?.faculty || 'UNU Yogyakarta',
+        prodi: gameStore.participant?.prodi || 'Informatika',
+        avatar: gameStore.participant?.avatar || 'character_cowok',
+        totalXp: gameStore.participant?.totalXp || 0,
+        stampsCount: gameStore.getTotalStampsCount?.() || 0,
+        completedFloors: gameStore.getCompletedFloorsCount?.() || 0,
+        isCurrentUser: true,
+        groupId: gameStore.participant?.groupId || 'group-01',
+        groupName: gameStore.participant?.groupName || 'Genius 01',
+      },
+    ];
+  }
 
-  const others = INITIAL_LEADERBOARD_USERS.filter((u) => !u.isCurrentUser);
-  const all = [...others, currentUserEntry];
-
-  all.sort((a, b) => {
-    if (b.totalXp !== a.totalXp) return b.totalXp - a.totalXp;
-    return b.stampsCount - a.stampsCount;
-  });
-
-  return all.map((user, idx) => ({
-    ...user,
-    rank: idx + 1,
-  }));
+  return [];
 });
 
 const filteredIndividuals = computed(() => {
@@ -189,7 +202,7 @@ const filteredIndividuals = computed(() => {
   );
 });
 
-// Compute live group leaderboard
+// Compute live group leaderboard from real database
 const groupList = computed<LeaderboardGroup[]>(() => {
   if (liveLeaderboard.value?.teamLeaderboard?.length > 0) {
     return liveLeaderboard.value.teamLeaderboard.map((team: any, index: number) => {
@@ -221,7 +234,7 @@ const groupList = computed<LeaderboardGroup[]>(() => {
                 name: 'Peserta Regu',
                 avatar: 'character_cowok',
                 totalXp: team.avgScore || 0,
-                stampsCount: 5,
+                stampsCount: 0,
                 isCurrentUser: false,
                 prodi: 'UNU Yogyakarta',
               },
@@ -230,34 +243,7 @@ const groupList = computed<LeaderboardGroup[]>(() => {
     });
   }
 
-  return INITIAL_LEADERBOARD_GROUPS.map((group) => {
-    if (group.id === 'group-03') {
-      const updatedMembers = group.members.map((m) => {
-        if (m.isCurrentUser) {
-          return {
-            ...m,
-            name: `${gameStore.participant?.name || 'Mahasiswa Baru'} (Kamu)`,
-            avatar: gameStore.participant?.avatar || 'character_cowok',
-            totalXp: gameStore.participant?.totalXp || 0,
-            stampsCount: gameStore.getTotalStampsCount?.() || 0,
-            prodi: gameStore.participant?.prodi || 'Informatika',
-          };
-        }
-        return m;
-      });
-
-      const totalXp = updatedMembers.reduce((sum, m) => sum + m.totalXp, 0);
-      const avgXp = Math.round(totalXp / updatedMembers.length);
-
-      return {
-        ...group,
-        totalXp,
-        avgXp,
-        members: updatedMembers,
-      };
-    }
-    return group;
-  }).sort((a, b) => b.avgXp - a.avgXp).map((g, idx) => ({ ...g, rank: idx + 1 }));
+  return [];
 });
 
 const currentUserRankInfo = computed(() => {
@@ -640,6 +626,13 @@ const currentUserRankInfo = computed(() => {
               </div>
             </div>
           </div>
+        </div>
+
+        <div
+          v-if="groupList.length === 0"
+          class="p-6 text-center bg-[#19110a]/90 border border-[#5a3a18] rounded-xl font-sans text-xs text-[#a08060]"
+        >
+          Belum ada data kelompok tersedia di database.
         </div>
       </div>
 
