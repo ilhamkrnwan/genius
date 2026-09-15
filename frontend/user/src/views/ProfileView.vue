@@ -361,14 +361,14 @@ function handleLogout() {
       <!-- SECTION 2: PORTAL PROGRES & STATISTIK ORIENTASI               -->
       <!-- ------------------------------------------------------------- -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <!-- Card 1: Paspor Stempel Pos -->
+        <!-- Card 1: Profil & Stempel Pos -->
         <RouterLink
           to="/paspor"
           @click="() => gameStore.soundEnabled && soundEngine.playClick()"
           class="p-3 rounded-xl bg-[#23150b]/90 hover:bg-[#321e10] border border-[#8b6f4e] hover:border-[#facc15] transition-all flex flex-col justify-between group shadow cursor-pointer"
         >
           <div class="flex items-center justify-between mb-2">
-            <span class="text-[8px] text-[#facc15] font-bold uppercase">PASPOR DIGITAL</span>
+            <span class="text-[8px] text-[#facc15] font-bold uppercase">PROFIL & STEMPEL</span>
             <PhIdentificationBadge :size="18" weight="bold" class="text-[#facc15] group-hover:scale-110 transition-transform" />
           </div>
           <div class="text-xl font-bold text-white font-mono">
@@ -376,7 +376,7 @@ function handleLogout() {
           </div>
           <div class="text-[8px] text-[#86efac] mt-1 font-sans flex items-center justify-between">
             <span>6 Lantai Kampus</span>
-            <span class="group-hover:translate-x-1 transition-transform">Buka Paspor →</span>
+            <span class="group-hover:translate-x-1 transition-transform">Buka Stempel →</span>
           </div>
         </RouterLink>
 

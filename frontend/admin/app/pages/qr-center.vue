@@ -459,9 +459,9 @@
 
           <!-- Instructions for Participants -->
           <div class="border-t border-[#6b21a8] print:border-black pt-2 text-[10px] font-mono text-muted-foreground print:text-gray-800 space-y-0.5 text-left">
-            <p class="font-bold text-[#c084fc] print:text-black">📱 PETUNJUK MAHASISWA:</p>
+            <p class="font-bold text-[#c084fc] print:text-black">PETUNJUK MAHASISWA:</p>
             <p>1. Kunjungi stand UKM dan kenali program kegiatannya.</p>
-            <p>2. Scan QR stand ini untuk membuka <strong>Lencana Paspor UKM</strong>.</p>
+            <p>2. Scan QR stand ini untuk membuka <strong>Lencana Profil UKM</strong>.</p>
             <p class="text-emerald-400 print:text-black font-bold">Reward: +{{ booth.xpReward || 75 }} XP (Capping maks 10 stan)</p>
           </div>
         </div>

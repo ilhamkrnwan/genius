@@ -783,7 +783,7 @@ export const useGameStore = defineStore('game', {
       if (this.visitedOrmawa.includes(stand.id)) {
         return {
           success: false,
-          message: `Stan "${stand.shortName}" sudah pernah Anda kunjungi dan terdaftar di paspor.`,
+          message: `Stan "${stand.shortName}" sudah pernah Anda kunjungi dan terdaftar di profil.`,
           xpEarned: 0,
           stand,
           isCapped: this.visitedOrmawa.length >= 10,

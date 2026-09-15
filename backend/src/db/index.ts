@@ -55,7 +55,10 @@ if (usePglite) {
   }
   try {
     await client.exec(`
+      ALTER TYPE "user_role" ADD VALUE IF NOT EXISTS 'ORMAWA_PIC';
       ALTER TYPE "game_type" ADD VALUE IF NOT EXISTS 'FLAPPY_BIRD';
+      ALTER TABLE "ormawa_booths" ADD COLUMN IF NOT EXISTS "pic_user_id" uuid REFERENCES "users"("id") ON DELETE SET NULL;
+      ALTER TABLE "ormawa_booths" ADD COLUMN IF NOT EXISTS "logo_url" text;
       CREATE TABLE IF NOT EXISTS "attendance_sessions" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
         "title" varchar(255) NOT NULL,
@@ -71,10 +74,23 @@ if (usePglite) {
         "created_at" timestamp with time zone DEFAULT now() NOT NULL,
         "updated_at" timestamp with time zone DEFAULT now() NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS "ormawa_interests" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+        "participant_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+        "booth_id" uuid NOT NULL REFERENCES "ormawa_booths"("id") ON DELETE CASCADE,
+        "phone_number" varchar(30) NOT NULL,
+        "motivation" text,
+        "experience" text,
+        "xp_bonus_earned" integer DEFAULT 25 NOT NULL,
+        "created_at" timestamp with time zone DEFAULT now() NOT NULL
+      );
       ALTER TABLE "attendances" ADD COLUMN IF NOT EXISTS "session_id" uuid REFERENCES "attendance_sessions"("id") ON DELETE SET NULL;
       CREATE INDEX IF NOT EXISTS "attendances_session_idx" ON "attendances" ("session_id");
       CREATE INDEX IF NOT EXISTS "attendance_sessions_active_idx" ON "attendance_sessions" ("is_active");
       CREATE INDEX IF NOT EXISTS "attendance_sessions_type_idx" ON "attendance_sessions" ("type");
+      CREATE UNIQUE INDEX IF NOT EXISTS "ormawa_interest_unique" ON "ormawa_interests" ("participant_id", "booth_id");
+      CREATE INDEX IF NOT EXISTS "ormawa_interest_participant_idx" ON "ormawa_interests" ("participant_id");
+      CREATE INDEX IF NOT EXISTS "ormawa_interest_booth_idx" ON "ormawa_interests" ("booth_id");
     `);
   } catch (e: any) {
     console.warn("[DB] Attendance sessions & enum setup warning:", e.message);

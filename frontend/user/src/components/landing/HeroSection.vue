@@ -609,12 +609,12 @@ onUnmounted(() => {
           <PhStorefront :size="19" weight="fill" class="text-[#c084fc] group-hover:scale-110 transition-transform" />
         </RouterLink>
 
-        <!-- 4. Paspor Digital Box -->
+        <!-- 4. Profil Digital Box -->
         <RouterLink
           to="/paspor"
           @click="() => gameStore.soundEnabled && soundEngine.playClick()"
           class="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-[#22160d] border border-[#5c3e23] hover:border-[#facc15] hover:bg-[#322013] transition-all flex items-center justify-center shrink-0 group cursor-pointer shadow-sm active:scale-95"
-          title="Paspor Petualang & Stempel Corner"
+          title="Profil Petualang & Stempel Corner"
         >
           <PhIdentificationBadge :size="19" weight="bold" class="text-[#facc15] group-hover:scale-110 transition-transform" />
         </RouterLink>

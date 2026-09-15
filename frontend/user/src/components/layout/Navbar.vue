@@ -47,7 +47,7 @@ const navLinks = [
   { href: '/', label: 'Beranda', icon: PhHouse },
   { href: '/play', label: 'Main', icon: PhGameController },
   { href: '/team', label: 'Regu', icon: PhUsersThree },
-  { href: '/paspor', label: 'Paspor', icon: PhIdentificationBadge },
+  { href: '/paspor', label: 'Profil', icon: PhIdentificationBadge },
   { href: '/presensi', label: 'Presensi', icon: PhCalendarCheck },
   { href: '/ormawa', label: 'Ormawa', icon: PhStorefront },
   { href: '/leaderboard', label: 'Peringkat', icon: PhTrophy },

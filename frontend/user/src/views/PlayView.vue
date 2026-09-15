@@ -535,7 +535,7 @@ function openEditProfile() {
                 <span class="text-[7.5px] text-[#94a3b8] block mt-0.5 font-sans">Stan UKM</span>
               </button>
 
-              <!-- 4. Paspor Digital -->
+              <!-- 4. Profil Digital -->
               <button
                 type="button"
                 @click="navigateTo('/paspor')"
@@ -543,7 +543,7 @@ function openEditProfile() {
               >
                 <PhIdentificationBadge :size="22" weight="bold" class="text-[#facc15] group-hover:scale-110 transition-transform mb-1" />
                 <span class="text-[8.5px] sm:text-[9.5px] text-[#e2e8f0] font-bold leading-tight block">
-                  PASPOR DIGITAL
+                  PROFIL DIGITAL
                 </span>
                 <span class="text-[7.5px] text-[#94a3b8] block mt-0.5 font-sans">{{ totalStamps }}/9 Stempel</span>
               </button>

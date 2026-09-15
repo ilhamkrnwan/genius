@@ -504,7 +504,7 @@ onUnmounted(() => {
                   <div>
                     <div class="font-pixel text-[11px] text-[#fbf6e9]">Solidaritas Tim</div>
                     <div class="text-xs text-[#a08060] font-sans mt-0.5 leading-normal">
-                      Seluruh anggota berkontribusi aktif menyelesaikan stempel paspor.
+                      Seluruh anggota berkontribusi aktif menyelesaikan stempel profil.
                     </div>
                   </div>
                 </div>

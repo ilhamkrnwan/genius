@@ -94,7 +94,7 @@ const handleConfirmLogout = () => {
       <div class="flex items-start gap-2 text-[10px] text-[#a89078] bg-[#140e08]/70 border border-[#402917] rounded-lg p-2.5 mb-5">
         <PhShieldCheck :size="16" weight="fill" class="text-[#7ec850] shrink-0 mt-0.5" />
         <span class="leading-tight">
-          Progres petualangan, stempel paspor, dan XP Anda tetap tersimpan di akun Anda dan dapat dilanjutkan saat masuk kembali.
+          Progres petualangan, stempel profil, dan XP Anda tetap tersimpan di akun Anda dan dapat dilanjutkan saat masuk kembali.
         </span>
       </div>
 

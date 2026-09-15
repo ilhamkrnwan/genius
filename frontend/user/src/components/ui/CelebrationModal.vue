@@ -133,7 +133,7 @@ const handleNext = () => {
           @click="handleClose"
           className="w-full sm:w-auto"
         >
-          Lihat Paspor
+          Lihat Profil
         </PixelButton>
         <PixelButton
           variant="primary"

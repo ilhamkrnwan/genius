@@ -53,7 +53,7 @@ const steps = [
     num: '04',
     title: 'Koleksi Stempel & XP',
     subtitle: 'Raih Puncak Leaderboard',
-    desc: 'Dapatkan stempel emas digital di Paspor Petualangmu. Setiap keberhasilan menambah XP untuk Kelompok Genius-mu!',
+    desc: 'Dapatkan stempel emas digital di Profil Petualangmu. Setiap keberhasilan menambah XP untuk Kelompok Genius-mu!',
     tip: 'Kelompok dengan XP tertinggi berhak atas Piagam & Hadiah Utama.',
     icon: PhMedal,
     accent: '#f472b6',
