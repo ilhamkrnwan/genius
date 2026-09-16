@@ -12,6 +12,7 @@ import {
   routeStops,
   missions,
   ormawaBooths,
+  ormawaInterests,
   dailyReflections,
   ormawaScans,
   fgdEvaluations,
@@ -36,7 +37,9 @@ async function seed() {
   // ============================================================
   console.log("🧹 [1/8] Cleaning up existing transactional, team, and user data...");
   await db.delete(dailyReflections);
+  await db.delete(ormawaInterests);
   await db.delete(ormawaScans);
+  await db.delete(ormawaBooths);
   await db.delete(fgdEvaluations);
   await db.delete(attendances);
   await db.delete(attendanceSessions);
