@@ -1,5 +1,5 @@
 /**
- * Global authentication & role middleware for Admin & Buddy Control Center.
+ * Global authentication & role middleware for Admin, Buddy, and Ormawa PIC.
  * Protects all routes except /login.
  * Separates access between Superadmin and Buddy roles.
  */
@@ -23,10 +23,15 @@ export default defineNuxtRouteMiddleware((to) => {
       const user = JSON.parse(userRaw);
       const role = user?.role;
 
-      if (role !== "ADMIN" && role !== "BUDDY") {
+      if (role !== "ADMIN" && role !== "BUDDY" && role !== "ORMAWA_PIC") {
         localStorage.removeItem("genius_admin_token");
         localStorage.removeItem("genius_admin_user");
         return navigateTo("/login");
+      }
+
+      // PIC Ormawa hanya memiliki akses ke scanner stan miliknya.
+      if (role === "ORMAWA_PIC" && to.path !== "/ormawa/scan") {
+        return navigateTo("/ormawa/scan");
       }
 
       // If Buddy accesses root dashboard or superadmin pages, route them to /buddy portal

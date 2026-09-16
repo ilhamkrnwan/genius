@@ -1,6 +1,9 @@
-// Use the explicit IPv4 loopback in local development. On some Windows setups
-// localhost resolves to an unrelated IPv6 listener on port 3001.
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:3001/api';
+// When the app is opened from a phone on the same Wi-Fi, loopback would point
+// back to the phone. Use the hostname serving the page for the local API too.
+const browserApiBase = typeof window !== 'undefined'
+  ? `http://${window.location.hostname}:3001/api`
+  : 'http://127.0.0.1:3001/api';
+const API_BASE = import.meta.env.VITE_API_BASE || browserApiBase;
 
 import type { AnswerSubmission, GameSession, PlayableMission } from '@genius-unu/shared';
 
@@ -158,19 +161,11 @@ export const api = {
     return this.request('/ormawa/booths' + query);
   },
 
-  async scanOrmawa(qrToken: string, participantId?: string) {
-    // Backend accepts both qrToken and qrCode — sending qrToken per spec
-    return this.request('/ormawa/scan', {
-      method: 'POST',
-      body: JSON.stringify({ qrToken, participantId }),
-    });
+  async getMyOrmawaProgress(participantId: string) {
+    return this.request('/ormawa/progress/' + encodeURIComponent(participantId));
   },
 
-  async getMyOrmawaBadges(participantId: string) {
-    return this.request('/ormawa/my-badges/' + encodeURIComponent(participantId));
-  },
-
-  async submitOrmawaInterest(payload: { boothId: string; phoneNumber: string; motivation?: string; experience?: string }) {
+  async submitOrmawaInterest(payload: { boothId: string; phoneNumber: string; instagramUsername: string; motivation?: string; experience?: string }) {
     return this.request('/ormawa/interest', {
       method: 'POST',
       body: JSON.stringify(payload),

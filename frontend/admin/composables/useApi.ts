@@ -1,5 +1,6 @@
 import { useRuntimeConfig } from "#app";
 import { useAuth } from "./useAuth";
+import { resolveApiBase } from "~/utils/api-base";
 
 /**
  * Direct HTTP Client for GENIUS UNU 2026 Admin Control Center.
@@ -11,7 +12,7 @@ export function useApi() {
   const auth = useAuth();
 
   const getBaseUrl = () => {
-    return config.public?.apiBase || "http://localhost:3001/api";
+    return resolveApiBase(config.public?.apiBase as string | undefined);
   };
 
   async function request<T = any>(

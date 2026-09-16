@@ -3,11 +3,55 @@ import { Participant, PlayerLevel, StampRecord } from '../types/game';
 import { BOOTHS_DATA, FLOORS_DATA, INITIAL_PARTICIPANT } from '../data/mockData';
 import { soundEngine } from '../lib/sound';
 import { AttendanceStoreMap, DailyReflectionData, AttendanceStatus } from '../types/attendance';
-import { ORMAWA_STANDS } from '../data/ormawaData';
-import { OrmawaScanResult } from '../types/ormawa';
 import { api } from '../lib/api';
 
 const STORAGE_KEY = 'genius_unu_user_storage_v1';
+
+export const OFFICIAL_LOCATION_ALIAS_MAP: Record<string, string> = {
+  'POS-L1-1': 'booth-1a',
+  'POS-L2-2': 'booth-2a',
+  'POS-L3-3': 'booth-3a',
+  'POS-L4-4': 'booth-4a',
+  'POS-L5-5': 'booth-5a',
+  'POS-L2-6': 'booth-2b',
+  'POS-L6-7': 'booth-6a',
+  'POS-L6-8': 'booth-6b',
+  'POS-L4-9': 'booth-4b',
+  'BOOTH-1': 'booth-1a',
+  'BOOTH-2': 'booth-2a',
+  'BOOTH-3': 'booth-3a',
+  'BOOTH-4': 'booth-4a',
+  'BOOTH-5': 'booth-5a',
+  'BOOTH-6': 'booth-2b',
+  'BOOTH-7': 'booth-6a',
+  'BOOTH-8': 'booth-6b',
+  'BOOTH-9': 'booth-4b',
+};
+
+export const OFFICIAL_MISSION_UUID_MAP: Record<string, string> = {
+  'bddbcea0-c115-470c-b241-0ab9a9e8f649': 'booth-1a',
+  'cda41578-47ef-481f-b241-0b34e82581d8': 'booth-2a',
+  'ce4ad838-7bb1-4e7e-8918-78a85c19ad92': 'booth-2b',
+  'c4fd7d58-33b2-4b2e-9403-f312c960f773': 'booth-3a',
+  'dcdfaa74-66ae-4535-aaf3-eb5f701ff574': 'booth-4a',
+  'fd988953-9869-4349-b9fb-b68ad45c6a0e': 'booth-4b',
+  'ce2510ce-512b-421c-81f6-5d1b46f9b563': 'booth-5a',
+  '85cf0860-f752-43dc-9555-62ea59e898e7': 'booth-6a',
+  '6cb9ae29-febe-4ad0-b620-6de0f91f89bd': 'booth-6b',
+};
+
+export function resolveCanonicalBoothId(idOrCode: string): string {
+  if (!idOrCode) return '';
+  if (BOOTHS_DATA[idOrCode]) return idOrCode;
+  const upper = idOrCode.toUpperCase();
+  if (OFFICIAL_LOCATION_ALIAS_MAP[upper]) return OFFICIAL_LOCATION_ALIAS_MAP[upper];
+  const lower = idOrCode.toLowerCase();
+  if (OFFICIAL_MISSION_UUID_MAP[lower]) return OFFICIAL_MISSION_UUID_MAP[lower];
+  const found = Object.values(BOOTHS_DATA).find(
+    (b) => b.code?.toUpperCase() === upper || b.id.toLowerCase() === lower
+  );
+  return found?.id || idOrCode;
+}
 
 export const DEFAULT_ATTENDANCE: AttendanceStoreMap = {
   1: {
@@ -70,10 +114,15 @@ function loadInitialState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      const participant = { ...INITIAL_PARTICIPANT, ...(parsed.participant || {}) } as Participant;
-      const isLoggedIn = Boolean(parsed.isLoggedIn ?? (participant.isRegistered && participant.name));
+      const loadedParticipant = { ...INITIAL_PARTICIPANT, ...(parsed.participant || {}) } as Participant;
+      if (!loadedParticipant.unlockedFloors) loadedParticipant.unlockedFloors = [];
+      if (!loadedParticipant.unlockedFloors.includes(1)) loadedParticipant.unlockedFloors.push(1);
+      if (!Array.isArray(loadedParticipant.completedBooths)) loadedParticipant.completedBooths = [];
+      if (!loadedParticipant.stamps || typeof loadedParticipant.stamps !== 'object') loadedParticipant.stamps = {};
+      
+      const isLoggedIn = Boolean(parsed.isLoggedIn ?? (loadedParticipant.isRegistered && loadedParticipant.name));
       return {
-        participant,
+        participant: loadedParticipant,
         attendance: { ...DEFAULT_ATTENDANCE, ...(parsed.attendance || {}) } as AttendanceStoreMap,
         visitedOrmawa: (parsed.visitedOrmawa || []) as string[],
         ormawaInterests: (parsed.ormawaInterests || []) as string[],
@@ -104,6 +153,7 @@ export const useGameStore = defineStore('game', {
     isLoggedIn: saved.isLoggedIn,
     soundEnabled: true,
     crtEffect: false,
+    ambientEffects: true,
     activeDay: 1 as 1 | 2 | 3,
     isLeaderboardFrozen: false,
   }),
@@ -113,36 +163,47 @@ export const useGameStore = defineStore('game', {
       const floor = FLOORS_DATA.find((f) => f.number === floorNumber);
       if (!floor) return 'not_started';
 
+      const completedBooths = state.participant?.completedBooths || [];
       const completedCount = floor.boothIds.filter((id) =>
-        state.participant.completedBooths.includes(id)
+        id ? completedBooths.includes(id) : false
       ).length;
 
-      if (completedCount === 2) return 'completed';
-      if (completedCount === 1) return 'partial';
+      if (completedCount === floor.boothIds.length && completedCount > 0) return 'completed';
+      if (completedCount > 0) return 'partial';
       return 'not_started';
     },
 
     getCompletedFloorsCount: (state) => (): number => {
-      const completedBooths = state.participant.completedBooths;
+      const completedBooths = state.participant?.completedBooths || [];
       return FLOORS_DATA.filter((f) =>
-        f.boothIds.every((bId) => completedBooths.includes(bId))
+        f.boothIds.every((bId) => (bId ? completedBooths.includes(bId) : false))
       ).length;
     },
 
     getCurrentLevel: (state) => (): PlayerLevel => {
-      const completedBooths = state.participant.completedBooths;
+      const completedBooths = state.participant?.completedBooths || [];
       const completedFloors = FLOORS_DATA.filter((f) =>
-        f.boothIds.every((bId) => completedBooths.includes(bId))
+        f.boothIds.every((bId) => (bId ? completedBooths.includes(bId) : false))
       ).length;
       return calculateLevel(completedFloors);
     },
 
     getTotalStampsCount: (state) => (): number => {
-      return state.participant.completedBooths.length;
+      const completedBooths = state.participant?.completedBooths || [];
+      const canonicalSet = new Set(
+        completedBooths.map((id) => resolveCanonicalBoothId(id)).filter(Boolean)
+      );
+      return canonicalSet.size;
     },
 
     isBoothCompleted: (state) => (boothId: string): boolean => {
-      return state.participant.completedBooths.includes(boothId);
+      if (!boothId) return false;
+      const canonical = resolveCanonicalBoothId(boothId);
+      const completedBooths = state.participant?.completedBooths || [];
+      return (
+        completedBooths.includes(boothId) ||
+        (Boolean(canonical) && completedBooths.includes(canonical))
+      );
     },
 
     getAttendanceForDay: (state) => (day: number) => {
@@ -161,15 +222,24 @@ export const useGameStore = defineStore('game', {
       return Boolean(state.attendance[day]?.checkOutAt);
     },
 
+    getAttendedSessionsCount: (state) => (): number => {
+      let count = 0;
+      for (const d of [1, 2, 3]) {
+        if (state.attendance[d]?.checkInAt) count++;
+        if (state.attendance[d]?.checkOutAt) count++;
+      }
+      return count;
+    },
+
     getTotalAttendanceXp: (state) => (): number => {
       return Object.values(state.attendance).reduce((acc, curr) => acc + (curr.xpAwarded || 0), 0);
     },
 
     visitedOrmawaCount: (state) => state.visitedOrmawa.length,
 
-    ormawaXpEarned: (state) => Math.min(state.visitedOrmawa.length, 10) * 75,
+    ormawaStampXpEarned: (state) => state.visitedOrmawa.length * 2,
 
-    isOrmawaCapped: (state) => state.visitedOrmawa.length >= 10,
+    ormawaXpEarned: (state) => (state.visitedOrmawa.length * 2) + (state.ormawaInterests.length * 3),
 
     isStandVisited: (state) => (standId: string): boolean => {
       return state.visitedOrmawa.includes(standId);
@@ -177,9 +247,7 @@ export const useGameStore = defineStore('game', {
 
     interestCount: (state) => state.ormawaInterests.length,
 
-    interestXpEarned: (state) => Math.min(state.ormawaInterests.length, 3) * 25,
-
-    isInterestCapped: (state) => state.ormawaInterests.length >= 3,
+    interestXpEarned: (state) => state.ormawaInterests.length * 3,
 
     isStandInterested: (state) => (standId: string): boolean => {
       return state.ormawaInterests.includes(standId);
@@ -196,11 +264,116 @@ export const useGameStore = defineStore('game', {
             participant: this.participant,
             attendance: this.attendance,
             visitedOrmawa: this.visitedOrmawa,
+            ormawaInterests: this.ormawaInterests,
             isLoggedIn: this.isLoggedIn,
           })
         );
       } catch (err) {
         console.warn('[Store] Failed to save state to localStorage:', err);
+      }
+    },
+
+    async syncWithServer() {
+      const target = this.participant.id || this.participant.nim;
+      if (!target) return;
+      try {
+        const res = await api.getUserProfile(target);
+        if (res.success && res.data) {
+          const serverScore = Number(res.data.totalScore || 0);
+          this.participant.totalXp = serverScore;
+          if (res.data.id && !this.participant.id) {
+            this.participant.id = res.data.id;
+          }
+          if (res.data.teamId) {
+            this.participant.teamId = res.data.teamId;
+          }
+          if (res.data.teamName) {
+            this.participant.groupName = res.data.teamName;
+          }
+          if (res.data.buddyName) {
+            this.participant.buddyName = res.data.buddyName;
+          }
+
+          // Sync completed game missions to local stamps & completedBooths
+          const completedSessions = (res.data as any).completedSessions;
+          if (Array.isArray(completedSessions) && completedSessions.length > 0) {
+            const completedSet = new Set(this.participant.completedBooths);
+            const stamps = { ...this.participant.stamps };
+
+            for (const session of completedSessions) {
+              const canonicalId = resolveCanonicalBoothId(session.locationCode || session.missionId);
+              const booth = BOOTHS_DATA[canonicalId];
+              if (canonicalId) completedSet.add(canonicalId);
+              if (session.missionId) completedSet.add(session.missionId);
+              if (session.locationCode) completedSet.add(session.locationCode);
+
+              if (booth && !stamps[canonicalId]) {
+                stamps[canonicalId] = {
+                  boothId: canonicalId,
+                  boothName: booth.name,
+                  floorNumber: booth.floorNumber,
+                  stampTitle: booth.stampTitle,
+                  stampIcon: booth.stampIcon,
+                  stampColor: booth.stampColor,
+                  earnedAt: session.completedAt
+                    ? new Date(session.completedAt).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    : new Date().toLocaleDateString('id-ID'),
+                  score: typeof session.score === 'number' ? session.score : 100,
+                  totalQuestions: 8,
+                };
+              }
+            }
+
+            this.participant.completedBooths = Array.from(completedSet);
+            this.participant.stamps = stamps;
+          }
+
+          // Sync attendances from server
+          const serverAttendances = (res.data as any).attendances;
+          if (Array.isArray(serverAttendances)) {
+            for (const att of serverAttendances) {
+              const d = Number(att.day);
+              if (d && this.attendance[d]) {
+                if (att.checkInAt) this.attendance[d].checkInAt = new Date(att.checkInAt).toISOString();
+                if (att.checkInStatus) this.attendance[d].checkInStatus = att.checkInStatus;
+                if (att.checkOutAt) this.attendance[d].checkOutAt = new Date(att.checkOutAt).toISOString();
+                if (att.xpAwarded != null) this.attendance[d].xpAwarded = Number(att.xpAwarded);
+              }
+            }
+          }
+
+          this.saveToStorage();
+        }
+      } catch (err) {
+        console.warn('[gameStore] Server sync note:', err);
+      }
+    },
+
+    async syncAttendanceFromServer() {
+      const target = this.participant.id || this.participant.nim;
+      if (!target) return;
+      try {
+        const res = await api.getAttendanceStatus(target);
+        if (res.success && res.data) {
+          const daysMap = res.data.days || {};
+          for (const d of [1, 2, 3]) {
+            const rec = daysMap[d];
+            if (rec && this.attendance[d]) {
+              if (rec.checkInAt) this.attendance[d].checkInAt = new Date(rec.checkInAt).toISOString();
+              if (rec.checkInStatus) this.attendance[d].checkInStatus = rec.checkInStatus;
+              if (rec.checkOutAt) this.attendance[d].checkOutAt = new Date(rec.checkOutAt).toISOString();
+              if (rec.xpAwarded != null) this.attendance[d].xpAwarded = Number(rec.xpAwarded);
+            }
+          }
+          this.saveToStorage();
+        }
+        await this.syncWithServer();
+      } catch (err) {
+        console.warn('[gameStore] syncAttendanceFromServer note:', err);
       }
     },
 
@@ -213,6 +386,7 @@ export const useGameStore = defineStore('game', {
         };
       }
       this.saveToStorage();
+      this.syncWithServer();
     },
 
     completeProfile(data: { name: string; nim: string; faculty: string; prodi: string; avatar: string }) {
@@ -276,6 +450,11 @@ export const useGameStore = defineStore('game', {
     toggleCrt() {
       if (this.soundEnabled) soundEngine.playClick();
       this.crtEffect = !this.crtEffect;
+    },
+
+    toggleAmbient() {
+      if (this.soundEnabled) soundEngine.playClick();
+      this.ambientEffects = !Boolean(this.ambientEffects);
     },
 
     setActiveDay(day: 1 | 2 | 3) {
@@ -466,8 +645,9 @@ export const useGameStore = defineStore('game', {
       };
     },
 
-    completeBooth(boothId: string, score: number, totalQuestions: number) {
-      const booth = BOOTHS_DATA[boothId];
+    completeBooth(boothId: string, score: number, totalQuestions: number, isServerSynced = false) {
+      const canonicalId = resolveCanonicalBoothId(boothId) || boothId;
+      const booth = BOOTHS_DATA[canonicalId] || BOOTHS_DATA[boothId];
       if (!booth) {
         return {
           isNewStamp: false,
@@ -478,16 +658,20 @@ export const useGameStore = defineStore('game', {
         };
       }
 
-      const isAlreadyCompleted = this.participant.completedBooths.includes(boothId);
+      const isAlreadyCompleted =
+        this.participant.completedBooths.includes(boothId) ||
+        this.participant.completedBooths.includes(canonicalId);
       const oldCompletedFloors = this.getCompletedFloorsCount();
       const oldLevel = calculateLevel(oldCompletedFloors);
 
-      const newCompletedBooths = isAlreadyCompleted
-        ? this.participant.completedBooths
-        : [...this.participant.completedBooths, boothId];
+      const uniqueCompleted = new Set(this.participant.completedBooths);
+      uniqueCompleted.add(canonicalId);
+      uniqueCompleted.add(boothId);
+      if (booth.code) uniqueCompleted.add(booth.code);
+      const newCompletedBooths = Array.from(uniqueCompleted);
 
       const stampRecord: StampRecord = {
-        boothId,
+        boothId: canonicalId,
         boothName: booth.name,
         floorNumber: booth.floorNumber,
         stampTitle: booth.stampTitle,
@@ -504,21 +688,23 @@ export const useGameStore = defineStore('game', {
 
       const newStamps = {
         ...this.participant.stamps,
+        [canonicalId]: stampRecord,
         [boothId]: stampRecord,
       };
 
-      const xpEarned = isAlreadyCompleted ? 0 : 150 + score * 50;
+      // Exact score matching quiz_database.csv (up to 100 points per pos)
+      const xpEarned = isAlreadyCompleted ? 0 : Math.min(100, Math.max(0, score));
       const newTotalXp = this.participant.totalXp + xpEarned;
 
       const floor = FLOORS_DATA.find((f) => f.number === booth.floorNumber);
       const floorBooths = floor ? floor.boothIds : [];
-      const isFloorNowCompleted = floorBooths.every((bId) => newCompletedBooths.includes(bId));
+      const isFloorNowCompleted = floorBooths.every((bId) => (bId ? newCompletedBooths.includes(bId) : false));
       const wasFloorPreviouslyCompleted = floorBooths.every((bId) =>
-        this.participant.completedBooths.includes(bId)
+        bId ? this.participant.completedBooths.includes(bId) : false
       );
 
       const newCompletedFloorsCount = FLOORS_DATA.filter((f) =>
-        f.boothIds.every((bId) => newCompletedBooths.includes(bId))
+        f.boothIds.every((bId) => (bId ? newCompletedBooths.includes(bId) : false))
       ).length;
 
       const newLevel = calculateLevel(newCompletedFloorsCount);
@@ -533,6 +719,32 @@ export const useGameStore = defineStore('game', {
 
       this.saveToStorage();
 
+      // Sync game score to live PostgreSQL point ledger ONLY if not already synced by server session
+      if (!isAlreadyCompleted && xpEarned > 0 && !isServerSynced) {
+        api.submitScore({
+          participantId: this.participant.id || this.participant.nim || 'MABA',
+          teamId: this.participant.teamId || this.participant.groupId || '',
+          amount: xpEarned,
+          sourceType: 'GAME',
+          reason: `Penyelesaian Pos ${booth.name} (Skor: ${score}/${totalQuestions})`,
+        }).then((res) => {
+          if (res.success && res.data) {
+            console.log('[Store] Live game score synced to PostgreSQL:', res.data);
+            if (typeof res.data.totalXp === 'number' && res.data.totalXp > this.participant.totalXp) {
+              this.participant.totalXp = res.data.totalXp;
+              this.saveToStorage();
+            }
+          }
+        }).catch((err) => {
+          console.warn('[Store] Live score submission note:', err);
+        });
+      } else if (isServerSynced) {
+        // If handled by server session, sync score after ledger is written
+        setTimeout(() => {
+          this.syncWithServer();
+        }, 1200);
+      }
+
       return {
         isNewStamp: !isAlreadyCompleted,
         isFloorCompleted: isFloorNowCompleted && !wasFloorPreviouslyCompleted,
@@ -542,84 +754,33 @@ export const useGameStore = defineStore('game', {
       };
     },
 
-    scanOrmawa(rawToken: string): OrmawaScanResult {
-      const token = rawToken.trim().toUpperCase();
-
-      const stand = ORMAWA_STANDS.find((s) => {
-        const expected = s.qrToken.toUpperCase();
-        return (
-          token === expected ||
-          token === s.id.toUpperCase() ||
-          token.includes(s.id.toUpperCase())
-        );
-      });
-
-      if (!stand) {
-        return {
-          success: false,
-          message: `QR Code Ormawa tidak dikenali: "${rawToken}". Pastikan memindai barcode stan resmi.`,
-          xpEarned: 0,
-          isCapped: this.visitedOrmawa.length >= 10,
-        };
-      }
-
-      if (this.visitedOrmawa.includes(stand.id)) {
-        return {
-          success: false,
-          message: `Stan "${stand.shortName}" sudah pernah Anda kunjungi dan terdaftar di paspor.`,
-          xpEarned: 0,
-          stand,
-          isCapped: this.visitedOrmawa.length >= 10,
-        };
-      }
-
-      const currentCount = this.visitedOrmawa.length;
-      const isCapped = currentCount >= 10;
-      const xpEarned = isCapped ? 0 : 75;
-
-      this.visitedOrmawa.push(stand.id);
-      if (xpEarned > 0) {
-        this.participant.totalXp += xpEarned;
-      }
-      this.saveToStorage();
-
-      if (this.soundEnabled) {
-        if (isCapped) {
-          soundEngine.playSelect();
-        } else {
-          soundEngine.playCorrect();
+    async syncOrmawaProgress() {
+      const participantId = this.participant.id;
+      if (!participantId) return;
+      try {
+        const [progressResponse, interestsResponse] = await Promise.all([
+          api.getMyOrmawaProgress(participantId),
+          api.getMyOrmawaInterests(participantId),
+        ]);
+        if (progressResponse.success && Array.isArray((progressResponse.data as any)?.visits)) {
+          this.visitedOrmawa = (progressResponse.data as any).visits.map((visit: any) => visit.boothId);
+          this.participant.totalXp = Number((progressResponse.data as any).totalXp || 0);
         }
-      }
-
-      const message = isCapped
-        ? `Kunjungan ${stand.shortName} dicatat! (Batas XP Capping 10 Stan Tercapai, +0 XP)`
-        : `Lencana "${stand.badgeTitle}" diraih dari ${stand.shortName}! (+${xpEarned} XP)`;
-
-      // Sync scan to live PostgreSQL backend
-      api.scanOrmawa(rawToken, this.participant.id || undefined).then((res) => {
-        if (res.success && res.data) {
-          console.log('[Store] Live Ormawa scan recorded in PostgreSQL:', res.data);
+        if (interestsResponse.success && Array.isArray((interestsResponse.data as any)?.interests)) {
+          this.ormawaInterests = (interestsResponse.data as any).interests.map((interest: any) => interest.boothId);
         }
-      }).catch((err) => {
-        console.warn('[Store] Live Ormawa scan sync note:', err);
-      });
-
-      return {
-        success: true,
-        message,
-        xpEarned,
-        stand,
-        isCapped: this.visitedOrmawa.length >= 10,
-      };
+        this.saveToStorage();
+      } catch (error) {
+        console.warn('[Store] Failed to sync Ormawa progress:', error);
+      }
     },
 
-    async submitInterest(boothId: string, payload: { phoneNumber: string; motivation?: string; experience?: string }) {
+    async submitInterest(boothId: string, payload: { phoneNumber: string; instagramUsername: string; motivation?: string; experience?: string }) {
       if (this.ormawaInterests.includes(boothId)) {
         return { success: false, message: 'Anda sudah mendaftar minat pada ormawa ini.' };
       }
 
-      const isCapped = this.ormawaInterests.length >= 3;
-      const xpBonusEarned = isCapped ? 0 : 25;
+      const xpBonusEarned = 3;
 
       try {
         // Optimistic update
@@ -633,6 +794,7 @@ export const useGameStore = defineStore('game', {
         const res = await api.submitOrmawaInterest({
           boothId,
           phoneNumber: payload.phoneNumber,
+          instagramUsername: payload.instagramUsername,
           motivation: payload.motivation,
           experience: payload.experience,
         });
@@ -641,9 +803,7 @@ export const useGameStore = defineStore('game', {
 
         return {
           success: true,
-          message: isCapped 
-            ? 'Minat bergabung dicatat! (Batas 3 ormawa tercapai, +0 XP)'
-            : `Minat bergabung berhasil dicatat! (+${xpBonusEarned} XP)`,
+          message: `Minat bergabung berhasil dicatat! (+${xpBonusEarned} XP Ormawa)`,
           xpBonusEarned
         };
       } catch (err: any) {
@@ -666,6 +826,7 @@ export const useGameStore = defineStore('game', {
       };
       this.attendance = { ...DEFAULT_ATTENDANCE };
       this.visitedOrmawa = [];
+      this.ormawaInterests = [];
       this.saveToStorage();
       soundEngine.playClick();
     },

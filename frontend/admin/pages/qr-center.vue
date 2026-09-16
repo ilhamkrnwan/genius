@@ -24,7 +24,7 @@
     <!-- Subtitle / Info Bar -->
     <div class="print:hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-muted-foreground border-b border-[#4a3624]/60 pb-2">
       <p>
-        Pusat pencetakan kartu QR Code fisik berbingkai RPG resmi untuk ditempel pada 9 lantai pos kampus, gerbang presensi, dan stand UKM UNU Yogyakarta.
+        Pusat pencetakan & proyektor QR Code resmi PKKMB GENIUS UNU Yogyakarta 2026 dengan fitur randomisasi berkala anti-titip absen.
       </p>
       <div class="flex items-center gap-2 shrink-0">
         <span class="border border-[#ca8a04]/40 bg-[#2b2014] px-2 py-0.5 text-[9px] font-pixel text-[#facc15] flex items-center gap-1">
@@ -39,41 +39,130 @@
       <button
         @click="activeCategory = 'gate'"
         :class="[
-          'h-8 px-3 rounded font-pixel text-[10px] sm:text-xs flex items-center gap-1.5 border transition-all cursor-pointer',
+          'h-8 px-3 rounded font-pixel text-[10px] sm:text-xs flex items-center gap-1.5 border transition-all cursor-pointer shrink-0',
           activeCategory === 'gate'
             ? 'bg-[#ca8a04] text-black border-[#facc15] font-bold shadow'
             : 'bg-[#271d15] text-gray-300 border-[#523e2b] hover:border-[#f59e0b]'
         ]"
       >
         <CalendarCheck class="h-3.5 w-3.5" />
-        <span>GERBANG PRESENSI (H1 - H3)</span>
+        <span>GERBANG PRESENSI ({{ gateList.length }})</span>
       </button>
 
       <button
         @click="activeCategory = 'pos'"
         :class="[
-          'h-8 px-3 rounded font-pixel text-[10px] sm:text-xs flex items-center gap-1.5 border transition-all cursor-pointer',
+          'h-8 px-3 rounded font-pixel text-[10px] sm:text-xs flex items-center gap-1.5 border transition-all cursor-pointer shrink-0',
           activeCategory === 'pos'
             ? 'bg-[#ca8a04] text-black border-[#facc15] font-bold shadow'
             : 'bg-[#271d15] text-gray-300 border-[#523e2b] hover:border-[#f59e0b]'
         ]"
       >
         <Building2 class="h-3.5 w-3.5" />
-        <span>18 POS KAMPUS (9 LANTAI)</span>
+        <span>POS KAMPUS ({{ locations.length }})</span>
       </button>
 
       <button
         @click="activeCategory = 'ormawa'"
         :class="[
-          'h-8 px-3 rounded font-pixel text-[10px] sm:text-xs flex items-center gap-1.5 border transition-all cursor-pointer',
+          'h-8 px-3 rounded font-pixel text-[10px] sm:text-xs flex items-center gap-1.5 border transition-all cursor-pointer shrink-0',
           activeCategory === 'ormawa'
             ? 'bg-[#ca8a04] text-black border-[#facc15] font-bold shadow'
             : 'bg-[#271d15] text-gray-300 border-[#523e2b] hover:border-[#f59e0b]'
         ]"
       >
         <Store class="h-3.5 w-3.5" />
-        <span>STAND ORMAWA EXPO (HARI 3)</span>
+        <span>STAND ORMAWA ({{ ormawaList.length }})</span>
       </button>
+    </div>
+
+    <!-- ================= DYNAMIC QR 5-MINUTE AUTO-REFRESH CONTROL DECK ================= -->
+    <div class="print:hidden p-3.5 bg-[#17100a] border-2 border-[#ca8a04] rounded-lg shadow-md flex flex-col md:flex-row items-center justify-between gap-3">
+      <!-- Status & Switch -->
+      <div class="flex items-center gap-2.5 w-full md:w-auto">
+        <button
+          type="button"
+          @click="toggleAutoRefresh()"
+          :class="[
+            'h-9 px-3.5 rounded font-pixel text-[11px] border flex items-center gap-2 transition-all cursor-pointer shadow-sm',
+            autoRefreshEnabled
+              ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300 hover:bg-emerald-900/90'
+              : 'bg-[#241910] border-[#523e2b] text-gray-400 hover:text-white'
+          ]"
+        >
+          <ToggleRight v-if="autoRefreshEnabled" class="h-4 w-4 text-emerald-400" />
+          <ToggleLeft v-else class="h-4 w-4 text-gray-400" />
+          <span>{{ autoRefreshEnabled ? 'PEMBARUAN OTOMATIS: AKTIF (5 MENIT)' : 'PEMBARUAN OTOMATIS: NONAKTIF' }}</span>
+        </button>
+
+        <span
+          :class="[
+            'hidden sm:inline-block text-[10px] font-mono px-2 py-1 rounded border',
+            autoRefreshEnabled
+              ? 'border-emerald-500/40 text-emerald-400 bg-emerald-950/40'
+              : 'border-[#523e2b] text-gray-400 bg-[#1f160e]'
+          ]"
+        >
+          {{ autoRefreshEnabled ? 'Mode Dinamis (Anti-Titip Absen)' : 'Mode Statis (Standar Cetak A4)' }}
+        </span>
+      </div>
+
+      <!-- Live Countdown & Progress Indicator -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-center">
+        <div class="flex items-center gap-2 font-mono text-xs">
+          <Clock class="h-3.5 w-3.5 text-[#f59e0b]" />
+          <span class="text-gray-300 text-[11px]">Berganti otomatis:</span>
+          <span
+            :class="[
+              'font-pixel text-sm font-bold px-2 py-0.5 rounded border',
+              autoRefreshEnabled
+                ? remainingSeconds <= 30
+                  ? 'bg-red-950 border-red-500 text-red-400 animate-pulse'
+                  : 'bg-[#2b2014] border-[#ca8a04] text-[#facc15]'
+                : 'bg-gray-800 border-gray-600 text-gray-400'
+            ]"
+          >
+            {{ autoRefreshEnabled ? formattedCountdown : 'DIJEDA' }}
+          </span>
+        </div>
+
+        <div class="w-24 sm:w-32 h-2.5 bg-[#120d09] border border-[#4a3624] rounded-full overflow-hidden">
+          <div
+            class="h-full transition-all duration-1000 ease-linear rounded-full"
+            :style="{ width: `${autoRefreshEnabled ? progressPercentage : 100}%` }"
+            :class="[
+              remainingSeconds <= 30
+                ? 'bg-red-500'
+                : remainingSeconds <= 60
+                ? 'bg-amber-500'
+                : 'bg-emerald-500'
+            ]"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Actions: Acak Sekarang & Buka Proyektor -->
+      <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+        <button
+          type="button"
+          @click="manualRandomizeHandler"
+          class="pixel-btn h-8 px-3 text-[10px] font-pixel bg-[#2b2014] text-[#facc15] border-[#523e2b] flex items-center gap-1.5 hover:bg-[#3d2d1e] cursor-pointer"
+          title="Acak ulang kode token seketika"
+        >
+          <RotateCw class="h-3.5 w-3.5" :class="isRotating && 'animate-spin'" />
+          <span>ACAK SEKARANG</span>
+        </button>
+
+        <button
+          type="button"
+          @click="openProjectorLive(null)"
+          class="pixel-btn h-8 px-3 text-[10px] font-pixel bg-[#ca8a04] text-black border-[#facc15] flex items-center gap-1.5 hover:bg-[#eab308] cursor-pointer font-bold shadow"
+          title="Buka Layar Penuh Proyektor Gerbang"
+        >
+          <Tv class="h-3.5 w-3.5" />
+          <span>LAYAR PROYEKTOR</span>
+        </button>
+      </div>
     </div>
 
     <!-- Filter & Toolbar for POS (Screen Only) -->
@@ -87,8 +176,8 @@
           v-model.number="selectedFloor"
           class="h-7 bg-[#1d1611] border border-[#523e2b] px-2 text-foreground focus:outline-none focus:border-[#f59e0b]"
         >
-          <option :value="0">Semua Lantai (1 - 9)</option>
-          <option v-for="f in 9" :key="f" :value="f">Lantai {{ f }}</option>
+          <option :value="0">Semua Lantai ({{ availableFloors.length ? `${availableFloors[0]} - ${availableFloors[availableFloors.length - 1]}` : 'Semua' }})</option>
+          <option v-for="f in availableFloors" :key="f" :value="f">Lantai {{ f }}</option>
         </select>
       </div>
 
@@ -102,6 +191,11 @@
       v-if="activeCategory === 'gate'"
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:grid-cols-2 print:gap-4 print:m-0"
     >
+      <div v-if="gateList.length === 0" class="col-span-full py-16 text-center border border-dashed border-[#523e2b] bg-[#1a140f] p-8 text-muted-foreground font-mono space-y-2">
+        <CalendarCheck class="h-8 w-8 mx-auto text-[#523e2b]" />
+        <p class="text-xs">Belum ada sesi presensi resmi terdaftar di database.</p>
+      </div>
+
       <div
         v-for="gate in gateList"
         :key="gate.code"
@@ -141,14 +235,34 @@
         <!-- QR Code Box -->
         <div class="flex flex-col items-center justify-center p-3 bg-white border-2 border-black rounded shadow-inner">
           <img
-            :src="getQrImageUrl(gate.code)"
-            :alt="gate.code"
+            :src="getQrImageUrl(getDynamicToken(gate.code))"
+            :alt="getDynamicToken(gate.code)"
             class="h-44 w-44 object-contain print:h-40 print:w-40"
             loading="lazy"
           />
-          <span class="font-mono text-[9px] text-black font-bold mt-1.5 tracking-wider">
-            {{ gate.code }}
-          </span>
+          <div class="flex items-center gap-1.5 mt-1.5 flex-wrap justify-center">
+            <span class="font-mono text-[9px] text-black font-bold tracking-wider">
+              {{ getDynamicToken(gate.code) }}
+            </span>
+            <span
+              v-if="autoRefreshEnabled"
+              class="print:hidden text-[8px] font-pixel bg-emerald-600 text-white px-1.5 py-0.2 rounded"
+            >
+              LIVE 5M
+            </span>
+          </div>
+        </div>
+
+        <!-- Action: Proyeksikan Layar Penuh -->
+        <div class="print:hidden pt-1">
+          <button
+            type="button"
+            @click="openProjectorLive(gate)"
+            class="w-full pixel-btn h-7 text-[9px] font-pixel bg-[#241a12] text-[#facc15] border-[#523e2b] flex items-center justify-center gap-1.5 hover:bg-[#382618] cursor-pointer"
+          >
+            <Maximize2 class="h-3 w-3" />
+            <span>TAMPILKAN PROYEKTOR LAYAR PENUH</span>
+          </button>
         </div>
 
         <!-- Instructions for Participants & Panitia -->
@@ -166,6 +280,11 @@
       v-else-if="activeCategory === 'pos'"
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:grid-cols-2 print:gap-4 print:m-0"
     >
+      <div v-if="filteredLocations.length === 0" class="col-span-full py-16 text-center border border-dashed border-[#523e2b] bg-[#1a140f] p-8 text-muted-foreground font-mono space-y-2">
+        <Building2 class="h-8 w-8 mx-auto text-[#523e2b]" />
+        <p class="text-xs">Belum ada checkpoint pos kampus terdaftar untuk filter ini.</p>
+      </div>
+
       <div
         v-for="pos in filteredLocations"
         :key="pos.code"
@@ -192,14 +311,34 @@
         <!-- QR Code Image Box -->
         <div class="flex flex-col items-center justify-center p-3 bg-white border-2 border-[#523e2b] print:border-black rounded">
           <img
-            :src="getQrImageUrl(pos.code)"
-            :alt="pos.code"
+            :src="getQrImageUrl(getDynamicToken(pos.code))"
+            :alt="getDynamicToken(pos.code)"
             class="h-44 w-44 object-contain print:h-40 print:w-40"
             loading="lazy"
           />
-          <span class="font-mono text-[9px] text-black font-bold mt-1">
-            {{ pos.code }}
-          </span>
+          <div class="flex items-center gap-1.5 mt-1 flex-wrap justify-center">
+            <span class="font-mono text-[9px] text-black font-bold">
+              {{ getDynamicToken(pos.code) }}
+            </span>
+            <span
+              v-if="autoRefreshEnabled"
+              class="print:hidden text-[8px] font-pixel bg-emerald-600 text-white px-1.5 py-0.2 rounded"
+            >
+              LIVE 5M
+            </span>
+          </div>
+        </div>
+
+        <!-- Action: Proyeksikan Layar Penuh -->
+        <div class="print:hidden pt-1">
+          <button
+            type="button"
+            @click="openProjectorLive(pos)"
+            class="w-full pixel-btn h-7 text-[9px] font-pixel bg-[#241a12] text-[#facc15] border-[#523e2b] flex items-center justify-center gap-1.5 hover:bg-[#382618] cursor-pointer"
+          >
+            <Maximize2 class="h-3 w-3" />
+            <span>TAMPILKAN PROYEKTOR LAYAR PENUH</span>
+          </button>
         </div>
 
         <!-- Instructions for Participants -->
@@ -288,27 +427,52 @@
           <!-- QR Code Image Box -->
           <div class="flex flex-col items-center justify-center p-3 bg-white border-2 border-black rounded">
             <img
-              :src="getQrImageUrl(booth.code)"
-              :alt="booth.code"
+              :src="getQrImageUrl(getDynamicToken(booth.code))"
+              :alt="getDynamicToken(booth.code)"
               class="h-44 w-44 object-contain print:h-40 print:w-40"
               loading="lazy"
             />
-            <span class="font-mono text-[9px] text-black font-bold mt-1">
-              {{ booth.code }}
-            </span>
+            <div class="flex items-center gap-1.5 mt-1 flex-wrap justify-center">
+              <span class="font-mono text-[9px] text-black font-bold">
+                {{ getDynamicToken(booth.code) }}
+              </span>
+              <span
+                v-if="autoRefreshEnabled"
+                class="print:hidden text-[8px] font-pixel bg-emerald-600 text-white px-1.5 py-0.2 rounded"
+              >
+                LIVE 5M
+              </span>
+            </div>
+          </div>
+
+          <!-- Action: Proyeksikan Layar Penuh -->
+          <div class="print:hidden pt-1">
+            <button
+              type="button"
+              @click="openProjectorLive(booth)"
+              class="w-full pixel-btn h-7 text-[9px] font-pixel bg-[#241a12] text-[#facc15] border-[#523e2b] flex items-center justify-center gap-1.5 hover:bg-[#382618] cursor-pointer"
+            >
+              <Maximize2 class="h-3 w-3" />
+              <span>TAMPILKAN PROYEKTOR LAYAR PENUH</span>
+            </button>
           </div>
 
           <!-- Instructions for Participants -->
           <div class="border-t border-[#6b21a8] print:border-black pt-2 text-[10px] font-mono text-muted-foreground print:text-gray-800 space-y-0.5 text-left">
-            <p class="font-bold text-[#c084fc] print:text-black">📱 PETUNJUK MAHASISWA:</p>
-            <p>1. Kunjungi stand UKM dan kenali program kegiatannya.</p>
-            <p>2. Scan QR stand ini untuk membuka <strong>Lencana Paspor UKM</strong>.</p>
-            <p class="text-emerald-400 print:text-black font-bold">Reward: +{{ booth.xpReward || 75 }} XP (Capping maks 10 stan)</p>
+            <p class="font-bold text-[#c084fc] print:text-black">ALUR STAMP:</p>
+            <p>1. Maba menyelesaikan misi yang ditentukan stan.</p>
+            <p>2. Maba membuka QR profilnya, lalu PIC memindai melalui Dashboard Scanner PIC.</p>
+            <p class="text-emerald-400 print:text-black font-bold">Reward stamp: +{{ booth.xpReward ?? 2 }} XP</p>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Live Gate Projector Modal -->
+    <GateProjectorModal
+      v-model="showProjectorModal"
+      :custom-card="projectorTargetCard"
+    />
   </div>
 </template>
 
@@ -322,106 +486,68 @@ import {
   Building2,
   Store,
   ExternalLink,
+  Clock,
+  ToggleRight,
+  ToggleLeft,
+  Tv,
+  Maximize2,
 } from "lucide-vue-next";
-import { useApi } from "@/composables/useApi";
+import { useApi } from "~/composables/useApi";
+import { useDynamicQr } from "~/composables/useDynamicQr";
+import GateProjectorModal from "@/components/qr/GateProjectorModal.vue";
 
 const api = useApi();
+const {
+  autoRefreshEnabled,
+  remainingSeconds,
+  formattedCountdown,
+  progressPercentage,
+  getDynamicToken,
+  randomizeAll,
+  toggleAutoRefresh,
+} = useDynamicQr();
+
 const activeCategory = ref<"gate" | "pos" | "ormawa">("gate");
 const selectedFloor = ref(0);
 const loading = ref(false);
+const isRotating = ref(false);
+const showProjectorModal = ref(false);
+const projectorTargetCard = ref<any | null>(null);
+
 const locations = ref<any[]>([]);
 const ormawaList = ref<any[]>([]);
 
-// Daftar Kartu Gerbang Presensi Resmi 3 Hari
-const gateList = [
-  {
-    code: "UNU-PRESENSI-H1-GATE-2026",
-    title: "PRESENSI MASUK HARI 1",
-    subtitle: "Pintu Utama Hall Lantai 1 (Selasa, 22 Sep 2026)",
-    type: "MASUK",
-    timeLabel: "PAGI: 07:00 - 07:30",
-    rewardXp: "+100 XP Presensi Masuk",
-  },
-  {
-    code: "UNU-PRESENSI-H1-CHECKOUT-2026",
-    title: "PRESENSI PULANG HARI 1",
-    subtitle: "Gerbang Keluar Hall Utama (Selasa, 22 Sep 2026)",
-    type: "PULANG",
-    timeLabel: "SORE: 16:00 WIB",
-    rewardXp: "+50 XP Presensi Pulang",
-  },
-  {
-    code: "UNU-PRESENSI-H2-GATE-2026",
-    title: "PRESENSI MASUK HARI 2",
-    subtitle: "Pintu Utama Hall Lantai 1 (Rabu, 23 Sep 2026)",
-    type: "MASUK",
-    timeLabel: "PAGI: 07:00 - 07:30",
-    rewardXp: "+100 XP Presensi Masuk",
-  },
-  {
-    code: "UNU-PRESENSI-H2-CHECKOUT-2026",
-    title: "PRESENSI PULANG HARI 2",
-    subtitle: "Gerbang Keluar Hall Utama (Rabu, 23 Sep 2026)",
-    type: "PULANG",
-    timeLabel: "SORE: 16:00 WIB",
-    rewardXp: "+50 XP Presensi Pulang",
-  },
-  {
-    code: "UNU-PRESENSI-H3-GATE-2026",
-    title: "PRESENSI MASUK HARI 3",
-    subtitle: "Pintu Utama Hall Lantai 1 (Kamis, 24 Sep 2026)",
-    type: "MASUK",
-    timeLabel: "PAGI: 07:00 - 07:30",
-    rewardXp: "+100 XP Presensi Masuk",
-  },
-  {
-    code: "UNU-PRESENSI-H3-CHECKOUT-2026",
-    title: "PRESENSI PULANG HARI 3",
-    subtitle: "Gerbang Keluar Hall Utama (Kamis, 24 Sep 2026)",
-    type: "PULANG",
-    timeLabel: "SORE: 16:00 WIB",
-    rewardXp: "+50 XP Presensi Pulang",
-  },
-];
-
-// 18 Pos Fisik 9 Lantai Fallback
-const defaultCampusLocations = [
-  { floorNumber: 1, name: "Welcome Hall & Karakter Kampus (Zona Barat)", code: "POS-L1-A" },
-  { floorNumber: 1, name: "Student Center & Aspirasi (Zona Timur)", code: "POS-L1-B" },
-  { floorNumber: 2, name: "Perpustakaan Digital UNU (Zona Barat)", code: "POS-L2-A" },
-  { floorNumber: 2, name: "Smart Classroom & Diskusi (Zona Timur)", code: "POS-L2-B" },
-  { floorNumber: 3, name: "Fakultas Teknologi Informasi (Zona Barat)", code: "POS-L3-A" },
-  { floorNumber: 3, name: "AI & Software Engineering Lab (Zona Timur)", code: "POS-L3-B" },
-  { floorNumber: 4, name: "Fakultas Industri Halal (Zona Barat)", code: "POS-L4-A" },
-  { floorNumber: 4, name: "Bioteknologi & Sensor Lab (Zona Timur)", code: "POS-L4-B" },
-  { floorNumber: 5, name: "Fakultas Ekonomi Bisnis Digital (Zona Barat)", code: "POS-L5-A" },
-  { floorNumber: 5, name: "Inkubator Startup Mahasiswa (Zona Timur)", code: "POS-L5-B" },
-  { floorNumber: 6, name: "Fakultas Studi Islam & Budaya (Zona Barat)", code: "POS-L6-A" },
-  { floorNumber: 6, name: "Pusat Bahasa & Kaligrafi (Zona Timur)", code: "POS-L6-B" },
-  { floorNumber: 7, name: "Fakultas Ilmu Pendidikan (Zona Barat)", code: "POS-L7-A" },
-  { floorNumber: 7, name: "Microteaching & Seni Musik (Zona Timur)", code: "POS-L7-B" },
-  { floorNumber: 8, name: "Rektorat & Kantor Dekanat (Zona Barat)", code: "POS-L8-A" },
-  { floorNumber: 8, name: "Pusat Riset & Inovasi UNU (Zona Timur)", code: "POS-L8-B" },
-  { floorNumber: 9, name: "Grand Convention Hall (Zona Barat)", code: "POS-L9-A" },
-  { floorNumber: 9, name: "Rooftop Sky Garden & Arena Final (Zona Timur)", code: "POS-L9-B" },
-];
+const gateList = ref<any[]>([]);
 
 async function fetchLocations() {
   loading.value = true;
   try {
-    // 1. Fetch Campus Pos Locations from API
+    // 1. Fetch Dynamic Presensi Gate Sessions from DB
+    const sessionsRes = await api.get<{ success: boolean; data: any[] }>("/api/attendance/sessions");
+    if (sessionsRes?.success && Array.isArray(sessionsRes.data)) {
+      gateList.value = sessionsRes.data.map((s) => ({
+        code: s.qrToken || s.code || s.id,
+        title: s.title,
+        subtitle: s.description || (s.type === 'PULANG' ? 'Gerbang Keluar Hall Utama' : 'Pintu Utama Hall Kampus'),
+        type: s.type || "MASUK",
+        timeLabel: s.timeLabel || (s.type === 'PULANG' ? 'SORE' : 'PAGI'),
+        rewardXp: `+${s.xpReward || (s.type === 'PULANG' ? 50 : 100)} XP Presensi ${s.type === 'PULANG' ? 'Pulang' : 'Masuk'}`,
+      }));
+    }
+
+    // 2. Fetch Campus Pos Locations from API dynamically (tanpa fallback mock static)
     const locRes = await api.get<{ success: boolean; data: any[] }>("/api/floors/locations");
-    if (locRes?.success && Array.isArray(locRes.data) && locRes.data.length > 0) {
+    if (locRes?.success && Array.isArray(locRes.data)) {
       locations.value = locRes.data.map((l) => ({
         floorNumber: l.floorNumber || 1,
         name: l.name,
         code: l.qrCode || l.code,
       }));
     } else {
-      locations.value = defaultCampusLocations;
+      locations.value = [];
     }
 
-    // 2. Fetch Ormawa Booths dynamically
+    // 3. Fetch Ormawa Booths dynamically
     const ormawaRes = await api.get<{ success: boolean; data: any[] }>("/api/ormawa/booths?includeInactive=false");
     if (ormawaRes?.success && Array.isArray(ormawaRes.data)) {
       ormawaList.value = ormawaRes.data.map((b) => ({
@@ -430,19 +556,39 @@ async function fetchLocations() {
         boothNumber: b.boothNumber || `STAN L${b.floorNumber || 3}`,
         category: b.category,
         location: b.floorName ? `${b.floorName} (Lantai ${b.floorNumber})` : (b.boothNumber || "Selasar Expo"),
-        xpReward: b.xpReward || 75,
+        xpReward: b.xpReward ?? 2,
       }));
     }
   } catch (err) {
     console.error("Gagal memuat data QR:", err);
-    if (locations.value.length === 0) locations.value = defaultCampusLocations;
   } finally {
     loading.value = false;
   }
 }
 
+function manualRandomizeHandler() {
+  isRotating.value = true;
+  randomizeAll();
+  setTimeout(() => {
+    isRotating.value = false;
+  }, 500);
+}
+
+function openProjectorLive(card: any | null) {
+  projectorTargetCard.value = card;
+  showProjectorModal.value = true;
+}
+
 onMounted(() => {
   fetchLocations();
+});
+
+const availableFloors = computed(() => {
+  const floorSet = new Set<number>();
+  for (const loc of locations.value) {
+    if (loc.floorNumber) floorSet.add(Number(loc.floorNumber));
+  }
+  return Array.from(floorSet).sort((a, b) => a - b);
 });
 
 const filteredLocations = computed(() => {

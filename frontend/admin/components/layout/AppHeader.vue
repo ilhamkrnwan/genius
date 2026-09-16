@@ -65,8 +65,9 @@ import {
   ShieldAlert,
   FileText,
   Settings,
+  Store,
 } from "lucide-vue-next";
-import { useLayoutState } from "@/composables/useLayoutState";
+import { useLayoutState } from "~/composables/useLayoutState";
 
 const { openMobile, customPageTitle, customPageBadge, customPageIcon } = useLayoutState();
 const route = useRoute();
@@ -79,10 +80,11 @@ const routeLabels: Record<string, string> = {
   buddies: "Manajemen Buddy (GM)",
   teams: "Manajemen Tim Petualang",
   users: "Manajemen Pengguna",
-  floors: "9 Lantai & Lokasi UNU",
+  floors: "Lantai UNU",
   routes: "Rute Perjalanan",
   missions: "Misi & Pos Tantangan",
-  stages: "Game Stages",
+  stages: "Timeline & Stages",
+  ormawa: "Scanner PIC Ormawa",
   "qr-center": "QR Print Center",
   games: "Arena Games",
   questions: "Bank Soal & Kuis",
@@ -105,6 +107,7 @@ const routeIcons: Record<string, any> = {
   routes: GitFork,
   missions: Target,
   stages: Layers,
+  ormawa: Store,
   "qr-center": QrCode,
   games: Gamepad2,
   questions: HelpCircle,

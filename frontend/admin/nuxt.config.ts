@@ -1,5 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import tailwindcss from "@tailwindcss/vite";
+
 export default defineNuxtConfig({
+  future: {
+    compatibilityVersion: 4,
+  },
   compatibilityDate: "2024-11-01",
   devtools: { enabled: false },
   telemetry: false,
@@ -8,19 +13,46 @@ export default defineNuxtConfig({
   ssr: false,
 
   devServer: {
+    host: "0.0.0.0",
     port: 3002,
   },
 
   css: ["~/assets/css/tailwind.css", "~/assets/css/main.css"],
 
+  vite: {
+    plugins: [tailwindcss()],
+    server: {
+      allowedHosts: [".trycloudflare.com"],
+    },
+  },
+
+  nitro: {
+    devProxy: {
+      "/api": {
+        target: "http://127.0.0.1:3001/api",
+        changeOrigin: true,
+      },
+    },
+  },
+
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || "/api",
       useMockApi: process.env.NUXT_PUBLIC_USE_MOCK_API === "true",
     },
   },
 
-  modules: ["@nuxtjs/tailwindcss", "shadcn-nuxt"],
+  modules: ["shadcn-nuxt"],
+
+  components: {
+    dirs: [
+      {
+        path: "~/components",
+        pathPrefix: false,
+        extensions: [".vue"],
+      },
+    ],
+  },
 
   shadcn: {
     /**
@@ -31,7 +63,7 @@ export default defineNuxtConfig({
      * Directory that the component lives in.
      * @default "./components/ui"
      */
-    componentDir: "./components/ui",
+    componentDir: "./app/components/ui",
   },
 
   app: {
@@ -49,8 +81,9 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
-        { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16x16.png" },
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
         { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32x32.png" },
+        { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16x16.png" },
         { rel: "icon", type: "image/png", sizes: "48x48", href: "/favicon-48x48.png" },
         { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
         { rel: "manifest", href: "/site.webmanifest" },

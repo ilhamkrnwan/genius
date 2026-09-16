@@ -328,7 +328,7 @@ export const authRoutes = new Elysia({
     }
   )
 
-  // POST /api/auth/login-admin — Login Panitia (Admin & Buddy)
+  // POST /api/auth/login-admin — Login Panitia (Admin, Buddy, dan PIC Ormawa)
   .post(
     "/login-admin",
     async ({ body, set }) => {
@@ -348,7 +348,7 @@ export const authRoutes = new Elysia({
         .where(eq(users.username, username))
         .limit(1);
 
-      if (!user || (user.role !== "ADMIN" && user.role !== "BUDDY")) {
+      if (!user || (user.role !== "ADMIN" && user.role !== "BUDDY" && user.role !== "ORMAWA_PIC")) {
         set.status = 401;
         return { success: false, error: { code: "INVALID_CREDENTIALS", message: "Akun panitia tidak ditemukan" } };
       }
@@ -376,7 +376,7 @@ export const authRoutes = new Elysia({
     },
     {
       detail: {
-        summary: "Login Admin & Buddy Panitia",
+        summary: "Login Admin, Buddy, dan PIC Ormawa",
       },
       body: t.Object({
         username: t.String(),

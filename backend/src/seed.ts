@@ -12,184 +12,119 @@ import {
   routeStops,
   missions,
   ormawaBooths,
+  dailyReflections,
+  ormawaScans,
+  fgdEvaluations,
+  attendances,
+  attendanceSessions,
+  participantAchievements,
+  auditLogs,
+  scoreTransactions,
+  gameSessions,
+  achievements,
 } from "./db/schema";
 import { hashPassword } from "./lib/password";
+import { ensureOfficialOrmawaPics } from "./db/ensure-ormawa-pics";
 import { eq, and } from "drizzle-orm";
 import { RAW_BUDDY_DATA } from "./data/officialBuddies";
+import { OFFICIAL_PARTICIPANTS } from "./data/participants";
 
 async function seed() {
-  console.log("🌱 Starting GENIUS 2026 Database Seeding...");
+  console.log("🌱 Starting GENIUS 2026 Database Seeding (Clean Slate)...");
 
-  // 1. Seed Admin & Sample Users
-  console.log("Creating Admin & Demo Users...");
+  // ============================================================
+  // 1. CLEAN SLATE: Bersihkan Seluruh Data Transaksi & Akun Pengguna
+  // ============================================================
+  console.log("🧹 [1/8] Cleaning up existing transactional, team, and user data...");
+  // Putuskan relasi PIC lebih dahulu agar penghapusan akun tidak melanggar FK.
+  await db.update(ormawaBooths).set({ picUserId: null });
+  await db.delete(dailyReflections);
+  await db.delete(ormawaScans);
+  await db.delete(fgdEvaluations);
+  await db.delete(attendances);
+  await db.delete(attendanceSessions);
+  await db.delete(participantAchievements);
+  await db.delete(auditLogs);
+  await db.delete(scoreTransactions);
+  await db.delete(gameSessions);
+  await db.delete(teamMembers);
+  await db.update(teams).set({ captainId: null });
+  await db.delete(teams);
+  await db.delete(users);
+  console.log("  ✅ Clean slate complete: previous users, teams, and logs removed.");
+
+  // Default Passwords
   const adminPassword = await hashPassword("admin2026");
-  const buddyPassword = await hashPassword("buddy2026");
   const defaultPassword = await hashPassword("genius2026");
 
-  // Check if admin exists
-  const [existingAdmin] = await db
-    .select()
-    .from(users)
-    .where(eq(users.username, "admin"))
-    .limit(1);
+  // ============================================================
+  // 2. SEED ADMIN USER
+  // ============================================================
+  console.log("👑 [2/8] Creating Master Administrator...");
+  const [adminUser] = await db
+    .insert(users)
+    .values({
+      username: "admin",
+      passwordHash: adminPassword,
+      fullName: "Administrator GENIUS 2026",
+      role: "ADMIN",
+      status: "ACTIVE",
+    })
+    .returning();
+  console.log("  ✅ Admin created: username 'admin', password 'admin2026'");
 
-  let adminUser = existingAdmin;
-  if (!existingAdmin) {
-    [adminUser] = await db
-      .insert(users)
-      .values({
-        username: "admin",
-        passwordHash: adminPassword,
-        fullName: "Administrator GENIUS",
-        role: "ADMIN",
-        status: "ACTIVE",
-      })
-      .returning();
-    console.log("  ✅ Admin created: username 'admin', password 'admin2026'");
-  }
-
-  // Create sample Buddies
-  const [existingBuddy] = await db
-    .select()
-    .from(users)
-    .where(eq(users.username, "buddy_budi"))
-    .limit(1);
-
-  let buddyUser = existingBuddy;
-  if (!existingBuddy) {
-    [buddyUser] = await db
-      .insert(users)
-      .values({
-        username: "buddy_budi",
-        passwordHash: buddyPassword,
-        fullName: "Budi Santoso (Buddy)",
-        role: "BUDDY",
-        status: "ACTIVE",
-      })
-      .returning();
-    console.log("  ✅ Sample Buddy created: username 'buddy_budi'");
-  }
-
-  const [existingBuddy01] = await db
-    .select()
-    .from(users)
-    .where(eq(users.username, "buddy01"))
-    .limit(1);
-
-  if (!existingBuddy01) {
-    await db
-      .insert(users)
-      .values({
-        username: "buddy01",
-        passwordHash: buddyPassword,
-        fullName: "Budi Santoso (Buddy)",
-        role: "BUDDY",
-        status: "ACTIVE",
-      });
-    console.log("  ✅ Sample Buddy created: username 'buddy01'");
-  }
-
-  // Create sample Participants with rich RPG profiles & evolution tiers
-  const sampleParticipantsConfig = [
-    {
-      username: "peserta_1",
-      fullName: "Ahmad Dahlan",
-      gender: "MALE",
-      characterClass: "CYBER_KNIGHT",
-      characterTitle: "Novice Adventurer",
-      characterTier: 1,
-      unlockedTitles: ["Novice Adventurer", "Penjelajah Kampus Baru"],
-      avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=CyberKnightM1&backgroundColor=0284c7",
-    },
-    {
-      username: "peserta_2",
-      fullName: "Fatimah Azzahra",
-      gender: "FEMALE",
-      characterClass: "TECH_MAGE",
-      characterTitle: "Master Kuis Cepat",
+  // ============================================================
+  // 3. SEED 10 BUDDY (NIM 25111101 - 25111110)
+  // ============================================================
+  console.log("👥 [3/8] Creating 10 Official Buddies (NIM 25111101 - 25111110)...");
+  const buddyInserts = RAW_BUDDY_DATA.slice(0, 10).map((b, idx) => {
+    const nim = `251111${String(idx + 1).padStart(2, "0")}`;
+    return {
+      username: nim,
+      passwordHash: defaultPassword,
+      fullName: b.fullName,
+      role: "BUDDY" as const,
+      status: "ACTIVE" as const,
+      gender: b.gender,
+      faculty: b.faculty,
+      prodi: b.prodi,
+      characterClass: "TECH_MONK",
+      characterTitle: "Pemandu Mahasiswa",
       characterTier: 2,
-      unlockedTitles: ["Novice Adventurer", "Code Apprentice", "Master Kuis Cepat", "Archmage of Code"],
-      avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=TechMageF2&backgroundColor=6b21a8",
-    },
-    {
-      username: "peserta_3",
-      fullName: "Rian Pratama",
-      gender: "MALE",
-      characterClass: "CODE_ARCHER",
-      characterTitle: "Ahli Refleks Kilat",
-      characterTier: 2,
-      unlockedTitles: ["Novice Adventurer", "Algorithm Scout", "Ahli Refleks Kilat"],
-      avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=CodeArcherM2&backgroundColor=166534",
-    },
-    {
-      username: "peserta_4",
-      fullName: "Siti Nurhaliza",
-      gender: "FEMALE",
-      characterClass: "DATA_ALCHEMIST",
-      characterTitle: "Pakar Teka-Teki Kuno",
-      characterTier: 2,
-      unlockedTitles: ["Novice Adventurer", "Data Seeker", "Pakar Teka-Teki Kuno", "Data Wizard"],
-      avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=DataAlchemistF2&backgroundColor=854d0e",
-    },
-    {
-      username: "peserta_5",
-      fullName: "Kevin Wijaya",
-      gender: "MALE",
-      characterClass: "SHADOW_ASSASSIN",
-      characterTitle: "Penakluk 9 Lantai",
-      characterTier: 3,
-      unlockedTitles: ["Novice Adventurer", "Silent Runner", "Speed Solver", "Penakluk 9 Lantai", "Lantai 9 Conqueror"],
-      avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=ShadowAssassinM3&backgroundColor=713f12",
-    },
-  ];
+      avatarUrl: b.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png",
+    };
+  });
 
-  const sampleParticipants = [];
-  for (const pConfig of sampleParticipantsConfig) {
-    const [existing] = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, pConfig.username))
-      .limit(1);
+  const createdBuddies = await db.insert(users).values(buddyInserts).returning();
+  console.log(`  ✅ ${createdBuddies.length} Official Buddies registered with NIM 25111101 - 25111110 (Password: genius2026)`);
 
-    if (!existing) {
-      const [p] = await db
-        .insert(users)
-        .values({
-          username: pConfig.username,
-          passwordHash: defaultPassword,
-          fullName: pConfig.fullName,
-          role: "PARTICIPANT",
-          status: "ACTIVE",
-          gender: pConfig.gender,
-          characterClass: pConfig.characterClass,
-          characterTitle: pConfig.characterTitle,
-          characterTier: pConfig.characterTier,
-          unlockedTitles: pConfig.unlockedTitles,
-          avatarUrl: pConfig.avatarUrl,
-        })
-        .returning();
-      sampleParticipants.push(p);
-    } else {
-      // Update with RPG metadata
-      await db
-        .update(users)
-        .set({
-          fullName: pConfig.fullName,
-          gender: pConfig.gender,
-          characterClass: pConfig.characterClass,
-          characterTitle: pConfig.characterTitle,
-          characterTier: pConfig.characterTier,
-          unlockedTitles: pConfig.unlockedTitles,
-          avatarUrl: pConfig.avatarUrl,
-        })
-        .where(eq(users.id, existing.id));
-      sampleParticipants.push(existing);
-    }
-  }
-  console.log(`  ✅ ${sampleParticipants.length} Sample RPG Participants verified/updated`);
+  // ============================================================
+  // 4. SEED 100 PARTICIPANTS (NIM 26111101 - 26111200)
+  // ============================================================
+  console.log("🎓 [4/8] Creating 100 Official Participants (NIM 26111101 - 26111200)...");
+  const participantInserts = OFFICIAL_PARTICIPANTS.map((p) => ({
+    username: p.nim,
+    passwordHash: defaultPassword,
+    fullName: p.fullName,
+    role: "PARTICIPANT" as const,
+    status: "ACTIVE" as const,
+    gender: p.gender,
+    faculty: p.faculty,
+    prodi: p.prodi,
+    characterClass: p.characterClass,
+    characterTitle: "Novice Adventurer",
+    characterTier: 1,
+    unlockedTitles: ["Novice Adventurer"],
+    avatarUrl: p.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png",
+  }));
 
-  // 2. Seed 9 Floors of UNU Yogyakarta
-  console.log("Creating 9 Campus Floors...");
+  const createdParticipants = await db.insert(users).values(participantInserts).returning();
+  console.log(`  ✅ ${createdParticipants.length} Participants registered with NIM 26111101 - 26111200 (Password: genius2026)`);
+
+  // ============================================================
+  // 5. SEED MASTER DATA: Floors & 18 Locations
+  // ============================================================
+  console.log("🏢 [5/8] Verifying 9 Campus Floors & 18 Pos Locations...");
   const floorConfig = [
     { number: 1, name: "Lantai 1: Lobby Utama & Student Center", description: "Lobby resepsionis, pusat layanan mahasiswa, dan plaza kampus." },
     { number: 2, name: "Lantai 2: Perpustakaan & Digital Learning Lab", description: "Pusat literasi digital, koleksi buku referensi, dan lab pembelajaran mandiri." },
@@ -204,59 +139,35 @@ async function seed() {
 
   const createdFloors = [];
   for (const fc of floorConfig) {
-    const [existing] = await db
-      .select()
-      .from(floors)
-      .where(eq(floors.number, fc.number))
-      .limit(1);
-
+    const [existing] = await db.select().from(floors).where(eq(floors.number, fc.number)).limit(1);
     if (!existing) {
-      const [f] = await db
-        .insert(floors)
-        .values({
-          number: fc.number,
-          name: fc.name,
-          description: fc.description,
-        })
-        .returning();
+      const [f] = await db.insert(floors).values(fc).returning();
       createdFloors.push(f);
     } else {
       await db.update(floors).set({ name: fc.name, description: fc.description }).where(eq(floors.id, existing.id));
       createdFloors.push(existing);
     }
   }
-  console.log("  ✅ 9 Floors seeded with detailed facility names");
 
-  // 3. Seed 18 Campus Pos Locations (Zona A & B per Lantai)
-  console.log("Creating 18 Physical Pos Locations & QR Identifiers...");
   const sampleLocationData = [
-    // Lantai 1
-    { code: "POS-L1-A", name: "Lantai 1: Lobby Utama (Zona Barat)", floorNum: 1, qrCode: "UNU-QR-L1-ZONA-A-2026", desc: "Pos Pendaftaran & Orientasi Awal Mahasiswa Baru" },
-    { code: "POS-L1-B", name: "Lantai 1: Student Center (Zona Timur)", floorNum: 1, qrCode: "UNU-QR-L1-ZONA-B-2026", desc: "Pos UKM & Informasi Komunitas Kampus" },
-    // Lantai 2
-    { code: "POS-L2-A", name: "Lantai 2: Perpustakaan (Zona Barat)", floorNum: 2, qrCode: "UNU-QR-L2-ZONA-A-2026", desc: "Pos Literasi & Arsip Khazanah Ilmu" },
-    { code: "POS-L2-B", name: "Lantai 2: Digital Learning Lab (Zona Timur)", floorNum: 2, qrCode: "UNU-QR-L2-ZONA-B-2026", desc: "Pos E-Learning & Akses Jurnal Internasional" },
-    // Lantai 3
-    { code: "POS-L3-A", name: "Lantai 3: Lab Komputer AI (Zona Barat)", floorNum: 3, qrCode: "UNU-QR-L3-ZONA-A-2026", desc: "Pos Algoritma & Pemrograman Cerdas" },
-    { code: "POS-L3-B", name: "Lantai 3: Smart FTI Hall (Zona Timur)", floorNum: 3, qrCode: "UNU-QR-L3-ZONA-B-2026", desc: "Pos Jaringan & Infrastruktur Siber Kampus" },
-    // Lantai 4
-    { code: "POS-L4-A", name: "Lantai 4: Lab Riset Halal (Zona Barat)", floorNum: 4, qrCode: "UNU-QR-L4-ZONA-A-2026", desc: "Pos Standarisasi & Sains Industri Halal" },
-    { code: "POS-L4-B", name: "Lantai 4: Bioteknologi Terapan (Zona Timur)", floorNum: 4, qrCode: "UNU-QR-L4-ZONA-B-2026", desc: "Pos Eksperimen Hayati & Keberlanjutan" },
-    // Lantai 5
-    { code: "POS-L5-A", name: "Lantai 5: Smart Classroom FEB (Zona Barat)", floorNum: 5, qrCode: "UNU-QR-L5-ZONA-A-2026", desc: "Pos Manajemen & Simulasi Bisnis Modern" },
-    { code: "POS-L5-B", name: "Lantai 5: Inkubator Startup (Zona Timur)", floorNum: 5, qrCode: "UNU-QR-L5-ZONA-B-2026", desc: "Pos Inovasi Ekonomi Kreatif Digital" },
-    // Lantai 6
-    { code: "POS-L6-A", name: "Lantai 6: Pusat Studi Islam (Zona Barat)", floorNum: 6, qrCode: "UNU-QR-L6-ZONA-A-2026", desc: "Pos Khazanah Islam Nusantara & Kebangsaan" },
-    { code: "POS-L6-B", name: "Lantai 6: Lab Bahasa Global (Zona Timur)", floorNum: 6, qrCode: "UNU-QR-L6-ZONA-B-2026", desc: "Pos Diplomasi & Komunikasi Multibahasa" },
-    // Lantai 7
-    { code: "POS-L7-A", name: "Lantai 7: Studio Multimedia (Zona Barat)", floorNum: 7, qrCode: "UNU-QR-L7-ZONA-A-2026", desc: "Pos Desain Kreatif & Visualisasi Digital" },
-    { code: "POS-L7-B", name: "Lantai 7: Microteaching Lab (Zona Timur)", floorNum: 7, qrCode: "UNU-QR-L7-ZONA-B-2026", desc: "Pos Karakter Pendidik & Metodologi Belajar" },
-    // Lantai 8
-    { code: "POS-L8-A", name: "Lantai 8: Pusat Inovasi Riset (Zona Barat)", floorNum: 8, qrCode: "UNU-QR-L8-ZONA-A-2026", desc: "Pos Kolaborasi Strategis & Riset Terapan" },
-    { code: "POS-L8-B", name: "Lantai 8: Ruang Rapat Pimpinan (Zona Timur)", floorNum: 8, qrCode: "UNU-QR-L8-ZONA-B-2026", desc: "Pos Tata Kelola & Kepemimpinan Kampus" },
-    // Lantai 9
-    { code: "POS-L9-A", name: "Lantai 9: Convention Hall (Zona Barat)", floorNum: 9, qrCode: "UNU-QR-L9-ZONA-A-2026", desc: "Pos Puncak Arena Grand Quest & Sidang Pleno" },
-    { code: "POS-L9-B", name: "Lantai 9: Rooftop Sky Garden (Zona Timur)", floorNum: 9, qrCode: "UNU-QR-L9-ZONA-B-2026", desc: "Pos Epilog & Titik Foto Kemenangan Tim" },
+    { code: "POS-L1-A", name: "Lobby Utama & Welcome Center", floorNum: 1, qrCode: "UNU-QR-L1-A-2026", desc: "Corner Nilai Dasar, Tradisi Aswaja & Karakter Kampus UNU" },
+    { code: "POS-L1-B", name: "Student Center & Layanan Kampus", floorNum: 1, qrCode: "UNU-QR-L1-B-2026", desc: "Etika Kampus, Tata Krama Mahasiswa & Komunitas Kampus" },
+    { code: "POS-L2-A", name: "Klinik & Posko Kesehatan Mahasiswa", floorNum: 2, qrCode: "UNU-QR-L2-A-2026", desc: "Layanan Kesehatan, P3K, Well-being & Ketahanan Fisik" },
+    { code: "POS-L2-B", name: "Kampus Bersinar & Konseling Sebaya", floorNum: 2, qrCode: "UNU-QR-L2-B-2026", desc: "Komitmen Kampus Bersih Narkoba, Edukasi Anti-Rokok & Mental Health" },
+    { code: "POS-L3-A", name: "Lab Komputer AI & Software Studio", floorNum: 3, qrCode: "UNU-QR-L3-A-2026", desc: "Algoritma Cerdas, Pemrograman Masa Depan & Literasi Digital" },
+    { code: "POS-L3-B", name: "Smart FTI Hall & Ruang Kolaborasi", floorNum: 3, qrCode: "UNU-QR-L3-B-2026", desc: "Komunikasi Efektif, Negosiasi & Kepemimpinan Inklusif" },
+    { code: "POS-L4-A", name: "Posko Layanan PPKS & Konseling Ramah", floorNum: 4, qrCode: "UNU-QR-L4-A-2026", desc: "Kanal Pengaduan Aman, Perlindungan Korban & Anti-Perundungan" },
+    { code: "POS-L4-B", name: "Lab Riset Halal & Bioteknologi Terapan", floorNum: 4, qrCode: "UNU-QR-L4-B-2026", desc: "Standarisasi Halal, Sains Industri & Keberlanjutan Hayati" },
+    { code: "POS-L5-A", name: "Perpustakaan Pusat & Pustaka Digital", floorNum: 5, qrCode: "UNU-QR-L5-A-2026", desc: "Akses Repositori Ilmiah, Database Jurnal & Khazanah Pustaka" },
+    { code: "POS-L5-B", name: "Klinik Anti-Plagiarisme & Penulisan Ilmiah", floorNum: 5, qrCode: "UNU-QR-L5-B-2026", desc: "Kaidah Sitasi Orisinil, Etika Informasi & Kejujuran Akademik" },
+    { code: "POS-L6-A", name: "Pusat Studi Islam Nusantara & Budaya", floorNum: 6, qrCode: "UNU-QR-L6-A-2026", desc: "Kajian Moderasi Beragama, Wawasan Kebangsaan & Nilai Aswaja" },
+    { code: "POS-L6-B", name: "Laboratorium Sains Terpadu & Energi Hijau", floorNum: 6, qrCode: "UNU-QR-L6-B-2026", desc: "Riset Multidisiplin Berkelanjutan, SDGs & Green Science" },
+    { code: "POS-L7-A", name: "Creative Co-Working Space & Multimedia", floorNum: 7, qrCode: "UNU-QR-L7-A-2026", desc: "Ideasi Bisnis, AI Beretika, Desain Kreatif & Visual Digital" },
+    { code: "POS-L7-B", name: "Microteaching Lab & Karakter Pendidik", floorNum: 7, qrCode: "UNU-QR-L7-B-2026", desc: "Simulasi Mengajar Inovatif & Metodologi Pembelajaran Abad 21" },
+    { code: "POS-L8-A", name: "Klinik Integritas & Anti-Korupsi", floorNum: 8, qrCode: "UNU-QR-L8-A-2026", desc: "Pendidikan Antikorupsi, Tolak Gratifikasi & Nilai Kejujuran" },
+    { code: "POS-L8-B", name: "Ruang Tata Kelola & Kepemimpinan Kampus", floorNum: 8, qrCode: "UNU-QR-L8-B-2026", desc: "Transparansi, Akuntabilitas & Tata Kelola Perguruan Tinggi" },
+    { code: "POS-L9-A", name: "Auditorium & Convention Hall Utama", floorNum: 9, qrCode: "UNU-QR-L9-A-2026", desc: "Arena Sidang Pleno, Grand Quest & Ikrar Mahasiswa Unggul" },
+    { code: "POS-L9-B", name: "Rooftop Sky Garden Panoramic Deck", floorNum: 9, qrCode: "UNU-QR-L9-B-2026", desc: "Visi Indonesia Emas 2045, Epilog & Selebrasi Puncak Transformasi" },
   ];
 
   const createdLocations = [];
@@ -264,12 +175,7 @@ async function seed() {
     const floor = createdFloors.find((f) => f.number === loc.floorNum);
     if (!floor) continue;
 
-    const [existing] = await db
-      .select()
-      .from(locations)
-      .where(eq(locations.code, loc.code))
-      .limit(1);
-
+    const [existing] = await db.select().from(locations).where(eq(locations.code, loc.code)).limit(1);
     if (!existing) {
       const [l] = await db
         .insert(locations)
@@ -285,162 +191,129 @@ async function seed() {
         .returning();
       createdLocations.push(l);
     } else {
-      await db
-        .update(locations)
-        .set({
-          name: loc.name,
-          description: loc.desc,
-          qrCode: loc.qrCode,
-          capacity: 4,
-        })
-        .where(eq(locations.id, existing.id));
+      await db.update(locations).set({ name: loc.name, description: loc.desc, qrCode: loc.qrCode }).where(eq(locations.id, existing.id));
       createdLocations.push(existing);
     }
   }
-  console.log(`  ✅ ${createdLocations.length} Physical Pos Locations mapped with verified QR codes`);
 
-  // 4. Seed Stages with Explicit Daily Schedules (Stage 1, 2, 3)
-  console.log("Creating Event Stages with Daily Schedule Timestamps...");
+  // ============================================================
+  // 6. SEED MASTER DATA: Stages, Games, Questions & Route
+  // ============================================================
+  console.log("🎮 [6/8] Initializing Stages, Mini-Games, Questions, and 9-Floor Route...");
   const baseDate = new Date();
   baseDate.setHours(8, 0, 0, 0);
-
-  const day1Start = new Date(baseDate);
-  const day1End = new Date(baseDate);
-  day1End.setHours(16, 0, 0, 0);
-
-  const day2Start = new Date(baseDate);
-  day2Start.setDate(day2Start.getDate() + 1);
-  const day2End = new Date(day2Start);
-  day2End.setHours(16, 0, 0, 0);
-
-  const day3Start = new Date(baseDate);
-  day3Start.setDate(day3Start.getDate() + 2);
-  const day3End = new Date(day3Start);
-  day3End.setHours(17, 30, 0, 0);
 
   const stageData = [
     {
       name: "Stage 1: Campus Discovery (Hari 1)",
       order: 1,
       status: "ACTIVE" as const,
-      startTime: day1Start,
-      endTime: day1End,
+      startTime: baseDate,
+      endTime: new Date(baseDate.getTime() + 8 * 3600 * 1000),
       description: "Eksplorasi fisik lantai 1-3, orientasi fakultas, pengenalan sistem kuis pos, dan pembentukan sinergi tim.",
     },
     {
       name: "Stage 2: Logic & Teamwork (Hari 2)",
       order: 2,
       status: "UPCOMING" as const,
-      startTime: day2Start,
-      endTime: day2End,
+      startTime: new Date(baseDate.getTime() + 24 * 3600 * 1000),
+      endTime: new Date(baseDate.getTime() + 32 * 3600 * 1000),
       description: "Penjelajahan lantai 4-7, tantangan pemecahan masalah multidisiplin, dan pengumpulan poin tier lanjutan.",
     },
     {
       name: "Stage 3: Grand Quest Final (Hari 3)",
       order: 3,
       status: "UPCOMING" as const,
-      startTime: day3Start,
-      endTime: day3End,
+      startTime: new Date(baseDate.getTime() + 48 * 3600 * 1000),
+      endTime: new Date(baseDate.getTime() + 57.5 * 3600 * 1000),
       description: "Penaklukan lantai 8-9, pertarungan kuis kecepatan tinggi, perebutan tahta juara, dan upacara penganugerahan gelar.",
     },
   ];
 
   const createdStages = [];
   for (const s of stageData) {
-    const [existing] = await db
-      .select()
-      .from(stages)
-      .where(eq(stages.order, s.order))
-      .limit(1);
-
+    const [existing] = await db.select().from(stages).where(eq(stages.order, s.order)).limit(1);
     if (!existing) {
-      const [st] = await db
-        .insert(stages)
-        .values({
-          name: s.name,
-          order: s.order,
-          status: s.status,
-          startTime: s.startTime,
-          endTime: s.endTime,
-          description: s.description,
-        })
-        .returning();
+      const [st] = await db.insert(stages).values(s).returning();
       createdStages.push(st);
     } else {
       await db.update(stages).set(s).where(eq(stages.id, existing.id));
       createdStages.push(existing);
     }
   }
-  console.log("  ✅ Stages seeded with exact schedule");
 
-  // 5. Seed Mini Games Definitions (Focusing on Team Quiz Challenge)
-  console.log("Creating Mini Game Definitions (Focus on Team Quiz)...");
+  // Games
   const gameDefs = [
     {
-      name: "Team Quiz Challenge",
+      name: "Kuis Wawasan Aswaja & Kampus UNU",
       type: "QUIZ" as const,
-      description: "Kuis wawasan kampus, nilai Aswaja, teknologi, dan khazanah UNU Yogyakarta.",
-      instructions: "Jawab seluruh soal pilihan ganda bersama tim secara cepat dan akurat untuk memaksimalkan speed bonus!",
-      config: {
-        questionCount: 5,
-        timeLimit: 90,
-        baseScorePerQuestion: 15,
-        maxSpeedBonusPerQuestion: 10,
-      },
-      questionBankCategory: "Umum",
+      description: "Kuis interaktif pilihan ganda seputar wawasan kampus, nilai Aswaja, etika akademik, dan wawasan kebangsaan.",
+      instructions: "Pilih jawaban paling tepat sebelum batas waktu countdown berakhir. Skor dihitung berdasarkan akurasi dan kecepatan!",
+      config: { timeLimitSeconds: 20, pointsPerCorrectAnswer: 10, streakBonus: true },
+      questionBankCategory: "Wawasan Kampus",
+      minPlayers: 1,
+      maxPlayers: 10,
       status: "ACTIVE" as const,
     },
     {
-      name: "Speed Reaction Blitz",
-      type: "REACTION" as const,
-      description: "Uji refleks tim dalam menanggapi sinyal pos.",
-      instructions: "Tap setiap target secepat mungkin saat muncul di layar!",
-      config: {
-        targetCount: 10,
-        timeLimit: 60,
-        targetTimeoutMs: 2000,
-        baseScorePerTarget: 10,
-      },
+      name: "Tebak Kata & Susun Frasa Karakter",
+      type: "WORD_GAME" as const,
+      description: "Susun huruf-huruf acak menjadi terminologi penting seputar nilai moderasi beragama dan profil keunggulan UNU.",
+      instructions: "Drag atau tap huruf-huruf acak untuk membentuk kata yang valid sebelum waktu habis.",
+      config: { timeLimitSeconds: 60, minWordLength: 4, allowShuffle: true },
+      questionBankCategory: "Bahasa",
+      minPlayers: 1,
+      maxPlayers: 4,
       status: "ACTIVE" as const,
     },
     {
-      name: "Memory Match Pairs",
-      type: "MEMORY" as const,
-      description: "Cari & cocokkan pasangan lambang serta fasilitas kampus.",
-      instructions: "Buka dan temukan seluruh pasangan kartu yang cocok dalam batas waktu!",
-      config: {
-        gridSize: "4x4",
-        totalPairs: 8,
-        timeLimit: 120,
-        scorePerMatch: 15,
-      },
+      name: "Teka-Teki Logika & Silang Kampus",
+      type: "LOGIC" as const,
+      description: "Teka-teki silang digital mini dan pencocokan petunjuk sejarah, fakultas, serta pimpinan kampus UNU Yogyakarta.",
+      instructions: "Isi kolom jawaban dengan membaca petunjuk mendatar dan menurun secara cermat.",
+      config: { gridSize: 8, timeLimitSeconds: 120, hintsAllowed: 3 },
+      questionBankCategory: "Logika",
+      minPlayers: 1,
+      maxPlayers: 4,
+      status: "ACTIVE" as const,
+    },
+    {
+      name: "Pena Digital & Sketsa Nilai AI",
+      type: "IMAGE_GUESS" as const,
+      description: "Tantangan tebak visual dan scratch & reveal sketsa AI interaktif bertema pilar keunggulan mahasiswa.",
+      instructions: "Buka lapisan petunjuk visual atau lukis objek sesuai instruksi prompt sebelum batas waktu habis!",
+      config: { drawingTimeSeconds: 60, maxScore: 100 },
+      questionBankCategory: "Kreativitas",
+      minPlayers: 1,
+      maxPlayers: 10,
+      status: "ACTIVE" as const,
+    },
+    {
+      name: "Flappy Genius — Terbang Melampaui Nilai UNU",
+      type: "FLAPPY_BIRD" as const,
+      description: "Arcade retro pixel flyer: kendalikan maskot Genius melewati pilar-pilar nilai Aswaja & integritas kampus tanpa menabrak.",
+      instructions: "Tap atau tekan tombol SPACE untuk terbang melompat. Lewati setiap pilar nilai untuk mengumpulkan XP & poin kelulusan pos!",
+      config: { pipeSpeed: 200, gapSize: 140, durationSeconds: 60, xpPerPipe: 5, maxScore: 100 },
+      questionBankCategory: "Arcade",
+      minPlayers: 1,
+      maxPlayers: 1,
       status: "ACTIVE" as const,
     },
   ];
 
-  const createdGames = [];
   let mainQuizGame: any = null;
   for (const g of gameDefs) {
-    const [existing] = await db
-      .select()
-      .from(games)
-      .where(eq(games.name, g.name))
-      .limit(1);
-
+    const [existing] = await db.select().from(games).where(eq(games.name, g.name)).limit(1);
     if (!existing) {
       const [game] = await db.insert(games).values(g).returning();
-      createdGames.push(game);
-      if (game.type === "QUIZ") mainQuizGame = game;
+      if (game.type === "QUIZ" && !mainQuizGame) mainQuizGame = game;
     } else {
       await db.update(games).set(g).where(eq(games.id, existing.id));
-      createdGames.push(existing);
-      if (existing.type === "QUIZ") mainQuizGame = existing;
+      if (existing.type === "QUIZ" && !mainQuizGame) mainQuizGame = existing;
     }
   }
-  console.log("  ✅ Mini Game definitions initialized");
 
-  // 6. Seed Rich Question Bank (15+ Curated Questions for UNU Yogyakarta)
-  console.log("Creating Expanded Question Bank (UNU Yogyakarta & GENIUS 2026)...");
+  // Questions
   const sampleQuestions = [
     {
       category: "Wawasan Kampus",
@@ -465,28 +338,6 @@ async function seed() {
       tags: ["kampus", "fti", "ai"],
     },
     {
-      category: "Teknologi",
-      difficulty: "MEDIUM" as const,
-      questionText: "Protokol apa yang digunakan oleh platform GENIUS 2026 untuk sinkronisasi multiplayer realtime dalam jaringan kampus?",
-      type: "MULTIPLE_CHOICE" as const,
-      options: ["WebSocket Native", "SMS Gateway", "Bluetooth Beacon", "Polling HTTP 1.0"],
-      correctAnswer: "WebSocket Native",
-      explanation: "WebSocket native Bun/Elysia memungkinkan sinkronisasi sesi multiplayer, countdown timer, dan skor secara realtime tanpa jeda.",
-      baseScore: 20,
-      tags: ["teknologi", "realtime", "websocket"],
-    },
-    {
-      category: "Wawasan Kampus",
-      difficulty: "MEDIUM" as const,
-      questionText: "Apa nama lokasi yang berada di Lantai 9 Gedung UNU Yogyakarta yang digunakan untuk acara akbar dan arena puncak?",
-      type: "MULTIPLE_CHOICE" as const,
-      options: ["Convention Hall & Rooftop Sky Garden", "Basement Parking", "Perpustakaan Kuno", "Asrama Mahasiswa"],
-      correctAnswer: "Convention Hall & Rooftop Sky Garden",
-      explanation: "Lantai 9 adalah Convention Hall luas berstandar internasional dan Rooftop Sky Garden dengan pemandangan terbuka.",
-      baseScore: 20,
-      tags: ["lantai9", "venue"],
-    },
-    {
       category: "Karakter & Nilai",
       difficulty: "EASY" as const,
       questionText: "Landasan nilai keagamaan dan kebangsaan apakah yang diintegrasikan dengan sains teknologi di UNU Yogyakarta?",
@@ -509,28 +360,6 @@ async function seed() {
       tags: ["fakultas", "industri-halal"],
     },
     {
-      category: "Sistem RPG",
-      difficulty: "EASY" as const,
-      questionText: "Berapa tier evolusi karakter RPG yang dapat diraih peserta sepanjang petualangan GENIUS 2026?",
-      type: "MULTIPLE_CHOICE" as const,
-      options: ["3 Tier (Novice, Advanced, Ascended)", "1 Tier Saja", "5 Tier", "10 Tier"],
-      correctAnswer: "3 Tier (Novice, Advanced, Ascended)",
-      explanation: "Karakter peserta berevolusi dari Tier 1 (Novice), Tier 2 (Advanced 200+ pts), hingga Tier 3 (Ascended 500+ pts).",
-      baseScore: 15,
-      tags: ["rpg", "tier", "evolusi"],
-    },
-    {
-      category: "Karakter & Nilai",
-      difficulty: "MEDIUM" as const,
-      questionText: "Apa peran utama seorang Buddy dalam petualangan tim GENIUS 2026?",
-      type: "MULTIPLE_CHOICE" as const,
-      options: ["Pemandu, fasilitator misi, dan motivator tim", "Wasit yang hanya mencatat pelanggaran", "Pemain pengganti peserta", "Juri tunggal penentu nilai"],
-      correctAnswer: "Pemandu, fasilitator misi, dan motivator tim",
-      explanation: "Buddy mendampingi tim, mengontrol sesi permainan di pos, memotivasi peserta, dan memberikan apresiasi bonus.",
-      baseScore: 20,
-      tags: ["buddy", "tim", "orientasi"],
-    },
-    {
       category: "Wawasan Kampus",
       difficulty: "HARD" as const,
       questionText: "Lantai manakah di Gedung UNU Yogyakarta yang menjadi pusat inkubator startup dan smart classroom ekonomi syariah?",
@@ -541,267 +370,462 @@ async function seed() {
       baseScore: 25,
       tags: ["feb", "lantai5", "startup"],
     },
-    {
-      category: "Wawasan Kampus",
-      difficulty: "HARD" as const,
-      questionText: "Di lantai berapakah Studio Multimedia Kreatif dan Microteaching Lab berada?",
-      type: "MULTIPLE_CHOICE" as const,
-      options: ["Lantai 7 (Fakultas Ilmu Pendidikan & Seni)", "Lantai 2", "Lantai 4", "Lantai 6"],
-      correctAnswer: "Lantai 7 (Fakultas Ilmu Pendidikan & Seni)",
-      explanation: "Lantai 7 adalah rumah bagi Fakultas Ilmu Pendidikan dan Studio Multimedia Kreatif.",
-      baseScore: 25,
-      tags: ["fip", "lantai7", "studio"],
-    },
   ];
 
   for (const q of sampleQuestions) {
-    const [existing] = await db
-      .select()
-      .from(questions)
-      .where(eq(questions.questionText, q.questionText))
-      .limit(1);
-
-    if (!existing) {
-      await db.insert(questions).values(q);
-    } else {
-      await db.update(questions).set(q).where(eq(questions.id, existing.id));
-    }
+    const [existing] = await db.select().from(questions).where(eq(questions.questionText, q.questionText)).limit(1);
+    if (!existing) await db.insert(questions).values(q);
   }
-  console.log(`  ✅ ${sampleQuestions.length} Curated Questions active in Question Bank`);
 
-  // 7. Seed Missions & Routes Mapping to 9 Floors
-  console.log("Setting up Stage Routes and Missions for all 9 Floors...");
+  // Route & Missions
   const stage1 = createdStages.find((s) => s.order === 1) || createdStages[0];
-  
+  let mainRoute: any = null;
   if (stage1 && mainQuizGame) {
-    const [existingRoute] = await db
-      .select()
-      .from(routes)
-      .where(eq(routes.name, "Rute Utama Ekspedisi 9 Lantai"))
-      .limit(1);
-
-    let mainRoute = existingRoute;
+    const [existingRoute] = await db.select().from(routes).where(eq(routes.name, "Rute Utama Ekspedisi 9 Lantai")).limit(1);
     if (!existingRoute) {
-      [mainRoute] = await db
-        .insert(routes)
-        .values({
-          name: "Rute Utama Ekspedisi 9 Lantai",
-          stageId: stage1.id,
-          status: "ACTIVE",
-        })
-        .returning();
-    }
-
-    // Attach route stops for each floor
-    for (let fNum = 1; fNum <= 9; fNum++) {
-      const posLoc = createdLocations.find((l) => l.code === `POS-L${fNum}-A`);
-      if (posLoc && mainRoute) {
-        const [existingStop] = await db
-          .select()
-          .from(routeStops)
-          .where(and(eq(routeStops.routeId, mainRoute.id), eq(routeStops.order, fNum)))
-          .limit(1);
-
-        if (!existingStop) {
-          await db.insert(routeStops).values({
-            routeId: mainRoute.id,
-            locationId: posLoc.id,
-            order: fNum,
-            isRequired: true,
-            estimatedDurationMin: 15,
-          });
-        }
-
-        // Attach mission for this pos
-        const [existingMission] = await db
-          .select()
-          .from(missions)
-          .where(eq(missions.locationId, posLoc.id))
-          .limit(1);
-
-        if (!existingMission) {
-          await db.insert(missions).values({
-            name: `Tantangan Kuis Pos Lantai ${fNum}`,
-            description: `Selesaikan kuis wawasan dan uji kecerdasan tim di ${posLoc.name}`,
-            type: "MAIN",
-            locationId: posLoc.id,
-            stageId: stage1.id,
-            gameId: mainQuizGame.id,
-            order: fNum,
-            timeLimit: 120,
-            status: "ACTIVE",
-          });
-        }
-      }
-    }
-    console.log("  ✅ 9 Floor Routes & Quiz Missions attached to Stage 1");
-  }
-
-  // 8. Seed 50 Official Teams & Buddies Roster
-  console.log("Creating 50 Official Teams (Genius 01 - Genius 50) & Official Buddies...");
-  const buddyDefaultPassword = await hashPassword("buddy2026");
-
-  for (const b of RAW_BUDDY_DATA) {
-    const padNum = String(b.num).padStart(2, "0");
-    const username = `buddy${padNum}`;
-    const teamName = `Genius ${padNum}`;
-    const teamCode = `GENIUS-${padNum}`;
-
-    // Create or find Team
-    const [existingT] = await db
-      .select()
-      .from(teams)
-      .where(eq(teams.code, teamCode))
-      .limit(1);
-
-    let teamObj = existingT;
-    if (!existingT) {
-      [teamObj] = await db
-        .insert(teams)
-        .values({
-          name: teamName,
-          code: teamCode,
-          status: "ACTIVE",
-        })
-        .returning();
-    }
-
-    // Create or find Buddy User
-    const [existingB] = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, username))
-      .limit(1);
-
-    let buddyObj = existingB;
-    if (!existingB) {
-      [buddyObj] = await db
-        .insert(users)
-        .values({
-          username,
-          passwordHash: buddyDefaultPassword,
-          fullName: b.fullName,
-          role: "BUDDY",
-          status: "ACTIVE",
-          gender: b.gender,
-          avatarUrl: b.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png",
-        })
-        .returning();
-    }
-
-    // Link Buddy to Team
-    if (teamObj && buddyObj) {
-      const [existingLink] = await db
-        .select()
-        .from(teamMembers)
-        .where(and(eq(teamMembers.teamId, teamObj.id), eq(teamMembers.userId, buddyObj.id)))
-        .limit(1);
-
-      if (!existingLink) {
-        await db.insert(teamMembers).values({
-          teamId: teamObj.id,
-          userId: buddyObj.id,
-          buddyRole: "PRIMARY",
-        });
-      }
-    }
-
-    // Assign sample participants to Genius 01
-    if (b.num === 1 && teamObj) {
-      for (const p of sampleParticipants) {
-        const [pLink] = await db
-          .select()
-          .from(teamMembers)
-          .where(and(eq(teamMembers.teamId, teamObj.id), eq(teamMembers.userId, p.id)))
-          .limit(1);
-
-        if (!pLink) {
-          await db.insert(teamMembers).values({
-            teamId: teamObj.id,
-            userId: p.id,
-          });
-        }
-      }
+      [mainRoute] = await db.insert(routes).values({ name: "Rute Utama Ekspedisi 9 Lantai", stageId: stage1.id, status: "ACTIVE" }).returning();
+    } else {
+      mainRoute = existingRoute;
     }
   }
-  console.log("  ✅ 50 Official Teams and Buddies mapped and assigned!");
 
-  // 9. Seed Sample Ormawa Booths (Expo Hari 3)
-  console.log("🎪 Seeding Sample Ormawa Booths (Expo Hari 3)...");
-  const sampleOrmawa = [
+  // ============================================================
+  // 7. SEED 5 TEAMS & ASSIGN 2 BUDDIES + 20 PARTICIPANTS EACH
+  // ============================================================
+  console.log("🛡️ [7/8] Creating 5 Official Genius Teams & Linking 2 Buddies + 20 MABA per Team...");
+
+  const teamDefinitions = [
     {
-      code: "ORMAWA-SILAT",
-      name: "Pagar Nusa & Pencak Silat UNU Jogja",
-      shortName: "Silat Pagar Nusa",
-      category: "Olahraga & Seni Beladiri",
-      boothNumber: "E3-01",
-      description: "Pengembangan seni beladiri tradisional dan kebugaran jasmani mahasiswa.",
-      qrCode: "UNU-ORMAWA-SILAT-2026",
-      xpReward: 75,
-      badgeIcon: "Shield",
-      badgeColor: "#16a34a",
-      contactPerson: "Zaki (+6281399887766)",
-      instagram: "@silat_unujogja",
+      code: "GENIUS-01",
+      name: "Jabu",
+      captainNim: "26111101",
+      primaryBuddyNim: "25111101",
+      assistantBuddyNim: "25111102",
+      participantNims: OFFICIAL_PARTICIPANTS.slice(0, 20).map((p) => p.nim),
     },
     {
-      code: "ORMAWA-ROBOTIK",
-      name: "Komunitas Robotika & AI UNU",
-      shortName: "Robotika AI Club",
-      category: "Sains & Teknologi",
-      boothNumber: "E3-02",
-      description: "Riset dan pengembangan robot cerdas, drone, dan IoT kampus.",
-      qrCode: "UNU-ORMAWA-ROBOTIK-2026",
-      xpReward: 75,
-      badgeIcon: "Cpu",
-      badgeColor: "#38bdf8",
-      contactPerson: "Farhan (+6281234567891)",
-      instagram: "@robotika_unujogja",
+      code: "GENIUS-02",
+      name: "Bolon",
+      captainNim: "26111121",
+      primaryBuddyNim: "25111103",
+      assistantBuddyNim: "25111104",
+      participantNims: OFFICIAL_PARTICIPANTS.slice(20, 40).map((p) => p.nim),
     },
     {
-      code: "ORMAWA-PADUS",
-      name: "Paduan Suara Mahasiswa Gita Nusantara",
-      shortName: "PSM Gita Nusantara",
-      category: "Seni & Vokal",
-      boothNumber: "E3-03",
-      description: "Paduan suara representasi kampus pada agenda protokoler dan festival padus nasional.",
-      qrCode: "UNU-ORMAWA-PADUS-2026",
-      xpReward: 75,
-      badgeIcon: "MusicNotes",
-      badgeColor: "#ec4899",
-      contactPerson: "Nabila (+6281298765432)",
-      instagram: "@psm_unujogja",
+      code: "GENIUS-03",
+      name: "Gadang",
+      captainNim: "26111141",
+      primaryBuddyNim: "25111105",
+      assistantBuddyNim: "25111106",
+      participantNims: OFFICIAL_PARTICIPANTS.slice(40, 60).map((p) => p.nim),
     },
     {
-      code: "ORMAWA-TEATER",
-      name: "Teater & Seni Peran Candradimuka",
-      shortName: "Teater Candradimuka",
-      category: "Seni Pertunjukan",
-      boothNumber: "E3-04",
-      description: "Apresiasi sastra, lakon panggung, dan seni peran mahasiswa.",
-      qrCode: "UNU-ORMAWA-TEATER-2026",
-      xpReward: 75,
-      badgeIcon: "MasksTheater",
-      badgeColor: "#a855f7",
-      contactPerson: "Danang (+6285612345678)",
-      instagram: "@teater_unujogja",
+      code: "GENIUS-04",
+      name: "Limas",
+      captainNim: "26111161",
+      primaryBuddyNim: "25111107",
+      assistantBuddyNim: "25111108",
+      participantNims: OFFICIAL_PARTICIPANTS.slice(60, 80).map((p) => p.nim),
     },
     {
-      code: "ORMAWA-KSR",
-      name: "Korps Sukarela (KSR) PMI Unit UNU",
-      shortName: "KSR PMI UNU",
-      category: "Sosial & Kemanusiaan",
-      boothNumber: "E3-05",
-      description: "Pelayanan pertolongan pertama, donor darah, dan tanggap bencana kampus.",
-      qrCode: "UNU-ORMAWA-KSR-2026",
-      xpReward: 75,
-      badgeIcon: "FirstAidKit",
-      badgeColor: "#ef4444",
-      contactPerson: "Rina (+6287711223344)",
-      instagram: "@ksrpmi_unujogja",
+      code: "GENIUS-05",
+      name: "Lontik",
+      captainNim: "26111181",
+      primaryBuddyNim: "25111109",
+      assistantBuddyNim: "25111110",
+      participantNims: OFFICIAL_PARTICIPANTS.slice(80, 100).map((p) => p.nim),
     },
   ];
 
-  for (const ob of sampleOrmawa) {
+  const houseNames = [
+    "Jabu", "Bolon", "Gadang", "Limas", "Lontik", "Kajang", "Bubung", "Panggung", "Nuwo", "Baduy",
+    "Gudang", "Bapang", "Joglo", "Kampung", "Panggang", "Jompongan", "Jolopong", "Julang", "Tagog", "Badak",
+    "Capit", "Jubleg", "Tikel", "Baresan", "Crocogan", "Tengger", "Bale", "Lumbung", "Uma", "Omo",
+    "Sebua", "Hada", "Betang", "Lamin", "Baloy", "Banjar", "Tambi", "Laika", "Boyang", "Buton",
+    "Lego", "Lopo", "Mbaru", "Sao", "Musalaki", "Uma", "Honai", "Lopo", "Baileo", "Sasadu",
+  ];
+  teamDefinitions.push(...houseNames.slice(5).map((name, index) => ({
+    code: `GENIUS-${String(index + 6).padStart(2, "0")}`,
+    name,
+    participantNims: [],
+  })));
+
+  for (const tDef of teamDefinitions) {
+    const captainUser = createdParticipants.find((p) => p.username === tDef.captainNim);
+    const primaryBuddy = createdBuddies.find((b) => b.username === tDef.primaryBuddyNim);
+    const assistantBuddy = createdBuddies.find((b) => b.username === tDef.assistantBuddyNim);
+
+    const [team] = await db
+      .insert(teams)
+      .values({
+        name: tDef.name,
+        code: tDef.code,
+        routeId: mainRoute?.id || null,
+        captainId: captainUser?.id || null,
+        status: "ACTIVE",
+      })
+      .returning();
+
+    // Link Primary Buddy
+    if (primaryBuddy) {
+      await db.insert(teamMembers).values({
+        teamId: team.id,
+        userId: primaryBuddy.id,
+        buddyRole: "PRIMARY",
+        isCaptain: false,
+      });
+    }
+
+    // Link Assistant Buddy
+    if (assistantBuddy) {
+      await db.insert(teamMembers).values({
+        teamId: team.id,
+        userId: assistantBuddy.id,
+        buddyRole: "ASSISTANT",
+        isCaptain: false,
+      });
+    }
+
+    // Link 20 Participants
+    const membersToInsert = [];
+    for (const pNim of tDef.participantNims) {
+      const partUser = createdParticipants.find((p) => p.username === pNim);
+      if (partUser) {
+        membersToInsert.push({
+          teamId: team.id,
+          userId: partUser.id,
+          isCaptain: pNim === tDef.captainNim,
+          buddyRole: null,
+        });
+      }
+    }
+    if (membersToInsert.length > 0) {
+      await db.insert(teamMembers).values(membersToInsert);
+    }
+    console.log(`  ✅ ${tDef.name} (${tDef.code}): Primary Buddy ${tDef.primaryBuddyNim}, Assistant ${tDef.assistantBuddyNim}, 20 MABA, Kapten ${tDef.captainNim}`);
+  }
+
+  // ============================================================
+  // 8. SEED ATTENDANCE SESSION & OFFICIAL 19 ORMAWA BOOTHS
+  // ============================================================
+  console.log("🎫 [8/8] Setting up Active Attendance Session & Official Ormawa Booths...");
+  await db.insert(attendanceSessions).values({
+    title: "Presensi Gerbang Masuk Hari 1 — Campus Discovery",
+    description: "Scan QR Code di Lobby Lantai 1 untuk presensi kehadiran pagi & klaim 100 XP awal.",
+    type: "CHECK_IN",
+    isActive: true,
+    qrToken: "UNU-PRESENSI-DAY1-IN",
+    xpReward: 100,
+    allowLate: true,
+    lateTime: "07:30",
+  });
+
+  const fl3 = createdFloors.find((f) => f.number === 3)?.id;
+  const fl4 = createdFloors.find((f) => f.number === 4)?.id;
+  const fl5 = createdFloors.find((f) => f.number === 5)?.id;
+
+  const officialOrmawa = [
+    {
+      code: "ORMAWA-HMTE",
+      name: "Himpunan Mahasiswa Teknik Elektro (HMTE)",
+      shortName: "HMTE",
+      category: "Himpunan Mahasiswa",
+      floorId: fl3,
+      boothNumber: "E-01",
+      description: "Wadah aspirasi, kreativitas, riset keteknikan, dan pengembangan kompetensi mahasiswa Teknik Elektro UNU Yogyakarta.",
+      qrCode: "UNU-ORMAWA-HMTE-2026",
+      xpReward: 2,
+      badgeIcon: "Lightning",
+      badgeColor: "#f59e0b",
+      contactPerson: "Dito Aji Nugroho (NIM 241113013) - 085816307604",
+      instagram: "@hmte_unujogja",
+    },
+    {
+      code: "ORMAWA-HIMAFAR",
+      name: "Himpunan Mahasiswa Farmasi (HIMAFAR)",
+      shortName: "HIMAFAR",
+      category: "Himpunan Mahasiswa",
+      floorId: fl4,
+      boothNumber: "E-02",
+      description: "Organisasi keprofesian dan keilmuan mahasiswa Farmasi dalam pengembangan sains obat halal, klinis, dan herbal nusantara.",
+      qrCode: "UNU-ORMAWA-HIMAFAR-2026",
+      xpReward: 2,
+      badgeIcon: "Pill",
+      badgeColor: "#10b981",
+      contactPerson: "Roikhan Ziaulhaq Aula (NIM 243333057) - 082226332991",
+      instagram: "@himafar_unujogja",
+    },
+    {
+      code: "ORMAWA-MUSIK",
+      name: "UKM Musik Florence UNU Yogyakarta",
+      shortName: "Musik Florence",
+      category: "Seni & Musik",
+      floorId: fl3,
+      boothNumber: "E-03",
+      description: "Komunitas musisi kampus penampung minat band, akustik, aransemen lagu, audio engineering, dan panggung apresiasi nada.",
+      qrCode: "UNU-ORMAWA-MUSIK-2026",
+      xpReward: 2,
+      badgeIcon: "Guitar",
+      badgeColor: "#a855f7",
+      contactPerson: "Sahrul Jihad (NIM 244441046) - 082251691584",
+      instagram: "@musikflorence_unu",
+    },
+    {
+      code: "ORMAWA-HIMASII",
+      name: "Himpunan Mahasiswa Studi Islam Interdisipliner (HIMASII)",
+      shortName: "HIMASII",
+      category: "Himpunan Mahasiswa",
+      floorId: fl5,
+      boothNumber: "E-04",
+      description: "Wadah kajian intelektual Islam kontemporer, dialog antar peradaban, sosiologi keagamaan, dan integrasi studi Islam interdisipliner.",
+      qrCode: "UNU-ORMAWA-HIMASII-2026",
+      xpReward: 2,
+      badgeIcon: "BookOpen",
+      badgeColor: "#0d9488",
+      contactPerson: "Risco Dwi Kurniawan (NIM 245551083) - 081373453027",
+      instagram: "@himasii_unujogja",
+    },
+    {
+      code: "ORMAWA-PADUS",
+      name: "UKM Paduan Suara Mahasiswa (PSM) Gita Nusantara",
+      shortName: "PSM Gita Nusantara",
+      category: "Seni & Vokal",
+      floorId: fl3,
+      boothNumber: "E-05",
+      description: "Paduan suara resmi representasi universitas dalam kompetisi paduan suara, konser harmoni kebangsaan, dan protokoler wisuda.",
+      qrCode: "UNU-ORMAWA-PADUS-2026",
+      xpReward: 2,
+      badgeIcon: "MusicNotes",
+      badgeColor: "#ec4899",
+      contactPerson: "Dimas Ardhiwinata (NIM 245551076) - 082374544670",
+      instagram: "@psm_unujogja",
+    },
+    {
+      code: "ORMAWA-HIMATIKA",
+      name: "Himpunan Mahasiswa Informatika (HIMATIKA)",
+      shortName: "HIMATIKA",
+      category: "Himpunan Mahasiswa",
+      floorId: fl3,
+      boothNumber: "E-06",
+      description: "Himpunan pemersatu mahasiswa informatika, pengembang software engineering, data science, cybersecurity, dan kompetisi Gemastik.",
+      qrCode: "UNU-ORMAWA-HIMATIKA-2026",
+      xpReward: 2,
+      badgeIcon: "Code",
+      badgeColor: "#2563eb",
+      contactPerson: "Muhammad Raihan (NIM 241111075) - 082333016806",
+      instagram: "@himatika_unujogja",
+    },
+    {
+      code: "ORMAWA-HIMAGRI",
+      name: "Himpunan Mahasiswa Agribisnis (HIMAGRI)",
+      shortName: "HIMAGRI",
+      category: "Himpunan Mahasiswa",
+      floorId: fl4,
+      boothNumber: "E-07",
+      description: "Penggerak agrososiopreneur modern, rantai pasok pangan berkelanjutan, dan pemberdayaan petani milenial berbasis inovasi cerdas.",
+      qrCode: "UNU-ORMAWA-HIMAGRI-2026",
+      xpReward: 2,
+      badgeIcon: "Plant",
+      badgeColor: "#65a30d",
+      contactPerson: "Eka Aditya (NIM 243331011) - 08812451059",
+      instagram: "@himagri_unujogja",
+    },
+    {
+      code: "ORMAWA-HMP-THP",
+      name: "Himpunan Mahasiswa Teknologi Hasil Pertanian (HMP THP)",
+      shortName: "HMP THP",
+      category: "Himpunan Mahasiswa",
+      floorId: fl4,
+      boothNumber: "E-08",
+      description: "Organisasi kemahasiswaan riset pengolahan pangan halal, bioteknologi pangan nusantara, mikrobiologi terapan, dan ketahanan pangan.",
+      qrCode: "UNU-ORMAWA-HMP-THP-2026",
+      xpReward: 2,
+      badgeIcon: "Flask",
+      badgeColor: "#ca8a04",
+      contactPerson: "Muh. Naufal Rosyiq Ammar (NIM 243332036) - 0882003832116",
+      instagram: "@hmpthp_unujogja",
+    },
+    {
+      code: "ORMAWA-HIMATANSI",
+      name: "Himpunan Mahasiswa Akuntansi (HIMATANSI)",
+      shortName: "HIMATANSI",
+      category: "Himpunan Mahasiswa",
+      floorId: fl5,
+      boothNumber: "E-09",
+      description: "Wadah pengembangan keahlian akuntansi forensik, audit syariah, financial analysis, dan perpajakan di era transformasi digital.",
+      qrCode: "UNU-ORMAWA-HIMATANSI-2026",
+      xpReward: 2,
+      badgeIcon: "Calculator",
+      badgeColor: "#0284c7",
+      contactPerson: "Gita Selfiana Tasya (NIM 244442056) - 087726430792",
+      instagram: "@himatansi_unujogja",
+    },
+    {
+      code: "ORMAWA-JQH-IAC",
+      name: "UKM Jam'iyyatul Qurro' wal Huffazh & Intercollegiate Arabic Club (JQH IAC)",
+      shortName: "UKM JQH IAC",
+      category: "Keagamaan & Bahasa",
+      floorId: fl5,
+      boothNumber: "E-10",
+      description: "Pusat pembinaan tilawatil Qur'an, tahfizh, kajian tartil, serta dialektika debat dan percakapan bahasa Arab mahasiswa.",
+      qrCode: "UNU-ORMAWA-JQH-IAC-2026",
+      xpReward: 2,
+      badgeIcon: "BookBookmark",
+      badgeColor: "#047857",
+      contactPerson: "Akhyar Sabqi (NIM 235551030) - 081523754964",
+      instagram: "@jqhiac_unujogja",
+    },
+    {
+      code: "ORMAWA-BADMINTON",
+      name: "UKM Badminton UNU Yogyakarta",
+      shortName: "UKM Badminton",
+      category: "Olahraga",
+      floorId: fl4,
+      boothNumber: "E-11",
+      description: "Wadah atlet dan peminat olahraga bulutangkis untuk pembinaan teknik, sparring berkala, dan kejuaraan pekan olahraga mahasiswa.",
+      qrCode: "UNU-ORMAWA-BADMINTON-2026",
+      xpReward: 2,
+      badgeIcon: "Trophy",
+      badgeColor: "#f97316",
+      contactPerson: "Riski Ramadhan (NIM 251113022) - 081351770669",
+      instagram: "@badminton_unujogja",
+    },
+    {
+      code: "ORMAWA-MAPALA",
+      name: "UKM Mahasiswa Pecinta Alam UNUYO (MAPALA)",
+      shortName: "UKM MAPALA UNUYO",
+      category: "Pecinta Alam & Lingkungan",
+      floorId: fl4,
+      boothNumber: "E-12",
+      description: "Organisasi penggiat alam bebas, konservasi rimba gunung, susur gua (caving), rock climbing, dan tanggap darurat search & rescue.",
+      qrCode: "UNU-ORMAWA-MAPALA-2026",
+      xpReward: 2,
+      badgeIcon: "Compass",
+      badgeColor: "#166534",
+      contactPerson: "Aditya Firdaus Alfajar (NIM 231111047) - 082138047276",
+      instagram: "@mapala_unuyo",
+    },
+    {
+      code: "ORMAWA-SILAT",
+      name: "UKM Pencak Silat Pagar Nusa UNU Yogyakarta",
+      shortName: "UKM Pencak Silat",
+      category: "Olahraga & Seni Beladiri",
+      floorId: fl3,
+      boothNumber: "E-13",
+      description: "Kawah candradimuka pesilat Nahdlatul Ulama yang memadukan keindahan jurus tradisional, adu tanding fisik, dan nilai ksatria Aswaja.",
+      qrCode: "UNU-ORMAWA-SILAT-2026",
+      xpReward: 2,
+      badgeIcon: "Shield",
+      badgeColor: "#15803d",
+      contactPerson: "Dhany Dwi Saputra (NIM 241113035) - 081288867914",
+      instagram: "@silat_unujogja",
+    },
+    {
+      code: "ORMAWA-TARI",
+      name: "UKM Seni Tari Tradisional & Modern UNU Yogyakarta",
+      shortName: "UKM Tari",
+      category: "Seni & Budaya",
+      floorId: fl3,
+      boothNumber: "E-14",
+      description: "Ruang gerak estetika dan koreografi penari muda dalam melestarikan tarian klasik nusantara serta kreasi tari kontemporer.",
+      qrCode: "UNU-ORMAWA-TARI-2026",
+      xpReward: 2,
+      badgeIcon: "Sparkle",
+      badgeColor: "#f43f5e",
+      contactPerson: "Faiqotul Mahfaza (NIM 244442082) - 082279370055",
+      instagram: "@tari_unujogja",
+    },
+    {
+      code: "ORMAWA-HIMA-PGSD",
+      name: "Himpunan Mahasiswa Pendidikan Guru Sekolah Dasar (HIMA PGSD)",
+      shortName: "HIMA PGSD",
+      category: "Himpunan Mahasiswa",
+      floorId: fl5,
+      boothNumber: "E-15",
+      description: "Wadah calon pendidik bangsa berkarakter inklusif, pengembang media pembelajaran interaktif, microteaching, dan pendidikan anak abad 21.",
+      qrCode: "UNU-ORMAWA-HIMA-PGSD-2026",
+      xpReward: 2,
+      badgeIcon: "GraduationCap",
+      badgeColor: "#4f46e5",
+      contactPerson: "Tri Yuliyanto (NIM 242221040) - 085641353117",
+      instagram: "@himapgsd_unujogja",
+    },
+    {
+      code: "ORMAWA-HMP-PBI",
+      name: "Himpunan Mahasiswa Program Studi Pendidikan Bahasa Inggris (HMP PBI)",
+      shortName: "HMP PBI",
+      category: "Himpunan Mahasiswa",
+      floorId: fl5,
+      boothNumber: "E-16",
+      description: "Komunitas calon guru dan profesional bahasa Inggris, penyelenggara English speech, drama festival, and global pedagogical insights.",
+      qrCode: "UNU-ORMAWA-HMP-PBI-2026",
+      xpReward: 2,
+      badgeIcon: "Translate",
+      badgeColor: "#0891b2",
+      contactPerson: "Masbihul Abidi (NIM 242222020) - 083138822922",
+      instagram: "@hmppbi_unujogja",
+    },
+    {
+      code: "ORMAWA-KSR",
+      name: "UKM Korps Sukarela PMI Unit UNU Yogyakarta (KSR PMI)",
+      shortName: "UKM KSR PMI UNUYO",
+      category: "Sosial & Kemanusiaan",
+      floorId: fl4,
+      boothNumber: "E-17",
+      description: "Garda terdepan kemanusiaan kampus dalam layanan P3K cepat tanggap, donor darah teratur, edukasi tanggap bencana, dan bakti kesehatan.",
+      qrCode: "UNU-ORMAWA-KSR-2026",
+      xpReward: 2,
+      badgeIcon: "FirstAidKit",
+      badgeColor: "#dc2626",
+      contactPerson: "Wahyu Nugroho (NIM 224442005) - 089514729547",
+      instagram: "@ksrpmi_unujogja",
+    },
+    {
+      code: "ORMAWA-PERMASUM",
+      name: "PERMASUM UNUYO (Persatuan Mahasiswa Sumatera UNU Yogyakarta)",
+      shortName: "PERMASUM UNUYO",
+      category: "Organisasi Daerah & Kebudayaan",
+      floorId: fl4,
+      boothNumber: "E-18",
+      description: "Rumah kekeluargaan dan persatuan mahasiswa rantau asal pulau Sumatera di UNU Yogyakarta untuk pelestarian adat, seni, dan sinergi daerah.",
+      qrCode: "UNU-ORMAWA-PERMASUM-2026",
+      xpReward: 2,
+      badgeIcon: "UsersThree",
+      badgeColor: "#b45309",
+      contactPerson: "Rifki Ramadani (NIM 235551056) - 083830130949",
+      instagram: "@permasum_unuyo",
+    },
+    {
+      code: "ORMAWA-HMPM",
+      name: "Himpunan Mahasiswa Program Studi Manajemen UNU Yogyakarta (HMPM)",
+      shortName: "HMPM UNUYO",
+      category: "Himpunan Mahasiswa",
+      floorId: fl5,
+      boothNumber: "E-19",
+      description: "Inkubator calon manajer dan entrepreneur unggul dalam strategi bisnis digital, pemasaran modern, tata kelola korporasi, dan inovasi startup.",
+      qrCode: "UNU-ORMAWA-HMPM-2026",
+      xpReward: 2,
+      badgeIcon: "Briefcase",
+      badgeColor: "#7c3aed",
+      contactPerson: "Muhammad Farits Nauval (NIM 244441014) - 085742923549",
+      instagram: "@hmpm_unujogja",
+    },
+  ];
+
+  for (const ob of officialOrmawa) {
+    const contactPhone = ob.contactPerson.match(/(?:\+?62|0)8[\d\s-]{7,15}/)?.[0]?.replace(/[\s-]/g, "") || null;
+    const boothData = {
+      ...ob,
+      tagline: ob.description,
+      activities: [],
+      requirements: [],
+      stampInstructions: [
+        "Datangi stan dan kenali program Ormawa atau UKM.",
+        "Selesaikan misi yang diberikan oleh PIC stan.",
+        "Buka QR profilmu dan minta PIC memindainya untuk menerima stamp.",
+      ],
+      contactPhone,
+    };
     const [existing] = await db
       .select()
       .from(ormawaBooths)
@@ -809,12 +833,39 @@ async function seed() {
       .limit(1);
 
     if (!existing) {
-      await db.insert(ormawaBooths).values(ob);
+      await db.insert(ormawaBooths).values(boothData);
+    } else {
+      await db.update(ormawaBooths).set(boothData).where(eq(ormawaBooths.id, existing.id));
     }
   }
-  console.log(`  ✅ ${sampleOrmawa.length} Sample Ormawa Booths seeded`);
+  console.log(`  ✅ ${officialOrmawa.length} Official Ormawa Booths seeded (Lantai 3, 4, 5)`);
 
-  console.log("🎉 GENIUS 2026 Seeding Completed Successfully!");
+  const picResult = await ensureOfficialOrmawaPics({ resetPasswords: true });
+  console.log(`  ✅ ${picResult.linked} akun PIC Ormawa dibuat/diperbarui dan dihubungkan ke stan resmi`);
+
+  // ============================================================
+  // 9. SEED OFFICIAL QUIZ DATABASE (9 Pos dari quiz_database.csv)
+  // ============================================================
+  console.log("🧩 [9/9] Seeding Official 9-Pos Quiz Database from quiz_database.csv...");
+  try {
+    const { seedOfficialQuizDatabase } = await import("../scripts/seed_official_quiz");
+    await seedOfficialQuizDatabase();
+    console.log("  ✅ Official 9-Pos Quiz Database seeded successfully (51 Questions, 9 Locations, 12 Games)");
+  } catch (err: any) {
+    console.warn("  ⚠️ [Seed] Official quiz database seed warning:", err.message);
+  }
+
+  console.log("\n========================================================");
+  console.log("🎉 GENIUS 2026 DATABASE SEEDING COMPLETED SUCCESSFULLY!");
+  console.log("========================================================");
+  console.log("👤 Admin       : admin (password: admin2026)");
+  console.log("👥 Buddies (10): 25111101 s/d 25111110 (password: genius2026)");
+  console.log("🎓 MABA (100)  : 26111101 s/d 26111200 (password: genius2026)");
+  console.log("🛡️ Kelompok (5): Jabu s/d Lontik (20 MABA + 2 Buddy/tim)");
+  console.log("🎪 Ormawa (19) : 19 Official Booths (Lantai 3, 4, 5)");
+  console.log("🧩 Kuis Resmi  : 9 Pos di 6 Lantai (51 Soal, 100 Poin/pos)");
+  console.log("========================================================\n");
+
   process.exit(0);
 }
 

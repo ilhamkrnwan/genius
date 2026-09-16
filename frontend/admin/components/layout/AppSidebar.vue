@@ -8,7 +8,7 @@
     <!-- 1. Brand Header with Floating Collapse/Expand Button at Top -->
     <div class="relative flex h-16 shrink-0 items-center justify-between border-b-2 border-[#5a3a18] px-3.5 bg-[#1e130a]">
       <!-- Brand Logo & Title -->
-      <NuxtLink to="/" class="flex items-center gap-2.5 overflow-hidden group">
+      <NuxtLink :to="homeRoute" class="flex items-center gap-2.5 overflow-hidden group">
         <div
           class="flex h-9 w-9 shrink-0 items-center justify-center border-2 border-[#f59e0b] bg-[#2d1b0e] p-1 shadow-[0_0_8px_rgba(245,158,11,0.25)] group-hover:scale-105 transition-transform"
         >
@@ -196,6 +196,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 import {
   LayoutDashboard,
@@ -240,7 +241,7 @@ const isActive = (to: string) => {
   return route.path.startsWith(to);
 };
 
-const navGroups = [
+const adminNavGroups = [
   {
     label: "Main Quest",
     items: [
@@ -289,4 +290,19 @@ const navGroups = [
     ],
   },
 ];
+
+const picNavGroups = [
+  {
+    label: "Stan Ormawa",
+    items: [{ label: "Scanner Kunjungan", to: "/ormawa/scan", icon: QrCode }],
+  },
+];
+
+const navGroups = computed(() =>
+  user.value?.role === "ORMAWA_PIC" ? picNavGroups : adminNavGroups,
+);
+
+const homeRoute = computed(() =>
+  user.value?.role === "ORMAWA_PIC" ? "/ormawa/scan" : "/",
+);
 </script>

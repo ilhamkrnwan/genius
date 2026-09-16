@@ -11,26 +11,19 @@ export interface OrmawaStand {
   name: string;
   shortName: string;
   category: OrmawaCategory;
-  floor: 3 | 4 | 5;
+  floor: number;
   location: string;
   qrToken: string;
   tagline: string;
   description: string;
   instagram: string;
-  badgeTitle: string;
-  badgeColor: string;
   activities: string[];
   requirements: string[];
+  stampInstructions?: string[];
+  xpReward?: number;
   contactPerson?: string;
+  contactPhone?: string;
   logoUrl?: string;
-}
-
-export interface OrmawaScanResult {
-  success: boolean;
-  message: string;
-  xpEarned: number;
-  stand?: OrmawaStand;
-  isCapped: boolean;
 }
 
 export interface OrmawaInterest {
@@ -38,6 +31,7 @@ export interface OrmawaInterest {
   boothId: string;
   participantId: string;
   phoneNumber: string;
+  instagramUsername: string;
   motivation?: string;
   experience?: string;
   xpBonusEarned: number;
@@ -47,6 +41,7 @@ export interface OrmawaInterest {
 export interface OrmawaInterestPayload {
   boothId: string;
   phoneNumber: string;
+  instagramUsername: string;
   motivation?: string;
   experience?: string;
 }

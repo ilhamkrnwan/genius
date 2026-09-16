@@ -9,14 +9,24 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "bun --filter '*' dev",
-    "dev:user": "bun --filter @genius-unu/user dev",
-    "dev:admin": "bun --filter @genius-unu/admin dev",
-    "dev:backend": "bun --filter @genius-unu/backend dev",
+    "dev": "bun --filter '@genius-unu/backend' --filter '@genius-unu/user' --filter '@genius-unu/admin' --parallel run dev",
+    "dev:user": "cd frontend/user && bun run dev",
+    "dev:admin": "cd frontend/admin && bun run dev",
+    "dev:backend": "cd backend && bun run dev",
     "build": "bun --filter '*' build",
     "build:user": "bun --filter @genius-unu/user build",
     "build:admin": "bun --filter @genius-unu/admin build",
     "build:backend": "bun --filter @genius-unu/backend build",
-    "typecheck": "bun --filter '*' typecheck"
+    "typecheck": "bun --filter '*' typecheck",
+    "db:push": "bun --filter @genius-unu/backend db:push",
+    "db:generate": "bun --filter @genius-unu/backend db:generate",
+    "db:studio": "bun --filter @genius-unu/backend db:studio",
+    "db:seed": "bun --filter @genius-unu/backend db:seed",
+    "db:seed:official": "bun --filter @genius-unu/backend db:seed:official",
+    "db:seed:quiz": "bun --filter @genius-unu/backend db:seed:quiz",
+    "db:repair:ormawa-pics": "bun --filter @genius-unu/backend db:repair:ormawa-pics"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.4"
   }
 }
