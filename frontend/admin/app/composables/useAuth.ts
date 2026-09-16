@@ -136,7 +136,7 @@ export function useAuth() {
   }
 
   async function loginAsPreset(presetUser: User, password?: string) {
-    const defaultPassword = password || (presetUser.role === "ADMIN" ? "admin2026" : presetUser.role === "BUDDY" ? "genius2026" : "ormawa2026");
+    const defaultPassword = password || (presetUser.role === "ADMIN" ? "admin2026" : presetUser.role === "BUDDY" ? "buddy2026" : "ormawa2026");
     return await login(presetUser.username, defaultPassword);
   }
 

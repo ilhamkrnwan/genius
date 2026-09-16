@@ -67,7 +67,7 @@ async function runSimulation() {
   console.log(`   ${c.green}✔ Admin authenticated!${c.reset}`);
 
   // 2. Buddy Login
-  const buddyLogin = await post("/api/auth/login", { username: "buddy_ahmad", password: "buddy2026" });
+  const buddyLogin = await post("/api/auth/login", { username: "buddy03", password: "buddy2026" });
   if (!buddyLogin.data.success || !buddyLogin.data.data?.token) {
     throw new Error(`Buddy login gagal: ${JSON.stringify(buddyLogin.data)}`);
   }

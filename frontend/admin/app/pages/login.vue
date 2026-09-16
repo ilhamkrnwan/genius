@@ -90,7 +90,7 @@
       <div class="p-2 bg-[#170f07] border border-[#5a3a18] rounded-lg text-[10px] font-mono flex items-center justify-between">
         <span class="text-[#a08060]">Akun Terdaftar di PostgreSQL:</span>
         <span class="text-[#facc15] font-pixel text-[8px]">
-          {{ activeRoleTab === 'admin' ? 'admin / admin2026' : 'NIM: 25111101..10 / genius2026' }}
+          {{ activeRoleTab === 'admin' ? 'admin / admin2026' : 'buddy01..50 / buddy2026' }}
         </span>
       </div>
 
@@ -215,8 +215,8 @@ function selectRoleTab(role: "admin" | "buddy") {
     username.value = "admin";
     password.value = "admin2026";
   } else {
-    username.value = "25111101";
-    password.value = "genius2026";
+    username.value = "buddy01";
+    password.value = "buddy2026";
   }
 }
 
@@ -231,7 +231,7 @@ const cardSubtitle = computed(() => {
 });
 
 const usernamePlaceholder = computed(() => {
-  if (activeRoleTab.value === "buddy") return "NIM Buddy (contoh: 25111101)";
+  if (activeRoleTab.value === "buddy") return "Username Buddy (contoh: buddy01 - buddy50)";
   return "Username admin";
 });
 
