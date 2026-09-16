@@ -117,6 +117,17 @@
         <h2 class="font-pixel text-[9px] sm:text-[11px] lg:text-xs text-[#e5b383] uppercase tracking-wider">Daftar Mahasiswa ({{ activeMembers.length }})</h2>
       </div>
 
+      <!-- Locked Banner -->
+      <div v-if="isLocked" class="bg-red-950/60 border border-red-500/50 rounded-lg p-3 sm:p-4 mb-4 flex items-start sm:items-center gap-3 shadow-lg">
+        <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-red-900/80 border-2 border-red-400 flex items-center justify-center shrink-0">
+          <span class="text-lg sm:text-xl leading-none">🔒</span>
+        </div>
+        <div class="min-w-0">
+          <h3 class="font-pixel text-[10px] sm:text-xs text-red-400 uppercase tracking-widest mb-0.5">SISTEM DIKUNCI ADMIN</h3>
+          <p class="text-[9px] sm:text-[10px] text-red-200/80 font-mono leading-tight">Penilaian FGD dan Absensi Manual telah ditutup. Hubungi pos informasi jika terdapat kendala darurat.</p>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
         <div
           v-for="(m, i) in activeMembers"
@@ -203,9 +214,13 @@
               v-if="!m.checkInTime"
               type="button"
               @click="markManualAttendance(m)"
-              class="pixel-btn h-6 sm:h-7 px-2 sm:px-2.5 bg-[#4a3624] hover:bg-[#5a3a18] text-[#f0e0c0] font-pixel text-[7.5px] sm:text-[8px] font-bold flex items-center gap-1 transition-colors"
+              :disabled="isLocked"
+              class="pixel-btn h-6 sm:h-7 px-2 sm:px-2.5 bg-[#4a3624] text-[#f0e0c0] font-pixel text-[7.5px] sm:text-[8px] font-bold flex items-center gap-1 transition-colors"
+              :class="isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#5a3a18]'"
             >
-              <span class="text-[#86efac]">+</span> HADIR
+              <span v-if="!isLocked" class="text-[#86efac]">+</span>
+              <span v-else class="text-red-400">🔒</span>
+              HADIR
             </button>
 
             <NuxtLink
@@ -249,6 +264,7 @@ interface BuddyMember {
 }
 
 const loading = ref(true);
+const isLocked = ref(false);
 const teamData = ref<any>(null);
 const activeMembers = ref<BuddyMember[]>([]);
 const leaderboardTeams = ref<any[]>([]);
@@ -291,6 +307,7 @@ const fgdCompletedCount = computed(
 );
 
 async function markManualAttendance(member: BuddyMember) {
+  if (isLocked.value) return;
   try {
     const res = await api.post<{ success: boolean; data: any }>("/api/attendance/check-in", {
       participantId: member.id,
@@ -325,12 +342,13 @@ async function loadData() {
     }
 
     if (targetTeamId) {
-      // 2. Fetch Team Details, Leaderboard, FGD Evaluations, and Attendance
-      const [teamRes, lbRes, evalsRes, attRes] = await Promise.allSettled([
+      // 2. Fetch Team Details, Leaderboard, FGD Evaluations, Attendance, and System Settings
+      const [teamRes, lbRes, evalsRes, attRes, settingsRes] = await Promise.allSettled([
         api.get<{ success: boolean; data: any }>(`/api/teams/${targetTeamId}`),
         api.get<{ success: boolean; data: any }>("/api/leaderboard"),
         api.get<{ success: boolean; data: any }>(`/api/buddy/evaluations/team/${targetTeamId}`),
         api.get<{ success: boolean; data: any }>("/api/attendance/recap?day=1"),
+        api.get<{ success: boolean; data: any }>("/api/system/settings"),
       ]);
 
       if (teamRes.status === "fulfilled" && teamRes.value.success) {
@@ -339,6 +357,10 @@ async function loadData() {
 
       if (lbRes.status === "fulfilled" && lbRes.value.success) {
         leaderboardTeams.value = lbRes.value.data?.teamLeaderboard || [];
+      }
+
+      if (settingsRes.status === "fulfilled" && settingsRes.value.success) {
+        isLocked.value = settingsRes.value.data.isBuddyEvaluationLocked || false;
       }
 
       const fgdEvalsMap = new Map<string, number>();

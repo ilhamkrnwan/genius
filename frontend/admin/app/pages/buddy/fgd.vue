@@ -64,6 +64,17 @@
           <p>Belum ada mahasiswa yang terdaftar di regu bimbingan Anda.</p>
         </div>
 
+        <!-- Locked Banner -->
+        <div v-else-if="isLocked" class="bg-red-950/60 border border-red-500/50 rounded-lg p-3 sm:p-4 mb-4 flex items-start sm:items-center gap-3 shadow-lg">
+          <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-red-900/80 border-2 border-red-400 flex items-center justify-center shrink-0">
+            <span class="text-lg sm:text-xl leading-none">🔒</span>
+          </div>
+          <div class="min-w-0">
+            <h3 class="font-pixel text-[10px] sm:text-xs text-red-400 uppercase tracking-widest mb-0.5">SISTEM DIKUNCI ADMIN</h3>
+            <p class="text-[9px] sm:text-[10px] text-red-200/80 font-mono leading-tight">Penilaian FGD telah ditutup oleh Admin.</p>
+          </div>
+        </div>
+
         <!-- Member Grid/Carousel -->
         <div v-else class="space-y-2">
           <div class="flex items-center gap-2 pl-1">
@@ -226,13 +237,15 @@
             <input
               v-model="feedbackNotes"
               type="text"
+              :disabled="isLocked"
               placeholder="Berikan catatan motivasi singkat untuk mahasiswa ini..."
-              class="w-full bg-[#120a05] border-2 border-[#5a3a18] focus:border-[#f0d060] rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-white outline-none font-sans shadow-inner transition-colors focus:shadow-[0_0_10px_rgba(240,208,96,0.1)]"
+              class="w-full bg-[#120a05] border-2 border-[#5a3a18] focus:border-[#f0d060] rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-white outline-none font-sans shadow-inner transition-colors focus:shadow-[0_0_10px_rgba(240,208,96,0.1)] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
           <!-- Submit Action Button -->
           <button
+            v-if="!isLocked"
             type="button"
             @click="submitFgdEvaluation"
             :disabled="submitting"
@@ -242,6 +255,11 @@
             <CheckCircle2 class="h-4 w-4 sm:h-5 sm:w-5" :class="submitting ? 'animate-pulse' : 'text-[#86efac]'" />
             <span>{{ submitting ? 'MENYIMPAN DATA...' : `SIMPAN NILAI FGD (+${calculatedXp} XP)` }}</span>
           </button>
+          
+          <div v-else class="w-full h-11 sm:h-12 font-pixel text-[11px] sm:text-xs font-bold flex items-center justify-center gap-2 bg-[#2a1210] text-red-400 border-2 border-red-900 rounded opacity-70">
+            <span class="text-lg leading-none">🔒</span>
+            <span>TERKUNCI</span>
+          </div>
         </div>
       </div>
     </div>
@@ -294,6 +312,7 @@ interface FgdMember {
 }
 
 const loading = ref(true);
+const isLocked = ref(false);
 const submitting = ref(false);
 const activeTeamId = ref<string>("");
 const teamMembers = ref<FgdMember[]>([]);
@@ -412,10 +431,15 @@ async function loadData() {
     if (targetTeamId) {
       activeTeamId.value = targetTeamId;
 
-      const [teamRes, evalsRes] = await Promise.allSettled([
+      const [teamRes, evalsRes, settingsRes] = await Promise.allSettled([
         api.get<{ success: boolean; data: any }>(`/api/teams/${targetTeamId}`),
         api.get<{ success: boolean; data: any }>(`/api/buddy/evaluations/team/${targetTeamId}`),
+        api.get<{ success: boolean; data: any }>("/api/system/settings"),
       ]);
+
+      if (settingsRes.status === "fulfilled" && settingsRes.value.success) {
+        isLocked.value = settingsRes.value.data.isBuddyEvaluationLocked || false;
+      }
 
       const evalMap = new Map<string, any[]>();
       if (evalsRes.status === "fulfilled" && evalsRes.value.success) {

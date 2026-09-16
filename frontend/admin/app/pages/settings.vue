@@ -192,6 +192,42 @@
       </div>
     </div>
 
+    <!-- 2.5 BUDDY EVALUATION LOCK (ADMIN ACCESS) -->
+    <div class="pixel-card p-5 border border-[#4a3624] space-y-4">
+      <div class="border-b border-[#4a3624] pb-2 flex items-center justify-between">
+        <h2 class="font-pixel text-xs text-[#f59e0b] flex items-center gap-2">
+          <ShieldAlert class="h-4 w-4 text-purple-400" />
+          KONTROL AKSES BUDDY (LOCK EVALUASI)
+        </h2>
+        <span class="text-[9px] font-mono text-purple-400 border border-purple-500/40 bg-purple-950/40 px-1.5 py-0.2">
+          HAK AKSES ADMIN
+        </span>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="space-y-1 max-w-2xl">
+          <p class="font-bold text-sm" :class="systemSettings.isBuddyEvaluationLocked ? 'text-red-400' : 'text-emerald-400'">
+            Status Saat Ini: {{ systemSettings.isBuddyEvaluationLocked ? '🔒 DIKUNCI (LOCKED)' : '🔓 TERBUKA (UNLOCKED)' }}
+          </p>
+          <p class="text-xs text-muted-foreground font-mono leading-relaxed">
+            Jika dikunci, Buddy tidak akan bisa lagi memberikan penilaian FGD ataupun merubah data absensi harian mahasiswa secara manual melalui perangkat mereka. Gunakan fitur ini di akhir hari saat waktu evaluasi telah habis.
+          </p>
+        </div>
+
+        <button
+          @click="toggleBuddyEvaluationLock"
+          :disabled="togglingLock"
+          class="pixel-btn h-10 px-4 whitespace-nowrap font-mono font-bold flex items-center gap-2 shrink-0 transition-all"
+          :class="systemSettings.isBuddyEvaluationLocked 
+            ? 'bg-[#059669] text-white border-[#34d399] hover:bg-[#047857]' 
+            : 'bg-[#dc2626] text-white border-[#f87171] hover:bg-[#b91c1c]'"
+        >
+          <span v-if="togglingLock" class="animate-spin inline-block border-2 border-white border-t-transparent rounded-full h-4 w-4"></span>
+          <span v-else>{{ systemSettings.isBuddyEvaluationLocked ? 'BUKA KUNCI (UNLOCK)' : 'KUNCI SEKARANG (LOCK)' }}</span>
+        </button>
+      </div>
+    </div>
+
     <!-- 3. SERVER & DATABASE DIAGNOSTICS -->
     <div class="pixel-card p-5 space-y-4 font-mono text-xs">
       <div class="border-b border-[#4a3624] pb-2 flex items-center justify-between">
@@ -251,6 +287,7 @@ import {
   Layers,
   Server,
   RotateCw,
+  Lock,
 } from "lucide-vue-next";
 import { useApi } from "~/composables/useApi";
 import { useToast } from "~/composables/useToast";
@@ -263,8 +300,10 @@ const confirmModal = useConfirm();
 const loading = ref(false);
 const freezing = ref(false);
 const broadcasting = ref(false);
+const togglingLock = ref(false);
 
 const stagesList = ref<any[]>([]);
+const systemSettings = ref<any>({});
 
 const broadcastForm = ref({
   title: "PENGUMUMAN GAME MASTER",
@@ -279,14 +318,41 @@ onMounted(async () => {
 async function loadAllData() {
   loading.value = true;
   try {
-    const res = await api.get("/stages");
-    if (res?.success && Array.isArray(res.data)) {
-      stagesList.value = res.data;
+    const [resStages, resSettings] = await Promise.all([
+      api.get("/stages"),
+      api.get("/system/settings")
+    ]);
+    if (resStages?.success && Array.isArray(resStages.data)) {
+      stagesList.value = resStages.data;
+    }
+    if (resSettings?.success && resSettings.data) {
+      systemSettings.value = resSettings.data;
     }
   } catch (err) {
-    console.error("Failed to load stages:", err);
+    console.error("Failed to load settings:", err);
   } finally {
     loading.value = false;
+  }
+}
+
+async function toggleBuddyEvaluationLock() {
+  togglingLock.value = true;
+  try {
+    const newValue = !systemSettings.value.isBuddyEvaluationLocked;
+    const res = await api.put("/system/settings", {
+      isBuddyEvaluationLocked: newValue
+    });
+    if (res?.success) {
+      systemSettings.value.isBuddyEvaluationLocked = newValue;
+      toast.success(
+        newValue ? "Akses Buddy Dikunci" : "Akses Buddy Dibuka",
+        newValue ? "Buddy tidak dapat lagi merubah evaluasi dan absensi." : "Buddy dapat kembali melakukan penilaian."
+      );
+    }
+  } catch (err: any) {
+    toast.error("Gagal Mengubah Status Lock", err.message || "Terjadi kesalahan.");
+  } finally {
+    togglingLock.value = false;
   }
 }
 

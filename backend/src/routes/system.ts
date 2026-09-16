@@ -13,6 +13,7 @@ export interface EventSettings {
   isIncubationOpen: boolean;
   gateCheckInOpen: boolean;
   gateCheckOutOpen: boolean;
+  isBuddyEvaluationLocked: boolean;
   updatedAt: string;
 }
 
@@ -28,6 +29,7 @@ let currentSettings: EventSettings = {
   isIncubationOpen: true,
   gateCheckInOpen: true,
   gateCheckOutOpen: true,
+  isBuddyEvaluationLocked: false,
   updatedAt: new Date().toISOString(),
 };
 
@@ -91,6 +93,7 @@ export const systemRoutes = new Elysia({
         isIncubationOpen: t.Optional(t.Boolean()),
         gateCheckInOpen: t.Optional(t.Boolean()),
         gateCheckOutOpen: t.Optional(t.Boolean()),
+        isBuddyEvaluationLocked: t.Optional(t.Boolean()),
       }),
     }
   )
