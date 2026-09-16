@@ -91,24 +91,30 @@ export class GameEngine {
       }
 
       case "MEMORY_MATCH": {
-        // If the game config already has predefined pairs (like in mockData), use them!
-        if (config.pairs && Array.isArray(config.pairs) && config.pairs.length > 0) {
-          return { pairs: config.pairs };
+        const pairCount = config.pairs?.length || config.pairCount || 6;
+        let pairs = config.pairs;
+        if (!pairs || !Array.isArray(pairs) || pairs.length === 0) {
+          const symbols = ["Shield", "Crystal", "Bow", "Flask", "Sword", "Scroll", "Bolt", "Gear"];
+          const chosen = symbols.slice(0, pairCount);
+          pairs = chosen.map((symbol, idx) => ({
+            id: `mm-auto-${idx}`,
+            labelA: symbol,
+            labelB: symbol,
+            tag: "Symbol",
+          }));
         }
-        
-        // Otherwise generate fallback pairs using symbols
-        const pairCount = config.pairCount || 6;
-        const symbols = ["🛡️", "🔮", "🏹", "🧪", "🗡️", "📜", "⚡", "⚙️"];
-        const chosen = symbols.slice(0, pairCount);
-        const pairs = chosen.map((symbol, idx) => ({
-          id: `mm-auto-${idx}`,
-          labelA: symbol,
-          labelB: symbol,
-          tag: 'Symbol',
-        }));
-        
+
+        const cards = pairs
+          .flatMap((p: any) => [
+            { id: `${p.id}-a`, pairId: p.id, label: p.labelA },
+            { id: `${p.id}-b`, pairId: p.id, label: p.labelB },
+          ])
+          .sort(() => Math.random() - 0.5);
+
         return {
+          pairCount: pairs.length,
           pairs,
+          cards,
         };
       }
 

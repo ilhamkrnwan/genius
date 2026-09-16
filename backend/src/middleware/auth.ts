@@ -33,13 +33,20 @@ export const authMiddleware = new Elysia({ name: "auth-middleware" })
       const payload = await verifyToken(token);
       let user = payload as TokenPayload | null;
       if (user && !user.teamId && user.role === "PARTICIPANT" && user.userId) {
-        const [membership] = await db
-          .select({ teamId: teamMembers.teamId })
-          .from(teamMembers)
-          .where(eq(teamMembers.userId, user.userId))
-          .limit(1);
-        if (membership?.teamId) {
-          user = { ...user, teamId: membership.teamId };
+        try {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.userId);
+          if (isUuid) {
+            const [membership] = await db
+              .select({ teamId: teamMembers.teamId })
+              .from(teamMembers)
+              .where(eq(teamMembers.userId, user.userId))
+              .limit(1);
+            if (membership?.teamId) {
+              user = { ...user, teamId: membership.teamId };
+            }
+          }
+        } catch {
+          // Ignore DB lookup error during auth derivation
         }
       }
       return { user };
