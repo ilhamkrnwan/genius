@@ -156,7 +156,7 @@ onUnmounted(() => {
   if (sessionPollingTimer) clearInterval(sessionPollingTimer);
 });
 
-const showStoryModal = ref(false);
+const showStoryModal = ref(!isAlreadyCompleted.value);
 const showCelebration = ref(false);
 const celebrationDetails = ref<{
   stampRecord: StampRecord | null;
@@ -425,7 +425,7 @@ const handleNextStep = () => {
             </div>
             <div class="min-w-0 flex-1">
               <span class="text-[8px] font-pixel text-[#7ec850] uppercase block">
-                Materi Corner • {{ booth.code }}
+                Narasi Pos • {{ booth.code }}
               </span>
               <h3 class="font-pixel text-[10px] sm:text-xs font-bold text-white leading-normal break-words">
                 {{ booth.name }}
@@ -468,7 +468,7 @@ const handleNextStep = () => {
           }"
           class="w-full rpg-btn-primary py-2.5 px-4 text-xs font-pixel font-bold cursor-pointer"
         >
-          TUTUP & MAINKAN MISI
+          LANJUT KE GAME
         </button>
       </div>
     </div>
