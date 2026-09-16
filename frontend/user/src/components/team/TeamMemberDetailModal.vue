@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted } from 'vue';
 import {
   PhX,
   PhCrown,
@@ -48,9 +48,27 @@ const emit = defineEmits<{
 const gameStore = useGameStore();
 
 function handleClose() {
-  if (gameStore.soundEnabled) soundEngine.playClick();
+  try {
+    if (gameStore.soundEnabled) soundEngine.playClick();
+  } catch {
+    // audio failure should never prevent modal from closing
+  }
   emit('close');
 }
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && props.isOpen) {
+    handleClose();
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown);
+});
 
 const displayAvatar = computed(() => {
   if (!props.member) return '/character-cowok-avatar.png';
@@ -84,7 +102,7 @@ const formattedClass = computed(() => {
 <template>
   <div
     v-if="isOpen && member"
-    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#0a0604]/85 backdrop-blur-md animate-in fade-in duration-200 select-none font-sans"
+    class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-[#0a0604]/85 backdrop-blur-md animate-in fade-in duration-200 select-none font-sans"
     @click.self="handleClose"
   >
     <div

@@ -238,12 +238,12 @@ const visitorCount = ref(0);
 const toast = ref<{ type: 'success' | 'error'; message: string } | null>(null);
 
 const boothInfo = ref({
-  id: "booth-hmte",
-  name: "Himpunan Mahasiswa Teknik Elektro (HMTE)",
-  code: "ORMAWA-HMTE",
-  category: "Himpunan & Teknologi",
-  floorNumber: 3,
-  qrCode: "UNU-ORMAWA-HMTE-2026",
+  id: (user.value as any)?.boothId || "",
+  name: (user.value as any)?.boothName || "Memuat Stan Ormawa...",
+  code: (user.value as any)?.boothCode || "ORMAWA",
+  category: (user.value as any)?.category || "Stan Ormawa",
+  floorNumber: (user.value as any)?.assignedFloor || 6,
+  qrCode: (user.value as any)?.qrCode || "",
   xpReward: 75,
 });
 

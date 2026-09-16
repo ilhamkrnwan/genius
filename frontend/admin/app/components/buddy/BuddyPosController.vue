@@ -20,7 +20,7 @@
       <div>
         <span
           v-if="currentSession?.status === 'ACTIVE'"
-          class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-pixel text-[#86efac] bg-[#172513] border border-[#22c55e]/60 animate-pulse"
+          class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-pixel text-[#86efac] bg-[#172513] border border-[#22c55e]/60"
         >
           <span class="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
           SESI AKTIF

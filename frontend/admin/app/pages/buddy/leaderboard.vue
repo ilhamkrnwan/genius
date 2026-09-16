@@ -19,7 +19,7 @@
       <!-- Live / Freeze Status Pill -->
       <div class="flex items-center justify-between pt-1 border-t border-[#5a3a18] text-[10px] font-mono">
         <div class="flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse"></span>
+          <span class="w-2 h-2 rounded-full bg-[#22c55e]"></span>
           <span class="text-[#86efac]">LIVE CLOUD SYNC</span>
         </div>
         <span class="text-[#c4956a]">
@@ -90,7 +90,7 @@
 
         <!-- 1st Place (Winner / Highlight) -->
         <div class="sdv-card-gold p-2.5 text-center flex flex-col justify-end items-center scale-105 shadow-xl">
-          <Crown class="h-6 w-6 text-[#facc15] mb-1 animate-bounce" />
+          <Crown class="h-6 w-6 text-[#facc15] mb-1" />
           <span class="font-pixel text-[8px] text-[#facc15]">#1 EMAS</span>
           <span class="font-sans text-[10.5px] font-bold text-[#fef08a] line-clamp-1 mt-0.5">{{ rank1Team?.name || '-' }}</span>
           <span class="font-pixel text-[9.5px] text-[#86efac] font-bold mt-1">{{ rank1Team ? `${rank1Team.score.toLocaleString()} PTS` : '- PTS' }}</span>

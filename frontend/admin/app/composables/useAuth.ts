@@ -1,5 +1,5 @@
 import { ref, computed } from "vue";
-import { navigateTo, useRuntimeConfig } from "#app";
+import { navigateTo, useRuntimeConfig, useRoute } from "#app";
 import { useConfirm } from "./useConfirm";
 import { useToast } from "./useToast";
 
@@ -65,8 +65,16 @@ export function useAuth() {
 
   /**
    * Real Authentication via Backend REST API (/api/auth/login)
+   * Automatically routes to the matching dashboard based on user.role:
+   * - ADMIN -> /
+   * - BUDDY -> /buddy
+   * - ORMAWA_PIC -> /ormawa/portal
    */
-  async function login(usernameInput: string, passwordInput: string): Promise<{ success: boolean; error?: string }> {
+  async function login(
+    usernameInput: string,
+    passwordInput: string,
+    customRedirect?: string
+  ): Promise<{ success: boolean; role?: User["role"]; user?: User; error?: string }> {
     loading.value = true;
     try {
       const config = useRuntimeConfig();
@@ -102,7 +110,7 @@ export function useAuth() {
       if (res.data.user.role !== "ADMIN" && res.data.user.role !== "BUDDY" && res.data.user.role !== "ORMAWA_PIC") {
         return {
           success: false,
-          error: "Akses ditolak: Akun Anda terdaftar sebagai Peserta, bukan Panitia/Ormawa.",
+          error: "Akses ditolak: Akun Anda terdaftar sebagai Peserta, bukan Panitia atau Ormawa.",
         };
       }
 
@@ -114,15 +122,39 @@ export function useAuth() {
         localStorage.setItem("genius_admin_user", JSON.stringify(res.data.user));
       }
 
-      if (res.data.user.role === "BUDDY") {
-        navigateTo("/buddy");
-      } else if (res.data.user.role === "ORMAWA_PIC") {
-        navigateTo("/ormawa/portal");
-      } else {
-        navigateTo("/");
+      let redirectTarget = customRedirect;
+      if (!redirectTarget) {
+        try {
+          const route = useRoute();
+          if (route?.query?.redirect && typeof route.query.redirect === "string") {
+            redirectTarget = route.query.redirect;
+          }
+        } catch {}
       }
 
-      return { success: true };
+      // Role-based routing
+      if (res.data.user.role === "BUDDY") {
+        if (redirectTarget && redirectTarget.startsWith("/buddy")) {
+          navigateTo(redirectTarget);
+        } else {
+          navigateTo("/buddy");
+        }
+      } else if (res.data.user.role === "ORMAWA_PIC") {
+        if (redirectTarget && (redirectTarget.startsWith("/ormawa") || redirectTarget.startsWith("/qr-center"))) {
+          navigateTo(redirectTarget);
+        } else {
+          navigateTo("/ormawa/portal");
+        }
+      } else {
+        // ADMIN
+        if (redirectTarget && !redirectTarget.startsWith("/login") && !redirectTarget.startsWith("/ormawa/login")) {
+          navigateTo(redirectTarget);
+        } else {
+          navigateTo("/");
+        }
+      }
+
+      return { success: true, role: res.data.user.role, user: res.data.user };
     } catch (err: any) {
       const errMsg =
         err?.data?.error?.message ||
@@ -133,11 +165,6 @@ export function useAuth() {
     } finally {
       loading.value = false;
     }
-  }
-
-  async function loginAsPreset(presetUser: User, password?: string) {
-    const defaultPassword = password || (presetUser.role === "ADMIN" ? "admin2026" : presetUser.role === "BUDDY" ? "genius2026" : "ormawa2026");
-    return await login(presetUser.username, defaultPassword);
   }
 
   async function switchRole(targetRole: "ADMIN" | "BUDDY" | "ORMAWA_PIC") {
@@ -161,15 +188,13 @@ export function useAuth() {
         }).catch(() => {});
       }
     } finally {
-      const wasOrmawa = user.value?.role === "ORMAWA_PIC";
       token.value = null;
       user.value = null;
       if (typeof window !== "undefined") {
         localStorage.removeItem("genius_admin_token");
         localStorage.removeItem("genius_admin_user");
-      }
-      if (wasOrmawa) {
-        navigateTo("/ormawa/login");
+        // Hard redirect to guarantee clean navigation back to unified login
+        window.location.href = "/login";
       } else {
         navigateTo("/login");
       }
@@ -230,7 +255,6 @@ export function useAuth() {
     isOrmawaPic,
     userInitials,
     login,
-    loginAsPreset,
     switchRole,
     logout,
     confirmLogout,
