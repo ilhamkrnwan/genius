@@ -23,51 +23,262 @@ Password   : admin2026
 Nama       : Administrator GENIUS 2026
 
 ================================================================================
-2. AKUN GAME MASTER BUDDY (10 BUDDY — PENILAIAN FGD & PRESENSI REGU)
+2. AKUN GAME MASTER BUDDY (50 BUDDY — PENILAIAN FGD & PRESENSI REGU)
 ================================================================================
 Role       : BUDDY
 Portal URL : http://localhost:3002/login ➔ /buddy
-Password   : genius2026
+Password   : buddy2026 (atau alternatif: genius2026)
+Catatan    : Login dapat menggunakan username resmi (buddy01..50) maupun alias NIM (25111101..25111150)
 
-[1] NIM/Username : 25111101 | Password: genius2026
+[1] Username     : buddy01 (Alias NIM: 25111101) | Password: buddy2026
     Nama Lengkap : Agnes Anggraini Risdiyanto
-    Penugasan    : Jabu (GENIUS-01)
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Jabu (GENIUS-01) - Primary Buddy
 
-[2] NIM/Username : 25111102 | Password: genius2026
+[2] Username     : buddy02 (Alias NIM: 25111102) | Password: buddy2026
     Nama Lengkap : Agnesya Putri Triyana
-    Penugasan    : Jabu (GENIUS-01)
+    Prodi/Fak    : Teknik Elektro (Fakultas Teknologi Informasi)
+    Penugasan    : Jabu (GENIUS-01) - Assistant Buddy
 
-[3] NIM/Username : 25111103 | Password: genius2026
+[3] Username     : buddy03 (Alias NIM: 25111103) | Password: buddy2026
     Nama Lengkap : Ahmad Fadlil Munajad
-    Penugasan    : Bolon (GENIUS-02)
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Bolon (GENIUS-02) - Primary Buddy
 
-[4] NIM/Username : 25111104 | Password: genius2026
+[4] Username     : buddy04 (Alias NIM: 25111104) | Password: buddy2026
     Nama Lengkap : Ahmad Ichsan Maulana
-    Penugasan    : Bolon (GENIUS-02)
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Bolon (GENIUS-02) - Assistant Buddy
 
-[5] NIM/Username : 25111105 | Password: genius2026
+[5] Username     : buddy05 (Alias NIM: 25111105) | Password: buddy2026
     Nama Lengkap : Aning Gusmi Rahayu
-    Penugasan    : Gadang (GENIUS-03)
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Gadang (GENIUS-03) - Primary Buddy
 
-[6] NIM/Username : 25111106 | Password: genius2026
+[6] Username     : buddy06 (Alias NIM: 25111106) | Password: buddy2026
     Nama Lengkap : Arselia Sakina
-    Penugasan    : Gadang (GENIUS-03)
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Gadang (GENIUS-03) - Assistant Buddy
 
-[7] NIM/Username : 25111107 | Password: genius2026
+[7] Username     : buddy07 (Alias NIM: 25111107) | Password: buddy2026
     Nama Lengkap : Asadurrahman Mujtaba Alhamidy
-    Penugasan    : Limas (GENIUS-04)
+    Prodi/Fak    : Pendidikan Bahasa Inggris (Fakultas Ilmu Pendidikan)
+    Penugasan    : Limas (GENIUS-04) - Primary Buddy
 
-[8] NIM/Username : 25111108 | Password: genius2026
+[8] Username     : buddy08 (Alias NIM: 25111108) | Password: buddy2026
     Nama Lengkap : Dafa Alif Laguna
-    Penugasan    : Limas (GENIUS-04)
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Limas (GENIUS-04) - Assistant Buddy
 
-[9] NIM/Username : 25111109 | Password: genius2026
+[9] Username     : buddy09 (Alias NIM: 25111109) | Password: buddy2026
     Nama Lengkap : Destiya Lintang Dwi Utami
-    Penugasan    : Lontik (GENIUS-05)
+    Prodi/Fak    : Farmasi (Fakultas Ilmu Kesehatan)
+    Penugasan    : Lontik (GENIUS-05) - Primary Buddy
 
-[10] NIM/Username : 25111110 | Password: genius2026
+[10] Username     : buddy10 (Alias NIM: 25111110) | Password: buddy2026
     Nama Lengkap : Dzulfa Sindi Saputri
-    Penugasan    : Lontik (GENIUS-05)
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Lontik (GENIUS-05) - Assistant Buddy
+
+[11] Username     : buddy11 (Alias NIM: 25111111) | Password: buddy2026
+    Nama Lengkap : Eka Setiawan
+    Prodi/Fak    : Teknik Elektro (Fakultas Teknologi Informasi)
+    Penugasan    : Kajang (GENIUS-06) - Primary Buddy
+
+[12] Username     : buddy12 (Alias NIM: 25111112) | Password: buddy2026
+    Nama Lengkap : Farazinia Aditiani Putri
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Bubung (GENIUS-07) - Primary Buddy
+
+[13] Username     : buddy13 (Alias NIM: 25111113) | Password: buddy2026
+    Nama Lengkap : Fathi Rizqy Ramadhan
+    Prodi/Fak    : Informatika (Fakultas Teknologi Informasi)
+    Penugasan    : Panggung (GENIUS-08) - Primary Buddy
+
+[14] Username     : buddy14 (Alias NIM: 25111114) | Password: buddy2026
+    Nama Lengkap : Fauza Ramadani
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Nuwo (GENIUS-09) - Primary Buddy
+
+[15] Username     : buddy15 (Alias NIM: 25111115) | Password: buddy2026
+    Nama Lengkap : Fina Nur Jayanti
+    Prodi/Fak    : Pendidikan Bahasa Inggris (Fakultas Ilmu Pendidikan)
+    Penugasan    : Baduy (GENIUS-10) - Primary Buddy
+
+[16] Username     : buddy16 (Alias NIM: 25111116) | Password: buddy2026
+    Nama Lengkap : Isna Shabrina Berliana
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Gudang (GENIUS-11) - Primary Buddy
+
+[17] Username     : buddy17 (Alias NIM: 25111117) | Password: buddy2026
+    Nama Lengkap : Istiqomah Kurniawati
+    Prodi/Fak    : Teknik Elektro (Fakultas Teknologi Informasi)
+    Penugasan    : Bapang (GENIUS-12) - Primary Buddy
+
+[18] Username     : buddy18 (Alias NIM: 25111118) | Password: buddy2026
+    Nama Lengkap : Jernikan Qalbi Zauqillah
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Joglo (GENIUS-13) - Primary Buddy
+
+[19] Username     : buddy19 (Alias NIM: 25111119) | Password: buddy2026
+    Nama Lengkap : Khansa Saifanah Khair
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Kampung (GENIUS-14) - Primary Buddy
+
+[20] Username     : buddy20 (Alias NIM: 25111120) | Password: buddy2026
+    Nama Lengkap : Khoirunnisa Aulia Rahmah
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Panggang (GENIUS-15) - Primary Buddy
+
+[21] Username     : buddy21 (Alias NIM: 25111121) | Password: buddy2026
+    Nama Lengkap : Moh. Dimas Adi Putra
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Jompongan (GENIUS-16) - Primary Buddy
+
+[22] Username     : buddy22 (Alias NIM: 25111122) | Password: buddy2026
+    Nama Lengkap : Mohamad Budi Wibowo
+    Prodi/Fak    : Informatika (Fakultas Teknologi Informasi)
+    Penugasan    : Jolopong (GENIUS-17) - Primary Buddy
+
+[23] Username     : buddy23 (Alias NIM: 25111123) | Password: buddy2026
+    Nama Lengkap : Mohammad Hilman Umami
+    Prodi/Fak    : Teknik Elektro (Fakultas Teknologi Informasi)
+    Penugasan    : Julang (GENIUS-18) - Primary Buddy
+
+[24] Username     : buddy24 (Alias NIM: 25111124) | Password: buddy2026
+    Nama Lengkap : Muhammad Ma'shum
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Tagog (GENIUS-19) - Primary Buddy
+
+[25] Username     : buddy25 (Alias NIM: 25111125) | Password: buddy2026
+    Nama Lengkap : Muhammad Naufal Rosyiq Ammar
+    Prodi/Fak    : Teknologi Hasil Pertanian (Fakultas Bioindustri)
+    Penugasan    : Badak (GENIUS-20) - Primary Buddy
+
+[26] Username     : buddy26 (Alias NIM: 25111126) | Password: buddy2026
+    Nama Lengkap : Muhammad Pradana Sidiq Nurcahyo
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Capit (GENIUS-21) - Primary Buddy
+
+[27] Username     : buddy27 (Alias NIM: 25111127) | Password: buddy2026
+    Nama Lengkap : Mutiara Nisa Cahya Kusuma
+    Prodi/Fak    : Farmasi (Fakultas Ilmu Kesehatan)
+    Penugasan    : Jubleg (GENIUS-22) - Primary Buddy
+
+[28] Username     : buddy28 (Alias NIM: 25111128) | Password: buddy2026
+    Nama Lengkap : Nazriel Rizky Fadilah
+    Prodi/Fak    : Pendidikan Bahasa Inggris (Fakultas Ilmu Pendidikan)
+    Penugasan    : Tikel (GENIUS-23) - Primary Buddy
+
+[29] Username     : buddy29 (Alias NIM: 25111129) | Password: buddy2026
+    Nama Lengkap : Nur Raihana Zulfa
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Baresan (GENIUS-24) - Primary Buddy
+
+[30] Username     : buddy30 (Alias NIM: 25111130) | Password: buddy2026
+    Nama Lengkap : Nurhidayah Irawan
+    Prodi/Fak    : Pendidikan Guru Sekolah Dasar (PGSD) (Fakultas Ilmu Pendidikan)
+    Penugasan    : Crocogan (GENIUS-25) - Primary Buddy
+
+[31] Username     : buddy31 (Alias NIM: 25111131) | Password: buddy2026
+    Nama Lengkap : Orryza Sativa Qurrota A'yun
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Tengger (GENIUS-26) - Primary Buddy
+
+[32] Username     : buddy32 (Alias NIM: 25111132) | Password: buddy2026
+    Nama Lengkap : Pandu Alfa Pratama
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Bale (GENIUS-27) - Primary Buddy
+
+[33] Username     : buddy33 (Alias NIM: 25111133) | Password: buddy2026
+    Nama Lengkap : Ramanda
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Lumbung (GENIUS-28) - Primary Buddy
+
+[34] Username     : buddy34 (Alias NIM: 25111134) | Password: buddy2026
+    Nama Lengkap : Refina Aprillia
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Uma (GENIUS-29) - Primary Buddy
+
+[35] Username     : buddy35 (Alias NIM: 25111135) | Password: buddy2026
+    Nama Lengkap : Rizka Sonia Octavia
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Omo (GENIUS-30) - Primary Buddy
+
+[36] Username     : buddy36 (Alias NIM: 25111136) | Password: buddy2026
+    Nama Lengkap : Rizki Nur Aini
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Sebua (GENIUS-31) - Primary Buddy
+
+[37] Username     : buddy37 (Alias NIM: 25111137) | Password: buddy2026
+    Nama Lengkap : Sakina Tasya
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Hada (GENIUS-32) - Primary Buddy
+
+[38] Username     : buddy38 (Alias NIM: 25111138) | Password: buddy2026
+    Nama Lengkap : Salis Nawalin Najah
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Betang (GENIUS-33) - Primary Buddy
+
+[39] Username     : buddy39 (Alias NIM: 25111139) | Password: buddy2026
+    Nama Lengkap : Sevia Mila Sari
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Lamin (GENIUS-34) - Primary Buddy
+
+[40] Username     : buddy40 (Alias NIM: 25111140) | Password: buddy2026
+    Nama Lengkap : Siti Via Syahrani Putri
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Baloy (GENIUS-35) - Primary Buddy
+
+[41] Username     : buddy41 (Alias NIM: 25111141) | Password: buddy2026
+    Nama Lengkap : Sovi Sarah
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Banjar (GENIUS-36) - Primary Buddy
+
+[42] Username     : buddy42 (Alias NIM: 25111142) | Password: buddy2026
+    Nama Lengkap : Sukma Maulana Pangesti
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Tambi (GENIUS-37) - Primary Buddy
+
+[43] Username     : buddy43 (Alias NIM: 25111143) | Password: buddy2026
+    Nama Lengkap : Talitha Zerlina Aurellia
+    Prodi/Fak    : Farmasi (Fakultas Ilmu Kesehatan)
+    Penugasan    : Laika (GENIUS-38) - Primary Buddy
+
+[44] Username     : buddy44 (Alias NIM: 25111144) | Password: buddy2026
+    Nama Lengkap : Usman Raya
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Boyang (GENIUS-39) - Primary Buddy
+
+[45] Username     : buddy45 (Alias NIM: 25111145) | Password: buddy2026
+    Nama Lengkap : Yoga Rama Indardy
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Buton (GENIUS-40) - Primary Buddy
+
+[46] Username     : buddy46 (Alias NIM: 25111146) | Password: buddy2026
+    Nama Lengkap : Yulita Wahyu Utami
+    Prodi/Fak    : Pendidikan Guru Sekolah Dasar (PGSD) (Fakultas Ilmu Pendidikan)
+    Penugasan    : Lego (GENIUS-41) - Primary Buddy
+
+[47] Username     : buddy47 (Alias NIM: 25111147) | Password: buddy2026
+    Nama Lengkap : Zahra Audrina Fadhilah
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Lopo (GENIUS-42) - Primary Buddy
+
+[48] Username     : buddy48 (Alias NIM: 25111148) | Password: buddy2026
+    Nama Lengkap : Zahro Makhbubah
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Mbaru (GENIUS-43) - Primary Buddy
+
+[49] Username     : buddy49 (Alias NIM: 25111149) | Password: buddy2026
+    Nama Lengkap : Zakiya Aisyah Dealatifa
+    Prodi/Fak    : Teknik Elektro (Fakultas Teknologi Informasi)
+    Penugasan    : Sao (GENIUS-44) - Primary Buddy
+
+[50] Username     : buddy50 (Alias NIM: 25111150) | Password: buddy2026
+    Nama Lengkap : Zulaika
+    Prodi/Fak    : Farmasi (Fakultas Ilmu Kesehatan)
+    Penugasan    : Musalaki (GENIUS-45) - Primary Buddy
 
 ================================================================================
 3. AKUN PIC STAN ORMAWA / UKM EXPO (19 STAN RESMI LANTAI 3, 4, 5)
