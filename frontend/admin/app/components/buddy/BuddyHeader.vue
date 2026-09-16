@@ -26,19 +26,10 @@
       </div>
     </div>
 
-    <!-- Right: Quick Role Switcher & Logout -->
+    <!-- Right: Logout Button -->
     <div class="flex items-center gap-1.5 shrink-0">
-      <!-- Role Switcher Button for Instant Testing -->
       <button
-        @click="switchRole('ADMIN')"
-        class="h-7 px-2 bg-[#271d15] hover:bg-[#3d2d1e] border border-[#523e2b] hover:border-[#f59e0b] text-[#facc15] font-pixel text-[9px] rounded flex items-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95"
-        title="Ganti ke Tampilan Super Admin"
-      >
-        <ArrowLeftRight class="h-3 w-3 text-[#f59e0b]" />
-        <span class="hidden sm:inline">KE ADMIN</span>
-      </button>
-
-      <button
+        type="button"
         @click="confirmLogout"
         class="h-7 w-7 rounded bg-[#2a1313] border border-red-800/80 text-red-400 hover:text-white hover:bg-red-900 flex items-center justify-center cursor-pointer transition-all active:scale-95"
         title="Keluar"
@@ -51,10 +42,10 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { Crown, Shield, ArrowLeftRight, LogOut } from "lucide-vue-next";
+import { Crown, Shield, LogOut } from "lucide-vue-next";
 import { useAuth } from "~/composables/useAuth";
 
-const { user, switchRole, confirmLogout } = useAuth();
+const { user, confirmLogout } = useAuth();
 
 const cleanBuddyName = computed(() => {
   const raw = user.value?.fullName || "Agnes Anggraini Risdiyanto";

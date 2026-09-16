@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch, onUnmounted } from "vue";
 import {
   Dialog,
   DialogContent,
@@ -254,7 +254,22 @@ const confirmBtnClasses = computed(() => {
   }
 });
 
+function forceUnlockBody() {
+  if (typeof document !== "undefined") {
+    document.body.style.removeProperty("pointer-events");
+    document.body.style.pointerEvents = "";
+  }
+}
+
+watch(modelOpen, (isOpen) => {
+  if (!isOpen) {
+    forceUnlockBody();
+    setTimeout(forceUnlockBody, 50);
+  }
+});
+
 function onConfirm() {
+  forceUnlockBody();
   if (props.open !== undefined) {
     emit("confirm");
   } else {
@@ -263,6 +278,7 @@ function onConfirm() {
 }
 
 function onCancel() {
+  forceUnlockBody();
   if (props.open !== undefined) {
     emit("cancel");
     emit("update:open", false);
@@ -276,4 +292,8 @@ function onOpenChange(val: boolean) {
     onCancel();
   }
 }
+
+onUnmounted(() => {
+  forceUnlockBody();
+});
 </script>

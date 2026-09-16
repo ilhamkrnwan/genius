@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted } from 'vue';
 import {
   PhX,
   PhCrown,
@@ -48,9 +48,32 @@ const emit = defineEmits<{
 const gameStore = useGameStore();
 
 function handleClose() {
-  if (gameStore.soundEnabled) soundEngine.playClick();
-  emit('close');
+  try {
+    if (gameStore.soundEnabled) soundEngine.playClick();
+  } catch {
+    // Ignore sound audio errors
+  } finally {
+    emit('close');
+  }
 }
+
+function handleKeyDown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && props.isOpen) {
+    handleClose();
+  }
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', handleKeyDown);
+  }
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', handleKeyDown);
+  }
+});
 
 const displayAvatar = computed(() => {
   if (!props.member) return '/character-cowok-avatar.png';
