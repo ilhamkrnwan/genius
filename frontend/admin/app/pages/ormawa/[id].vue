@@ -92,11 +92,9 @@
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 w-full min-w-0">
           <!-- Left: Identity & Info -->
           <div class="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
-            <div
-              class="h-12 w-12 sm:h-14 sm:w-14 shrink-0 rounded border-2 border-[#facc15] flex items-center justify-center font-pixel text-base sm:text-lg font-bold text-white shadow"
-              :style="{ backgroundColor: booth.badgeColor || '#9333ea' }"
-            >
-              {{ booth.shortName?.slice(0, 3) || booth.code.slice(0, 3) }}
+            <div class="h-12 w-12 sm:h-14 sm:w-14 shrink-0 rounded border-2 border-white bg-white flex items-center justify-center font-pixel text-sm font-bold text-[#3a2818] shadow overflow-hidden">
+              <img v-if="booth.logoUrl" :src="booth.logoUrl" :alt="`Logo ${booth.name}`" class="h-full w-full object-contain p-1" />
+              <span v-else>{{ booth.shortName?.slice(0, 3) || booth.code.slice(0, 3) }}</span>
             </div>
 
             <div class="space-y-1 flex-1 min-w-0">
@@ -635,6 +633,8 @@
             </div>
           </div>
 
+          <LogoUploadField v-model="formState.logoUrl" />
+
           <!-- Status Switch -->
           <div class="pt-2 border-t border-[#4a3624] flex items-center gap-2">
             <input
@@ -691,6 +691,7 @@ import {
   CheckSquare,
 } from "lucide-vue-next";
 import PixelPagination from "@/components/PixelPagination.vue";
+import LogoUploadField from "~/components/ormawa/LogoUploadField.vue";
 import { useApi } from "~/composables/useApi";
 import { useToast } from "~/composables/useToast";
 
@@ -734,6 +735,7 @@ const formState = reactive({
   xpReward: 75,
   contactPerson: "",
   instagram: "",
+  logoUrl: "",
   isActive: true,
 });
 
@@ -872,6 +874,7 @@ function openEditModal() {
   formState.xpReward = booth.value.xpReward || 75;
   formState.contactPerson = booth.value.contactPerson || "";
   formState.instagram = booth.value.instagram || "";
+  formState.logoUrl = booth.value.logoUrl || "";
   formState.isActive = booth.value.isActive;
   showEditModal.value = true;
 }
@@ -891,6 +894,7 @@ async function submitBoothForm() {
       xpReward: formState.xpReward,
       contactPerson: formState.contactPerson || null,
       instagram: formState.instagram || null,
+      logoUrl: formState.logoUrl || null,
       isActive: formState.isActive,
     });
 

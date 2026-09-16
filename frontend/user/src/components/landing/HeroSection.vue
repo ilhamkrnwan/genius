@@ -370,27 +370,17 @@ onUnmounted(() => {
 
     <!-- Main Content: GSAP Scroll Parallax Wrapper -->
     <div class="hero-scroll-content relative z-10 w-full my-auto will-change-transform">
-      <div class="w-full max-w-lg mx-auto px-3 sm:px-6 flex flex-col items-center justify-center text-center">
+      <div class="w-full max-w-2xl mx-auto px-3 sm:px-6 flex flex-col items-center justify-center text-center">
       <!-- Grand Title -->
-      <div class="hero-title-wrap space-y-0.5 sm:space-y-1 mb-2.5 sm:mb-4">
-        <h1
-          class="font-pixel text-3xl sm:text-5xl md:text-6xl font-extrabold text-[#f0d060] tracking-[4px] sm:tracking-[10px] animate-title-pulse drop-shadow-[0_6px_16px_rgba(0,0,0,0.9)]"
-          style="text-shadow: 2px 2px 0 #6b4f2e, 4px 4px 0 #1b120a, 0 0 20px rgba(240, 208, 96, 0.4);"
-        >
-          GENIUS
-        </h1>
-        <div
-          class="font-pixel text-xs sm:text-xl md:text-2xl text-white tracking-[2px] sm:tracking-[4px]"
-          style="text-shadow: 1px 1px 0 #2d1b0e, 0 2px 8px rgba(0,0,0,0.9);"
-        >
-          UPGRADE NEW YOU
-        </div>
-        <p
-          class="font-pixel text-[8px] sm:text-[10px] text-[#a0d870] tracking-[1px] pt-0.5 uppercase"
-          style="text-shadow: 1px 1px 3px rgba(0,0,0,0.9);"
-        >
-          ORIENTASI MAHASISWA BARU 2026
-        </p>
+      <div class="hero-title-wrap w-full flex justify-center mb-2.5 sm:mb-4">
+        <img
+          src="/genius-logo-with-tagline.png"
+          alt="Genius UNU Jogja Grow 2026"
+          class="w-[min(94vw,640px)] h-auto max-h-[28dvh] object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.85)]"
+          width="1400"
+          height="733"
+          fetchpriority="high"
+        />
       </div>
 
       <!-- Character Box: Switch between Profile Card (if Registered) vs Character Selector (if Guest) -->

@@ -87,6 +87,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 import {
   LayoutDashboard,
@@ -137,7 +138,7 @@ function isActive(path: string) {
   return route.path.startsWith(path);
 }
 
-const navGroups = [
+const adminNavGroups = [
   {
     label: "Main Quest",
     items: [
@@ -185,4 +186,15 @@ const navGroups = [
     ],
   },
 ];
+
+const picNavGroups = [
+  {
+    label: "Stan Ormawa",
+    items: [{ to: "/ormawa/scan", label: "Scanner Kunjungan", icon: QrCode }],
+  },
+];
+
+const navGroups = computed(() =>
+  user.value?.role === "ORMAWA_PIC" ? picNavGroups : adminNavGroups,
+);
 </script>

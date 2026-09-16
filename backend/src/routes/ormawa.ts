@@ -4,6 +4,28 @@ import { ormawaBooths, ormawaScans, ormawaInterests, users, teams, teamMembers, 
 import { eq, and, sql, desc, or, ilike, inArray } from "drizzle-orm";
 import { authMiddleware, requireAdmin, requireOrmawaOrAdmin, requireUser } from "../middleware/auth";
 import { broadcastLeaderboardUpdate, broadcastAdminEvent } from "../realtime";
+import {
+  normalizeInstagramUsername,
+  ORMAWA_INTEREST_XP,
+  ORMAWA_STAMP_XP,
+  validateOrmawaLogoDataUrl,
+} from "../domain/ormawa";
+
+function normalizeWhatsappNumber(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.startsWith("62")) return digits;
+  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
+  if (digits.startsWith("8")) return `62${digits}`;
+  return digits;
+}
+
+function parseMabaQrIdentifier(raw: string): string {
+  const value = raw.trim();
+  const match = value.match(/^GENIUS-MABA(?::|-)([A-Za-z0-9._-]+)$/i);
+  return (match?.[1] || value).trim();
+}
 
 export const ormawaRoutes = new Elysia({
   prefix: "/api/ormawa",
@@ -41,13 +63,19 @@ export const ormawaRoutes = new Elysia({
           floorNumber: floors.number,
           floorName: floors.name,
           boothNumber: ormawaBooths.boothNumber,
+          tagline: ormawaBooths.tagline,
           description: ormawaBooths.description,
+          activities: ormawaBooths.activities,
+          requirements: ormawaBooths.requirements,
+          stampInstructions: ormawaBooths.stampInstructions,
           qrCode: ormawaBooths.qrCode,
           xpReward: ormawaBooths.xpReward,
           badgeIcon: ormawaBooths.badgeIcon,
           badgeColor: ormawaBooths.badgeColor,
           contactPerson: ormawaBooths.contactPerson,
+          contactPhone: ormawaBooths.contactPhone,
           instagram: ormawaBooths.instagram,
+          logoUrl: ormawaBooths.logoUrl,
           isActive: ormawaBooths.isActive,
           visitorCount: sql<number>`COALESCE(${visitorCountSubquery.visitorCount}, 0)`.as("visitor_count"),
           createdAt: ormawaBooths.createdAt,
@@ -106,13 +134,19 @@ export const ormawaRoutes = new Elysia({
           floorNumber: floors.number,
           floorName: floors.name,
           boothNumber: ormawaBooths.boothNumber,
+          tagline: ormawaBooths.tagline,
           description: ormawaBooths.description,
+          activities: ormawaBooths.activities,
+          requirements: ormawaBooths.requirements,
+          stampInstructions: ormawaBooths.stampInstructions,
           qrCode: ormawaBooths.qrCode,
           xpReward: ormawaBooths.xpReward,
           badgeIcon: ormawaBooths.badgeIcon,
           badgeColor: ormawaBooths.badgeColor,
           contactPerson: ormawaBooths.contactPerson,
+          contactPhone: ormawaBooths.contactPhone,
           instagram: ormawaBooths.instagram,
+          logoUrl: ormawaBooths.logoUrl,
           isActive: ormawaBooths.isActive,
           createdAt: ormawaBooths.createdAt,
         })
@@ -166,12 +200,28 @@ export const ormawaRoutes = new Elysia({
       const [booth] = await db
         .select({
           id: ormawaBooths.id,
-          name: ormawaBooths.name,
-          category: ormawaBooths.category,
           code: ormawaBooths.code,
+          name: ormawaBooths.name,
+          shortName: ormawaBooths.shortName,
+          category: ormawaBooths.category,
+          floorId: ormawaBooths.floorId,
           qrCode: ormawaBooths.qrCode,
-          xpReward: ormawaBooths.xpReward,
           floorNumber: floors.number,
+          floorName: floors.name,
+          boothNumber: ormawaBooths.boothNumber,
+          tagline: ormawaBooths.tagline,
+          description: ormawaBooths.description,
+          activities: ormawaBooths.activities,
+          requirements: ormawaBooths.requirements,
+          stampInstructions: ormawaBooths.stampInstructions,
+          xpReward: ormawaBooths.xpReward,
+          badgeIcon: ormawaBooths.badgeIcon,
+          badgeColor: ormawaBooths.badgeColor,
+          contactPerson: ormawaBooths.contactPerson,
+          contactPhone: ormawaBooths.contactPhone,
+          instagram: ormawaBooths.instagram,
+          logoUrl: ormawaBooths.logoUrl,
+          isActive: ormawaBooths.isActive,
         })
         .from(ormawaBooths)
         .leftJoin(floors, eq(ormawaBooths.floorId, floors.id))
@@ -210,12 +260,84 @@ export const ormawaRoutes = new Elysia({
     }
   )
 
+  // PUT /api/ormawa/my-booth — PIC memperbarui konten kartu stan miliknya.
+  .put(
+    "/my-booth",
+    async ({ body, user, set }: any) => {
+      if (user?.role !== "ORMAWA_PIC") {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Hanya PIC Ormawa yang dapat mengubah profil stan" } };
+      }
+
+      const updates: Record<string, unknown> = {};
+      const textFields = [
+        "name", "shortName", "category", "boothNumber", "tagline", "description",
+        "contactPerson", "contactPhone", "instagram", "logoUrl",
+      ];
+      for (const field of textFields) {
+        if (body[field] !== undefined) {
+          const value = typeof body[field] === "string" ? body[field].trim() : body[field];
+          updates[field] = value || null;
+        }
+      }
+      if (Array.isArray(body.activities)) updates.activities = body.activities.map((item: string) => item.trim()).filter(Boolean);
+      if (Array.isArray(body.requirements)) updates.requirements = body.requirements.map((item: string) => item.trim()).filter(Boolean);
+      if (Array.isArray(body.stampInstructions)) updates.stampInstructions = body.stampInstructions.map((item: string) => item.trim()).filter(Boolean);
+
+      if (body.logoUrl !== undefined) {
+        const logoError = validateOrmawaLogoDataUrl(body.logoUrl);
+        if (logoError) {
+          set.status = 400;
+          return { success: false, error: { code: "INVALID_LOGO", message: logoError } };
+        }
+      }
+
+      if (Object.keys(updates).length === 0) {
+        set.status = 400;
+        return { success: false, error: { code: "NO_CHANGES", message: "Tidak ada perubahan profil yang dikirim" } };
+      }
+
+      const [updated] = await db
+        .update(ormawaBooths)
+        .set(updates)
+        .where(eq(ormawaBooths.picUserId, user.userId))
+        .returning();
+
+      if (!updated) {
+        set.status = 404;
+        return { success: false, error: { code: "NOT_FOUND", message: "Stan tidak ditemukan untuk akun PIC ini" } };
+      }
+
+      broadcastAdminEvent("ORMAWA_BOOTH_UPDATED", { boothId: updated.id, name: updated.name });
+      return { success: true, message: "Informasi stan berhasil diperbarui", data: updated };
+    },
+    {
+      use: requireOrmawaOrAdmin,
+      body: t.Object({
+        name: t.Optional(t.String({ minLength: 2 })),
+        shortName: t.Optional(t.Nullable(t.String())),
+        category: t.Optional(t.String({ minLength: 2 })),
+        boothNumber: t.Optional(t.Nullable(t.String())),
+        tagline: t.Optional(t.Nullable(t.String())),
+        description: t.Optional(t.Nullable(t.String())),
+        activities: t.Optional(t.Array(t.String())),
+        requirements: t.Optional(t.Array(t.String())),
+        stampInstructions: t.Optional(t.Array(t.String())),
+        contactPerson: t.Optional(t.Nullable(t.String())),
+        contactPhone: t.Optional(t.Nullable(t.String())),
+        instagram: t.Optional(t.Nullable(t.String())),
+        logoUrl: t.Optional(t.Nullable(t.String())),
+      }),
+      detail: { summary: "PIC mengubah informasi kartu stan miliknya" },
+    }
+  )
+
   // GET /api/ormawa/booths/:id/visitors — Rekap daftar siapa saja maba yang absen/scan stan ini
   .get(
     "/booths/:id/visitors",
-    async ({ params, set }) => {
+    async ({ params, user, set }) => {
       const [booth] = await db
-        .select({ id: ormawaBooths.id, name: ormawaBooths.name, code: ormawaBooths.code })
+        .select({ id: ormawaBooths.id, name: ormawaBooths.name, code: ormawaBooths.code, picUserId: ormawaBooths.picUserId })
         .from(ormawaBooths)
         .where(eq(ormawaBooths.id, params.id))
         .limit(1);
@@ -223,6 +345,11 @@ export const ormawaRoutes = new Elysia({
       if (!booth) {
         set.status = 404;
         return { success: false, error: { code: "NOT_FOUND", message: "Stan Ormawa tidak ditemukan" } };
+      }
+
+      if (user?.role === "ORMAWA_PIC" && booth.picUserId !== user.userId) {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "PIC hanya dapat melihat pengunjung stan miliknya" } };
       }
 
       const attendees = await db
@@ -258,6 +385,7 @@ export const ormawaRoutes = new Elysia({
       };
     },
     {
+      use: requireOrmawaOrAdmin,
       detail: {
         summary: "Daftar mahasiswa yang hadir / absen di stan spesifik",
         description: "Menampilkan daftar seluruh mahasiswa (Nama, NIM, Tim, Waktu Scan, XP) yang telah mengunjungi stan ini.",
@@ -310,6 +438,7 @@ export const ormawaRoutes = new Elysia({
       };
     },
     {
+      use: requireAdmin,
       detail: {
         summary: "Rekapitulasi log seluruh kunjungan mahasiswa ke stan expo",
       },
@@ -340,6 +469,12 @@ export const ormawaRoutes = new Elysia({
         };
       }
 
+      const logoError = validateOrmawaLogoDataUrl(body.logoUrl);
+      if (logoError) {
+        set.status = 400;
+        return { success: false, error: { code: "INVALID_LOGO", message: logoError } };
+      }
+
       const [newBooth] = await db
         .insert(ormawaBooths)
         .values({
@@ -349,13 +484,19 @@ export const ormawaRoutes = new Elysia({
           category: body.category.trim(),
           floorId: body.floorId || null,
           boothNumber: body.boothNumber ? body.boothNumber.trim() : null,
+          tagline: body.tagline ? body.tagline.trim() : null,
           description: body.description ? body.description.trim() : null,
+          activities: body.activities || [],
+          requirements: body.requirements || [],
+          stampInstructions: body.stampInstructions || [],
           qrCode,
-          xpReward: body.xpReward || 75,
+          xpReward: body.xpReward ?? ORMAWA_STAMP_XP,
           badgeIcon: body.badgeIcon || "Shield",
           badgeColor: body.badgeColor || "#16a34a",
           contactPerson: body.contactPerson ? body.contactPerson.trim() : null,
+          contactPhone: body.contactPhone ? body.contactPhone.trim() : null,
           instagram: body.instagram ? body.instagram.trim() : null,
+          logoUrl: body.logoUrl ? body.logoUrl.trim() : null,
           isActive: body.isActive !== undefined ? body.isActive : true,
         })
         .returning();
@@ -373,6 +514,7 @@ export const ormawaRoutes = new Elysia({
       };
     },
     {
+      use: requireAdmin,
       detail: {
         summary: "Buat stan Ormawa / UKM baru (Admin Only)",
       },
@@ -383,13 +525,19 @@ export const ormawaRoutes = new Elysia({
         category: t.String({ minLength: 2 }),
         floorId: t.Optional(t.Nullable(t.String())),
         boothNumber: t.Optional(t.Nullable(t.String())),
+        tagline: t.Optional(t.Nullable(t.String())),
         description: t.Optional(t.Nullable(t.String())),
+        activities: t.Optional(t.Array(t.String())),
+        requirements: t.Optional(t.Array(t.String())),
+        stampInstructions: t.Optional(t.Array(t.String())),
         qrCode: t.Optional(t.Nullable(t.String())),
         xpReward: t.Optional(t.Number()),
         badgeIcon: t.Optional(t.Nullable(t.String())),
         badgeColor: t.Optional(t.Nullable(t.String())),
         contactPerson: t.Optional(t.Nullable(t.String())),
+        contactPhone: t.Optional(t.Nullable(t.String())),
         instagram: t.Optional(t.Nullable(t.String())),
+        logoUrl: t.Optional(t.Nullable(t.String())),
         isActive: t.Optional(t.Boolean()),
       }),
     }
@@ -405,13 +553,26 @@ export const ormawaRoutes = new Elysia({
       if (body.category) updates.category = body.category.trim();
       if (body.floorId !== undefined) updates.floorId = body.floorId || null;
       if (body.boothNumber !== undefined) updates.boothNumber = body.boothNumber ? body.boothNumber.trim() : null;
+      if (body.tagline !== undefined) updates.tagline = body.tagline ? body.tagline.trim() : null;
       if (body.description !== undefined) updates.description = body.description ? body.description.trim() : null;
+      if (body.activities !== undefined) updates.activities = body.activities.map((item: string) => item.trim()).filter(Boolean);
+      if (body.requirements !== undefined) updates.requirements = body.requirements.map((item: string) => item.trim()).filter(Boolean);
+      if (body.stampInstructions !== undefined) updates.stampInstructions = body.stampInstructions.map((item: string) => item.trim()).filter(Boolean);
       if (body.qrCode) updates.qrCode = body.qrCode.trim();
       if (body.xpReward !== undefined) updates.xpReward = body.xpReward;
       if (body.badgeIcon !== undefined) updates.badgeIcon = body.badgeIcon;
       if (body.badgeColor !== undefined) updates.badgeColor = body.badgeColor;
       if (body.contactPerson !== undefined) updates.contactPerson = body.contactPerson ? body.contactPerson.trim() : null;
+      if (body.contactPhone !== undefined) updates.contactPhone = body.contactPhone ? body.contactPhone.trim() : null;
       if (body.instagram !== undefined) updates.instagram = body.instagram ? body.instagram.trim() : null;
+      if (body.logoUrl !== undefined) {
+        const logoError = validateOrmawaLogoDataUrl(body.logoUrl);
+        if (logoError) {
+          set.status = 400;
+          return { success: false, error: { code: "INVALID_LOGO", message: logoError } };
+        }
+        updates.logoUrl = body.logoUrl ? body.logoUrl.trim() : null;
+      }
       if (body.isActive !== undefined) updates.isActive = body.isActive;
 
       const [updated] = await db
@@ -437,6 +598,7 @@ export const ormawaRoutes = new Elysia({
       };
     },
     {
+      use: requireAdmin,
       params: t.Object({ id: t.String() }),
       body: t.Object({
         name: t.Optional(t.String()),
@@ -444,13 +606,19 @@ export const ormawaRoutes = new Elysia({
         category: t.Optional(t.String()),
         floorId: t.Optional(t.Nullable(t.String())),
         boothNumber: t.Optional(t.Nullable(t.String())),
+        tagline: t.Optional(t.Nullable(t.String())),
         description: t.Optional(t.Nullable(t.String())),
+        activities: t.Optional(t.Array(t.String())),
+        requirements: t.Optional(t.Array(t.String())),
+        stampInstructions: t.Optional(t.Array(t.String())),
         qrCode: t.Optional(t.String()),
         xpReward: t.Optional(t.Number()),
         badgeIcon: t.Optional(t.Nullable(t.String())),
         badgeColor: t.Optional(t.Nullable(t.String())),
         contactPerson: t.Optional(t.Nullable(t.String())),
+        contactPhone: t.Optional(t.Nullable(t.String())),
         instagram: t.Optional(t.Nullable(t.String())),
+        logoUrl: t.Optional(t.Nullable(t.String())),
         isActive: t.Optional(t.Boolean()),
       }),
     }
@@ -482,6 +650,7 @@ export const ormawaRoutes = new Elysia({
       };
     },
     {
+      use: requireAdmin,
       params: t.Object({ id: t.String() }),
     }
   )
@@ -511,6 +680,7 @@ export const ormawaRoutes = new Elysia({
       };
     },
     {
+      use: requireAdmin,
       body: t.Object({
         boothIds: t.Array(t.String()),
       }),
@@ -542,6 +712,7 @@ export const ormawaRoutes = new Elysia({
       };
     },
     {
+      use: requireAdmin,
       body: t.Object({
         boothIds: t.Array(t.String()),
         isActive: t.Boolean(),
@@ -549,7 +720,7 @@ export const ormawaRoutes = new Elysia({
     }
   )
 
-  // POST /api/ormawa/scan — Mahasiswa scan QR stan UKM (+75 XP capped 10 stan)
+  // POST /api/ormawa/scan — Mahasiswa scan QR stan UKM (+XP)
   .post(
     "/scan",
     async ({ body, user, set }: any) => {
@@ -616,16 +787,14 @@ export const ormawaRoutes = new Elysia({
         };
       }
 
-      // 3. Cek capping aturan gamifikasi: maksimal 10 stan yang memberikan XP
+      // 3. Hitung kunjungan sebelumnya untuk informasi progres. Jumlah stan tidak dibatasi.
       const [scanCountResult] = await db
         .select({ count: sql<number>`count(*)` })
         .from(ormawaScans)
         .where(eq(ormawaScans.participantId, participantId));
 
       const previousScanCount = Number(scanCountResult?.count || 0);
-      const MAX_REWARDED_BOOTHS = 10;
-      const isEligibleForXp = previousScanCount < MAX_REWARDED_BOOTHS;
-      const xpEarned = isEligibleForXp ? (booth.xpReward || 75) : 0;
+      const xpEarned = booth.xpReward ?? ORMAWA_STAMP_XP;
 
       // 4. Cari regu mahasiswa untuk pembukuan scoreTransactions
       const [membership] = await db
@@ -677,9 +846,7 @@ export const ormawaRoutes = new Elysia({
         totalVisited: previousScanCount + 1,
       });
 
-      const message = xpEarned > 0
-        ? `Selamat! Kunjungan ke stan ${booth.name} berhasil. Anda memperoleh +${xpEarned} XP dan lencana stan!`
-        : `Kunjungan ke stan ${booth.name} berhasil dicatat di profil! (Kuota XP maksimal 10 stan / 750 XP telah tercapai).`;
+      const message = `Selamat! Stamp ${booth.name} berhasil dicatat. Anda memperoleh +${xpEarned} XP Ormawa dan lencana stan!`;
 
       return {
         success: true,
@@ -691,19 +858,16 @@ export const ormawaRoutes = new Elysia({
             name: booth.name,
             code: booth.code,
             category: booth.category,
-            badgeIcon: booth.badgeIcon,
-            badgeColor: booth.badgeColor,
           },
           xpEarned,
           totalScanned: previousScanCount + 1,
-          isCapped: !isEligibleForXp,
         },
       };
     },
     {
       detail: {
-        summary: "Scan QR stan UKM oleh mahasiswa (+75 XP capped 10 stan)",
-        description: "Mencatat kunjungan stan ke profil digital, memberikan reward +75 XP (maksimal 10 stan = 750 XP), dan mencegah scan ganda.",
+        summary: "Catat stamp kunjungan stan Ormawa",
+        description: "Mencatat kunjungan stan ke profil digital, memberikan reward XP Ormawa, dan mencegah scan ganda.",
       },
       body: t.Object({
         participantId: t.Optional(t.String()),
@@ -713,9 +877,9 @@ export const ormawaRoutes = new Elysia({
     }
   )
 
-  // GET /api/ormawa/my-badges/:participantId — Ambil daftar lencana stan yang telah dikumpulkan
+  // GET /api/ormawa/progress/:participantId — Ringkasan XP Ormawa dan XP total
   .get(
-    "/my-badges/:participantId",
+    "/progress/:participantId",
     async ({ params }) => {
       const { participantId } = params;
 
@@ -728,8 +892,6 @@ export const ormawaRoutes = new Elysia({
           boothName: ormawaBooths.name,
           boothCode: ormawaBooths.code,
           category: ormawaBooths.category,
-          badgeIcon: ormawaBooths.badgeIcon,
-          badgeColor: ormawaBooths.badgeColor,
           boothNumber: ormawaBooths.boothNumber,
           instagram: ormawaBooths.instagram,
         })
@@ -738,22 +900,40 @@ export const ormawaRoutes = new Elysia({
         .where(eq(ormawaScans.participantId, participantId))
         .orderBy(desc(ormawaScans.scannedAt));
 
-      const totalXp = visits.reduce((acc, v) => acc + (v.xpEarned || 0), 0);
+      const [interestSummary] = await db
+        .select({
+          count: sql<number>`count(*)`,
+          xp: sql<number>`COALESCE(SUM(${ormawaInterests.xpBonusEarned}), 0)`,
+        })
+        .from(ormawaInterests)
+        .where(eq(ormawaInterests.participantId, participantId));
+
+      const [scoreSummary] = await db
+        .select({ total: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)` })
+        .from(scoreTransactions)
+        .where(eq(scoreTransactions.participantId, participantId));
+
+      const stampXp = visits.reduce((acc, visit) => acc + Number(visit.xpEarned || 0), 0);
+      const interestXp = Number(interestSummary?.xp || 0);
 
       return {
         success: true,
         data: {
           participantId,
-          totalBadges: visits.length,
-          totalXpEarned: totalXp,
-          badges: visits,
+          totalVisits: visits.length,
+          totalInterests: Number(interestSummary?.count || 0),
+          stampXp,
+          interestXp,
+          ormawaXp: stampXp + interestXp,
+          totalXp: Number(scoreSummary?.total || 0),
+          visits,
         },
       };
     },
     {
       detail: {
-        summary: "Profil lencana stan UKM mahasiswa",
-        description: "Menampilkan koleksi lencana stan UKM yang telah dikunjungi dan total perolehan XP expo.",
+        summary: "Ringkasan progres Ormawa mahasiswa",
+        description: "Menampilkan stamp kunjungan, lencana stan, XP Ormawa, dan XP total peserta.",
       },
       params: t.Object({
         participantId: t.String(),
@@ -803,10 +983,8 @@ export const ormawaRoutes = new Elysia({
     "/scan-maba",
     async ({ body, user, set }: any) => {
       const { mabaNim, mabaQrToken, boothId } = body;
-      
-      const raw = (mabaNim || mabaQrToken || "").trim();
-      const identifier = raw.replace(/^GENIUS-MABA-/i, "").trim();
 
+      const identifier = parseMabaQrIdentifier(mabaQrToken || mabaNim || "");
       if (!identifier) {
         set.status = 400;
         return { success: false, error: { code: "BAD_REQUEST", message: "mabaNim atau mabaQrToken diperlukan" } };
@@ -835,6 +1013,11 @@ export const ormawaRoutes = new Elysia({
         };
       }
 
+      if (maba.role !== "PARTICIPANT") {
+        set.status = 400;
+        return { success: false, error: { code: "INVALID_PARTICIPANT", message: "QR tersebut bukan milik mahasiswa baru" } };
+      }
+
       // 2. Cari booth berdasarkan picUserId yang login atau boothId jika ADMIN
       let booth;
       if (user?.role === "ADMIN" && boothId) {
@@ -846,7 +1029,10 @@ export const ormawaRoutes = new Elysia({
         const [found] = await db.select().from(ormawaBooths).where(eq(ormawaBooths.isActive, true)).limit(1);
         booth = found;
       } else {
-        const [found] = await db.select().from(ormawaBooths).where(eq(ormawaBooths.picUserId, user?.userId!)).limit(1);
+        const [found] = await db.select().from(ormawaBooths).where(and(
+          eq(ormawaBooths.picUserId, user?.userId!),
+          eq(ormawaBooths.isActive, true),
+        )).limit(1);
         booth = found;
       }
 
@@ -869,29 +1055,37 @@ export const ormawaRoutes = new Elysia({
         .limit(1);
 
       if (existingScan) {
+        set.status = 409;
         return {
           success: false,
-          message: `Mahasiswa ${maba.fullName} sudah di-scan sebelumnya di stan ini.`,
-          data: { xpEarned: 0, isCapped: false },
+          error: { code: "ALREADY_SCANNED", message: `Mahasiswa ${maba.fullName} sudah pernah mendapat stamp dari stan ini.` },
+          data: { xpEarned: 0 },
         };
       }
 
-      // 4. Cek Capping (max 10)
+      // 4. Hitung jumlah stamp sebelumnya; jumlah stan dapat berubah dan tidak dibatasi.
       const [scanCountRow] = await db
         .select({ count: sql<number>`count(*)` })
         .from(ormawaScans)
         .where(eq(ormawaScans.participantId, maba.id));
       
       const previousScanCount = Number(scanCountRow?.count || 0);
-      const isEligibleForXp = previousScanCount < 10;
-      const xpEarned = isEligibleForXp ? (booth.xpReward || 75) : 0;
+      const xpEarned = booth.xpReward ?? ORMAWA_STAMP_XP;
 
       // 5. Insert scan
       const [newScan] = await db.insert(ormawaScans).values({
         participantId: maba.id,
         boothId: booth.id,
         xpEarned,
-      }).returning();
+      }).onConflictDoNothing().returning();
+
+      if (!newScan) {
+        set.status = 409;
+        return {
+          success: false,
+          error: { code: "ALREADY_SCANNED", message: `Mahasiswa ${maba.fullName} sudah pernah mendapat stamp dari stan ini.` },
+        };
+      }
 
       // 6. Tambah transaksi score
       let targetTeamId = null;
@@ -929,7 +1123,7 @@ export const ormawaRoutes = new Elysia({
 
       return {
         success: true,
-        message: `Kunjungan mahasiswa ${maba.fullName} berhasil dicatat di ${booth.name}!`,
+        message: `Stamp ${maba.fullName} berhasil dicatat di ${booth.name}! +${xpEarned} XP Ormawa.`,
         data: {
           maba: {
             id: maba.id,
@@ -943,7 +1137,6 @@ export const ormawaRoutes = new Elysia({
           },
           xpEarned,
           totalScanned: previousScanCount + 1,
-          isCapped: !isEligibleForXp,
         },
       };
     },
@@ -961,9 +1154,19 @@ export const ormawaRoutes = new Elysia({
   // POST /api/ormawa/interest — Maba berminat gabung
   .post(
     "/interest",
-    async ({ body, user, set }) => {
-      const { boothId, phoneNumber, motivation, experience } = body;
+    async ({ body, user, set }: any) => {
+      const { boothId, phoneNumber, instagramUsername: rawInstagramUsername, motivation, experience } = body;
       const participantId = user?.userId!;
+      const whatsappNumber = normalizeWhatsappNumber(phoneNumber);
+      if (!whatsappNumber || whatsappNumber.length < 9 || whatsappNumber.length > 15) {
+        set.status = 400;
+        return { success: false, error: { code: "INVALID_PHONE", message: "Nomor WhatsApp tidak valid" } };
+      }
+      const instagramUsername = normalizeInstagramUsername(rawInstagramUsername);
+      if (!instagramUsername) {
+        set.status = 400;
+        return { success: false, error: { code: "INVALID_INSTAGRAM", message: "Username Instagram tidak valid. Tulis tanpa tanda @." } };
+      }
 
       // 1. Cek booth ada
       const [booth] = await db.select({ id: ormawaBooths.id, name: ormawaBooths.name }).from(ormawaBooths).where(eq(ormawaBooths.id, boothId)).limit(1);
@@ -979,17 +1182,17 @@ export const ormawaRoutes = new Elysia({
         return { success: false, error: { code: "ALREADY_INTERESTED", message: "Anda sudah menyatakan minat pada ormawa ini." } };
       }
 
-      // 3. Cek capping (max 3)
+      // 3. Hitung minat sebelumnya untuk ringkasan; bonus diberikan per Ormawa yang unik.
       const [interestCountRow] = await db.select({ count: sql<number>`count(*)` }).from(ormawaInterests).where(eq(ormawaInterests.participantId, participantId));
       const previousCount = Number(interestCountRow?.count || 0);
-      const isEligibleForXp = previousCount < 3;
-      const xpBonusEarned = isEligibleForXp ? 25 : 0;
+      const xpBonusEarned = ORMAWA_INTEREST_XP;
 
       // 4. Insert
       const [newInterest] = await db.insert(ormawaInterests).values({
         participantId,
         boothId,
-        phoneNumber,
+        phoneNumber: phoneNumber.trim(),
+        instagramUsername,
         motivation,
         experience,
         xpBonusEarned,
@@ -1029,6 +1232,7 @@ export const ormawaRoutes = new Elysia({
       body: t.Object({
         boothId: t.String(),
         phoneNumber: t.String(),
+        instagramUsername: t.String(),
         motivation: t.Optional(t.String()),
         experience: t.Optional(t.String()),
       }),
@@ -1039,10 +1243,19 @@ export const ormawaRoutes = new Elysia({
   .get(
     "/booths/:id/interests",
     async ({ params, user, set }) => {
-      // Pastikan kalau dia PIC, cuma bisa akses booth miliknya
-      if (user?.role === "ORMAWA_PIC") {
-        const [booth] = await db.select({ id: ormawaBooths.id }).from(ormawaBooths).where(eq(ormawaBooths.id, params.id)).limit(1);
-        // Bisa tambahkan validasi tambahan kalau mau ketat
+      const [booth] = await db.select({
+        id: ormawaBooths.id,
+        name: ormawaBooths.name,
+        picUserId: ormawaBooths.picUserId,
+      }).from(ormawaBooths).where(eq(ormawaBooths.id, params.id)).limit(1);
+
+      if (!booth) {
+        set.status = 404;
+        return { success: false, error: { code: "NOT_FOUND", message: "Stan tidak ditemukan" } };
+      }
+      if (user?.role === "ORMAWA_PIC" && booth.picUserId !== user.userId) {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "PIC hanya dapat melihat peminat stan miliknya" } };
       }
 
       const interests = await db
@@ -1052,8 +1265,10 @@ export const ormawaRoutes = new Elysia({
           fullName: users.fullName,
           username: users.username,
           phoneNumber: ormawaInterests.phoneNumber,
+          instagramUsername: ormawaInterests.instagramUsername,
           motivation: ormawaInterests.motivation,
           experience: ormawaInterests.experience,
+          xpBonusEarned: ormawaInterests.xpBonusEarned,
           createdAt: ormawaInterests.createdAt,
         })
         .from(ormawaInterests)
@@ -1065,8 +1280,17 @@ export const ormawaRoutes = new Elysia({
         success: true,
         data: {
           boothId: params.id,
+          boothName: booth.name,
           totalInterests: interests.length,
-          interests,
+          interests: interests.map((interest) => {
+            const number = normalizeWhatsappNumber(interest.phoneNumber);
+            return {
+              ...interest,
+              whatsappNumber: number,
+              whatsappUrl: number ? `https://wa.me/${number}` : null,
+              instagramUrl: interest.instagramUsername ? `https://instagram.com/${interest.instagramUsername}` : null,
+            };
+          }),
         },
       };
     },

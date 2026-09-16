@@ -56,7 +56,26 @@
           </div>
         </div>
 
-        <!-- Field 2: Motivasi -->
+        <!-- Field 2: Instagram -->
+        <div class="space-y-1">
+          <label class="block font-pixel text-[9px] sm:text-[9.5px] text-[#3a2818] uppercase tracking-wider">
+            Username Instagram <span class="text-red-600">*</span>
+          </label>
+          <div class="relative">
+            <PhInstagramLogo :size="16" weight="fill" class="absolute left-3 top-1/2 -translate-y-1/2 text-[#a21caf]" />
+            <input
+              v-model="form.instagramUsername"
+              type="text"
+              required
+              autocomplete="off"
+              placeholder="Contoh: nama.instagram"
+              class="w-full bg-[#f3ecd8] hover:bg-[#fffdf7] focus:bg-white border-2 border-[#8b6f4e] focus:border-[#a21caf] rounded-xl pl-9 pr-3 py-2 font-sans text-xs sm:text-sm text-[#2d1b0e] placeholder-[#a08060] focus:outline-none focus:ring-2 focus:ring-[#a21caf]/20 shadow-inner transition-colors"
+            />
+          </div>
+          <p class="text-[10px] font-sans text-[#80684e]">Tulis username tanpa tanda “@”.</p>
+        </div>
+
+        <!-- Field 3: Motivasi -->
         <div class="space-y-1">
           <label class="block font-pixel text-[9px] sm:text-[9.5px] text-[#3a2818] uppercase tracking-wider">
             Motivasi Bergabung <span class="text-[#8c7860] lowercase font-sans text-[10px]">(opsional)</span>
@@ -69,7 +88,7 @@
           ></textarea>
         </div>
 
-        <!-- Field 3: Pengalaman -->
+        <!-- Field 4: Pengalaman -->
         <div class="space-y-1">
           <label class="block font-pixel text-[9px] sm:text-[9.5px] text-[#3a2818] uppercase tracking-wider">
             Pengalaman Terkait <span class="text-[#8c7860] lowercase font-sans text-[10px]">(opsional)</span>
@@ -99,10 +118,10 @@
         <!-- Submit Button -->
         <button 
           type="submit"
-          :disabled="isSubmitting || !isAgreed || !form.phoneNumber.trim()"
+          :disabled="isSubmitting || !isAgreed || !form.phoneNumber.trim() || !form.instagramUsername.trim()"
           class="w-full mt-2 py-2.5 sm:py-3 px-4 rounded-xl font-pixel text-xs sm:text-sm font-bold tracking-wide uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:cursor-not-allowed border-2 active:scale-[0.99]"
           :class="[
-            (isAgreed && form.phoneNumber.trim())
+            (isAgreed && form.phoneNumber.trim() && form.instagramUsername.trim())
               ? 'bg-gradient-to-b from-[#38761d] to-[#275314] hover:from-[#438d22] hover:to-[#2e6217] text-[#fbf6e9] border-[#1d3d0f] shadow-[0_4px_0_#1d3d0f,0_6px_12px_rgba(0,0,0,0.2)]'
               : 'bg-[#d8ceba] text-[#8c7860] border-[#b0a088] shadow-none opacity-80'
           ]"
@@ -128,6 +147,7 @@ import {
   PhSpinner, 
   PhPaperPlaneTilt, 
   PhWhatsappLogo, 
+  PhInstagramLogo,
   PhHandshake, 
   PhWarningCircle 
 } from '@phosphor-icons/vue';
@@ -140,7 +160,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
-  (e: 'submit', data: { phoneNumber: string; motivation?: string; experience?: string }): void;
+  (e: 'submit', data: { phoneNumber: string; instagramUsername: string; motivation?: string; experience?: string }): void;
 }>();
 
 const isSubmitting = ref(false);
@@ -149,6 +169,7 @@ const errorMessage = ref('');
 
 const form = reactive({
   phoneNumber: '',
+  instagramUsername: '',
   motivation: '',
   experience: '',
 });
@@ -168,15 +189,21 @@ const submit = () => {
     errorMessage.value = "Nomor WhatsApp wajib diisi.";
     return;
   }
+  const instagramUsername = form.instagramUsername.trim().replace(/^@+/, '');
+  if (!/^[A-Za-z0-9._]{1,30}$/.test(instagramUsername)) {
+    errorMessage.value = "Username Instagram tidak valid. Tulis tanpa tanda @.";
+    return;
+  }
   
   isSubmitting.value = true;
-  emit('submit', { ...form, phoneNumber: form.phoneNumber.trim() });
+  emit('submit', { ...form, phoneNumber: form.phoneNumber.trim(), instagramUsername });
 };
 
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
     // Reset form on open
     form.phoneNumber = '';
+    form.instagramUsername = '';
     form.motivation = '';
     form.experience = '';
     isAgreed.value = false;

@@ -65,6 +65,7 @@ import {
   ShieldAlert,
   FileText,
   Settings,
+  Store,
 } from "lucide-vue-next";
 import { useLayoutState } from "~/composables/useLayoutState";
 
@@ -83,6 +84,7 @@ const routeLabels: Record<string, string> = {
   routes: "Rute Perjalanan",
   missions: "Misi & Pos Tantangan",
   stages: "Timeline & Stages",
+  ormawa: "Manajemen Ormawa & Stan Expo",
   "qr-center": "QR Print Center",
   games: "Arena Games",
   questions: "Bank Soal & Kuis",
@@ -105,6 +107,7 @@ const routeIcons: Record<string, any> = {
   routes: GitFork,
   missions: Target,
   stages: Layers,
+  ormawa: Store,
   "qr-center": QrCode,
   games: Gamepad2,
   questions: HelpCircle,

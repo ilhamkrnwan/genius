@@ -323,6 +323,11 @@ async function migrateOrmawa() {
       floorId: floorId,
       boothNumber: item.boothNumber,
       description: item.description,
+      stampInstructions: [
+        "Datangi stan dan kenali program Ormawa atau UKM.",
+        "Selesaikan misi yang diberikan oleh PIC stan.",
+        "Buka QR profilmu dan minta PIC memindainya untuk menerima stamp.",
+      ],
       qrCode: item.qrCode,
       xpReward: item.xpReward,
       badgeIcon: item.badgeIcon,

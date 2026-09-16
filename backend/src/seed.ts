@@ -24,6 +24,7 @@ import {
   achievements,
 } from "./db/schema";
 import { hashPassword } from "./lib/password";
+import { ensureOfficialOrmawaPics } from "./db/ensure-ormawa-pics";
 import { eq, and } from "drizzle-orm";
 import { RAW_BUDDY_DATA } from "./data/officialBuddies";
 import { OFFICIAL_PARTICIPANTS } from "./data/participants";
@@ -35,6 +36,8 @@ async function seed() {
   // 1. CLEAN SLATE: Bersihkan Seluruh Data Transaksi & Akun Pengguna
   // ============================================================
   console.log("🧹 [1/8] Cleaning up existing transactional, team, and user data...");
+  // Putuskan relasi PIC lebih dahulu agar penghapusan akun tidak melanggar FK.
+  await db.update(ormawaBooths).set({ picUserId: null });
   await db.delete(dailyReflections);
   await db.delete(ormawaScans);
   await db.delete(fgdEvaluations);
@@ -823,37 +826,20 @@ async function seed() {
     },
   ];
 
-  const ormawaPassword = await hashPassword("ormawa2026");
-
   for (const ob of officialOrmawa) {
-    const picUsername = `pic_${ob.code.toLowerCase().replace('ormawa-', '').replace(/[^a-z0-9]/g, '_')}`;
-
-    let [picUser] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.username, picUsername))
-      .limit(1);
-
-    if (!picUser) {
-      const [newUser] = await db
-        .insert(users)
-        .values({
-          username: picUsername,
-          passwordHash: ormawaPassword,
-          fullName: `PIC ${ob.name}`,
-          role: "ORMAWA_PIC",
-          status: "ACTIVE",
-          characterTitle: "Penjaga Stan Ormawa",
-        })
-        .returning();
-      picUser = newUser;
-    }
-
+    const contactPhone = ob.contactPerson.match(/(?:\+?62|0)8[\d\s-]{7,15}/)?.[0]?.replace(/[\s-]/g, "") || null;
     const boothData = {
       ...ob,
-      picUserId: picUser.id,
+      tagline: ob.description,
+      activities: [],
+      requirements: [],
+      stampInstructions: [
+        "Datangi stan dan kenali program Ormawa atau UKM.",
+        "Selesaikan misi yang diberikan oleh PIC stan.",
+        "Buka QR profilmu dan minta PIC memindainya untuk menerima stamp.",
+      ],
+      contactPhone,
     };
-
     const [existing] = await db
       .select()
       .from(ormawaBooths)
@@ -866,7 +852,10 @@ async function seed() {
       await db.update(ormawaBooths).set(boothData).where(eq(ormawaBooths.id, existing.id));
     }
   }
-  console.log(`  ✅ ${officialOrmawa.length} Official Ormawa Booths & PIC accounts seeded (Lantai 3, 4, 5)`);
+  console.log(`  ✅ ${officialOrmawa.length} Official Ormawa Booths seeded (Lantai 3, 4, 5)`);
+
+  const picResult = await ensureOfficialOrmawaPics({ resetPasswords: true });
+  console.log(`  ✅ ${picResult.linked} akun PIC Ormawa dibuat/diperbarui dan dihubungkan ke stan resmi`);
 
   // ============================================================
   // 9. SEED OFFICIAL QUIZ DATABASE (9 Pos dari quiz_database.csv)

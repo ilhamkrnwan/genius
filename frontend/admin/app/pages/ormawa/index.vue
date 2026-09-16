@@ -30,6 +30,7 @@ import {
   DropdownMenuSeparator,
 } from "~/components/ui/dropdown-menu";
 import PixelPagination from "@/components/PixelPagination.vue";
+import LogoUploadField from "~/components/ormawa/LogoUploadField.vue";
 import { useApi } from "~/composables/useApi";
 import { useToast } from "~/composables/useToast";
 import { useConfirm } from "~/composables/useConfirm";
@@ -90,6 +91,7 @@ const formState = reactive({
   xpReward: 75,
   contactPerson: "",
   instagram: "",
+  logoUrl: "",
   isActive: true,
 });
 
@@ -288,6 +290,7 @@ function openCreateModal() {
   formState.xpReward = 75;
   formState.contactPerson = "";
   formState.instagram = "";
+  formState.logoUrl = "";
   formState.isActive = true;
   showFormModal.value = true;
 }
@@ -306,6 +309,7 @@ function openEditModal(booth: any) {
   formState.xpReward = booth.xpReward || 75;
   formState.contactPerson = booth.contactPerson || "";
   formState.instagram = booth.instagram || "";
+  formState.logoUrl = booth.logoUrl || "";
   formState.isActive = booth.isActive;
   showFormModal.value = true;
 }
@@ -325,6 +329,7 @@ async function submitBoothForm() {
         xpReward: formState.xpReward,
         contactPerson: formState.contactPerson || null,
         instagram: formState.instagram || null,
+        logoUrl: formState.logoUrl || null,
         isActive: formState.isActive,
       });
       toast.success(`Stan "${formState.name}" berhasil disimpan.`);
@@ -341,6 +346,7 @@ async function submitBoothForm() {
         xpReward: formState.xpReward,
         contactPerson: formState.contactPerson || null,
         instagram: formState.instagram || null,
+        logoUrl: formState.logoUrl || null,
         isActive: formState.isActive,
       });
       toast.success(`Stan "${formState.name}" berhasil ditambahkan.`);
@@ -811,10 +817,10 @@ onMounted(() => {
                 <div class="flex items-center gap-2.5">
                   <NuxtLink
                     :to="`/ormawa/${booth.id}`"
-                    class="h-7 w-7 shrink-0 rounded border flex items-center justify-center font-pixel text-[10px] font-bold text-white shadow-sm hover:scale-105 transition-transform"
-                    :style="{ backgroundColor: booth.badgeColor || '#9333ea', borderColor: '#facc15' }"
+                    class="h-8 w-8 shrink-0 rounded border-2 border-white bg-white flex items-center justify-center font-pixel text-[9px] font-bold text-[#3a2818] shadow-sm hover:scale-105 transition-transform overflow-hidden"
                   >
-                    {{ booth.shortName?.slice(0, 2) || booth.code.slice(0, 2) }}
+                    <img v-if="booth.logoUrl" :src="booth.logoUrl" :alt="`Logo ${booth.name}`" class="h-full w-full object-contain p-0.5" />
+                    <span v-else>{{ booth.shortName?.slice(0, 2) || booth.code.slice(0, 2) }}</span>
                   </NuxtLink>
                   <div class="min-w-0">
                     <NuxtLink
@@ -1354,6 +1360,8 @@ onMounted(() => {
               />
             </div>
           </div>
+
+          <LogoUploadField v-model="formState.logoUrl" />
 
           <!-- Status Switch -->
           <div class="pt-2 border-t border-[#4a3624] flex items-center gap-2">

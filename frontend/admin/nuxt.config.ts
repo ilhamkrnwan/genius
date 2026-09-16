@@ -13,6 +13,7 @@ export default defineNuxtConfig({
   ssr: false,
 
   devServer: {
+    host: "0.0.0.0",
     port: 3002,
   },
 
@@ -20,11 +21,23 @@ export default defineNuxtConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      allowedHosts: [".trycloudflare.com"],
+    },
+  },
+
+  nitro: {
+    devProxy: {
+      "/api": {
+        target: "http://127.0.0.1:3001/api",
+        changeOrigin: true,
+      },
+    },
   },
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || "/api",
       useMockApi: process.env.NUXT_PUBLIC_USE_MOCK_API === "true",
     },
   },

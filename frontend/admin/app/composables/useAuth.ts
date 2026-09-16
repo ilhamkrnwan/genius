@@ -2,6 +2,7 @@ import { ref, computed } from "vue";
 import { navigateTo, useRuntimeConfig, useRoute } from "#app";
 import { useConfirm } from "./useConfirm";
 import { useToast } from "./useToast";
+import { resolveApiBase } from "~/utils/api-base";
 
 export interface User {
   id: string;
@@ -78,7 +79,7 @@ export function useAuth() {
     loading.value = true;
     try {
       const config = useRuntimeConfig();
-      const baseUrl = config.public?.apiBase || "http://localhost:3001/api";
+      const baseUrl = resolveApiBase(config.public?.apiBase as string | undefined);
 
       const res = await $fetch<{
         success: boolean;
@@ -180,7 +181,7 @@ export function useAuth() {
   async function logout() {
     try {
       const config = useRuntimeConfig();
-      const baseUrl = config.public?.apiBase || "http://localhost:3001/api";
+      const baseUrl = resolveApiBase(config.public?.apiBase as string | undefined);
       if (token.value) {
         await $fetch(`${baseUrl}/auth/logout`, {
           method: "POST",
@@ -240,7 +241,7 @@ export function useAuth() {
     if (!token.value) return false;
     try {
       const config = useRuntimeConfig();
-      const baseUrl = config.public?.apiBase || "http://localhost:3001/api";
+      const baseUrl = resolveApiBase(config.public?.apiBase as string | undefined);
       const res = await $fetch<{ success: boolean; data: User }>(`${baseUrl}/auth/me`, {
         headers: { Authorization: `Bearer ${token.value}` },
       });

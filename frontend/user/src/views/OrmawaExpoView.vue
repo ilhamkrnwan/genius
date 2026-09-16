@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import QRCode from 'qrcode';
 import { RouterLink } from 'vue-router';
 import {
   PhStorefront,
@@ -14,20 +15,18 @@ import {
   PhQrCode,
   PhWarning,
   PhHeart,
-  PhBookOpen,
   PhArrowLeft,
   PhSpeakerHigh,
   PhSpeakerSimpleSlash,
   PhArrowsClockwise,
-  PhCalendarCheck,
-  PhMapTrifold,
-  PhIdentificationBadge,
   PhCamera,
+  PhCaretRight,
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
 import { ORMAWA_STANDS } from '@/data/ormawaData';
 import { OrmawaStand } from '@/types/ormawa';
 import OrmawaInterestModal from '@/components/ormawa/OrmawaInterestModal.vue';
+import OrmawaStampGrid from '@/components/ormawa/OrmawaStampGrid.vue';
 import QrScannerModal from '@/components/common/QrScannerModal.vue';
 import { soundEngine } from '@/lib/sound';
 import { api } from '@/lib/api';
@@ -70,26 +69,37 @@ const avatarData = computed(() => {
 });
 
 // Modal State
-const isQrModalOpen = ref(false);
 const isInterestModalOpen = ref(false);
 
 // QR Code Maba — menampilkan NIM sebagai QR agar bisa di-scan PIC Ormawa
 const mabaQrValue = computed(() => {
   const nim = gameStore.participant.nim || '261100123';
-  return `GENIUS-MABA-${nim}`;
+  return `GENIUS-MABA:${nim}`;
 });
 
-const mabaQrUrlBig = computed(() => {
-  const encoded = encodeURIComponent(mabaQrValue.value);
-  return `https://api.qrserver.com/v1/create-qr-code/?data=${encoded}&size=320x320&color=111111&bgcolor=ffffff&qzone=1`;
-});
+const mabaQrDataUrl = ref('');
+watch(
+  mabaQrValue,
+  async (value) => {
+    try {
+      mabaQrDataUrl.value = await QRCode.toDataURL(value, {
+        width: 360,
+        margin: 2,
+        color: { dark: '#111111', light: '#ffffff' },
+        errorCorrectionLevel: 'M',
+      });
+    } catch (e) {
+      console.warn('[OrmawaExpo] Failed to generate QR data URL:', e);
+    }
+  },
+  { immediate: true }
+);
 
 // ─── Normalisasi Data API & Lantai 6 Focus ─────────────────────────────────────
 const apiStands = ref<OrmawaStand[]>([]);
 
 function normalizeApiData(data: any[]): OrmawaStand[] {
   return data.map((item: any, idx: number) => {
-    // Seluruh stan expo Ormawa berpusat di Lantai 6 (Hall & Selasar Lantai 6)
     const floorNum = 6;
     let boothCode = item.boothNumber;
     if (boothCode) {
@@ -108,14 +118,23 @@ function normalizeApiData(data: any[]): OrmawaStand[] {
       floor: floorNum,
       location: locationStr,
       qrToken: item.qrCode,
-      tagline: item.description || '',
+      tagline: item.tagline || item.description || '',
       description: item.description || '',
       instagram: item.instagram || '',
       badgeTitle: item.name,
       badgeColor: item.badgeColor || '#16a34a',
       activities: Array.isArray(item.activities) ? item.activities : [],
       requirements: Array.isArray(item.requirements) ? item.requirements : [],
+      stampInstructions: Array.isArray(item.stampInstructions) && item.stampInstructions.length
+        ? item.stampInstructions
+        : [
+            'Datangi stan dan kenali program Ormawa atau UKM.',
+            'Selesaikan misi yang diberikan oleh PIC stan.',
+            'Buka QR profilmu dan minta PIC memindainya untuk menerima stamp.',
+          ],
+      xpReward: Number(item.xpReward ?? 75),
       contactPerson: item.contactPerson || '',
+      contactPhone: item.contactPhone || extractPhone(item.contactPerson),
       logoUrl: item.logoUrl || null,
     };
   });
@@ -131,6 +150,14 @@ const stands = computed(() => {
       ...s,
       floor: 6,
       location: `Hall Lantai 6 — Stand ${boothCode}`,
+      stampInstructions: s.stampInstructions?.length
+        ? s.stampInstructions
+        : [
+            'Datangi stan dan kenali program Ormawa atau UKM.',
+            'Selesaikan misi yang diberikan oleh PIC stan.',
+            'Buka QR profilmu dan minta PIC memindainya untuk menerima stamp.',
+          ],
+      xpReward: s.xpReward ?? 75,
     };
   });
 });
@@ -157,90 +184,70 @@ async function fetchBooths(isManualRefresh = false) {
   }
 }
 
-onMounted(() => {
-  fetchBooths();
+onMounted(async () => {
+  await Promise.all([fetchBooths(), gameStore.syncOrmawaProgress()]);
 });
 
 // ─── Segmented Tabs & Filter ──────────────────────────────────────────────────
 const CATEGORY_TABS = [
-  { id: 'ALL' as const, label: 'SEMUA' },
-  { id: 'BAKAT' as const, label: 'MINAT BAKAT' },
-  { id: 'PENALARAN' as const, label: 'PENALARAN & IT' },
-  { id: 'SOSIAL' as const, label: 'SOSIAL & ASWAJA' },
-];
+  { id: 'ALL', label: 'SEMUA STAN' },
+  { id: 'BAKAT', label: 'MINAT & BAKAT' },
+  { id: 'PENALARAN', label: 'PENALARAN & ILMIAH' },
+  { id: 'SOSIAL', label: 'SOSIAL & RELAWAN' },
+] as const;
 
-function matchesCategory(stand: OrmawaStand, tabId: string): boolean {
+function isCategoryMatch(tabId: string, category: string): boolean {
   if (tabId === 'ALL') return true;
-  const cat = (stand.category || '').toLowerCase();
-  const name = (stand.name || '').toLowerCase();
-
+  const cat = category.toUpperCase();
   if (tabId === 'BAKAT') {
     return (
-      cat.includes('olahraga') ||
-      cat.includes('seni') ||
-      cat.includes('musik') ||
-      cat.includes('vokal') ||
-      cat.includes('bela diri') ||
-      cat.includes('beladiri') ||
-      cat.includes('teater') ||
-      cat.includes('pertunjukan') ||
-      cat.includes('silat') ||
-      name.includes('musik') ||
-      name.includes('suara') ||
-      name.includes('teater') ||
-      name.includes('silat')
+      cat.includes('BELA_DIRI') ||
+      cat.includes('SENI') ||
+      cat.includes('OLAHRAGA') ||
+      cat.includes('BAKAT') ||
+      cat.includes('MUSIK') ||
+      cat.includes('TARI')
     );
   }
-
   if (tabId === 'PENALARAN') {
     return (
-      cat.includes('penalaran') ||
-      cat.includes('teknologi') ||
-      cat.includes('sains') ||
-      cat.includes('robotik') ||
-      cat.includes('himpunan') ||
-      cat.includes('it') ||
-      name.includes('robotik') ||
-      name.includes('himpunan') ||
-      name.includes('elektro') ||
-      name.includes('informatika')
+      cat.includes('TEKNOLOGI') ||
+      cat.includes('PENALARAN') ||
+      cat.includes('ILMIAH') ||
+      cat.includes('ROBOTIK') ||
+      cat.includes('HIMPUNAN') ||
+      cat.includes('KEISLAMAN') ||
+      cat.includes('BAHASA')
     );
   }
-
   if (tabId === 'SOSIAL') {
     return (
-      cat.includes('sosial') ||
-      cat.includes('kemanusiaan') ||
-      cat.includes('keagamaan') ||
-      cat.includes('aswaja') ||
-      cat.includes('pers') ||
-      cat.includes('dialektika') ||
-      cat.includes('relawan') ||
-      name.includes('ksr') ||
-      name.includes('pmi') ||
-      name.includes('pers')
+      cat.includes('SOSIAL') ||
+      cat.includes('KEMANUSIAAN') ||
+      cat.includes('RELAWAN') ||
+      cat.includes('PENGABDIAN') ||
+      cat.includes('LINGKUNGAN') ||
+      cat.includes('ALAM')
     );
   }
-
-  return true;
+  return false;
 }
 
 function getTabCount(tabId: string): number {
-  return stands.value.filter((s) => matchesCategory(s, tabId)).length;
+  return stands.value.filter((s) => isCategoryMatch(tabId, s.category)).length;
 }
 
 const filteredStands = computed(() => {
   let list = stands.value;
   if (activeCategoryTab.value !== 'ALL') {
-    list = list.filter((s) => matchesCategory(s, activeCategoryTab.value));
+    list = list.filter((s) => isCategoryMatch(activeCategoryTab.value, s.category));
   }
   if (searchQuery.value.trim()) {
-    const q = searchQuery.value.toLowerCase();
+    const q = searchQuery.value.trim().toLowerCase();
     list = list.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
         s.shortName.toLowerCase().includes(q) ||
-        s.tagline.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q) ||
         s.location.toLowerCase().includes(q)
     );
@@ -282,22 +289,61 @@ const handleBoothScanSuccess = (token: string) => {
 
 const openQrModal = () => {
   if (gameStore.soundEnabled) soundEngine.playSelect();
-  isQrModalOpen.value = true;
+  showQrModal.value = true;
 };
+
+const openStampQr = () => {
+  openQrModal();
+};
+
+function extractPhone(value?: string) {
+  return value?.match(/(?:\+?62|0)8[\d\s-]{7,15}/)?.[0]?.replace(/[\s-]/g, '') || '';
+}
+
+function whatsappHref(stand: OrmawaStand) {
+  const raw = stand.contactPhone || extractPhone(stand.contactPerson);
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  const normalized = digits.startsWith('62')
+    ? digits
+    : digits.startsWith('0')
+    ? `62${digits.slice(1)}`
+    : digits.startsWith('8')
+    ? `62${digits}`
+    : digits;
+  return `https://wa.me/${normalized}`;
+}
+
+function instagramHref(value: string) {
+  const trimmed = value.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://www.instagram.com/${trimmed.replace(/^@/, '').replace(/\/$/, '')}`;
+}
 
 const openInterestModal = () => {
   if (gameStore.soundEnabled) soundEngine.playSelect();
   isInterestModalOpen.value = true;
 };
 
-const submitInterestHandler = async (payload: { phoneNumber: string; motivation?: string; experience?: string }) => {
+const submitInterestHandler = async (payload: {
+  phoneNumber: string;
+  instagramUsername: string;
+  motivation?: string;
+  experience?: string;
+}) => {
   if (!activeStandDetail.value) return;
   const res = await gameStore.submitInterest(activeStandDetail.value.id, payload);
   if (res.success) {
     isInterestModalOpen.value = false;
-    alert(res.message); // can use toast in real app
+    ormawaScanToast.value = { message: res.message, success: true };
+    setTimeout(() => {
+      ormawaScanToast.value = null;
+    }, 4500);
   } else {
-    alert(res.message);
+    ormawaScanToast.value = { message: res.message, success: false };
+    setTimeout(() => {
+      ormawaScanToast.value = null;
+    }, 4500);
   }
 };
 
@@ -325,7 +371,7 @@ const getCategoryLabel = (category: string) => {
 
 <template>
   <div
-    class="relative w-full min-h-[100dvh] overflow-y-auto font-pixel text-[#fbf6e9] select-none flex flex-col justify-between py-3 sm:py-5 px-3 sm:px-6"
+    class="relative w-full min-h-[100dvh] overflow-y-auto font-pixel text-[#fbf6e9] select-none px-3 pb-28 pt-3 sm:px-6 sm:pb-10 sm:pt-5"
   >
     <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
     <div
@@ -338,17 +384,17 @@ const getCategoryLabel = (category: string) => {
       "
     />
     <!-- Dark Vignette Overlay -->
-    <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
+    <div class="fixed inset-0 bg-gradient-to-b from-[#0f0b08]/80 via-[#17100a]/65 to-[#0f0b08]/95 pointer-events-none z-0" />
 
     <!-- ================================================================= -->
     <!-- TOP HEADER: Sesuai Format Halaman Presensi & Play View             -->
     <!-- ================================================================= -->
-    <header class="relative z-20 w-full max-w-xl mx-auto flex items-center justify-between gap-2 pb-2 shrink-0">
+    <header class="relative z-20 mx-auto flex w-full max-w-2xl items-center justify-between gap-3 pb-3">
       <!-- Left: Back to Menu -->
       <RouterLink
         to="/play"
         @click="() => safeSound(() => soundEngine.playClick?.())"
-        class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] hover:text-white transition-all text-[9.5px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer active:scale-95 shadow shrink-0"
+        class="flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-[#8b6f4e] bg-[#2a1a0e]/95 px-3 py-2 text-[10px] text-[#f0d060] shadow transition-all hover:border-[#f0d060] hover:text-white active:scale-[0.98]"
         title="Kembali ke Menu Utama"
       >
         <PhArrowLeft :size="13" weight="bold" />
@@ -356,9 +402,9 @@ const getCategoryLabel = (category: string) => {
       </RouterLink>
 
       <!-- Center: Title Badge -->
-      <div class="px-3 py-1 bg-[#1a110a]/90 backdrop-blur-md border border-[#8b6f4e] rounded-full shadow flex items-center gap-1.5 shrink-0">
-        <PhStorefront :size="14" weight="fill" class="text-[#facc15]" />
-        <span class="text-[10px] sm:text-xs text-[#facc15] font-bold tracking-wide uppercase">
+      <div class="flex min-h-10 shrink-0 items-center gap-2 rounded-xl border border-[#8b6f4e] bg-[#1a110a]/90 px-3 shadow backdrop-blur-md">
+        <PhStorefront :size="15" weight="fill" class="text-[#facc15]" />
+        <span class="text-[10px] font-bold tracking-wide text-[#facc15] sm:text-xs">
           ORMAWA EXPO
         </span>
       </div>
@@ -370,7 +416,7 @@ const getCategoryLabel = (category: string) => {
           type="button"
           @click="fetchBooths(true)"
           title="Segarkan Katalog Stan"
-          class="p-1.5 rounded-lg bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] transition-all cursor-pointer active:scale-95 shadow"
+          class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-[#8b6f4e] bg-[#2a1a0e]/95 text-[#f0d060] shadow transition-all hover:border-[#f0d060] active:scale-[0.98]"
         >
           <PhArrowsClockwise :size="13" :class="{ 'animate-spin': isRefreshing }" />
         </button>
@@ -379,7 +425,7 @@ const getCategoryLabel = (category: string) => {
         <button
           type="button"
           @click="toggleSound"
-          class="p-1.5 rounded-lg bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] transition-all cursor-pointer active:scale-95 shadow"
+          class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-[#8b6f4e] bg-[#2a1a0e]/95 text-[#f0d060] shadow transition-all hover:border-[#f0d060] active:scale-[0.98]"
           :title="isMuted ? 'Nyalakan Suara' : 'Matikan Suara'"
         >
           <PhSpeakerHigh v-if="!isMuted" :size="13" weight="bold" />
@@ -389,9 +435,9 @@ const getCategoryLabel = (category: string) => {
     </header>
 
     <!-- ================================================================= -->
-    <!-- MAIN CONTENT: Simple, Clean & Focused (Sama Seperti Presensi)     -->
+    <!-- MAIN CONTENT: Simple, Clean & Focused                             -->
     <!-- ================================================================= -->
-    <main class="relative z-20 w-full max-w-xl mx-auto space-y-2.5 my-auto">
+    <main class="relative z-20 mx-auto w-full max-w-2xl space-y-4">
       <!-- Scan Result Toast -->
       <div
         v-if="ormawaScanToast"
@@ -419,12 +465,11 @@ const getCategoryLabel = (category: string) => {
         <span>{{ apiError }}</span>
       </div>
 
-      <!-- 1. STATUS CARD MAHASISWA & PROFIL EXPO (Format Sama Persis Presensi) -->
-      <section class="bg-[#19110a]/95 backdrop-blur-md border border-[#8b6f4e] rounded-xl p-3 shadow-lg space-y-2 text-left">
-        <!-- Row A: Mahasiswa Info & Total Kunjungan -->
-        <div class="flex items-center justify-between gap-2.5 pb-2 border-b border-[#4a2e14]/70">
-          <div class="flex items-center gap-2.5 min-w-0 flex-1">
-            <div class="w-10 h-10 rounded-lg bg-[#120a05] border border-[#f0d060] overflow-hidden shrink-0 shadow">
+      <!-- 1. Profil dan progres mahasiswa -->
+      <section class="overflow-hidden rounded-[18px] border border-[#8b6f4e] bg-[#19110a]/95 text-left shadow-[0_8px_24px_rgba(20,10,4,0.28)] backdrop-blur-md">
+        <div class="space-y-3 p-4">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="h-12 w-12 shrink-0 overflow-hidden rounded-xl border-2 border-[#f0d060] bg-[#120a05] shadow-[0_3px_0_#65451f]">
               <img
                 :src="avatarData.avatarImage"
                 :alt="gameStore.participant.name || 'Avatar'"
@@ -432,85 +477,87 @@ const getCategoryLabel = (category: string) => {
               />
             </div>
             <div class="min-w-0 flex-1">
-              <div class="text-xs sm:text-sm font-bold text-[#86efac] leading-tight truncate">
+              <div class="truncate text-sm font-bold leading-tight text-[#a7f3b7] sm:text-base">
                 {{ gameStore.participant.name || 'Mahasiswa Baru UNU' }}
               </div>
-              <div class="text-[9px] sm:text-[10px] text-[#c4956a] font-sans truncate mt-0.5">
-                NIM: {{ gameStore.participant.nim || '261100123' }} • Hall Lantai 6
+              <div class="mt-1 truncate font-sans text-[11px] text-[#c9a67d]">
+                {{ gameStore.participant.nim || '261100123' }} <span class="text-[#755838]">·</span> Hall Lantai 6
               </div>
+            </div>
+            <div class="text-right shrink-0">
+              <span class="text-[8px] text-[#a08060] font-sans block">Target Lencana:</span>
+              <span class="font-pixel text-[11px] sm:text-xs text-[#facc15] font-bold">
+                {{ visitedCount }} / 10 Stan
+              </span>
             </div>
           </div>
 
-          <div class="text-right shrink-0">
-            <span class="text-[8px] text-[#a08060] font-sans block">Kunjungan:</span>
-            <span class="font-pixel text-[10.5px] sm:text-xs text-[#facc15] font-bold">
-              {{ visitedCount }} / 10 Stan
-            </span>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="rounded-xl border border-[#2f8f4e]/70 bg-[#102315] p-3">
+              <span class="block font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-[#86efac]">XP Ormawa</span>
+              <div class="mt-1 flex items-end justify-between gap-2">
+                <span class="font-pixel text-base font-bold text-[#facc15]">{{ gameStore.ormawaXpEarned }}</span>
+                <span class="font-sans text-[9px] text-[#86efac]/75">{{ visitedCount }} stan dikunjungi</span>
+              </div>
+            </div>
+            <div class="rounded-xl border border-[#c49325]/70 bg-[#2a1a0e] p-3">
+              <span class="block font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-[#e2c477]">XP Total</span>
+              <div class="mt-1 flex items-end justify-between gap-2">
+                <span class="font-pixel text-base font-bold text-white">{{ gameStore.participant.totalXp.toLocaleString('id-ID') }}</span>
+                <span class="font-sans text-[9px] text-[#d8b878]/75">semua aktivitas</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Row B: Action Strip Pindai QR Meja & Buka QR Profil -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-[#120a05]/80 rounded-lg p-2 border border-[#5a3a18]/70">
+        <!-- Action Strip: Pindai QR Meja & Buka QR Profil -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-[#120a05]/90 border-t border-[#5a3a18]/70">
           <button
             type="button"
             @click="openBoothScanner"
-            class="py-2 px-3 rounded-lg bg-gradient-to-r from-[#166534] via-[#15803d] to-[#16a34a] hover:brightness-110 border border-[#22c55e] text-white font-pixel text-[9px] sm:text-[10px] font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 cursor-pointer transition-all"
+            class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#166534] via-[#15803d] to-[#16a34a] hover:brightness-110 border border-[#22c55e] text-white font-pixel text-[10px] font-bold flex items-center justify-center gap-2 shadow active:scale-[0.98] cursor-pointer transition-all"
           >
-            <PhCamera :size="14" weight="bold" class="text-[#86efac]" />
+            <PhCamera :size="16" weight="bold" class="text-[#86efac]" />
             <span>PINDAI QR MEJA STAN</span>
           </button>
 
           <button
             type="button"
             @click="showQrModal = true; safeSound(() => soundEngine.playSelect?.())"
-            class="py-2 px-3 rounded-lg bg-[#2a1a0e] hover:bg-[#3d2714] border border-[#facc15] text-[#facc15] hover:text-white font-pixel text-[9px] sm:text-[10px] font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 cursor-pointer transition-all"
+            class="py-2.5 px-3 rounded-xl bg-[#2a1a0e] hover:bg-[#3d2714] border border-[#facc15] text-[#facc15] hover:text-white font-pixel text-[10px] font-bold flex items-center justify-center gap-2 shadow active:scale-[0.98] cursor-pointer transition-all"
           >
-            <PhQrCode :size="13" weight="bold" />
+            <PhQrCode :size="16" weight="bold" />
             <span>BUKA QR PROFIL SAYA</span>
           </button>
-        </div>
-
-        <!-- Progress Bar Strip -->
-        <div class="pt-0.5 space-y-1">
-          <div class="flex items-center justify-between text-[8.5px] font-mono">
-            <span class="text-[#a08060]">Target 10 Stan Ormawa • Lantai 6</span>
-            <span class="text-[#facc15] font-bold">{{ visitedCount }} / 10 Dikunjungi</span>
-          </div>
-          <div class="w-full bg-[#120a05] h-1.5 rounded-full border border-[#3d2714] overflow-hidden p-0.5">
-            <div
-              class="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-[#d97706] via-[#facc15] to-[#22c55e]"
-              :style="{ width: `${Math.min(100, (visitedCount / 10) * 100)}%` }"
-            />
-          </div>
         </div>
       </section>
 
       <!-- Stamp Grid Collection -->
       <OrmawaStampGrid :maxStamps="10" />
 
-      <!-- 2. SEGMENTED TABS & SEARCH (Sama Seperti Tab Hari di Presensi) -->
-      <section class="space-y-1.5">
+      <!-- Pencarian dan filter -->
+      <section class="space-y-2.5">
         <!-- Search Input -->
         <div class="relative w-full">
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Cari stan UKM, robotika, seni, silat..."
-            class="w-full bg-[#140c06]/95 border border-[#5a3a18] focus:border-[#f0d060] rounded-xl pl-8 pr-7 py-1.5 text-xs text-[#fef08a] placeholder-[#8b6f4e] outline-none font-sans"
+            class="min-h-11 w-full rounded-xl border border-[#6a4a2b] bg-[#140c06]/95 py-2.5 pl-10 pr-9 font-sans text-sm text-[#fef3c7] outline-none transition-colors placeholder:text-[#8b6f4e] focus:border-[#f0d060]"
           />
-          <PhMagnifyingGlass :size="14" class="text-[#8b6f4e] absolute left-2.5 top-2.5" />
+          <PhMagnifyingGlass :size="17" class="absolute left-3.5 top-3.5 text-[#b08b5b]" />
           <button
             v-if="searchQuery"
             type="button"
             @click="searchQuery = ''; safeSound(() => soundEngine.playClick?.())"
-            class="absolute right-2.5 top-2 text-[#a08060] hover:text-white cursor-pointer"
+            class="absolute right-3 top-3 cursor-pointer rounded-md p-0.5 text-[#a08060] hover:text-white"
           >
             <PhX :size="12" />
           </button>
         </div>
 
-        <!-- Segmented Category Control -->
-        <div class="grid grid-cols-4 gap-1 bg-[#140c06]/90 p-1 rounded-xl border border-[#5a3a18]">
+        <!-- Filter chip horizontal agar label tetap terbaca di HP -->
+        <div class="flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             v-for="tab in CATEGORY_TABS"
             :key="tab.id"
@@ -520,187 +567,153 @@ const getCategoryLabel = (category: string) => {
               activeCategoryTab = tab.id;
             }"
             :class="[
-              'py-1.5 px-1 rounded-lg transition-all flex flex-col items-center justify-center text-center cursor-pointer active:scale-95',
+              'flex min-h-11 shrink-0 snap-start cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all active:scale-[0.98]',
               activeCategoryTab === tab.id
-                ? 'bg-[#38761d] text-white border border-[#f0d060] font-bold shadow'
-                : 'text-[#c4956a] hover:text-[#f0d060]'
+                ? 'border-[#d9b94b] bg-[#315f20] text-white shadow-[0_3px_0_#173f12]'
+                : 'border-[#5a3a18] bg-[#140c06]/90 text-[#c9a67d] hover:border-[#8b6f4e] hover:text-[#f0d060]'
             ]"
           >
-            <span class="text-[8.5px] sm:text-[9.5px] font-pixel leading-tight">{{ tab.label }}</span>
-            <span class="text-[7px] sm:text-[7.5px] opacity-75 font-sans mt-0.5">{{ getTabCount(tab.id) }} Stan</span>
+            <span class="text-[9px] font-pixel leading-tight">{{ tab.label }}</span>
+            <span :class="['rounded-md px-1.5 py-1 font-sans text-[9px] font-bold', activeCategoryTab === tab.id ? 'bg-black/20 text-[#f5e8a3]' : 'bg-[#2a1a0e] text-[#a98a65]']">{{ getTabCount(tab.id) }}</span>
           </button>
         </div>
       </section>
 
       <!-- Loading State -->
-      <div v-if="isLoading" class="flex items-center justify-center py-10 gap-3 text-[#facc15] font-mono text-xs">
-        <PhSpinner :size="20" class="animate-spin" />
-        <span>Memuat katalog stan Lantai 6...</span>
+      <div v-if="isLoading" class="space-y-2.5" aria-label="Memuat katalog stan">
+        <div v-for="n in 4" :key="n" class="grid min-h-24 animate-pulse grid-cols-[56px_1fr] gap-3 rounded-2xl border border-[#4a301a] bg-[#18100a]/85 p-3.5">
+          <div class="h-14 w-14 rounded-xl bg-[#3a2818]" />
+          <div class="space-y-2 py-1">
+            <div class="h-3 w-4/5 rounded bg-[#4a3524]" />
+            <div class="h-2.5 w-2/5 rounded bg-[#342318]" />
+            <div class="h-2.5 w-3/5 rounded bg-[#342318]" />
+          </div>
+        </div>
       </div>
 
-      <!-- 3. LIST STAN ORMAWA LANTAI 6 (Format Card Sesi Sama Persis Presensi) -->
-      <section v-else-if="filteredStands.length > 0" class="space-y-2">
-        <div
-          v-for="stand in filteredStands"
-          :key="stand.id"
-          @click="openStandDetail(stand)"
-          :class="[
-            'border rounded-xl p-2.5 sm:p-3 transition-all flex items-start gap-2.5 text-left backdrop-blur-md cursor-pointer hover:border-[#f0d060] active:scale-[0.99] shadow-sm',
-            gameStore.isStandVisited(stand.id)
-              ? 'bg-[#142312]/95 border-[#22c55e]'
-              : 'bg-[#18100a]/90 border-[#4a301a] hover:bg-[#22150c]'
-          ]"
-        >
-          <!-- Status / Category Icon Box (Sama Seperti Kotak Ikon Presensi) -->
-          <div
+      <!-- Daftar stan -->
+      <section v-else-if="filteredStands.length > 0" class="space-y-2.5">
+        <div class="flex items-end justify-between gap-3 px-1">
+          <div>
+            <p class="font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-[#d0ad78]">Jelajahi Ormawa & UKM</p>
+            <p class="mt-1 font-sans text-xs text-[#9f805e]">Pilih stan untuk melihat misi dan informasi.</p>
+          </div>
+          <span class="shrink-0 rounded-lg border border-[#5a3a18] bg-[#1b110a] px-2.5 py-1.5 font-mono text-[10px] text-[#facc15]">{{ filteredStands.length }} stan</span>
+        </div>
+
+        <div class="grid grid-cols-1 gap-2.5 md:grid-cols-2">
+          <button
+            v-for="stand in filteredStands"
+            :key="stand.id"
+            type="button"
+            @click="openStandDetail(stand)"
             :class="[
-              'w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 mt-0.5',
+              'group grid min-h-[94px] w-full grid-cols-[58px_1fr_34px] items-center gap-3 rounded-2xl border p-3.5 text-left shadow-[0_5px_16px_rgba(16,8,3,0.2)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-[#b9934f] active:translate-y-0 active:scale-[0.99]',
               gameStore.isStandVisited(stand.id)
-                ? 'bg-[#22c55e]/20 border-[#22c55e] text-[#4ade80]'
-                : 'bg-[#1a110a] border-[#5a3a18] text-[#facc15]'
+                ? 'border-[#3b9a55] bg-[#142312]/95'
+                : 'border-[#4f351e] bg-[#18100a]/94 hover:bg-[#21150d]'
             ]"
           >
-            <PhCheckCircle v-if="gameStore.isStandVisited(stand.id)" :size="18" weight="fill" />
-            <PhStorefront v-else :size="17" weight="fill" />
-          </div>
-
-          <!-- Stand Details (2-Row Design for Zero Truncation) -->
-          <div class="min-w-0 flex-1">
-            <!-- Row 1: Title -->
-            <div class="flex items-center gap-2">
-              <span class="text-[11px] sm:text-xs font-bold text-white leading-tight">
-                {{ stand.name }}
-              </span>
+            <!-- Logo Stan -->
+            <div class="relative flex h-[58px] w-[58px] shrink-0 items-center justify-center overflow-visible rounded-xl border-2 border-[#f5efe5] bg-[#f5efe5] shadow-[0_3px_0_#75583d]">
+              <img v-if="stand.logoUrl" :src="stand.logoUrl" :alt="`Logo ${stand.name}`" class="h-full w-full rounded-[10px] object-contain p-1.5" />
+              <PhStorefront v-else :size="25" weight="fill" class="text-[#5c4033]" />
+              <PhCheckCircle v-if="gameStore.isStandVisited(stand.id)" :size="19" weight="fill" class="absolute -bottom-1.5 -right-1.5 rounded-full bg-[#142312] text-[#4ade80]" />
             </div>
 
-            <!-- Row 2: Tagline / Deskripsi Singkat -->
-            <p v-if="stand.tagline" class="text-[9.5px] text-[#c4956a] font-sans line-clamp-1 mt-0.5">
-              "{{ stand.tagline }}"
-            </p>
-
-            <!-- Row 3: Location (Lantai 6), Category, & Status Badge -->
-            <div class="flex items-center justify-between gap-2 mt-1.5 flex-wrap">
-              <span class="text-[9px] text-[#a08060] font-sans flex items-center gap-1">
-                <PhMapPin :size="11" class="text-[#f59e0b] shrink-0" />
-                <span>{{ stand.location || 'Hall Lantai 6' }}</span>
-                <span class="text-[#38bdf8] font-mono">• {{ getCategoryLabel(stand.category) }}</span>
-              </span>
-
-              <span
-                :class="[
-                  'text-[7.5px] sm:text-[8px] font-mono px-2 py-0.5 rounded border uppercase font-bold shrink-0',
-                  gameStore.isStandVisited(stand.id)
-                    ? 'bg-[#22c55e]/20 border-[#22c55e] text-[#86efac]'
-                    : 'bg-black/40 border-[#5a3a18] text-[#facc15]'
-                ]"
-              >
-                {{ gameStore.isStandVisited(stand.id) ? 'TERVERIFIKASI' : 'LIHAT DETAIL' }}
-              </span>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5">
+                <span class="rounded bg-[#2e1d10] px-1.5 py-0.5 font-mono text-[8px] font-bold text-[#facc15] border border-[#6b4724]">
+                  {{ stand.location.split('—')[1]?.trim() || 'Lantai 6' }}
+                </span>
+                <span class="truncate font-sans text-[10px] text-[#c9a67d]">
+                  {{ getCategoryLabel(stand.category) }}
+                </span>
+              </div>
+              <h3 class="mt-1 line-clamp-1 font-pixel text-xs font-bold text-[#fef08a] sm:text-sm">
+                {{ stand.shortName || stand.name }}
+              </h3>
+              <p class="mt-0.5 line-clamp-1 font-sans text-[11px] text-[#d6c4a8]/80">
+                {{ stand.tagline || stand.description }}
+              </p>
+              <div class="mt-2 flex items-center gap-2">
+                <span :class="['rounded-md px-2 py-0.5 font-pixel text-[8px]', gameStore.isStandVisited(stand.id) ? 'bg-[#194020] text-[#86efac]' : 'bg-[#291b10] text-[#eab308]']">
+                  {{ gameStore.isStandVisited(stand.id) ? 'STAMP TERKUMPUL' : `+${stand.xpReward ?? 75} XP REWARD` }}
+                </span>
+                <span v-if="gameStore.isStandInterested(stand.id)" class="rounded-md bg-[#3c1440] px-2 py-0.5 font-pixel text-[8px] text-pink-300">
+                  MINAT
+                </span>
+              </div>
             </div>
-          </div>
+
+            <div class="flex justify-end text-[#d4af37] transition-transform group-hover:translate-x-1">
+              <PhCaretRight :size="18" weight="bold" />
+            </div>
+          </button>
         </div>
       </section>
 
       <!-- Empty State -->
-      <div
-        v-else
-        class="p-8 text-center bg-[#18100a]/90 border border-dashed border-[#5a3a18] rounded-xl space-y-2 font-mono"
-      >
-        <PhStorefront :size="32" class="text-amber-400 mx-auto opacity-40" />
-        <p class="text-xs text-amber-200">Tidak ada stan yang cocok dengan pencarian.</p>
+      <div v-else class="rounded-2xl border border-[#4a301a] bg-[#18100a]/90 p-8 text-center space-y-2">
+        <PhStorefront :size="32" class="mx-auto text-[#8b6f4e]" />
+        <p class="text-xs text-[#c9a67d]">Tidak ada stan yang sesuai dengan pencarian Anda.</p>
         <button
           type="button"
-          @click="searchQuery = ''; activeCategoryTab = 'ALL'; safeSound(() => soundEngine.playClick?.())"
-          class="text-[10px] text-[#facc15] underline cursor-pointer"
+          @click="searchQuery = ''; activeCategoryTab = 'ALL'"
+          class="font-pixel text-[10px] text-[#facc15] hover:underline"
         >
-          Reset Filter & Pencarian
+          RESET FILTER
         </button>
       </div>
     </main>
 
     <!-- ================================================================= -->
-    <!-- 4. BOTTOM FOOTER NAVIGATION                                       -->
-    <!-- ================================================================= -->
-    <footer class="flex items-center justify-center pt-2 pb-3 shrink-0 relative z-20">
-      <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#120a05]/90 backdrop-blur-md border border-[#5a3a18] text-[9px] text-[#a08060] font-pixel shadow-lg">
-        <RouterLink
-          to="/peta"
-          @click="() => safeSound(() => soundEngine.playClick?.())"
-          class="hover:text-[#60a5fa] flex items-center gap-1 transition-colors"
-        >
-          <PhMapTrifold :size="12" />
-          <span>PETA KAMPUS</span>
-        </RouterLink>
-        <span>•</span>
-        <RouterLink
-          to="/presensi"
-          @click="() => safeSound(() => soundEngine.playClick?.())"
-          class="hover:text-[#facc15] flex items-center gap-1 transition-colors"
-        >
-          <PhCalendarCheck :size="12" />
-          <span>PRESENSI</span>
-        </RouterLink>
-        <span>•</span>
-        <RouterLink
-          to="/profile"
-          @click="() => safeSound(() => soundEngine.playClick?.())"
-          class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
-        >
-          <PhIdentificationBadge :size="12" />
-          <span>PROFIL</span>
-        </RouterLink>
-      </div>
-    </footer>
-
-    <!-- ================================================================= -->
-    <!-- MODAL: BIG HIGH-CONTRAST QR SCANNER MODAL                         -->
+    <!-- MODAL: QR Code Mahasiswa (Ditunjukkan ke PIC Ormawa)              -->
     <!-- ================================================================= -->
     <div
       v-if="showQrModal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
+      class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
       @click.self="showQrModal = false; safeSound(() => soundEngine.playClick?.())"
     >
       <div class="w-full max-w-sm bg-[#1c1209] border-2 border-[#facc15] rounded-2xl p-5 text-center space-y-4 shadow-2xl relative">
-        <div class="flex items-center justify-between border-b border-[#3d2714] pb-2.5">
-          <div class="flex items-center gap-1.5 text-xs font-pixel text-[#facc15]">
-            <PhQrCode :size="16" weight="fill" />
-            <span>QR PROFIL MAHASISWA</span>
-          </div>
-          <button
-            type="button"
-            @click="showQrModal = false; safeSound(() => soundEngine.playClick?.())"
-            class="p-1 rounded-lg bg-[#2a1a0e] hover:bg-[#3d2714] text-[#a08560] hover:text-white cursor-pointer"
-          >
-            <PhX :size="16" />
-          </button>
-        </div>
+        <button
+          type="button"
+          @click="showQrModal = false; safeSound(() => soundEngine.playClick?.())"
+          class="absolute right-3 top-3 p-1.5 rounded-lg bg-[#2a1a0e] text-[#a08060] hover:text-white border border-[#5a3a18] cursor-pointer"
+        >
+          <PhX :size="14" />
+        </button>
 
-        <div class="space-y-0.5">
-          <h3 class="font-pixel text-sm sm:text-base text-[#fef08a]">
-            {{ gameStore.participant.name || 'Mahasiswa Baru UNU' }}
-          </h3>
-          <p class="font-mono text-xs text-[#fbbf24]">
-            NIM: {{ gameStore.participant.nim || '261100123' }}
-          </p>
+        <div class="space-y-1 pt-1">
+          <div class="flex items-center justify-center gap-1.5 text-[#facc15]">
+            <PhQrCode :size="18" weight="bold" />
+            <span class="font-pixel text-xs font-bold uppercase tracking-wider">QR CODE PROFIL PETUALANG</span>
+          </div>
+          <p class="text-xs text-[#fef08a] font-bold">{{ gameStore.participant.name || 'Mahasiswa Baru UNU' }}</p>
+          <p class="font-mono text-[10px] text-[#a08060]">NIM: {{ gameStore.participant.nim || '261100123' }}</p>
         </div>
 
         <!-- Big High-Contrast QR Code for PIC scanner -->
         <div class="w-52 h-52 sm:w-56 sm:h-56 mx-auto bg-white p-3 rounded-2xl shadow-inner flex items-center justify-center border-4 border-[#ca8a04]">
           <img
-            :src="mabaQrUrlBig"
+            v-if="mabaQrDataUrl"
+            :src="mabaQrDataUrl"
             :alt="`QR Code ${gameStore.participant.nim || '261100123'}`"
             class="w-full h-full object-contain"
           />
+          <div v-else class="text-black font-sans text-xs animate-pulse">
+            Membuat QR Code...
+          </div>
         </div>
 
         <p class="text-xs text-[#e6d5bc]/90 font-sans leading-relaxed">
-          Tunjukkan QR Code ini ke petugas stan Ormawa/UKM Lantai 6 untuk dipindai (scan) agar lencana dan bonus XP langsung tercatat di profilmu!
+          Tunjukkan QR Code ini ke PIC {{ activeStandDetail?.shortName || 'Ormawa/UKM' }} untuk dipindai agar stamp dan XP langsung tercatat di profilmu!
         </p>
 
         <button
           type="button"
           @click="showQrModal = false; safeSound(() => soundEngine.playClick?.())"
-          class="w-full py-2 bg-[#2a1a0e] hover:bg-[#3d2714] border border-[#8b6f4e] text-[#facc15] font-pixel text-xs rounded-xl cursor-pointer transition-colors active:scale-98 shadow"
+          class="w-full py-2.5 bg-[#2a1a0e] hover:bg-[#3d2714] text-[#facc15] font-pixel text-xs rounded-xl border border-[#8b6f4e] cursor-pointer transition-all active:scale-98 shadow"
         >
           TUTUP
         </button>
@@ -708,26 +721,30 @@ const getCategoryLabel = (category: string) => {
     </div>
 
     <!-- ================================================================= -->
-    <!-- MODAL: STAND DETAIL                                               -->
+    <!-- MODAL: Detail Stand UKM / Ormawa                                  -->
     <!-- ================================================================= -->
     <div
       v-if="activeStandDetail"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
+      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md"
       @click.self="closeStandDetail"
     >
       <div class="w-full max-w-lg bg-[#1c1209] border-2 border-[#ca8a04] rounded-2xl shadow-2xl p-4 sm:p-5 space-y-4 max-h-[90vh] overflow-y-auto font-sans">
         <!-- Modal Header -->
-        <div class="flex items-start justify-between gap-3 border-b border-[#3d2714] pb-3">
-          <div class="space-y-1">
+        <div class="grid grid-cols-[82px_1fr_auto] sm:grid-cols-[116px_1fr_auto] items-start gap-3 border-b border-[#3d2714] pb-4">
+          <div class="aspect-square rounded-xl border-2 border-white bg-white shadow-[0_5px_0_#8b6f4e] overflow-hidden flex items-center justify-center">
+            <img v-if="activeStandDetail.logoUrl" :src="activeStandDetail.logoUrl" :alt="`Logo ${activeStandDetail.name}`" class="h-full w-full object-contain p-2" />
+            <PhStorefront v-else :size="42" weight="duotone" class="text-[#5c4033]" />
+          </div>
+          <div class="space-y-1.5 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="px-2 py-0.5 rounded-md bg-[#2d1b0d] border border-[#d97706]/50 text-[8.5px] font-pixel text-[#facc15]">
                 HALL LANTAI 6
               </span>
-              <span class="text-[10px] text-[#38bdf8] font-mono">
+              <span class="px-2 py-0.5 rounded-md bg-[#1e293b] border border-[#38bdf8]/40 text-[8.5px] font-pixel text-[#38bdf8]">
                 {{ getCategoryLabel(activeStandDetail.category) }}
               </span>
             </div>
-            <h2 class="font-pixel text-sm sm:text-base text-[#fef08a] font-bold">
+            <h2 class="font-pixel text-xs sm:text-base text-[#fef08a] font-bold leading-relaxed">
               {{ activeStandDetail.name }}
             </h2>
             <p v-if="activeStandDetail.tagline" class="text-xs text-[#e6d5bc]/80 italic">
@@ -738,44 +755,55 @@ const getCategoryLabel = (category: string) => {
           <button
             type="button"
             @click="closeStandDetail"
-            class="p-1.5 rounded-lg bg-[#2a1a0e] hover:bg-[#3d2714] text-[#a08560] hover:text-white shrink-0 cursor-pointer"
+            class="p-1.5 rounded-lg bg-[#2a1a0e] text-[#a08060] hover:text-white border border-[#5a3a18] cursor-pointer"
           >
-            <PhX :size="18" />
+            <PhX :size="14" />
           </button>
         </div>
 
-        <!-- Visited Badge -->
+        <!-- Status Kunjungan -->
         <div
           v-if="gameStore.isStandVisited(activeStandDetail.id)"
           class="flex items-center gap-2 p-2.5 bg-[#142314] border border-[#22c55e] rounded-xl text-xs font-mono text-[#86efac]"
         >
           <PhCheckCircle :size="16" weight="fill" class="text-[#4ade80] shrink-0" />
-          <span>Kamu sudah mengunjungi stan ini! Lencana sudah tercatat di profil.</span>
+          <span>Stamp stan ini sudah tercatat. +{{ activeStandDetail.xpReward ?? 75 }} XP telah diberikan.</span>
         </div>
 
         <!-- Location -->
-        <div v-if="activeStandDetail.location" class="flex items-center gap-1.5 text-xs text-[#facc15] font-mono bg-[#140d06] p-2 rounded-xl border border-[#3d2714]">
-          <PhMapPin :size="15" class="text-[#f59e0b] shrink-0" />
+        <div class="flex items-center gap-2 p-2 bg-[#120a05] rounded-xl border border-[#2e1d0f] text-xs font-mono text-[#facc15]">
+          <PhMapPin :size="14" class="text-[#facc15] shrink-0" />
           <span>{{ activeStandDetail.location }}</span>
         </div>
 
-        <!-- Description -->
-        <div v-if="activeStandDetail.description" class="space-y-1">
-          <span class="text-[10px] text-[#a08560] font-mono font-bold uppercase block">
-            TENTANG UKM / ORGANISASI
-          </span>
+        <!-- Deskripsi -->
+        <div class="space-y-1">
+          <h3 class="text-[10.5px] font-pixel text-[#d4af37] uppercase tracking-wider">TENTANG ORGANISASI</h3>
           <p class="text-xs text-[#e6d5bc] leading-relaxed">
             {{ activeStandDetail.description }}
           </p>
         </div>
 
-        <!-- Kegiatan Rutin -->
+        <!-- Petunjuk Stamp -->
+        <div v-if="activeStandDetail.stampInstructions?.length" class="space-y-1.5 rounded-xl border border-[#854d0e]/60 bg-[#251508] p-3 text-xs text-[#fef08a]">
+          <div class="flex items-center gap-1.5 font-pixel text-[10px] text-[#facc15]">
+            <PhQrCode :size="14" weight="bold" />
+            <span>CARA MENDAPATKAN STAMP</span>
+          </div>
+          <ol class="list-decimal space-y-1 pl-4 text-[11px] leading-relaxed text-[#fef3c7]">
+            <li v-for="(inst, i) in activeStandDetail.stampInstructions" :key="i">
+              {{ inst }}
+            </li>
+          </ol>
+        </div>
+
+        <!-- Program Unggulan -->
         <div v-if="activeStandDetail.activities?.length" class="space-y-1.5">
-          <span class="text-[10px] text-[#a08560] font-mono font-bold uppercase flex items-center gap-1">
-            <PhListChecks :size="14" class="text-[#facc15]" />
-            <span>KEGIATAN UTAMA & AGENDA</span>
-          </span>
-          <ul class="space-y-1 text-xs text-[#e6d5bc]">
+          <div class="flex items-center gap-1.5 text-[10.5px] font-pixel text-[#d4af37] uppercase tracking-wider">
+            <PhListChecks :size="13" />
+            <span>PROGRAM & KEGIATAN UNGGULAN</span>
+          </div>
+          <ul class="space-y-1 text-xs text-[#e6d5bc]/90">
             <li
               v-for="(act, idx) in activeStandDetail.activities"
               :key="idx"
@@ -789,11 +817,11 @@ const getCategoryLabel = (category: string) => {
 
         <!-- Syarat Bergabung -->
         <div v-if="activeStandDetail.requirements?.length" class="space-y-1.5">
-          <span class="text-[10px] text-[#a08560] font-mono font-bold uppercase flex items-center gap-1">
-            <PhFlag :size="14" class="text-[#38bdf8]" />
+          <div class="flex items-center gap-1.5 text-[10.5px] font-pixel text-[#38bdf8] uppercase tracking-wider">
+            <PhFlag :size="13" />
             <span>SYARAT BERGABUNG</span>
-          </span>
-          <ul class="space-y-1 text-xs text-[#e6d5bc]">
+          </div>
+          <ul class="space-y-1 text-xs text-[#e6d5bc]/90">
             <li
               v-for="(req, idx) in activeStandDetail.requirements"
               :key="idx"
@@ -807,38 +835,59 @@ const getCategoryLabel = (category: string) => {
 
         <!-- Social & Narahubung -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
-          <div v-if="activeStandDetail.instagram" class="flex items-center gap-2 p-2 bg-[#120a05] rounded-xl border border-[#2e1d0f] text-[#d6c4a8]">
-            <PhInstagramLogo :size="16" class="text-pink-400 shrink-0" />
-            <span>{{ activeStandDetail.instagram }}</span>
-          </div>
-
-          <div
-            v-if="activeStandDetail.contactPerson"
-            class="flex items-center gap-2 p-2 bg-[#120a05] rounded-xl border border-[#2e1d0f] text-[#d6c4a8]"
+          <a
+            v-if="activeStandDetail.instagram"
+            :href="instagramHref(activeStandDetail.instagram)"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group min-h-14 flex items-center justify-between gap-2 px-3 py-2 bg-[#3b123f] hover:bg-[#581c5f] rounded-xl border-2 border-pink-500 text-white transition-all shadow-[0_3px_0_#831843] active:translate-y-0.5"
           >
-            <PhPhone :size="16" class="text-green-400 shrink-0" />
-            <span>{{ activeStandDetail.contactPerson }}</span>
-          </div>
+            <span class="flex items-center gap-2 min-w-0">
+              <PhInstagramLogo :size="20" weight="fill" class="text-pink-300 shrink-0" />
+              <span class="truncate">
+                <small class="block text-[8px] text-pink-200">BUKA INSTAGRAM</small>
+                {{ activeStandDetail.instagram }}
+              </span>
+            </span>
+            <span class="font-pixel text-[12px] text-pink-200">↗</span>
+          </a>
+
+          <a
+            v-if="whatsappHref(activeStandDetail)"
+            :href="whatsappHref(activeStandDetail)"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group min-h-14 flex items-center justify-between gap-2 px-3 py-2 bg-[#103b23] hover:bg-[#14532d] rounded-xl border-2 border-green-500 text-white transition-all shadow-[0_3px_0_#166534] active:translate-y-0.5"
+          >
+            <span class="flex items-center gap-2 min-w-0">
+              <PhPhone :size="20" weight="fill" class="text-green-300 shrink-0" />
+              <span class="truncate">
+                <small class="block text-[8px] text-green-200">CHAT WHATSAPP</small>
+                {{ activeStandDetail.contactPerson || activeStandDetail.contactPhone }}
+              </span>
+            </span>
+            <span class="font-pixel text-[12px] text-green-200">↗</span>
+          </a>
         </div>
 
-        <!-- CTA: Petunjuk Cara Mendapat Lencana & Berminat -->
+        <!-- CTA: Stamp & Berminat -->
         <div class="pt-2 border-t border-[#3d2714] space-y-2">
           <p class="text-[10.5px] text-[#facc15]/80 font-mono text-center">
-            Datangi stan ini di Hall Lantai 6 & tunjukkan QR Code profilmu ke petugas untuk klaim lencana!
+            Selesaikan misi stan, lalu tunjukkan QR profilmu kepada PIC untuk menerima stamp.
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
               v-if="!gameStore.isStandInterested(activeStandDetail.id)"
               type="button"
               @click="openInterestModal"
-              class="w-full py-2 bg-gradient-to-r from-[#166534] to-[#14532d] hover:from-[#14532d] hover:to-[#064e3b] text-[#86efac] font-pixel text-[10px] rounded-xl border border-[#166534] shadow active:scale-98 cursor-pointer transition-all flex items-center justify-center gap-1.5"
+              class="w-full py-2.5 bg-gradient-to-r from-[#166534] to-[#14532d] hover:from-[#14532d] hover:to-[#064e3b] text-[#86efac] font-pixel text-[10px] rounded-xl border border-[#166534] shadow active:scale-98 cursor-pointer transition-all flex items-center justify-center gap-1.5"
             >
               <PhHeart weight="fill" :size="14" />
-              <span>BERMINAT GABUNG</span>
+              <span>BERMINAT GABUNG (+3 XP)</span>
             </button>
             <div 
               v-else 
-              class="w-full py-2 bg-[#142314] text-[#86efac] font-pixel text-[10px] rounded-xl border border-[#22c55e] flex items-center justify-center gap-1.5 cursor-not-allowed opacity-80"
+              class="w-full py-2.5 bg-[#142314] text-[#86efac] font-pixel text-[10px] rounded-xl border border-[#22c55e] flex items-center justify-center gap-1.5 cursor-not-allowed opacity-80"
             >
               <PhCheckCircle :size="14" weight="fill" />
               <span>SUDAH BERMINAT</span>
@@ -846,10 +895,10 @@ const getCategoryLabel = (category: string) => {
 
             <button
               type="button"
-              @click="closeStandDetail"
-              class="w-full py-2 bg-[#2a1a0e] hover:bg-[#3d2714] text-[#facc15] font-pixel text-xs rounded-xl border border-[#8b6f4e] cursor-pointer transition-all active:scale-98 shadow"
+              @click="openStampQr"
+              class="w-full py-2.5 bg-[#713f12] hover:bg-[#854d0e] text-[#fef08a] font-pixel text-xs rounded-xl border border-[#facc15] cursor-pointer transition-all active:scale-98 shadow flex items-center justify-center gap-1.5"
             >
-              TUTUP
+              <PhQrCode :size="15" weight="bold" /> STAMP
             </button>
           </div>
         </div>

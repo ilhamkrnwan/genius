@@ -1,5 +1,6 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { useRuntimeConfig } from "#app";
+import { resolveApiBase } from "~/utils/api-base";
 import { useAuth } from "./useAuth";
 
 export interface RealtimeFeedEvent {
@@ -31,7 +32,7 @@ export function useRealtime() {
   const auth = useAuth();
 
   const getWsUrl = () => {
-    const apiBase = config.public?.apiBase || "http://localhost:3001/api";
+    const apiBase = resolveApiBase(config.public?.apiBase as string | undefined);
     const wsBase = apiBase.replace(/^http/, "ws").replace(/\/api$/, "/ws");
     const token = auth.token?.value;
     return token ? `${wsBase}?token=${encodeURIComponent(token)}` : wsBase;

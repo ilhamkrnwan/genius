@@ -3,8 +3,6 @@ import { Participant, PlayerLevel, StampRecord } from '../types/game';
 import { BOOTHS_DATA, FLOORS_DATA, INITIAL_PARTICIPANT } from '../data/mockData';
 import { soundEngine } from '../lib/sound';
 import { AttendanceStoreMap, DailyReflectionData, AttendanceStatus } from '../types/attendance';
-import { ORMAWA_STANDS } from '../data/ormawaData';
-import { OrmawaScanResult } from '../types/ormawa';
 import { api } from '../lib/api';
 
 const STORAGE_KEY = 'genius_unu_user_storage_v1';
@@ -239,9 +237,9 @@ export const useGameStore = defineStore('game', {
 
     visitedOrmawaCount: (state) => state.visitedOrmawa.length,
 
-    ormawaXpEarned: (state) => Math.min(state.visitedOrmawa.length, 10) * 75,
+    ormawaStampXpEarned: (state) => state.visitedOrmawa.length * 2,
 
-    isOrmawaCapped: (state) => state.visitedOrmawa.length >= 10,
+    ormawaXpEarned: (state) => (state.visitedOrmawa.length * 2) + (state.ormawaInterests.length * 3),
 
     isStandVisited: (state) => (standId: string): boolean => {
       return state.visitedOrmawa.includes(standId);
@@ -249,9 +247,7 @@ export const useGameStore = defineStore('game', {
 
     interestCount: (state) => state.ormawaInterests.length,
 
-    interestXpEarned: (state) => Math.min(state.ormawaInterests.length, 3) * 25,
-
-    isInterestCapped: (state) => state.ormawaInterests.length >= 3,
+    interestXpEarned: (state) => state.ormawaInterests.length * 3,
 
     isStandInterested: (state) => (standId: string): boolean => {
       return state.ormawaInterests.includes(standId);
@@ -268,6 +264,7 @@ export const useGameStore = defineStore('game', {
             participant: this.participant,
             attendance: this.attendance,
             visitedOrmawa: this.visitedOrmawa,
+            ormawaInterests: this.ormawaInterests,
             isLoggedIn: this.isLoggedIn,
           })
         );
@@ -830,13 +827,33 @@ export const useGameStore = defineStore('game', {
       };
     },
 
-    async submitInterest(boothId: string, payload: { phoneNumber: string; motivation?: string; experience?: string }) {
+    async syncOrmawaProgress() {
+      const participantId = this.participant.id;
+      if (!participantId) return;
+      try {
+        const [progressResponse, interestsResponse] = await Promise.all([
+          api.getMyOrmawaProgress(participantId),
+          api.getMyOrmawaInterests(participantId),
+        ]);
+        if (progressResponse.success && Array.isArray((progressResponse.data as any)?.visits)) {
+          this.visitedOrmawa = (progressResponse.data as any).visits.map((visit: any) => visit.boothId);
+          this.participant.totalXp = Number((progressResponse.data as any).totalXp || 0);
+        }
+        if (interestsResponse.success && Array.isArray((interestsResponse.data as any)?.interests)) {
+          this.ormawaInterests = (interestsResponse.data as any).interests.map((interest: any) => interest.boothId);
+        }
+        this.saveToStorage();
+      } catch (error) {
+        console.warn('[Store] Failed to sync Ormawa progress:', error);
+      }
+    },
+
+    async submitInterest(boothId: string, payload: { phoneNumber: string; instagramUsername: string; motivation?: string; experience?: string }) {
       if (this.ormawaInterests.includes(boothId)) {
         return { success: false, message: 'Anda sudah mendaftar minat pada ormawa ini.' };
       }
 
-      const isCapped = this.ormawaInterests.length >= 3;
-      const xpBonusEarned = isCapped ? 0 : 25;
+      const xpBonusEarned = 3;
 
       try {
         // Optimistic update
@@ -850,6 +867,7 @@ export const useGameStore = defineStore('game', {
         const res = await api.submitOrmawaInterest({
           boothId,
           phoneNumber: payload.phoneNumber,
+          instagramUsername: payload.instagramUsername,
           motivation: payload.motivation,
           experience: payload.experience,
         });
@@ -858,9 +876,7 @@ export const useGameStore = defineStore('game', {
 
         return {
           success: true,
-          message: isCapped 
-            ? 'Minat bergabung dicatat! (Batas 3 ormawa tercapai, +0 XP)'
-            : `Minat bergabung berhasil dicatat! (+${xpBonusEarned} XP)`,
+          message: `Minat bergabung berhasil dicatat! (+${xpBonusEarned} XP Ormawa)`,
           xpBonusEarned
         };
       } catch (err: any) {
@@ -883,6 +899,7 @@ export const useGameStore = defineStore('game', {
       };
       this.attendance = { ...DEFAULT_ATTENDANCE };
       this.visitedOrmawa = [];
+      this.ormawaInterests = [];
       this.saveToStorage();
       soundEngine.playClick();
     },

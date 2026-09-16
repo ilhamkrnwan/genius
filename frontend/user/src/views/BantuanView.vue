@@ -104,8 +104,9 @@ const GUIDE_ITEMS: GuideItem[] = [
     points: [
       'Seluruh stan UKM, organisasi mahasiswa, dan komunitas kampus berpusat di Hall dan Selasar Lantai 6.',
       'Buka halaman Ormawa Expo pada menu, lalu pilih tombol "Buka QR Profil".',
+      'Baca bagian "Cara Dapat Stamp" pada detail stan dan selesaikan misi yang ditentukan Ormawa/UKM.',
       'Tunjukkan kode QR Profil Mahasiswa tersebut kepada petugas stan untuk dipindai (scan) sebagai bukti kunjungan stan.',
-      'Kunjungi minimal 10 stan pilihan untuk melengkapi pencapaian lencana expo ormawa.',
+      'Dapatkan reward stamp dan XP setelah kunjungan stan berhasil diverifikasi.',
     ],
     tip: 'Kamu dapat membaca deskripsi kegiatan, profil, dan kontak tiap organisasi langsung di halaman Ormawa.',
   },
