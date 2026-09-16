@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { db } from "../db";
-import { users, teams, teamMembers } from "../db/schema";
+import { users, teams, teamMembers, ormawaBooths, floors } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { signToken } from "../lib/jwt";
 import { hashPassword, verifyPassword } from "../lib/password";
@@ -81,6 +81,26 @@ export const authRoutes = new Elysia({
         });
       }
 
+      let boothData: any = null;
+      if (user.role === "ORMAWA_PIC") {
+        const [foundBooth] = await db
+          .select({
+            id: ormawaBooths.id,
+            name: ormawaBooths.name,
+            code: ormawaBooths.code,
+            category: ormawaBooths.category,
+            floorId: ormawaBooths.floorId,
+            floorNumber: floors.number,
+            qrCode: ormawaBooths.qrCode,
+            xpReward: ormawaBooths.xpReward,
+          })
+          .from(ormawaBooths)
+          .leftJoin(floors, eq(ormawaBooths.floorId, floors.id))
+          .where(eq(ormawaBooths.picUserId, user.id))
+          .limit(1);
+        boothData = foundBooth || null;
+      }
+
       return {
         success: true,
         data: {
@@ -102,6 +122,13 @@ export const authRoutes = new Elysia({
             teamId: user.teamId,
             teamName: user.teamName,
             teamCode: user.teamCode,
+            boothId: boothData?.id,
+            boothName: boothData?.name,
+            boothCode: boothData?.code,
+            category: boothData?.category,
+            assignedFloor: boothData?.floorNumber || 3,
+            qrCode: boothData?.qrCode,
+            xpReward: boothData?.xpReward,
           },
         },
       };

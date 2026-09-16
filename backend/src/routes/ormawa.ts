@@ -610,6 +610,7 @@ export const ormawaRoutes = new Elysia({
           teamId: targetTeamId,
           amount: xpEarned,
           sourceType: "BONUS",
+          sourceId: booth.id,
           reason: `Kunjungan Stan Ormawa: ${booth.name}`,
           createdBy: user?.userId || participantId,
         });
@@ -826,6 +827,7 @@ export const ormawaRoutes = new Elysia({
           teamId: targetTeamId,
           amount: xpEarned,
           sourceType: "BONUS",
+          sourceId: booth.id,
           reason: `Kunjungan Stan Ormawa: ${booth.name}`,
           createdBy: user?.userId,
         });

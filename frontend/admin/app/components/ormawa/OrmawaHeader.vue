@@ -1,32 +1,30 @@
 <template>
-  <header class="sticky top-0 z-40 bg-[#2d1b0e]/90 border-b-2 border-[#5a3a18] backdrop-blur-md px-3 sm:px-4 py-2 flex items-center justify-between shadow-lg select-none">
-    <!-- Left: Buddy Identity & Team Badge -->
+  <header class="sticky top-0 z-40 bg-[#1c120a]/92 border-b-2 border-[#5a3a18] backdrop-blur-md px-3 sm:px-4 py-2.5 flex items-center justify-between shadow-lg select-none">
+    <!-- Left: Ormawa Booth Identity -->
     <div class="flex items-center gap-2.5 min-w-0">
       <div class="relative shrink-0">
-        <img
-          :src="buddyAvatar"
-          alt="Avatar Buddy"
-          class="h-9 w-9 rounded-lg border-2 border-[#f0d060] object-cover bg-black/40 shadow"
-        />
+        <div class="h-9 w-9 rounded-lg border-2 border-[#f0d060] bg-[#2d1b0e] flex items-center justify-center font-pixel text-xs text-[#facc15] font-bold shadow overflow-hidden">
+          <Store class="h-5 w-5 text-[#c084fc]" />
+        </div>
         <div class="absolute -bottom-1 -right-1 bg-[#1a1008] border border-[#f0d060] rounded px-1 text-[6px] font-pixel text-[#facc15] font-bold">
-          BUDDY
+          PIC
         </div>
       </div>
 
       <div class="flex flex-col min-w-0 leading-tight">
         <div class="flex items-center gap-1.5">
           <span class="font-pixel text-xs text-[#f0d060] font-bold truncate">
-            {{ cleanBuddyName }}
+            {{ cleanBoothName }}
           </span>
         </div>
         <span class="text-[10px] text-[#86efac] font-sans truncate font-medium flex items-center gap-1">
-          <Shield class="h-3 w-3 text-[#22c55e] inline shrink-0" />
-          <span>{{ cleanTeamName }}</span>
+          <Sparkles class="h-3 w-3 text-[#22c55e] inline shrink-0" />
+          <span>{{ cleanPicName }} &bull; Lantai {{ boothFloor }}</span>
         </span>
       </div>
     </div>
 
-    <!-- Right: Quick Role Switcher & Logout -->
+    <!-- Right: Role Switcher & Logout -->
     <div class="flex items-center gap-1.5 shrink-0">
       <!-- Role Switcher Button for Instant Testing -->
       <button
@@ -51,24 +49,21 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { Crown, Shield, ArrowLeftRight, LogOut } from "lucide-vue-next";
+import { Store, Sparkles, ArrowLeftRight, LogOut } from "lucide-vue-next";
 import { useAuth } from "~/composables/useAuth";
 
 const { user, switchRole, confirmLogout } = useAuth();
 
-const cleanBuddyName = computed(() => {
-  const raw = user.value?.fullName || "Agnes Anggraini Risdiyanto";
-  return raw.replace(/^Kak(ak)?\s+/i, "").trim();
+const cleanPicName = computed(() => {
+  return user.value?.fullName || "PIC Stan Ormawa";
 });
 
-const cleanTeamName = computed(() => {
-  const raw = user.value?.teamName || "Genius 01";
-  return raw.replace(/^Team\s+/i, "").trim();
+const cleanBoothName = computed(() => {
+  // Can be extracted from teamName or booth info or username
+  return (user.value as any)?.boothName || user.value?.teamName || "Stan Expo Ormawa";
 });
 
-const buddyAvatar = computed(() => {
-  if (user.value?.avatarUrl) return user.value.avatarUrl;
-  if (user.value?.gender === "FEMALE") return "/character-cewek-avatar.png";
-  return "/character-cowok-avatar.png";
+const boothFloor = computed(() => {
+  return user.value?.assignedFloor || 3;
 });
 </script>

@@ -7,7 +7,6 @@ import FloorIntroView from '@/views/FloorIntroView.vue';
 import LinearSpotView from '@/views/LinearSpotView.vue';
 import FloorCompleteView from '@/views/FloorCompleteView.vue';
 import BoothDetailView from '@/views/BoothDetailView.vue';
-import PasporView from '@/views/PasporView.vue';
 import LeaderboardView from '@/views/LeaderboardView.vue';
 import BantuanView from '@/views/BantuanView.vue';
 import AttendanceView from '@/views/AttendanceView.vue';
@@ -72,12 +71,6 @@ const routes: Array<RouteRecordRaw> = [
     component: BoothDetailView,
   },
   {
-    path: '/paspor',
-    name: 'paspor',
-    alias: ['/passport', '/passpor', '/stamps', '/stempel'],
-    component: PasporView,
-  },
-  {
     path: '/leaderboard',
     name: 'leaderboard',
     component: LeaderboardView,
@@ -103,8 +96,14 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/profile',
     name: 'profile',
-    alias: ['/profil', '/ktm'],
+    alias: ['/profil', '/paspor', '/passport', '/passpor', '/stamps', '/stempel', '/ktm'],
     component: ProfileView,
+  },
+  {
+    path: '/team',
+    name: 'team',
+    alias: ['/regu', '/kelompok', '/my-team'],
+    component: () => import('@/views/TeamView.vue'),
   },
   {
     path: '/:catchAll(.*)*',
@@ -118,6 +117,46 @@ const router = createRouter({
   scrollBehavior() {
     return { top: 0 };
   },
+});
+
+/**
+ * Navigation Guard (Auth Middleware):
+ * Seluruh halaman eksplorasi, game, paspor, leaderboard, presensi, profil, dan booth
+ * mewajibkan peserta telah masuk (minimal login). Hanya landing page ('/' / name: 'home')
+ * yang dapat diakses publik tanpa login.
+ */
+router.beforeEach((to, _from, next) => {
+  // 1. Landing page ('/' atau route dengan nama 'home') bersifat publik
+  if (to.path === '/' || to.name === 'home') {
+    return next();
+  }
+
+  // 2. Periksa status autentikasi melalui JWT token atau state login maba
+  const token = localStorage.getItem('genius_user_token');
+  const rawState = localStorage.getItem('genius_game_state_2026');
+  let isAuthenticated = Boolean(token);
+
+  if (!isAuthenticated && rawState) {
+    try {
+      const parsed = JSON.parse(rawState);
+      isAuthenticated = Boolean(parsed.isLoggedIn && (parsed.participant?.nim || parsed.participant?.id));
+    } catch {
+      // Abaikan error parsing JSON
+    }
+  }
+
+  // 3. Jika belum login, redirect ke Landing Page dengan query auth=required dan url tujuan
+  if (!isAuthenticated) {
+    return next({
+      path: '/',
+      query: {
+        auth: 'required',
+        redirect: to.fullPath,
+      },
+    });
+  }
+
+  next();
 });
 
 export default router;

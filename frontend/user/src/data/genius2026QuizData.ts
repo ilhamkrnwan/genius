@@ -965,7 +965,7 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
     stampColor: '#D97706',
     badgeTag: 'Navigasi Gedung',
     story:
-      'Setelah menjelajahi seluruh gedung 9 lantai UNU Yogyakarta, seberapa kenal kamu dengan letak fasilitas kampus? Tebak di lantai berapa lokasi foto sudut gedung berikut berada!',
+      'Setelah menjelajahi seluruh gedung UNU Yogyakarta, seberapa kenal kamu dengan letak fasilitas kampus? Tebak di lantai berapa lokasi foto sudut gedung berikut berada!',
     questions: [],
     tebakPosisiContent: {
       items: [

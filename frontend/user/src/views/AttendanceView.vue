@@ -110,7 +110,7 @@ const ALL_SESSIONS: SessionDefinition[] = [
     id: 'd2-checkout',
     day: 2,
     type: 'checkOut',
-    title: 'Sesi 4: Presensi Pulang Quest 9 Lantai',
+    title: 'Sesi 4: Presensi Pulang Quest',
     timeRange: '16:00 - 16:30 WIB',
     xpReward: 50,
   },
@@ -300,14 +300,8 @@ onMounted(async () => {
         </span>
       </div>
 
-      <!-- Right: Sound, Refresh, XP Badge -->
+      <!-- Right: Refresh & Sound -->
       <div class="flex items-center gap-1.5 shrink-0">
-        <!-- XP Badge -->
-        <div class="bg-[#24170d] border border-[#d97706] px-2 py-0.5 rounded-lg flex items-center gap-1 text-[9.5px] sm:text-[10px] text-[#facc15] font-bold">
-          <PhSparkle :size="11" weight="fill" />
-          <span>+{{ totalXp }} XP</span>
-        </div>
-
         <!-- Refresh Button -->
         <button
           type="button"
@@ -576,7 +570,7 @@ onMounted(async () => {
           </RouterLink>
           <span>•</span>
           <RouterLink
-            to="/paspor"
+            to="/profile"
             @click="() => safeSound(() => soundEngine.playClick?.())"
             class="hover:text-[#facc15] flex items-center gap-1 transition-colors"
           >
@@ -585,12 +579,12 @@ onMounted(async () => {
           </RouterLink>
           <span>•</span>
           <RouterLink
-            to="/profile"
+            to="/team"
             @click="() => safeSound(() => soundEngine.playClick?.())"
-            class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
+            class="hover:text-[#38bdf8] flex items-center gap-1 transition-colors"
           >
             <PhUser :size="12" />
-            <span>KTM & AKUN</span>
+            <span>REGU</span>
           </RouterLink>
         </div>
       </footer>

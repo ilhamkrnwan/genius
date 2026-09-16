@@ -173,6 +173,7 @@ const selectAvatar = (avId: string) => {
   <div
     v-if="isOpen"
     class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#0a0604]/85 backdrop-blur-md animate-in fade-in duration-200 select-none font-sans"
+    @click.self="canDismiss && emit('close')"
   >
     <div
       class="w-full max-w-lg max-h-[94dvh] overflow-y-auto custom-scrollbar bg-gradient-to-b from-[#2d1b0e] to-[#1a1008] border-[3.5px] border-[#f0d060] rounded-2xl p-4 sm:p-6 shadow-[inset_0_0_0_2px_#6b4f2e,0_16px_40px_rgba(0,0,0,0.85),0_0_30px_rgba(240,208,96,0.3)] relative text-[#f0e0c0]"

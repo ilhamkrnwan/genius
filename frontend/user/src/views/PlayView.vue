@@ -24,6 +24,7 @@ import {
   PhShieldCheck,
   PhPencilSimple,
   PhCompass,
+  PhUsersThree,
 } from '@phosphor-icons/vue';
 import MabaAuthModal from '@/components/auth/MabaAuthModal.vue';
 
@@ -464,6 +465,28 @@ function openEditProfile() {
               </div>
             </button>
 
+            <!-- Regu / Tim Banner Strip -->
+            <div 
+              @click="navigateTo('/team')"
+              class="w-full mb-2.5 px-3 py-2 rounded-xl bg-[#22150b]/90 border border-[#8b6f4e] hover:border-[#f0d060] flex items-center justify-between cursor-pointer transition-all shadow-md group active:scale-98"
+            >
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-[#38761d]/40 border border-[#4ade80]/60 flex items-center justify-center text-[#86efac] shrink-0">
+                  <PhUsersThree :size="18" weight="bold" />
+                </div>
+                <div class="text-left min-w-0">
+                  <div class="text-[7.5px] text-[#a89279] uppercase font-pixel tracking-wider">Regu Kelompok Kamu:</div>
+                  <div class="text-[11px] font-bold text-[#facc15] font-pixel group-hover:text-white transition-colors truncate">
+                    {{ gameStore.participant.groupName || 'Genius 01' }}
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 text-[8.5px] font-pixel text-[#86efac] group-hover:text-[#fde047] shrink-0 bg-black/40 px-2 py-1 rounded-lg border border-[#86efac]/30">
+                <span>Lihat</span>
+                <PhCaretRight :size="10" weight="bold" />
+              </div>
+            </div>
+
             <!-- 3. GRID MENU: 6 Portal Fitur Gamifikasi PKKMB -->
             <div class="grid grid-cols-3 gap-2 sm:gap-2.5 w-full">
               <!-- 1. Peta Kampus -->
@@ -512,10 +535,10 @@ function openEditProfile() {
                 <span class="text-[7.5px] text-[#94a3b8] block mt-0.5 font-sans">Stan UKM</span>
               </button>
 
-              <!-- 4. Profil Digital -->
+              <!-- 4. Profil Digital & Stempel -->
               <button
                 type="button"
-                @click="navigateTo('/paspor')"
+                @click="navigateTo('/profile')"
                 class="p-2 sm:p-2.5 rounded-xl bg-[#23170e] hover:bg-[#322013] border border-[#5a3a18] hover:border-[#facc15] transition-all flex flex-col items-center justify-center text-center group cursor-pointer shadow active:scale-95"
               >
                 <PhIdentificationBadge :size="22" weight="bold" class="text-[#facc15] group-hover:scale-110 transition-transform mb-1" />

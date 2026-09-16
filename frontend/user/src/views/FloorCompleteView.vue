@@ -71,7 +71,7 @@ const handleNextAction = () => {
   if (hasNextFloor.value) {
     router.push(`/play/floor/${nextFloorNumber.value}/intro`);
   } else {
-    router.push('/paspor');
+    router.push('/profile');
   }
 };
 

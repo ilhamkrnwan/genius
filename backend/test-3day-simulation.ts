@@ -220,7 +220,7 @@ async function runSimulation() {
   console.log(`   ${c.green}✔ Presensi Pulang Hari 1 selesai (+50 XP bonus kepulangan)${c.reset}`);
 
   // =========================================================================
-  // 🏢 HARI 2: CAMPUS QUEST 9 LANTAI, STEMPEL EMAS, & EVOLUSI TIER
+  // 🏢 HARI 2: CAMPUS QUEST, STEMPEL EMAS, & EVOLUSI TIER
   // =========================================================================
   console.log(`\n${c.bright}${c.blue}═════════════════════════════════════════════════════════════════════════${c.reset}`);
   console.log(`${c.bright}${c.blue}  🏢 [HARI 2] Campus Quest 9 Lantai, Stempel Emas, & Evolusi Level RPG  ${c.reset}`);

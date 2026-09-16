@@ -564,7 +564,7 @@ onMounted(() => {
     </TopbarActions>
 
     <!-- Subtitle / Info Header -->
-    <div class="px-4 md:px-6 pt-3 pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#4a3624]/60 text-xs text-muted-foreground bg-[#15100c] shrink-0">
+    <div class="px-4 md:px-6 pt-3 pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#4a3624]/60 text-xs text-muted-foreground bg-[#15100c]/85 backdrop-blur-md shrink-0">
       <div>
         <h1 class="font-pixel text-xs sm:text-sm text-[#f59e0b] font-bold uppercase tracking-wider flex items-center gap-2">
           <Store class="h-4 w-4 text-[#c084fc]" />
@@ -588,8 +588,8 @@ onMounted(() => {
     </div>
 
     <!-- Stats HUD Cards (Compact Top Deck) -->
-    <div class="px-4 md:px-6 py-2.5 grid grid-cols-2 lg:grid-cols-4 gap-2 border-b border-[#3d2a1b] bg-[#120d09] shrink-0">
-      <div class="p-2 border border-[#523e2b] bg-[#1a140f] rounded flex items-center justify-between">
+    <div class="px-4 md:px-6 py-2.5 grid grid-cols-2 lg:grid-cols-4 gap-2 border-b border-[#3d2a1b] bg-[#120d09]/80 backdrop-blur-md shrink-0">
+      <div class="p-2 border border-[#523e2b] bg-[#1a140f]/85 backdrop-blur-sm rounded flex items-center justify-between">
         <div>
           <span class="text-[8px] font-pixel text-gray-400 uppercase block">TOTAL STAN</span>
           <span class="font-pixel text-base text-foreground font-bold">
@@ -599,7 +599,7 @@ onMounted(() => {
         <span class="text-[10px] text-muted-foreground">Unit kegiatan</span>
       </div>
 
-      <div class="p-2 border border-[#16a34a] bg-[#132215] rounded flex items-center justify-between">
+      <div class="p-2 border border-[#16a34a] bg-[#132215]/85 backdrop-blur-sm rounded flex items-center justify-between">
         <div>
           <span class="text-[8px] font-pixel text-[#4ade80] uppercase block">KUNJUNGAN</span>
           <span class="font-pixel text-base text-[#4ade80] font-bold">{{ totalVisitsCount }}</span>
@@ -607,7 +607,7 @@ onMounted(() => {
         <span class="text-[10px] text-[#86efac]">Total scan</span>
       </div>
 
-      <div class="p-2 border border-[#ca8a04] bg-[#221a0f] rounded flex items-center justify-between">
+      <div class="p-2 border border-[#ca8a04] bg-[#221a0f]/85 backdrop-blur-sm rounded flex items-center justify-between">
         <div>
           <span class="text-[8px] font-pixel text-[#facc15] uppercase block">TERFAVORIT</span>
           <div class="font-pixel text-xs text-[#facc15] font-bold truncate max-w-[110px]" :title="topBooth?.name || '-'">
@@ -619,7 +619,7 @@ onMounted(() => {
         </span>
       </div>
 
-      <div class="p-2 border border-[#9333ea] bg-[#1e1329] rounded flex items-center justify-between">
+      <div class="p-2 border border-[#9333ea] bg-[#1e1329]/85 backdrop-blur-sm rounded flex items-center justify-between">
         <div>
           <span class="text-[8px] font-pixel text-[#c084fc] uppercase block">TOTAL XP</span>
           <span class="font-pixel text-base text-[#c084fc] font-bold">+{{ totalXpDistributed.toLocaleString('id-ID') }}</span>
@@ -629,7 +629,7 @@ onMounted(() => {
     </div>
 
     <!-- Main Navigation Tabs (Compact) -->
-    <div class="px-4 md:px-6 py-1.5 flex items-center gap-2 border-b border-[#3d2a1b] bg-[#15100c] shrink-0 text-xs">
+    <div class="px-4 md:px-6 py-1.5 flex items-center gap-2 border-b border-[#3d2a1b] bg-[#15100c]/85 backdrop-blur-md shrink-0 text-xs">
       <button
         @click="activeTab = 'booths'"
         :class="[
