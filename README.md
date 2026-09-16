@@ -1,147 +1,195 @@
-# GENIUS UNU (Gedung Edukasi Navigasi Interaktif Universitas Nahdlatul Ulama Yogyakarta) 2026 — Monorepo
+# GENIUS UNU Yogyakarta 2026 — Monorepo
 
-> **Platform Orientasi Kampus Interaktif Berbasis Gamifikasi RPG & 9 Lantai Kampus UNU Yogyakarta.**  
-> _Tema: "Upgrade New U 2026"_
+> **Platform Orientasi Kampus Interaktif Berbasis Gamifikasi RPG & Eksplorasi Kampus UNU Yogyakarta.**  
+> _Tema Resmi: "Upgrade New U 2026"_
 
-[![Vue.js](https://img.shields.io/badge/Vue.js-3.5-4FC08D?style=flat-square&logo=vuedotjs)](https://vuejs.org/)
-[![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)](https://vitejs.dev/)
-[![Hono](https://img.shields.io/badge/Backend-Hono-E36002?style=flat-square&logo=hono)](https://hono.dev/)
-[![Bun](https://img.shields.io/badge/Workspaces-Bun-f472b6?style=flat-square&logo=bun)](https://bun.sh/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
-[![Pinia](https://img.shields.io/badge/State-Pinia-ffd54f?style=flat-square)](https://pinia.vuejs.org/)
-
----
-
-## 📚 Dokumentasi Lengkap Proyek (`docs/`)
-
-Dokumentasi arsitektur, integrasi alur rundown 3 hari kegiatan, pemodelan MongoDB Atlas, spesifikasi modul, dan roadmap telah disusun secara terstruktur di folder [`docs/`](./docs/README.md):
-
-- 📑 [**01. Pemetaan Rundown 3 Hari ke Fitur Aplikasi**](./docs/01-RUNDOWN-DAN-EVENT-FLOW.md)
-- 🏗️ [**02. Arsitektur Sistem & Spesifikasi Tech Stack**](./docs/02-ARSITEKTUR-DAN-TECH-STACK.md)
-- 🍃 [**03. Skema Database NoSQL (MongoDB Atlas - Draft Awal)**](./docs/03-SKEMA-DATABASE-MONGODB.md)
-- ⚙️ [**04. Spesifikasi Fitur Utama & Logika Gamifikasi**](./docs/04-SPESIFIKASI-FITUR-UTAMA.md)
-- 📡 [**05. Spesifikasi Kontrak REST API Backend**](./docs/05-SPESIFIKASI-REST-API.md)
-- 🔍 [**06. Audit Status Implementasi & Gap Analysis**](./docs/06-AUDIT-PROGRESS-SAAT-INI.md)
-- 🗺️ [**07. Roadmap Pengembangan Menuju Produksi**](./docs/07-ROADMAP-PENGEMBANGAN.md)
-- 🎮 [**08. Panduan Modul Game & Kontribusi**](./docs/08-PANDUAN-MODUL-GAME-DAN-KONTRIBUSI.md)
-- 🧭 [**09. Penyelarasan Alur Pengalaman Pengguna (UX Flow)**](./docs/09-PENYELARASAN-FLOW-FRONTEND-3-HARI.md)
-- 💻 [**10. Panduan Implementasi Frontend Lengkap**](./docs/10-PANDUAN-IMPLEMENTASI-FRONTEND-LENGKAP.md)
-- 📋 [**11. Sistem Presensi Sesi Dinamis**](./docs/11-SISTEM-PRESENSI-SESI-FLEKSIBEL.md)
-- 🏛️ [**12. Rationale Arsitektur: Mengapa PostgreSQL + Drizzle ORM, Bukan NoSQL/MongoDB?**](./docs/12-RATIONALE-TECH-STACK-POSTGRESQL-VS-MONGODB.md)
-- 🧩 [**13. Pemetaan Kuis Resmi & Core Gameplay dari CSV**](./docs/13-PEMETAAN-QUIZ-DATABASE-DAN-CORE-GAMEPLAY.md)
-- 🌱 [**14. Panduan Eksekusi Seeder & Manajemen CRUD Kuis Admin**](./docs/14-PANDUAN-SEED-DAN-CRUD-ADMIN-KUIS.md)
+[![Vue.js](https://img.shields.io/badge/Frontend_User-Vue_3.5_+_Vite_6-4FC08D?style=flat-square&logo=vuedotjs)](https://vuejs.org/)
+[![Nuxt](https://img.shields.io/badge/Frontend_Admin-Nuxt_4_+_Nitro-00DC82?style=flat-square&logo=nuxtdotjs)](https://nuxt.com/)
+[![Elysia/Hono](https://img.shields.io/badge/Backend-Elysia_&_Hono-E36002?style=flat-square)](https://elysiajs.com/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL_16-4169E1?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
+[![Drizzle ORM](https://img.shields.io/badge/ORM-Drizzle_ORM-C5F74F?style=flat-square)](https://orm.drizzle.team/)
+[![Bun](https://img.shields.io/badge/Runtime-Bun_1.3-f472b6?style=flat-square&logo=bun)](https://bun.sh/)
+[![Docker](https://img.shields.io/badge/Container-Docker_Compose-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind_CSS_v4-38bdf8?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
 
 ---
 
-Proyek ini menggunakan arsitektur **Monorepo (Bun Workspaces)** yang memisahkan aplikasi mahasiswa baru, dashboard admin panitia, backend API service, dan shared domain types:
+## 🌟 Ringkasan Arsitektur & Status Implementasi
+
+Sistem GENIUS UNU 2026 dibangun menggunakan arsitektur **Bun Workspaces Monorepo** terintegrasi, menghubungkan ribuan Mahasiswa Baru (MABA), Game Master Buddy, Penjaga Stan Ormawa, dan Panitia Inti dalam satu ekosistem waktu nyata (*real-time*).
 
 ```text
-genius-unu/
+genius_project/
 ├── frontend/
-│   ├── user/                    # [@genius-unu/user] Aplikasi Gamifikasi Mahasiswa Baru (Port 3000)
+│   ├── user/                    # [@genius-unu/user] Aplikasi MABA (Vue 3 + Vite 6 + Pinia)
 │   │   ├── src/
-│   │   │   ├── components/      # UI components & mini-games (TTS, Tebak Kata, dsb)
-│   │   │   ├── views/           # FloorView, BoothView, LeaderboardView, PassportView
-│   │   │   ├── store/           # Pinia gameStore
-│   │   │   └── data/            # Mock dataset lantai & booth
-│   │   ├── public/              # Aset visual, avatar, background
-│   │   ├── vite.config.ts
+│   │   │   ├── components/      # UI components, Mini-games (TTS, Tebak Kata, Kuis Balapan, dsb)
+│   │   │   ├── views/           # Dashboard, Peta, Play, Team, Profile, Attendance, OrmawaExpo
+│   │   │   ├── store/           # Pinia gameStore (Sync server, offline fallback, cache)
+│   │   │   └── lib/             # API Client, sound effects, question shuffler
 │   │   └── package.json
 │   │
-│   └── admin/                   # [@genius-unu/admin] Dashboard Panitia & PJ Orientasi (Port 3002)
-│       ├── src/
-│       │   ├── views/           # DashboardView, ParticipantsView, FloorsView, LeaderboardView
-│       │   ├── components/      # Admin sidebar, header, layout
-│       │   └── store/           # Pinia adminStore
-│       ├── vite.config.ts
+│   └── admin/                   # [@genius-unu/admin] Dashboard Panitia & Portal (Nuxt 4 + Nitro)
+│       ├── app/
+│       │   ├── pages/           # Control Center, Buddy Portal, Ormawa PIC Portal, CRUD Kuis
+│       │   ├── components/      # Layouts, Sidebar, Modals, Scanner QR, Leaderboard tables
+│       │   ├── layouts/         # default.vue (Superadmin / Buddy RPG / Ormawa Standalone)
+│       │   └── composables/     # useAuth (PostgreSQL RBAC session), useApi
 │       └── package.json
 │
-├── backend/                     # [@genius-unu/backend] REST API Service (Hono + Bun) (Port 3001)
+├── backend/                     # [@genius-unu/backend] REST API & WebSocket (Bun + Elysia/Hono)
 │   ├── src/
-│   │   ├── routes/              # auth.ts, booths.ts, stamps.ts, leaderboard.ts, admin.ts
-│   │   ├── data/                # In-memory mock database store
-│   │   └── index.ts             # Hono server entrypoint
+│   │   ├── db/                  # Drizzle ORM Schema, PostgreSQL pool, PGlite local fallback
+│   │   ├── routes/              # auth, users, teams, attendance, ormawa, leaderboard, scores
+│   │   ├── seed.ts              # Seeder resmi (Admin, Buddy, 100 Maba, 50 Kelompok, 19 Ormawa, 9 Pos)
+│   │   └── index.ts             # Server entrypoint & WebSocket handler
 │   └── package.json
 │
 ├── packages/
-│   └── shared/                  # [@genius-unu/shared] Shared domain types, contracts & constants
-│       ├── src/
-│       │   ├── types/           # game.ts, auth.ts, api.ts
-│       │   ├── constants/       # config, player levels, scoring
-│       │   └── index.ts
-│       └── package.json
+│   └── shared/                  # [@genius-unu/shared] Kontrak tipe data bersama (TypeScript)
+│       └── src/types/           # game.ts, auth.ts, api.ts
 │
-├── tsconfig.base.json           # Base TypeScript configuration
-├── package.json                 # Root workspace orchestrator
-└── README.md
+├── docker/                      # Dockerfile multi-stage production
+│   ├── backend.Dockerfile       # Auto drizzle db:push saat startup container
+│   ├── user.Dockerfile          # Nginx reverse proxy + static client build
+│   └── admin.Dockerfile         # Nuxt Nitro node-server runner
+│
+├── docker-compose.yml           # Orkestrasi 4 kontainer (PostgreSQL, Backend, User, Admin)
+└── docs/                        # Dokumentasi teknis & pedoman resmi
 ```
+
+---
+
+## 👥 4 Portal Pengguna Berbasis Peran (RBAC)
+
+Aplikasi memiliki antarmuka khusus yang terisolasi sesuai perannya masing-masing:
+
+### 1. 🎓 Portal Mahasiswa Baru (`@genius-unu/user` - Port 3000 / 4000)
+* **Gamifikasi Eksplorasi 6 Lantai (9 Pos Resmi):** Tantangan pos mini-game (TTS Sparse Layout, Tebak Kata, Tebak Posisi, Kuis Cepat, dsb) dengan batas nilai kelulusan minimal 70% untuk meraih Stempel Emas & XP.
+* **Presensi Mandiri Dinamis (QR Scanner):** Check-in pagi & Check-out sore dengan token QR terenkripsi yang di-refresh berkala oleh panitia.
+* **Ormawa Expo (Lantai 3, 4, 5):** Eksplorasi 19 stan UKM/Organisasi Mahasiswa, pemindaian QR booth stan (+75 XP), dan pendaftaran form minat (+25 XP).
+* **Tim & Rumah Adat Nusantara:** Data kelompok resmi menggunakan nama rumah adat Nusantara (*Jabu, Bolon, Gadang, Limas, Lontik*, dll).
+* **Leaderboard & Profil:** Papan peringkat realtime individu & kelompok, kustomisasi avatar Stardew Valley, dan catatan progres stempel.
+
+### 2. 🛡️ Portal Game Master Buddy (`/buddy`)
+* **Mobile-First Retro RPG View:** Tampilan khusus ramah ponsel dengan tema Stardew Valley tanpa sidebar admin yang mengganggu.
+* **Manajemen Binaan:** Pantau progres stempel dan perolehan poin 20 mahasiswa bimbingan secara instan.
+* **Form Penilaian Rubrik FGD:** Input nilai diskusi kelompok (Keaktifan, Kedalaman Materi, Adab) langsung tersimpan ke database.
+* **Bonus & Apresiasi:** Pemberian stempel dan poin apresiasi keaktifan regu.
+
+### 3. 🎪 Portal Mandiri PIC Stan Ormawa (`/ormawa/portal` & `/ormawa/login`)
+* **Portal Terisolasi:** PIC Ormawa memiliki rute login tersendiri dengan akses terbatas hanya ke stannya masing-masing.
+* **QR Stan & Scanner:** Menampilkan QR Stan untuk dipindai maba, serta scanner kamera untuk validasi kehadiran pengunjung stan.
+* **Buku Tamu & Rekap Minat:** Melihat daftar maba yang berminat bergabung beserta nomor kontak WhatsApp dan alasan ketertarikannya secara *real-time*.
+
+### 4. 👑 Control Center Super Admin (`/` & `/pages/*`)
+* **Pusat Monitoring Realtime:** Pantau metrik kehadiran, total XP diterbitkan, dan traffic tiap lantai.
+* **Manajemen Pengguna & Roster:** Pencarian NIM, reset password massal ke default, filter fakultas/prodi, dan ekspor data CSV.
+* **Master Kuis & Pos:** Konfigurasi soal kuis resmi 9 pos, buka-tutup akses pos, serta audit transaksi poin.
+* **Proyektor & QR Center:** Layar proyektor leaderboard panggung dan display token QR presensi dinamis.
+
+---
+
+## 🧩 Pemetaan 9 Pos Kuis Resmi (Database Terverifikasi)
+
+Sistem kuis telah distandarisasi dari dataset resmi kepanitiaan ke dalam 9 Pos di 6 Lantai aktif:
+
+| Lantai | Kode Pos | Nama Pos / Tema | Jenis Mini-Game | Jumlah Soal | Bobot Nilai |
+| :---: | :---: | :--- | :--- | :---: | :---: |
+| **Lt. 1** | `POS-1` | Sejarah & Nilai Luhur UNU | Tebak Kata | 5 Soal | 100 Poin |
+| **Lt. 1** | `POS-2` | Aswaja & Ke-NU-an | Pilihan Ganda | 5 Soal | 100 Poin |
+| **Lt. 2** | `POS-3` | Visi Kampus & Masa Depan | Pilihan Ganda | 5 Soal | 100 Poin |
+| **Lt. 4** | `POS-4` | Satgas PPKS & Ruang Aman | TTS (Teka-Teki Silang) | 5 Soal | 100 Poin |
+| **Lt. 4** | `POS-5` | Kampus Sehat & Bebas Narkoba | Pilihan Ganda | 5 Soal | 100 Poin |
+| **Lt. 6** | `POS-6` | Etika Akademik & Fasilitas | Pilihan Ganda | 5 Soal | 100 Poin |
+| **Lt. 6** | `POS-7` | Riset & Budaya Inovasi | Pilihan Ganda | 5 Soal | 100 Poin |
+| **Lt. 7** | `POS-8` | Technopreneur & Karier | Pilihan Ganda | 5 Soal | 100 Poin |
+| **Lt. 9** | `POS-9` | Puncak Komitmen Mahasiswa | Pilihan Ganda | 6 Soal | 100 Poin |
 
 ---
 
 ## 🚀 Panduan Menjalankan Proyek
 
-### 1. Instalasi Seluruh Workspace
+### Opsi A: Menggunakan Docker Compose (Direkomendasikan untuk Production / VPS)
 
+Orkestrasi kontainer sudah dilengkapi dengan otomatisasi migrasi database skema saat startup:
+
+```bash
+# 1. Jalankan seluruh layanan (PostgreSQL, Backend, User, Admin)
+docker compose up -d --build
+
+# 2. Jalankan seeder database resmi (Pertama kali setup)
+docker compose exec backend bun run db:seed
+
+# 3. Cek status dan log kontainer
+docker compose logs -f backend
+```
+
+| Container | Image / Dockerfile | Port Eksternal | Keterangan |
+| :--- | :--- | :---: | :--- |
+| `genius_postgres` | `postgres:16-alpine` | `5433` | Database PostgreSQL utama |
+| `genius_backend` | `docker/backend.Dockerfile` | `4001` | API Elysia/Hono + WebSocket |
+| `genius_user` | `docker/user.Dockerfile` | `4000` | Nginx + Build SPA Maba |
+| `genius_admin` | `docker/admin.Dockerfile` | `4002` | Nuxt 4 Nitro Server Panitia |
+
+---
+
+### Opsi B: Pengembangan Lokal (Local Development)
+
+#### 1. Instalasi Dependensi
 ```bash
 bun install
 ```
 
-### 2. Menjalankan Aplikasi
-
-| Service                      | Perintah              | URL Lokal               | Deskripsi                             |
-| :--------------------------- | :-------------------- | :---------------------- | :------------------------------------ |
-| **Frontend User (MABA)**     | `bun run dev:user`    | `http://localhost:3000` | Gamifikasi & eksplorasi 9 lantai      |
-| **Frontend Admin**           | `bun run dev:admin`   | `http://localhost:3002` | Dashboard monitoring panitia          |
-| **Backend API**              | `bun run dev:backend` | `http://localhost:3001` | REST API (Hono)                       |
-| **Jalankan Semua Sekaligus** | `bun run dev`         | -                       | Menjalankan seluruh workspace paralel |
-
-### 3. Inisialisasi & Seeding Database
-
+#### 2. Jalankan Layanan Lokal
 ```bash
-# Inisialisasi awal penuh (Admin, 10 Buddy, 100 Maba, 5 Regu, Ormawa, & Kuis Resmi)
+# Jalankan seluruh workspace secara paralel
+bun run dev
+
+# Atau jalankan per-layanan:
+bun run dev:user      # http://localhost:3000 (Aplikasi MABA)
+bun run dev:admin     # http://localhost:3002 (Dashboard & Portal Admin)
+bun run dev:backend   # http://localhost:3001 (API Service)
+```
+
+#### 3. Manajemen Skema & Seeder Database
+```bash
+# Sinkronkan skema TypeScript Drizzle ke database
+cd backend
+bun run db:push
+
+# Eksekusi seeder lengkap (Admin, 10 Buddy, 100 Maba, 50 Regu, 19 Ormawa, 9 Pos)
 bun run db:seed
 
-# Atau sinkronisasi kuis resmi tanpa menghapus user & riwayat transaksi:
-bun run db:seed:official
-
-# Inspeksi visual database via browser (Drizzle Studio)
+# Buka visual viewer database via browser
 bun run db:studio
 ```
 
-> 📖 **Panduan Lengkap Seeder & CRUD Kuis:** Baca [`docs/14-PANDUAN-SEED-DAN-CRUD-ADMIN-KUIS.md`](./docs/14-PANDUAN-SEED-DAN-CRUD-ADMIN-KUIS.md).
+---
 
-### 4. Build Semua Aplikasi
+## 🔐 Keamanan & Autentikasi
 
-```bash
-bun run build
-```
+* **Arsitektur Tanpa Mock Data di Production:** Seluruh proses autentikasi diverifikasi langsung ke tabel `users` PostgreSQL menggunakan perbandingan password hash `bcrypt` dan session `JWT`.
+* **Proteksi Form Login:** Halaman login bersih dari hardcode data testing untuk mencegah kebocoran kredensial di lingkungan publik.
+* **Role-Based Middleware Guard:** Rute `/buddy/*` hanya dapat dibuka oleh user dengan role `BUDDY` dan `ADMIN`, rute `/ormawa/*` hanya dapat dibuka oleh `ORMAWA_PIC`, dan rute sistem hanya dapat diakses oleh `ADMIN`.
 
 ---
 
-## 🏢 Fitur & Struktur 9 Lantai (Frontend User)
+## 📚 Indeks Dokumentasi Terstruktur (`docs/`)
 
-1. **Lantai 1:** Ground Zero • Aswaja & Etika (TTS & Tebak Kata)
-2. **Lantai 2:** Welcoming Zone & Health (Benar/Salah & Kuis Cepat)
-3. **Lantai 3:** Student Lounge & Kolaborasi (Memory Match & Tebak Posisi)
-4. **Lantai 4:** Ruang Aman & Solidaritas (Kuis Cepat & TTS)
-5. **Lantai 5:** Knowledge Sanctuary & Library (Tebak Kata & Benar/Salah)
-6. **Lantai 6:** Future Labs & Riset Kampus (Tebak Posisi & Memory Match)
-7. **Lantai 7:** Technopreneur & AI Hub (TTS & Kuis Cepat)
-8. **Lantai 8:** Integritas & Tata Kelola (Benar/Salah & Tebak Kata)
-9. **Lantai 9:** Summit & Puncak Transformasi (Master Challenge & Ikrar Upgraded You)
-
----
-
-## 🛡️ Fitur Dashboard Admin (`frontend/admin`)
-
-- 📊 **Realtime Dashboard:** Pantau jumlah pendaftar, total stempel diterbitkan, dan rata-rata kelulusan lantai.
-- 👥 **Manajemen Mahasiswa:** Pencarian NIM/Nama, verifikasi stempel, dan reset progres jika diperlukan.
-- 🏢 **Pengawasan 9 Lantai & 18 Booth:** Pantau status tiap booth mini-game secara real-time.
-- 🏆 **Leaderboard Panitia:** Rekap peringkat individu (MABA) dan kelompok untuk penentuan reward orientasi.
-- 🔐 **Passcode Authentication:** Proteksi login panitia (Default demo: `unu2026`).
+Detail spesifikasi teknis dan rationale arsitektur tersimpan di folder [`docs/`](./docs/):
+- 📑 [**01. Pemetaan Rundown 3 Hari ke Fitur Aplikasi**](./docs/01-RUNDOWN-DAN-EVENT-FLOW.md)
+- 🏗️ [**02. Arsitektur Sistem & Spesifikasi Tech Stack**](./docs/02-ARSITEKTUR-DAN-TECH-STACK.md)
+- ⚙️ [**04. Spesifikasi Fitur Utama & Logika Gamifikasi**](./docs/04-SPESIFIKASI-FITUR-UTAMA.md)
+- 📡 [**05. Spesifikasi Kontrak REST API Backend**](./docs/05-SPESIFIKASI-REST-API.md)
+- 🎮 [**08. Panduan Modul Game & Kontribusi**](./docs/08-PANDUAN-MODUL-GAME-DAN-KONTRIBUSI.md)
+- 📋 [**11. Sistem Presensi Sesi Dinamis**](./docs/11-SISTEM-PRESENSI-SESI-FLEKSIBEL.md)
+- 🏛️ [**12. Rationale Arsitektur: PostgreSQL + Drizzle ORM**](./docs/12-RATIONALE-TECH-STACK-POSTGRESQL-VS-MONGODB.md)
+- 🧩 [**13. Pemetaan Kuis Resmi & Core Gameplay dari CSV**](./docs/13-PEMETAAN-QUIZ-DATABASE-DAN-CORE-GAMEPLAY.md)
+- 🌱 [**14. Panduan Eksekusi Seeder & Manajemen CRUD Kuis Admin**](./docs/14-PANDUAN-SEED-DAN-CRUD-ADMIN-KUIS.md)
 
 ---
 
-## 📜 Lisensi
+## 📜 Lisensi & Hak Cipta
 
-Dikembangkan untuk Kepanitiaan Orientasi PKKMB 2026 Universitas Nahdlatul Ulama Yogyakarta.
+Dikembangkan untuk Panitia Orientasi Mahasiswa Baru (PKKMB) 2026 Universitas Nahdlatul Ulama Yogyakarta. Hak cipta dilindungi undang-undang.
