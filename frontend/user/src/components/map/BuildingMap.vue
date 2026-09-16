@@ -97,7 +97,6 @@ const backendBoothsForFloor = computed(() => {
 function boothPath(booth: any) {
   return `/play/floor/${booth.floorNumber}/spot/${booth.id}`;
 }
-
 const handleSelectFloor = (floorNum: number) => {
   selectedFloorNumber.value = floorNum;
   if (gameStore.soundEnabled) soundEngine.playSelect();

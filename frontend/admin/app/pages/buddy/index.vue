@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3 pb-8 font-sans">
+  <div class="space-y-3 sm:space-y-4 pb-10 font-sans px-1 sm:px-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
     <!-- Toast Notification -->
     <Transition
       enter-active-class="transition duration-200 ease-out"
@@ -26,24 +26,36 @@
         <span class="leading-tight">{{ toast.message }}</span>
       </div>
     </Transition>
-
     <!-- Compact Top Group Header -->
-    <div class="sdv-card-gold p-3 space-y-2">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="font-pixel text-xs sm:text-sm text-[#fef08a] font-bold">
+    <div class="pixel-card-gold p-3 sm:p-3.5 space-y-3 relative overflow-hidden group">
+      <!-- Decorative Background Glow -->
+      <div class="absolute -right-10 -top-10 w-32 h-32 bg-amber-500/20 rounded-full blur-2xl group-hover:bg-amber-500/30 transition-all duration-700"></div>
+      
+      <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-2 relative z-10">
+        <div class="space-y-1">
+          <h1 class="font-pixel text-sm sm:text-base text-[#fef08a] font-bold tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
             {{ currentTeamInfo.name }}
           </h1>
-          <span class="text-[10px] text-[#c4956a] font-mono">
-            Buddy: <strong class="text-white">{{ cleanBuddyName }}</strong> &bull; Rute: <strong class="text-[#f0d060]">{{ currentTeamInfo.startFloor }}</strong>
-          </span>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[10px] sm:text-[11px] text-[#c4956a] font-mono flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 bg-[#f0d060] rounded-sm shadow-[0_0_4px_#f0d060]"></span>
+              Buddy: <strong class="text-white ml-1">{{ cleanBuddyName }}</strong>
+            </span>
+            <span class="text-[10px] sm:text-[11px] text-[#c4956a] font-mono flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 bg-[#86efac] rounded-sm shadow-[0_0_4px_#86efac]"></span>
+              Rute: <strong class="text-[#86efac] ml-1">{{ currentTeamInfo.startFloor }}</strong>
+            </span>
+          </div>
         </div>
 
-        <div class="text-right shrink-0">
-          <span class="font-pixel text-xs sm:text-sm text-[#86efac] font-bold block">
+        <div class="self-start sm:self-auto text-left sm:text-right shrink-0 bg-black/40 p-2 rounded-lg border border-[#ca8a04]/50 shadow-inner backdrop-blur-sm min-w-[100px]">
+          <span class="font-pixel text-sm text-[#86efac] font-bold block drop-shadow-[0_0_5px_rgba(134,239,172,0.4)]">
             {{ currentTeamScore }} PTS
           </span>
-          <span class="text-[9px] text-[#facc15] font-mono">Rank #{{ currentTeamRank }}</span>
+          <div class="mt-1 flex items-center sm:justify-end gap-1">
+            <Trophy class="w-3 h-3 text-[#facc15]" />
+            <span class="text-[9px] text-[#facc15] font-pixel">Rank #{{ currentTeamRank }}</span>
+          </div>
         </div>
       </div>
 
@@ -105,61 +117,66 @@
       <div class="flex items-center gap-1.5 shrink-0">
         <button
           type="button"
-          :disabled="isBatchProcessing || attendedInCount >= activeMembers.length"
+          :disabled="isLocked || isBatchProcessing || attendedInCount >= activeMembers.length"
           @click="handleBatchCheckIn"
           class="rpg-btn-wood h-7 px-2.5 font-pixel text-[8px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          title="Presensi masuk seluruh anggota regu yang belum hadir (+100 XP)"
+          :title="isLocked ? 'Presensi dikunci admin' : 'Presensi masuk seluruh anggota regu yang belum hadir (+100 XP)'"
         >
-          <Sun class="h-3 w-3 text-[#facc15]" />
+          <Lock v-if="isLocked" class="w-2.5 h-2.5 text-red-400" />
+          <Sun v-else class="h-3 w-3 text-[#facc15]" />
           <span>+ MASUK SEMUA</span>
         </button>
 
         <button
           type="button"
-          :disabled="isBatchProcessing || attendedOutCount >= attendedInCount || attendedInCount === 0"
+          :disabled="isLocked || isBatchProcessing || attendedOutCount >= attendedInCount || attendedInCount === 0"
           @click="handleBatchCheckOut"
           class="rpg-btn-primary h-7 px-2.5 font-pixel text-[8px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          title="Presensi pulang seluruh anggota regu yang sudah masuk (+50 XP)"
+          :title="isLocked ? 'Presensi dikunci admin' : 'Presensi pulang seluruh anggota regu yang sudah masuk (+50 XP)'"
         >
-          <Moon class="h-3 w-3 text-[#38bdf8]" />
+          <Lock v-if="isLocked" class="w-2.5 h-2.5 text-red-400" />
+          <Moon v-else class="h-3 w-3 text-[#38bdf8]" />
           <span>+ PULANG SEMUA</span>
         </button>
       </div>
     </div>
 
-    <!-- Quick Actions Hub (Direct access to FGD, Bonus H3, Leaderboard) -->
-    <div class="grid grid-cols-3 gap-1.5 font-mono">
+    <!-- Quick Actions Hub -->
+    <div class="grid grid-cols-3 gap-1.5 sm:gap-2 font-mono">
       <NuxtLink
         to="/buddy/fgd"
-        class="sdv-card p-2 text-center flex flex-col items-center justify-center hover:border-[#f0d060] transition-all active:scale-95 group cursor-pointer"
+        class="pixel-card p-2 sm:p-2.5 text-center flex flex-col items-center justify-center hover:bg-[#2a1d13] hover:border-[#f0d060] transition-all active:scale-95 group cursor-pointer relative overflow-hidden"
       >
-        <div class="w-7 h-7 rounded-lg bg-[#271d15] border border-[#f0d060] flex items-center justify-center text-[#facc15] mb-1 group-hover:scale-105 transition-transform">
-          <FileEdit class="h-3.5 w-3.5" />
+        <div class="absolute inset-0 bg-gradient-to-t from-[#f0d060]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#120a05] border-2 border-[#f0d060]/50 flex items-center justify-center text-[#facc15] mb-1.5 group-hover:scale-110 group-hover:border-[#f0d060] transition-all group-hover:shadow-[0_0_10px_rgba(240,208,96,0.3)]">
+          <FileEdit class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
-        <span class="font-pixel text-[8px] sm:text-[9px] text-[#fef08a] block uppercase">NILAI FGD</span>
-        <span class="text-[7px] text-[#c4956a]">Rubrik Sesi</span>
+        <span class="font-pixel text-[8px] sm:text-[9.5px] text-[#fef08a] block uppercase mb-0.5 drop-shadow-md">NILAI FGD</span>
+        <span class="text-[7px] sm:text-[7.5px] text-[#c4956a] group-hover:text-[#e5b383] transition-colors line-clamp-1">Rubrik Sesi</span>
       </NuxtLink>
 
       <NuxtLink
         to="/buddy/bonus"
-        class="sdv-card-gold p-2 text-center flex flex-col items-center justify-center hover:border-[#facc15] transition-all active:scale-95 group cursor-pointer"
+        class="pixel-card-gold p-2 sm:p-2.5 text-center flex flex-col items-center justify-center hover:bg-[#2a1d13] transition-all active:scale-95 group cursor-pointer relative overflow-hidden"
       >
-        <div class="w-7 h-7 rounded-lg bg-[#281c12] border border-[#f0d060] flex items-center justify-center text-[#f0d060] mb-1 group-hover:scale-105 transition-transform">
-          <Gift class="h-3.5 w-3.5" />
+        <div class="absolute inset-0 bg-gradient-to-t from-[#facc15]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#120a05] border-2 border-[#facc15] flex items-center justify-center text-[#facc15] mb-1.5 group-hover:scale-110 transition-all glow-gold">
+          <Gift class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
-        <span class="font-pixel text-[8px] sm:text-[9px] text-[#facc15] block uppercase">BONUS H3</span>
-        <span class="text-[7px] text-[#86efac]">Apresiasi</span>
+        <span class="font-pixel text-[8px] sm:text-[9.5px] text-[#facc15] block uppercase mb-0.5 drop-shadow-md">BONUS H3</span>
+        <span class="text-[7px] sm:text-[7.5px] text-[#86efac] line-clamp-1">Apresiasi</span>
       </NuxtLink>
 
       <NuxtLink
         to="/buddy/leaderboard"
-        class="sdv-card p-2 text-center flex flex-col items-center justify-center hover:border-[#f0d060] transition-all active:scale-95 group cursor-pointer"
+        class="pixel-card p-2 sm:p-2.5 text-center flex flex-col items-center justify-center hover:bg-[#2a1d13] hover:border-[#38bdf8] transition-all active:scale-95 group cursor-pointer relative overflow-hidden"
       >
-        <div class="w-7 h-7 rounded-lg bg-[#271d15] border border-[#f0d060] flex items-center justify-center text-[#38bdf8] mb-1 group-hover:scale-105 transition-transform">
-          <Trophy class="h-3.5 w-3.5" />
+        <div class="absolute inset-0 bg-gradient-to-t from-[#38bdf8]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#120a05] border-2 border-[#38bdf8]/50 flex items-center justify-center text-[#38bdf8] mb-1.5 group-hover:scale-110 group-hover:border-[#38bdf8] transition-all group-hover:shadow-[0_0_10px_rgba(56,189,248,0.3)]">
+          <Trophy class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
-        <span class="font-pixel text-[8px] sm:text-[9px] text-[#38bdf8] block uppercase">KLASEMEN</span>
-        <span class="text-[7px] text-[#c4956a]">Leaderboard</span>
+        <span class="font-pixel text-[8px] sm:text-[9.5px] text-[#38bdf8] block uppercase mb-0.5 drop-shadow-md">KLASEMEN</span>
+        <span class="text-[7px] sm:text-[7.5px] text-[#c4956a] group-hover:text-[#e5b383] transition-colors line-clamp-1">Leaderboard</span>
       </NuxtLink>
     </div>
 
@@ -175,175 +192,212 @@
       <div class="inline-block w-5 h-5 border-2 border-[#f0d060] border-t-transparent rounded-full animate-spin mb-2"></div>
       <div>Memuat data presensi Hari {{ activeDayTab }} dari server...</div>
     </div>
-    <div v-else-if="activeMembers.length === 0" class="sdv-card p-6 text-center text-[#c4956a] font-mono text-xs">
-      Belum ada mahasiswa baru yang terdaftar di regu ini.
+    
+    <div v-else-if="activeMembers.length === 0" class="pixel-card p-6 sm:p-8 text-center text-[#e5b383] font-mono text-[10px] sm:text-xs flex flex-col items-center border-dashed border-[#5a3a18]">
+      <Users class="h-8 w-8 text-[#e5b383]/50 mb-2 mx-auto" />
+      <p>Belum ada mahasiswa baru yang terdaftar di regu ini.</p>
     </div>
 
-    <!-- Student Cards: Dual-Session Architecture (Jam Pertama & Kepulangan) -->
-    <div v-else class="space-y-2.5">
-      <div
-        v-for="m in activeMembers"
-        :key="m.id"
-        class="sdv-card p-3 space-y-2.5 transition-all"
-      >
-        <!-- Top Row: Student Profile & Current XP -->
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <!-- Avatar -->
-            <img
-              :src="m.avatarUrl || '/character-cowok-avatar.png'"
-              :alt="m.fullName"
-              class="w-9 h-9 rounded-lg border border-[#f0d060] bg-black/40 shrink-0 object-cover"
-            />
-            <div class="min-w-0 leading-tight">
-              <h3 class="font-bold text-xs sm:text-[13px] text-white truncate">
-                {{ m.fullName }}
-              </h3>
-              <div class="text-[10px] text-[#c4956a] font-mono truncate mt-0.5">
-                <span>{{ m.username }}</span>
-                <span class="mx-1">&bull;</span>
-                <span class="text-[#f0d060] font-semibold">{{ m.prodi }}</span>
-              </div>
-            </div>
-          </div>
+    <!-- Student Cards: Dual-Session Architecture with Retro Grid & Lock Mechanism -->
+    <div v-else class="space-y-3">
+      <div class="flex items-center gap-2 mb-2 pl-1">
+        <div class="w-1.5 h-1.5 bg-[#f0d060] rotate-45"></div>
+        <h2 class="font-pixel text-[9px] sm:text-[11px] lg:text-xs text-[#e5b383] uppercase tracking-wider">Daftar Mahasiswa ({{ activeMembers.length }})</h2>
+      </div>
 
-          <div class="text-right shrink-0">
-            <span class="font-pixel text-xs text-[#86efac] font-bold block">
-              {{ m.totalXp }} XP
-            </span>
-            <span class="text-[9px] text-[#38bdf8] font-mono">
-              {{ m.stampsCount }}/9 Pos
-            </span>
-          </div>
+      <!-- Locked Banner -->
+      <div v-if="isLocked" class="bg-red-950/60 border border-red-500/50 rounded-lg p-3 sm:p-4 mb-4 flex items-start sm:items-center gap-3 shadow-lg">
+        <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-red-900/80 border-2 border-red-400 flex items-center justify-center shrink-0">
+          <Lock class="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
         </div>
-
-        <!-- Middle: 2 Sesi Presensi Matching User Interface -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-[#5a3a18]">
-          <!-- Sesi 1: Jam Pertama / Masuk Pagi (+100 XP) -->
-          <div class="bg-[#170f07] p-2 rounded-lg border border-[#4a2e14] flex flex-col justify-between gap-1.5">
-            <div class="flex items-center justify-between gap-1">
-              <span class="text-[9.5px] font-bold text-white flex items-center gap-1 font-mono">
-                <Sun class="h-3 w-3 text-[#facc15]" />
-                <span>Sesi 1: Masuk Pagi</span>
-              </span>
-              <span class="font-pixel text-[8.5px] text-[#facc15] font-bold">+100 XP</span>
-            </div>
-
-            <div class="flex items-center justify-between gap-1.5 pt-1 border-t border-[#3a200f]">
-              <!-- Status Label -->
-              <div>
-                <span
-                  v-if="m.checkInTime"
-                  :class="[
-                    'text-[8.5px] font-mono px-1.5 py-0.5 rounded border block',
-                    m.attendanceStatus === 'LATE'
-                      ? 'bg-[#2a1d08] border-[#f59e0b]/50 text-[#facc15]'
-                      : 'bg-[#172513] border-[#22c55e]/50 text-[#86efac]'
-                  ]"
-                >
-                  {{ m.attendanceStatus === 'LATE' ? '⚠ Telat' : '✓ Hadir' }} ({{ m.checkInTime }})
-                </span>
-                <span
-                  v-else
-                  class="text-[8.5px] font-mono text-red-400 bg-[#2a1210] border border-red-500/40 px-1.5 py-0.5 rounded block"
-                >
-                  Belum Hadir
-                </span>
-              </div>
-
-              <!-- Button Action Sesi 1 -->
-              <div v-if="!m.checkInTime" class="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  :disabled="m.processingIn"
-                  @click="markCheckIn(m, 'ON_TIME')"
-                  class="rpg-btn-wood h-6 px-2 font-pixel text-[7.5px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40"
-                  title="Tandai Hadir Tepat Waktu (+100 XP)"
-                >
-                  <span>+ HADIR</span>
-                </button>
-                <button
-                  type="button"
-                  :disabled="m.processingIn"
-                  @click="markCheckIn(m, 'LATE')"
-                  class="h-6 px-1.5 rounded bg-[#2a1d08] border border-[#f59e0b]/60 hover:border-[#f59e0b] text-[#facc15] font-pixel text-[7px] font-bold shadow cursor-pointer active:scale-95 disabled:opacity-40"
-                  title="Tandai Terlambat (+50 XP)"
-                >
-                  <span>TELAT</span>
-                </button>
-              </div>
-              <div v-else class="text-[8px] font-mono text-[#86efac] flex items-center gap-0.5">
-                <CheckCircle2 class="h-3 w-3 text-[#22c55e]" />
-                <span>Terverifikasi</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sesi 2: Kepulangan / Check Out Sore (+50 XP) -->
-          <div class="bg-[#170f07] p-2 rounded-lg border border-[#4a2e14] flex flex-col justify-between gap-1.5">
-            <div class="flex items-center justify-between gap-1">
-              <span class="text-[9.5px] font-bold text-white flex items-center gap-1 font-mono">
-                <Moon class="h-3 w-3 text-[#38bdf8]" />
-                <span>Sesi 2: Pulang (Check-Out)</span>
-              </span>
-              <span class="font-pixel text-[8.5px] text-[#38bdf8] font-bold">+50 XP</span>
-            </div>
-
-            <div class="flex items-center justify-between gap-1.5 pt-1 border-t border-[#3a200f]">
-              <!-- Status Label -->
-              <div>
-                <span
-                  v-if="m.hasCheckedOut"
-                  class="text-[8.5px] font-mono text-[#86efac] bg-[#172513] border border-[#22c55e]/50 px-1.5 py-0.5 rounded block"
-                >
-                  ✓ Pulang ({{ m.checkOutTime }})
-                </span>
-                <span
-                  v-else-if="m.checkInTime"
-                  class="text-[8.5px] font-mono text-[#facc15] bg-[#2a1d08] border border-[#f59e0b]/50 px-1.5 py-0.5 rounded block"
-                >
-                  Belum Pulang
-                </span>
-                <span
-                  v-else
-                  class="text-[8.5px] font-mono text-[#8a6b52] bg-[#140c06] border border-[#3a200f] px-1.5 py-0.5 rounded block"
-                >
-                  Menunggu Sesi Masuk
-                </span>
-              </div>
-
-              <!-- Button Action Sesi 2 -->
-              <div v-if="!m.hasCheckedOut" class="shrink-0">
-                <button
-                  type="button"
-                  :disabled="m.processingOut"
-                  @click="markCheckOut(m)"
-                  class="rpg-btn-primary h-6 px-2.5 font-pixel text-[7.5px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40"
-                  :title="m.checkInTime ? 'Tandai Selesai & Pulang (+50 XP)' : 'Presensi Masuk & Pulang Otomatis (+150 XP)'"
-                >
-                  <span>+ PULANG</span>
-                </button>
-              </div>
-              <div v-else class="text-[8px] font-mono text-[#86efac] flex items-center gap-0.5">
-                <CheckCircle2 class="h-3 w-3 text-[#22c55e]" />
-                <span>Tuntas (+50 XP)</span>
-              </div>
-            </div>
-          </div>
+        <div class="min-w-0">
+          <h3 class="font-pixel text-[10px] sm:text-xs text-red-400 uppercase tracking-widest mb-0.5">SISTEM DIKUNCI ADMIN</h3>
+          <p class="text-[9px] sm:text-[10px] text-red-200/80 font-mono leading-tight">Penilaian FGD dan Absensi Manual telah ditutup. Hubungi pos informasi jika terdapat kendala darurat.</p>
         </div>
+      </div>
 
-        <!-- Bottom Row: FGD Assessment Link -->
-        <div class="flex items-center justify-between gap-2 pt-1 border-t border-[#3a200f] text-[10px]">
-          <span class="text-[#a08060] font-mono text-[9px]">
-            Status FGD: <strong :class="m.fgdScore ? 'text-[#86efac]' : 'text-[#facc15]'">{{ m.fgdScore ? `${m.fgdScore} XP Diperoleh` : 'Belum Dinilai' }}</strong>
-          </span>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
+        <div
+          v-for="(m, i) in activeMembers"
+          :key="m.id"
+          class="pixel-card p-2.5 sm:p-3.5 space-y-2.5 sm:space-y-3 transition-all hover:-translate-y-1 hover:shadow-xl relative overflow-hidden flex flex-col justify-between"
+          :style="`animation-delay: ${i * 50}ms`"
+        >
+          <!-- Top Row: Student Profile & XP -->
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <!-- Mini Avatar with Status Indicator -->
+              <div class="relative shrink-0 group">
+                <div class="absolute inset-0 bg-[#f0d060] rounded blur-sm opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                <img
+                  :src="m.avatarUrl || '/character-cowok-avatar.png'"
+                  :alt="m.fullName"
+                  class="relative w-8 h-8 sm:w-10 sm:h-10 rounded border-2 border-[#5a3a18] bg-[#120a05] object-cover group-hover:border-[#f0d060] transition-colors"
+                />
+                <div 
+                  class="absolute -bottom-1 -right-1 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-2 border-[#1d1611] flex items-center justify-center z-10"
+                  :class="{
+                    'bg-[#22c55e]': m.attendanceStatus === 'ON_TIME',
+                    'bg-[#f59e0b]': m.attendanceStatus === 'LATE',
+                    'bg-[#ef4444]': m.attendanceStatus === 'ABSENT' || (!m.attendanceStatus && !m.checkInTime)
+                  }"
+                ></div>
+              </div>
+              <div class="min-w-0 leading-tight">
+                <h3 class="font-bold text-xs sm:text-[13px] text-white truncate drop-shadow-md">
+                  {{ m.fullName }}
+                </h3>
+                <div class="text-[8.5px] sm:text-[10px] text-[#c4956a] font-mono truncate mt-0.5">
+                  <span class="opacity-80">{{ m.username }}</span>
+                  <span class="mx-1 sm:mx-1.5 text-[#5a3a18]">|</span>
+                  <span class="text-[#f0d060]">{{ m.prodi }}</span>
+                </div>
+              </div>
+            </div>
 
-          <NuxtLink
-            :to="`/buddy/fgd?participantId=${m.id}`"
-            class="px-2 py-1 rounded bg-[#271d15] border border-[#f0d060]/70 hover:border-[#f0d060] text-[#fef08a] font-pixel text-[8px] font-bold flex items-center gap-1 transition-all active:scale-95"
-          >
-            <span>{{ m.fgdScore ? 'EDIT NILAI FGD' : 'NILAI FGD' }}</span>
-          </NuxtLink>
+            <div class="self-start sm:self-auto bg-[#120a05] py-0.5 sm:py-1 px-1.5 sm:px-2 rounded-md border border-[#4a3624] flex items-center sm:flex-col gap-2 sm:gap-0 sm:items-end justify-between shrink-0">
+              <span class="font-pixel text-[9.5px] sm:text-[11px] text-[#86efac] font-bold block drop-shadow-[0_0_2px_rgba(134,239,172,0.5)]">
+                {{ m.totalXp }} XP
+              </span>
+              <div class="flex items-center gap-1 sm:mt-0.5">
+                <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-sm bg-[#38bdf8] inline-block opacity-80"></span>
+                <span class="text-[8px] sm:text-[8.5px] text-[#38bdf8] font-mono leading-none">
+                  {{ m.stampsCount }}/18 Pos
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Middle: 2 Sesi Presensi Matching User Interface -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-[#4a3624]/60">
+            <!-- Sesi 1: Jam Pertama / Masuk Pagi (+100 XP) -->
+            <div class="bg-[#170f07] p-2 rounded-lg border border-[#4a2e14] flex flex-col justify-between gap-1.5">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[9px] sm:text-[9.5px] font-bold text-white flex items-center gap-1 font-mono">
+                  <Sun class="h-3 w-3 text-[#facc15]" />
+                  <span>Sesi 1: Masuk Pagi</span>
+                </span>
+                <span class="font-pixel text-[8px] sm:text-[8.5px] text-[#facc15] font-bold">+100 XP</span>
+              </div>
+
+              <div class="flex items-center justify-between gap-1.5 pt-1 border-t border-[#3a200f]">
+                <!-- Status Label -->
+                <div>
+                  <span
+                    v-if="m.checkInTime"
+                    :class="[
+                      'text-[8px] sm:text-[8.5px] font-mono px-1.5 py-0.5 rounded border block',
+                      m.attendanceStatus === 'LATE'
+                        ? 'bg-[#2a1d08] border-[#f59e0b]/50 text-[#facc15]'
+                        : 'bg-[#172513] border-[#22c55e]/50 text-[#86efac]'
+                    ]"
+                  >
+                    {{ m.attendanceStatus === 'LATE' ? 'Telat' : 'Hadir' }} ({{ m.checkInTime }})
+                  </span>
+                  <span
+                    v-else
+                    class="text-[8px] sm:text-[8.5px] font-mono text-red-400 bg-[#2a1210] border border-red-500/40 px-1.5 py-0.5 rounded block"
+                  >
+                    Belum Hadir
+                  </span>
+                </div>
+
+                <!-- Button Action Sesi 1 -->
+                <div v-if="!m.checkInTime" class="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    :disabled="isLocked || m.processingIn"
+                    @click="markCheckIn(m, 'ON_TIME')"
+                    class="pixel-btn h-6 px-2 font-pixel text-[7.5px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40"
+                    :title="isLocked ? 'Sistem dikunci admin' : 'Tandai Hadir Tepat Waktu (+100 XP)'"
+                  >
+                    <Lock v-if="isLocked" class="w-2.5 h-2.5 text-red-400" />
+                    <span>+ HADIR</span>
+                  </button>
+                  <button
+                    type="button"
+                    :disabled="isLocked || m.processingIn"
+                    @click="markCheckIn(m, 'LATE')"
+                    class="h-6 px-1.5 rounded bg-[#2a1d08] border border-[#f59e0b]/60 hover:border-[#f59e0b] text-[#facc15] font-pixel text-[7px] font-bold shadow cursor-pointer active:scale-95 disabled:opacity-40"
+                    :title="isLocked ? 'Sistem dikunci admin' : 'Tandai Terlambat (+50 XP)'"
+                  >
+                    <span>TELAT</span>
+                  </button>
+                </div>
+                <div v-else class="text-[8px] font-mono text-[#86efac] flex items-center gap-0.5">
+                  <CheckCircle2 class="h-3 w-3 text-[#22c55e]" />
+                  <span>Terverifikasi</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sesi 2: Kepulangan / Check Out Sore (+50 XP) -->
+            <div class="bg-[#170f07] p-2 rounded-lg border border-[#4a2e14] flex flex-col justify-between gap-1.5">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[9px] sm:text-[9.5px] font-bold text-white flex items-center gap-1 font-mono">
+                  <Moon class="h-3 w-3 text-[#38bdf8]" />
+                  <span>Sesi 2: Pulang</span>
+                </span>
+                <span class="font-pixel text-[8px] sm:text-[8.5px] text-[#38bdf8] font-bold">+50 XP</span>
+              </div>
+
+              <div class="flex items-center justify-between gap-1.5 pt-1 border-t border-[#3a200f]">
+                <!-- Status Label -->
+                <div>
+                  <span
+                    v-if="m.hasCheckedOut"
+                    class="text-[8px] sm:text-[8.5px] font-mono text-[#86efac] bg-[#172513] border border-[#22c55e]/50 px-1.5 py-0.5 rounded block"
+                  >
+                    Pulang ({{ m.checkOutTime }})
+                  </span>
+                  <span
+                    v-else-if="m.checkInTime"
+                    class="text-[8px] sm:text-[8.5px] font-mono text-[#facc15] bg-[#2a1d08] border border-[#f59e0b]/50 px-1.5 py-0.5 rounded block"
+                  >
+                    Belum Pulang
+                  </span>
+                  <span
+                    v-else
+                    class="text-[8px] sm:text-[8.5px] font-mono text-[#8a6b52] bg-[#140c06] border border-[#3a200f] px-1.5 py-0.5 rounded block"
+                  >
+                    Menunggu Masuk
+                  </span>
+                </div>
+
+                <!-- Button Action Sesi 2 -->
+                <div v-if="!m.hasCheckedOut" class="shrink-0">
+                  <button
+                    type="button"
+                    :disabled="isLocked || m.processingOut"
+                    @click="markCheckOut(m)"
+                    class="pixel-btn h-6 px-2.5 font-pixel text-[7.5px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40"
+                    :title="isLocked ? 'Sistem dikunci admin' : (m.checkInTime ? 'Tandai Selesai & Pulang (+50 XP)' : 'Presensi Masuk & Pulang Otomatis (+150 XP)')"
+                  >
+                    <Lock v-if="isLocked" class="w-2.5 h-2.5 text-red-400" />
+                    <span>+ PULANG</span>
+                  </button>
+                </div>
+                <div v-else class="text-[8px] font-mono text-[#86efac] flex items-center gap-0.5">
+                  <CheckCircle2 class="h-3 w-3 text-[#22c55e]" />
+                  <span>Tuntas (+50 XP)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Row: FGD Assessment Link -->
+          <div class="flex items-center justify-between gap-2 pt-2 border-t border-[#4a3624]/60 text-[10px]">
+            <span class="text-[#a08060] font-mono text-[9px]">
+              Status FGD: <strong :class="m.fgdScore ? 'text-[#86efac]' : 'text-[#facc15]'">{{ m.fgdScore ? `${m.fgdScore} XP Diperoleh` : 'Belum Dinilai' }}</strong>
+            </span>
+
+            <NuxtLink
+              :to="`/buddy/fgd?participantId=${m.id}`"
+              class="px-2 py-1 rounded bg-[#271d15] border border-[#f0d060]/70 hover:border-[#f0d060] text-[#fef08a] font-pixel text-[8px] font-bold flex items-center gap-1 transition-all active:scale-95"
+            >
+              <span>{{ m.fgdScore ? 'EDIT NILAI FGD' : 'NILAI FGD' }}</span>
+            </NuxtLink>
+          </div>
         </div>
       </div>
     </div>
@@ -361,6 +415,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Sparkles,
+  Lock,
+  Users,
 } from "lucide-vue-next";
 import BuddyPosController from "@/components/buddy/BuddyPosController.vue";
 import { useAuth } from "~/composables/useAuth";
@@ -395,6 +451,7 @@ const DAYS = [
 const activeDayTab = ref<number>(1);
 const loading = ref(true);
 const isBatchProcessing = ref(false);
+const isLocked = ref(false);
 const teamData = ref<any>(null);
 const activeMembers = ref<BuddyMember[]>([]);
 const leaderboardTeams = ref<any[]>([]);
@@ -460,6 +517,10 @@ function selectDay(day: number) {
 }
 
 async function markCheckIn(member: BuddyMember, status: "ON_TIME" | "LATE" = "ON_TIME") {
+  if (isLocked.value) {
+    showToast("error", "Sistem absensi telah dikunci admin.");
+    return;
+  }
   member.processingIn = true;
   try {
     const res = await api.post<{ success: boolean; data: any; message?: string }>(
@@ -499,6 +560,10 @@ async function markCheckIn(member: BuddyMember, status: "ON_TIME" | "LATE" = "ON
 }
 
 async function markCheckOut(member: BuddyMember) {
+  if (isLocked.value) {
+    showToast("error", "Sistem absensi telah dikunci admin.");
+    return;
+  }
   member.processingOut = true;
   try {
     const res = await api.post<{ success: boolean; data: any; message?: string }>(
@@ -541,6 +606,10 @@ async function markCheckOut(member: BuddyMember) {
 }
 
 async function handleBatchCheckIn() {
+  if (isLocked.value) {
+    showToast("error", "Sistem absensi telah dikunci admin.");
+    return;
+  }
   const targets = activeMembers.value.filter((m) => !m.checkInTime).map((m) => m.id);
   if (targets.length === 0) {
     showToast("info", "Seluruh mahasiswa sudah presensi masuk.");
@@ -571,6 +640,10 @@ async function handleBatchCheckIn() {
 }
 
 async function handleBatchCheckOut() {
+  if (isLocked.value) {
+    showToast("error", "Sistem absensi telah dikunci admin.");
+    return;
+  }
   const targets = activeMembers.value
     .filter((m) => m.checkInTime && !m.hasCheckedOut)
     .map((m) => m.id);
@@ -617,8 +690,8 @@ async function loadData() {
     }
 
     if (targetTeamId) {
-      // 2. Fetch Team Details, Leaderboard, FGD Evaluations, and Attendance for activeDayTab
-      const [teamRes, lbRes, evalsRes, attRes] = await Promise.allSettled([
+      // 2. Fetch Team Details, Leaderboard, FGD Evaluations, Attendance for activeDayTab, and System Settings
+      const [teamRes, lbRes, evalsRes, attRes, settingsRes] = await Promise.allSettled([
         api.get<{ success: boolean; data: any }>(`/api/teams/${targetTeamId}`),
         api.get<{ success: boolean; data: any }>("/api/leaderboard"),
         api.get<{ success: boolean; data: any }>(
@@ -627,6 +700,7 @@ async function loadData() {
         api.get<{ success: boolean; data: any }>(
           `/api/attendance/recap?day=${activeDayTab.value}`
         ),
+        api.get<{ success: boolean; data: any }>("/api/system/settings"),
       ]);
 
       if (teamRes.status === "fulfilled" && teamRes.value.success) {
@@ -635,6 +709,10 @@ async function loadData() {
 
       if (lbRes.status === "fulfilled" && lbRes.value.success) {
         leaderboardTeams.value = lbRes.value.data?.teamLeaderboard || [];
+      }
+
+      if (settingsRes.status === "fulfilled" && settingsRes.value.success) {
+        isLocked.value = settingsRes.value.data.isBuddyEvaluationLocked || false;
       }
 
       const fgdEvalsMap = new Map<string, number>();
@@ -656,8 +734,8 @@ async function loadData() {
       >();
 
       if (attRes.status === "fulfilled" && attRes.value.success) {
-        const attendees = attRes.value.data?.attendees || [];
-        attendees.forEach((a: any) => {
+        const rawRecap = attRes.value.data || [];
+        rawRecap.forEach((a: any) => {
           if (a.participantId) {
             const inTimeStr = a.checkInAt
               ? new Date(a.checkInAt).toLocaleTimeString("id-ID", {
@@ -699,7 +777,7 @@ async function loadData() {
           checkInTime: att?.checkInTime,
           checkOutTime: att?.checkOutTime,
           hasCheckedOut: Boolean(att?.hasCheckedOut),
-          stampsCount: Math.min(9, Math.floor(Number(m.totalScore || 0) / 100)),
+          stampsCount: Math.min(18, Math.floor(Number(m.totalScore || 0) / 100)),
           fgdScore: fgdScore && fgdScore > 0 ? fgdScore : undefined,
         };
       });

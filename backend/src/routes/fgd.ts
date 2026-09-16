@@ -4,6 +4,7 @@ import { fgdEvaluations, users, teams, teamMembers, scoreTransactions } from "..
 import { eq, and, sql, desc, or } from "drizzle-orm";
 import { authMiddleware } from "../middleware/auth";
 import { broadcastLeaderboardUpdate, broadcastAdminEvent } from "../realtime";
+import { getSystemSettings } from "./system";
 
 async function handleEvaluationSubmit({
   body,
@@ -24,6 +25,11 @@ async function handleEvaluationSubmit({
   const targetId = (body.participantId || body.nim || "").trim();
   const { sessionId, rubricScores, feedbackNotes } = body;
   let teamId = body.teamId;
+
+  if (getSystemSettings().isBuddyEvaluationLocked) {
+    set.status = 403;
+    return { success: false, error: { code: "EVALUATION_LOCKED", message: "Evaluasi FGD telah dikunci oleh Admin." } };
+  }
 
   // 1. Verifikasi peserta via UUID atau NIM/Username
   const [participant] = await db

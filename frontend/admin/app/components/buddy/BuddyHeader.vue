@@ -1,34 +1,44 @@
 <template>
-  <header class="sticky top-0 z-40 bg-[#2d1b0e]/90 border-b-2 border-[#5a3a18] backdrop-blur-md px-3 sm:px-4 py-2 flex items-center justify-between shadow-lg select-none">
-    <!-- Left: Buddy Identity & Team -->
-    <div class="flex items-center gap-2.5 min-w-0">
-      <img
-        :src="buddyAvatar"
-        alt="Avatar Buddy"
-        class="h-9 w-9 rounded-lg border-2 border-[#f0d060] object-cover bg-black/40 shadow shrink-0"
-      />
+  <header class="sticky top-0 z-40 bg-[#120a05]/95 border-b-2 sm:border-b-4 border-[#5a3a18] backdrop-blur shadow-[0_8px_25px_rgba(0,0,0,0.8)] select-none">
+    <div class="max-w-6xl mx-auto w-full flex items-center justify-between px-3 sm:px-6 lg:px-8 py-2 sm:py-3">
+      <!-- Left: Buddy Identity & Team Badge -->
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="relative shrink-0 group">
+          <div class="absolute inset-0 bg-[#f0d060] rounded-lg blur-sm opacity-20 group-hover:opacity-40 transition-opacity"></div>
+          <img
+            :src="buddyAvatar"
+            alt="Avatar Buddy"
+            class="relative h-9 w-9 sm:h-10 sm:w-10 rounded-lg border-2 border-[#f0d060] object-cover bg-[#120a05] shadow-lg group-hover:border-[#facc15] transition-colors"
+          />
+          <div class="absolute -bottom-1.5 -right-1.5 bg-[#120a05] border-2 border-[#f0d060] rounded px-1.5 py-0.5 text-[6px] sm:text-[7px] font-pixel text-[#facc15] font-bold z-10 shadow-sm drop-shadow-md">
+            BUDDY
+          </div>
+        </div>
 
-      <div class="flex flex-col min-w-0 leading-tight">
-        <span class="font-pixel text-xs text-[#f0d060] font-bold truncate">
-          {{ cleanBuddyName }}
-        </span>
-        <span class="text-[10.5px] text-[#86efac] font-sans truncate font-medium flex items-center gap-1 mt-0.5">
-          <Shield class="h-3 w-3 text-[#22c55e] inline shrink-0" />
-          <span>{{ cleanTeamName }}</span>
-        </span>
+        <div class="flex flex-col min-w-0 leading-tight">
+          <div class="flex items-center gap-1.5">
+            <span class="font-pixel text-[11px] sm:text-[13px] text-[#fef08a] font-bold truncate drop-shadow-md">
+              {{ cleanBuddyName }}
+            </span>
+          </div>
+          <span class="text-[9px] sm:text-[10px] text-[#86efac] font-mono truncate font-medium flex items-center gap-1.5 mt-0.5">
+            <Shield class="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#22c55e] inline shrink-0" />
+            <span class="drop-shadow-[0_0_2px_rgba(134,239,172,0.4)]">{{ cleanTeamName }}</span>
+          </span>
+        </div>
       </div>
-    </div>
 
-    <!-- Right: Logout -->
-    <div class="flex items-center gap-1.5 shrink-0">
-      <button
-        type="button"
-        @click="confirmLogout"
-        class="h-7 w-7 rounded bg-[#2a1313] border border-red-800/80 text-red-400 hover:text-white hover:bg-red-900 flex items-center justify-center cursor-pointer transition-all active:scale-95"
-        title="Keluar"
-      >
-        <LogOut class="h-3.5 w-3.5" />
-      </button>
+      <!-- Right: Logout Only -->
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <button
+          type="button"
+          @click="confirmLogout"
+          class="pixel-btn h-7 w-7 sm:h-8 sm:w-8 bg-[#2a1210] hover:bg-[#451a1a] text-red-400 hover:text-[#fca5a5] border-[#7f1d1d] hover:border-[#b91c1c] flex items-center justify-center cursor-pointer transition-colors active:scale-95"
+          title="Keluar"
+        >
+          <LogOut class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        </button>
+      </div>
     </div>
   </header>
 </template>
