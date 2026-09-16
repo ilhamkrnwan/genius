@@ -1,75 +1,91 @@
 <template>
-  <div class="space-y-3 pb-8 font-sans">
+  <div class="space-y-4 pb-10 font-sans px-1 sm:px-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
     <!-- Compact Top Group Header -->
-    <div class="sdv-card-gold p-3 space-y-2">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="font-pixel text-xs sm:text-sm text-[#fef08a] font-bold">
+    <div class="pixel-card-gold p-3 sm:p-3.5 space-y-3 relative overflow-hidden group">
+      <!-- Decorative Background Glow -->
+      <div class="absolute -right-10 -top-10 w-32 h-32 bg-amber-500/20 rounded-full blur-2xl group-hover:bg-amber-500/30 transition-all duration-700"></div>
+      
+      <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-2 relative z-10">
+        <div class="space-y-1">
+          <h1 class="font-pixel text-sm sm:text-base text-[#fef08a] font-bold tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
             {{ currentTeamInfo.name }}
           </h1>
-          <span class="text-[10px] text-[#c4956a] font-mono">
-            Buddy: <strong class="text-white">{{ cleanBuddyName }}</strong> &bull; Rute: <strong class="text-[#f0d060]">{{ currentTeamInfo.startFloor }}</strong>
-          </span>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[10px] sm:text-[11px] text-[#c4956a] font-mono flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 bg-[#f0d060] rounded-sm shadow-[0_0_4px_#f0d060]"></span>
+              Buddy: <strong class="text-white ml-1">{{ cleanBuddyName }}</strong>
+            </span>
+            <span class="text-[10px] sm:text-[11px] text-[#c4956a] font-mono flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 bg-[#86efac] rounded-sm shadow-[0_0_4px_#86efac]"></span>
+              Rute: <strong class="text-[#86efac] ml-1">{{ currentTeamInfo.startFloor }}</strong>
+            </span>
+          </div>
         </div>
 
-        <div class="text-right shrink-0">
-          <span class="font-pixel text-xs sm:text-sm text-[#86efac] font-bold block">
+        <div class="self-start sm:self-auto text-left sm:text-right shrink-0 bg-black/40 p-2 rounded-lg border border-[#ca8a04]/50 shadow-inner backdrop-blur-sm min-w-[100px]">
+          <span class="font-pixel text-sm text-[#86efac] font-bold block drop-shadow-[0_0_5px_rgba(134,239,172,0.4)]">
             {{ currentTeamScore }} PTS
           </span>
-          <span class="text-[9px] text-[#facc15] font-mono">Rank #{{ currentTeamRank }}</span>
+          <div class="mt-1 flex items-center sm:justify-end gap-1">
+            <Trophy class="w-3 h-3 text-[#facc15]" />
+            <span class="text-[9px] text-[#facc15] font-pixel">Rank #{{ currentTeamRank }}</span>
+          </div>
         </div>
       </div>
 
       <!-- Quick Metrics Strip -->
-      <div class="grid grid-cols-3 gap-1.5 text-center font-mono text-[10px] pt-1 border-t border-[#5a3a18]">
-        <div class="bg-[#170f07] py-1 px-2 rounded border border-[#5a3a18]">
-          <span class="text-[#a08060] text-[8px] block">TOTAL MABA</span>
-          <span class="font-pixel text-xs text-white">{{ activeMembers.length }}</span>
+      <div class="grid grid-cols-3 gap-1.5 sm:gap-2 text-center font-mono text-[9px] sm:text-[10px] pt-2 border-t-2 border-[#ca8a04]/30 relative z-10">
+        <div class="bg-[#120a05] py-1.5 px-1 sm:px-2 rounded-md border-b-2 border-r-2 border-[#ca8a04]/20 shadow-inner flex flex-col items-center justify-center">
+          <span class="text-[#a08060] text-[7.5px] sm:text-[8px] block font-bold tracking-wider mb-0.5">TOTAL MABA</span>
+          <span class="font-pixel text-[11px] sm:text-xs text-white">{{ activeMembers.length }}</span>
         </div>
-        <div class="bg-[#170f07] py-1 px-2 rounded border border-[#5a3a18]">
-          <span class="text-[#a08060] text-[8px] block">HADIR</span>
-          <span class="font-pixel text-xs text-[#86efac]">{{ attendedCount }}/{{ activeMembers.length }}</span>
+        <div class="bg-[#120a05] py-1.5 px-1 sm:px-2 rounded-md border-b-2 border-r-2 border-[#22c55e]/20 shadow-inner flex flex-col items-center justify-center">
+          <span class="text-[#a08060] text-[7.5px] sm:text-[8px] block font-bold tracking-wider mb-0.5">HADIR</span>
+          <span class="font-pixel text-[11px] sm:text-xs text-[#86efac] drop-shadow-[0_0_2px_#86efac]">{{ attendedCount }}<span class="text-white/40 text-[8px] sm:text-[9px]">/{{ activeMembers.length }}</span></span>
         </div>
-        <div class="bg-[#170f07] py-1 px-2 rounded border border-[#5a3a18]">
-          <span class="text-[#a08060] text-[8px] block">FGD TUNTAS</span>
-          <span class="font-pixel text-xs text-[#38bdf8]">{{ fgdCompletedCount }}/{{ activeMembers.length }}</span>
+        <div class="bg-[#120a05] py-1.5 px-1 sm:px-2 rounded-md border-b-2 border-r-2 border-[#0ea5e9]/20 shadow-inner flex flex-col items-center justify-center">
+          <span class="text-[#a08060] text-[7.5px] sm:text-[8px] block font-bold tracking-wider mb-0.5">FGD TUNTAS</span>
+          <span class="font-pixel text-[11px] sm:text-xs text-[#38bdf8] drop-shadow-[0_0_2px_#38bdf8]">{{ fgdCompletedCount }}<span class="text-white/40 text-[8px] sm:text-[9px]">/{{ activeMembers.length }}</span></span>
         </div>
       </div>
     </div>
 
-    <!-- Quick Actions Hub (Direct access to FGD, Bonus H3, Leaderboard) -->
-    <div class="grid grid-cols-3 gap-1.5 font-mono">
+    <!-- Quick Actions Hub -->
+    <div class="grid grid-cols-3 gap-1.5 sm:gap-2 font-mono">
       <NuxtLink
         to="/buddy/fgd"
-        class="sdv-card p-2 text-center flex flex-col items-center justify-center hover:border-[#f0d060] transition-all active:scale-95 group cursor-pointer"
+        class="pixel-card p-2 sm:p-2.5 text-center flex flex-col items-center justify-center hover:bg-[#2a1d13] hover:border-[#f0d060] transition-all active:scale-95 group cursor-pointer relative overflow-hidden"
       >
-        <div class="w-7 h-7 rounded-lg bg-[#271d15] border border-[#f0d060] flex items-center justify-center text-[#facc15] mb-1 group-hover:scale-105 transition-transform">
-          <FileEdit class="h-3.5 w-3.5" />
+        <div class="absolute inset-0 bg-gradient-to-t from-[#f0d060]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#120a05] border-2 border-[#f0d060]/50 flex items-center justify-center text-[#facc15] mb-1.5 group-hover:scale-110 group-hover:border-[#f0d060] transition-all group-hover:shadow-[0_0_10px_rgba(240,208,96,0.3)]">
+          <FileEdit class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
-        <span class="font-pixel text-[8px] sm:text-[9px] text-[#fef08a] block uppercase">NILAI FGD</span>
-        <span class="text-[7px] text-[#c4956a]">Rubrik Sesi</span>
+        <span class="font-pixel text-[8px] sm:text-[9.5px] text-[#fef08a] block uppercase mb-0.5 drop-shadow-md">NILAI FGD</span>
+        <span class="text-[7px] sm:text-[7.5px] text-[#c4956a] group-hover:text-[#e5b383] transition-colors line-clamp-1">Rubrik Sesi</span>
       </NuxtLink>
 
       <NuxtLink
         to="/buddy/bonus"
-        class="sdv-card-gold p-2 text-center flex flex-col items-center justify-center hover:border-[#facc15] transition-all active:scale-95 group cursor-pointer"
+        class="pixel-card-gold p-2 sm:p-2.5 text-center flex flex-col items-center justify-center hover:bg-[#2a1d13] transition-all active:scale-95 group cursor-pointer relative overflow-hidden"
       >
-        <div class="w-7 h-7 rounded-lg bg-[#281c12] border border-[#f0d060] flex items-center justify-center text-[#f0d060] mb-1 group-hover:scale-105 transition-transform">
-          <Gift class="h-3.5 w-3.5" />
+        <div class="absolute inset-0 bg-gradient-to-t from-[#facc15]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#120a05] border-2 border-[#facc15] flex items-center justify-center text-[#facc15] mb-1.5 group-hover:scale-110 transition-all glow-gold">
+          <Gift class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
-        <span class="font-pixel text-[8px] sm:text-[9px] text-[#facc15] block uppercase">BONUS H3</span>
-        <span class="text-[7px] text-[#86efac]">Apresiasi</span>
+        <span class="font-pixel text-[8px] sm:text-[9.5px] text-[#facc15] block uppercase mb-0.5 drop-shadow-md">BONUS H3</span>
+        <span class="text-[7px] sm:text-[7.5px] text-[#86efac] line-clamp-1">Apresiasi</span>
       </NuxtLink>
 
       <NuxtLink
         to="/buddy/leaderboard"
-        class="sdv-card p-2 text-center flex flex-col items-center justify-center hover:border-[#f0d060] transition-all active:scale-95 group cursor-pointer"
+        class="pixel-card p-2 sm:p-2.5 text-center flex flex-col items-center justify-center hover:bg-[#2a1d13] hover:border-[#38bdf8] transition-all active:scale-95 group cursor-pointer relative overflow-hidden"
       >
-        <div class="w-7 h-7 rounded-lg bg-[#271d15] border border-[#f0d060] flex items-center justify-center text-[#38bdf8] mb-1 group-hover:scale-105 transition-transform">
-          <Trophy class="h-3.5 w-3.5" />
+        <div class="absolute inset-0 bg-gradient-to-t from-[#38bdf8]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#120a05] border-2 border-[#38bdf8]/50 flex items-center justify-center text-[#38bdf8] mb-1.5 group-hover:scale-110 group-hover:border-[#38bdf8] transition-all group-hover:shadow-[0_0_10px_rgba(56,189,248,0.3)]">
+          <Trophy class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
-        <span class="font-pixel text-[8px] sm:text-[9px] text-[#38bdf8] block uppercase">KLASEMEN</span>
-        <span class="text-[7px] text-[#c4956a]">Leaderboard</span>
+        <span class="font-pixel text-[8px] sm:text-[9.5px] text-[#38bdf8] block uppercase mb-0.5 drop-shadow-md">KLASEMEN</span>
+        <span class="text-[7px] sm:text-[7.5px] text-[#c4956a] group-hover:text-[#e5b383] transition-colors line-clamp-1">Leaderboard</span>
       </NuxtLink>
     </div>
 
@@ -81,95 +97,129 @@
     />
 
     <!-- Loading / Empty State -->
-    <div v-if="loading" class="sdv-card p-6 text-center text-[#c4956a] font-mono text-xs">
-      <div class="inline-block w-5 h-5 border-2 border-[#f0d060] border-t-transparent rounded-full animate-spin mb-2"></div>
-      <div>Memuat data regu dari server...</div>
+    <div v-if="loading" class="pixel-card p-6 sm:p-8 text-center text-[#e5b383] font-mono text-xs flex flex-col items-center justify-center">
+      <div class="w-8 h-8 relative mb-3">
+        <div class="absolute inset-0 border-4 border-[#f0d060]/20 rounded-full"></div>
+        <div class="absolute inset-0 border-4 border-[#f0d060] rounded-full border-t-transparent animate-spin"></div>
+      </div>
+      <div class="animate-pulse">Memuat data regu dari server...</div>
     </div>
-    <div v-else-if="activeMembers.length === 0" class="sdv-card p-6 text-center text-[#c4956a] font-mono text-xs">
-      Belum ada mahasiswa baru yang terdaftar di regu ini.
+    
+    <div v-else-if="activeMembers.length === 0" class="pixel-card p-6 sm:p-8 text-center text-[#e5b383] font-mono text-[10px] sm:text-xs flex flex-col items-center border-dashed border-[#5a3a18]">
+      <div class="text-3xl mb-2 opacity-50">👥</div>
+      <p>Belum ada mahasiswa baru yang terdaftar di regu ini.</p>
     </div>
 
-    <!-- Student Cards (Clean, Compact, Real UNU Majors) -->
-    <div v-else class="space-y-2">
-      <div
-        v-for="m in activeMembers"
-        :key="m.id"
-        class="sdv-card p-2.5 sm:p-3 space-y-2 transition-all"
-      >
+    <!-- Student Cards (Polished Retro Style) -->
+    <div v-else class="space-y-3">
+      <div class="flex items-center gap-2 mb-2 pl-1">
+        <div class="w-1.5 h-1.5 bg-[#f0d060] rotate-45"></div>
+        <h2 class="font-pixel text-[9px] sm:text-[11px] lg:text-xs text-[#e5b383] uppercase tracking-wider">Daftar Mahasiswa ({{ activeMembers.length }})</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
+        <div
+          v-for="(m, i) in activeMembers"
+          :key="m.id"
+          class="pixel-card p-2.5 sm:p-3.5 space-y-2 sm:space-y-3 transition-all hover:-translate-y-1 hover:shadow-xl relative overflow-hidden flex flex-col justify-between"
+          :style="`animation-delay: ${i * 50}ms`"
+        >
         <!-- Top Row: Name, NIM, Jurusan, XP -->
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <!-- Mini Avatar -->
-            <img
-              :src="m.avatarUrl || '/character-cowok-avatar.png'"
-              :alt="m.fullName"
-              class="w-8 h-8 rounded border border-[#f0d060] bg-black/40 shrink-0"
-            />
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-2">
+          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+            <!-- Mini Avatar with Status Indicator -->
+            <div class="relative shrink-0 group">
+              <div class="absolute inset-0 bg-[#f0d060] rounded blur-sm opacity-20 group-hover:opacity-40 transition-opacity"></div>
+              <img
+                :src="m.avatarUrl || '/character-cowok-avatar.png'"
+                :alt="m.fullName"
+                class="relative w-8 h-8 sm:w-10 sm:h-10 rounded border-2 border-[#5a3a18] bg-[#120a05] object-cover group-hover:border-[#f0d060] transition-colors"
+              />
+              <div 
+                class="absolute -bottom-1 -right-1 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-2 border-[#1d1611] flex items-center justify-center z-10"
+                :class="{
+                  'bg-[#22c55e]': m.attendanceStatus === 'ON_TIME',
+                  'bg-[#f59e0b]': m.attendanceStatus === 'LATE',
+                  'bg-[#ef4444]': m.attendanceStatus === 'ABSENT'
+                }"
+              ></div>
+            </div>
+            
             <div class="min-w-0 leading-tight">
-              <h3 class="font-bold text-xs text-white truncate">
+              <h3 class="font-bold text-[11px] sm:text-[13px] text-white truncate drop-shadow-md">
                 {{ m.fullName }}
               </h3>
-              <div class="text-[10px] text-[#c4956a] font-mono truncate">
-                <span>{{ m.username }}</span>
-                <span class="mx-1">&bull;</span>
-                <span class="text-[#f0d060] font-semibold">{{ m.prodi }}</span>
+              <div class="text-[8.5px] sm:text-[10px] text-[#c4956a] font-mono truncate mt-0.5">
+                <span class="opacity-80">{{ m.username }}</span>
+                <span class="mx-1 sm:mx-1.5 text-[#5a3a18]">|</span>
+                <span class="text-[#f0d060]">{{ m.prodi }}</span>
               </div>
             </div>
           </div>
 
-          <div class="text-right shrink-0">
-            <span class="font-pixel text-[11px] text-[#86efac] font-bold block">
+          <div class="self-start sm:self-auto bg-[#120a05] py-0.5 sm:py-1 px-1.5 sm:px-2 rounded-md border border-[#4a3624] flex items-center sm:flex-col gap-2 sm:gap-0 sm:items-end justify-between w-full sm:w-auto">
+            <span class="font-pixel text-[9.5px] sm:text-[11px] text-[#86efac] font-bold block drop-shadow-[0_0_2px_rgba(134,239,172,0.5)]">
               {{ m.totalXp }} XP
             </span>
-            <span class="text-[9px] text-[#38bdf8] font-mono">
-              {{ m.stampsCount }}/18 Pos
-            </span>
+            <div class="flex items-center gap-1 sm:mt-0.5">
+              <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-sm bg-[#38bdf8] inline-block opacity-80"></span>
+              <span class="text-[8px] sm:text-[8.5px] text-[#38bdf8] font-mono leading-none">
+                {{ m.stampsCount }}/18
+              </span>
+            </div>
           </div>
         </div>
 
+        <!-- Divider -->
+        <div class="h-px w-full bg-gradient-to-r from-[#4a3624]/20 via-[#4a3624] to-[#4a3624]/20 sm:from-transparent sm:opacity-50"></div>
+
         <!-- Status & Direct Actions Row -->
-        <div class="flex items-center justify-between gap-2 pt-1 border-t border-[#5a3a18]">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <!-- Status Pill -->
           <div>
-            <span
+            <div
               v-if="m.attendanceStatus === 'ON_TIME'"
-              class="text-[9px] font-mono text-[#86efac] bg-[#172513] border border-[#22c55e]/50 px-1.5 py-0.5 rounded"
+              class="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-[9px] font-mono text-[#86efac] bg-[#172513] border border-[#22c55e]/30 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded shadow-inner"
             >
-              ✓ Hadir ({{ m.checkInTime }})
-            </span>
-            <span
+              <span class="text-[#22c55e]">✓</span> Hadir ({{ m.checkInTime }})
+            </div>
+            <div
               v-else-if="m.attendanceStatus === 'LATE'"
-              class="text-[9px] font-mono text-[#facc15] bg-[#2a1d08] border border-[#f59e0b]/50 px-1.5 py-0.5 rounded"
+              class="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-[9px] font-mono text-[#facc15] bg-[#2a1d08] border border-[#f59e0b]/30 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded shadow-inner"
             >
-              ⚠ Telat ({{ m.checkInTime }})
-            </span>
-            <span
+              <span class="text-[#f59e0b]">⚠</span> Telat ({{ m.checkInTime }})
+            </div>
+            <div
               v-else
-              class="text-[9px] font-mono text-red-400 bg-[#2a1210] border border-red-500/40 px-1.5 py-0.5 rounded"
+              class="flex items-center gap-1 sm:gap-1.5 text-[8px] sm:text-[9px] font-mono text-red-400 bg-[#2a1210] border border-red-500/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded shadow-inner"
             >
-              Belum Hadir
-            </span>
+              <span class="text-red-500">✗</span> Belum Hadir
+            </div>
           </div>
 
           <!-- Buttons -->
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               v-if="!m.checkInTime"
               type="button"
               @click="markManualAttendance(m)"
-              class="rpg-btn-wood h-7 px-2 font-pixel text-[8px] font-bold flex items-center gap-1 shadow cursor-pointer"
+              class="pixel-btn h-6 sm:h-7 px-2 sm:px-2.5 bg-[#4a3624] hover:bg-[#5a3a18] text-[#f0e0c0] font-pixel text-[7.5px] sm:text-[8px] font-bold flex items-center gap-1 transition-colors"
             >
-              <span>+ HADIR</span>
+              <span class="text-[#86efac]">+</span> HADIR
             </button>
 
             <NuxtLink
               :to="`/buddy/fgd?participantId=${m.id}`"
-              class="rpg-btn-primary h-7 px-2 font-pixel text-[8px] font-bold flex items-center gap-1 shadow cursor-pointer"
+              class="pixel-btn h-6 sm:h-7 px-2 sm:px-2.5 font-pixel text-[7.5px] sm:text-[8px] font-bold flex items-center gap-1 sm:gap-1.5 transition-colors"
+              :class="m.fgdScore ? 'bg-[#1e3a29] hover:bg-[#284a37] text-[#86efac] border-[#22c55e]' : 'bg-[#b45309] hover:bg-[#d97706] text-white'"
             >
-              <span>{{ m.fgdScore ? `FGD: ${m.fgdScore} XP` : 'NILAI FGD' }}</span>
+              <FileEdit v-if="!m.fgdScore" class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+              <span class="text-[#86efac]" v-else>✓</span>
+              <span>{{ m.fgdScore ? `FGD: ${m.fgdScore}` : 'NILAI FGD' }}</span>
             </NuxtLink>
           </div>
         </div>
+      </div>
       </div>
     </div>
   </div>

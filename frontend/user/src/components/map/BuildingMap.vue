@@ -89,14 +89,12 @@ function boothPath(booth: any) {
   return `/play/floor/${booth.floorNumber}/spot/${booth.id}`;
 }
 
-=======
 watch(selectedFloorNumber, () => {
   nextTick(() => {
     bouncePop('.map-floor-detail', { duration: 0.35 });
   });
 });
 
->>>>>>> origin/main
 const handleSelectFloor = (floorNum: number) => {
   selectedFloorNumber.value = floorNum;
   if (gameStore.soundEnabled) soundEngine.playSelect();
