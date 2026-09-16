@@ -1,78 +1,48 @@
-# 📋 BACKLOG & HANDOFF NOTES — GENIUS UNU 2026
+# 📋 BACKLOG & STATUS IMPLEMENTASI — GENIUS UNU 2026
 
-Dokumen ini berisi catatan teknis dan daftar pekerjaan yang perlu diselesaikan oleh tim/anggota yang bertugas.
-Jangan hapus catatan ini sampai item terkait selesai diimplementasi dan di-merge ke main branch.
-
----
-
-## 🔐 [BACKEND] Role `ORMAWA_PIC` & Autentikasi Dashboard Scanner
-
-**PIC Teknis:** Tim Backend (Fauzan / yang bertugas di backend)
-**Status:** ⏳ PENDING — Menunggu implementasi
-
-### Latar Belakang
-Berdasarkan hasil rapat (07 Sept 2026), mekanisme scan Ormawa Expo **diubah**:
-- ❌ **LAMA:** Mahasiswa Baru (Maba) scan QR dari stan Ormawa.
-- ✅ **BARU:** PIC/Admin Ormawa scan QR milik Maba (berisi NIM). Maba hanya perlu menunjukkan layar HP mereka.
-
-### Yang Perlu Dikerjakan Backend
-
-#### 1. Tambah Role `ORMAWA_PIC` ke Skema Database
-Di berkas [`backend/src/db/schema.ts`](./backend/src/db/schema.ts), ubah enum `userRoleEnum`:
-```typescript
-// SEBELUM:
-export const userRoleEnum = pgEnum("user_role", ["ADMIN", "BUDDY", "PARTICIPANT"]);
-
-// SESUDAH:
-export const userRoleEnum = pgEnum("user_role", ["ADMIN", "BUDDY", "PARTICIPANT", "ORMAWA_PIC"]);
-```
-Kemudian jalankan migrasi: `bun run db:push` atau `drizzle-kit push`.
-
-#### 2. Tambah Kolom `logoUrl` & `picUserId` ke Tabel `ormawaBooths`
-Di [`backend/src/db/schema.ts`](./backend/src/db/schema.ts), tambahkan dua kolom ke tabel `ormawaBooths`:
-```typescript
-logoUrl: text("logo_url"),               // URL logo Ormawa/UKM untuk ditampilkan di frontend
-picUserId: uuid("pic_user_id").references(() => users.id),  // FK ke akun ORMAWA_PIC yang bertugas di stan ini
-```
-
-#### 3. Buat Endpoint Baru: `POST /api/ormawa/scan-maba`
-Endpoint ini dipanggil oleh akun `ORMAWA_PIC` melalui Dashboard Scanner Admin.
-- **Auth:** Hanya role `ORMAWA_PIC` (dan `ADMIN`) yang bisa memanggil endpoint ini.
-- **Request Body:** `{ mabaNim: string }` atau `{ mabaQrToken: string }` (QR token berisi NIM maba)
-- **Logic:**
-  1. Cari user Maba berdasarkan `username` (NIM).
-  2. Tentukan booth ID berdasarkan `picUserId` dari user yang sedang login (`user.userId`).
-  3. Cek duplikat scan (`ormawaScans` tabel — unique constraint `participantId + boothId`).
-  4. Cek capping (maksimal 10 stan per Maba yang memberikan XP).
-  5. Insert ke `ormawaScans`, tambah `scoreTransactions` jika berhak XP.
-  6. Broadcast `ORMAWA_VISIT_RECORDED` ke WebSocket admin.
-- **Response:** `{ success, message, data: { maba, xpEarned, totalScanned, isCapped } }`
-
-#### 4. Buat Akun Seed untuk PIC Ormawa
-Di [`backend/src/db/seed.ts`](./backend/src/db/seed.ts), tambahkan contoh akun PIC per stan:
-```typescript
-// Contoh: 1 akun ORMAWA_PIC per stan (username = kode stan, password = genius2026)
-{ username: "pic-pagar-nusa", fullName: "PIC Pagar Nusa", role: "ORMAWA_PIC", ... }
-```
-Dan hubungkan `picUserId` di tabel `ormawaBooths`.
-
-#### 5. Update Auth Middleware
-Pastikan `frontend/admin` bisa login dengan role `ORMAWA_PIC` dan diarahkan langsung ke halaman `/ormawa/scan`.
+Dokumen ini melacak catatan teknis dan status pekerjaan backlog monorepo. Seluruh tugas fundamental dan handoff fitur sebelumnya telah berhasil diimplementasikan dan diuji di lingkungan produksi.
 
 ---
 
-## 📱 [FRONTEND USER] QR Code Generator untuk Maba
+## ✅ Tugas yang Telah Selesai Diimplementasikan (Completed Tasks)
 
-**Status:** ✅ SELESAI (lihat `OrmawaExpoView.vue`)
+### 1. 🔐 [BACKEND] Role `ORMAWA_PIC` & Autentikasi Standalone Portal
+* **Status:** ✅ SELESAI & TERUJI
+* **Implementasi:**
+  - Enum `userRoleEnum` memuat role `'ORMAWA_PIC'`.
+  - Kolom `pic_user_id` dan `logo_url` aktif pada tabel `ormawa_booths`.
+  - Endpoint `POST /api/ormawa/scan-maba` dan `POST /api/ormawa/scan` aktif dengan validasi otentikasi role `ORMAWA_PIC`.
+  - Seeder otomatis membuat 19 akun login resmi PIC Ormawa (`pic_<kode_ormawa>`).
+  - Proteksi form login: data testing dan kredensial hardcode telah dibersihkan total.
 
-QR Code Maba sudah ditampilkan di halaman `/ormawa` berisi NIM mahasiswa. Format QR: `GENIUS-MABA-{NIM}`.
+### 2. 📱 [FRONTEND USER] QR Code Mahasiswa Baru & Minat Ormawa
+* **Status:** ✅ SELESAI & TERUJI
+* **Implementasi:**
+  - QR Code MABA dinamis ditampilkan di `OrmawaExpoView.vue` untuk discan oleh PIC Stan.
+  - Formulir pendaftaran minat bergabung Ormawa (+25 XP) terhubung ke tabel `ormawa_interests`.
+  - Mini-game TTS diperbarui menggunakan Sparse CSS Grid 9 kolom yang responsif di mobile.
+
+### 3. 🖥️ [FRONTEND ADMIN] Portal Mandiri PIC Ormawa & Game Master Buddy
+* **Status:** ✅ SELESAI & TERUJI
+* **Implementasi:**
+  - Dedicated Portal PIC Stan Ormawa (`/ormawa/portal`, `/ormawa/portal/visitors`, `/ormawa/scan`) dengan layout mandiri tanpa sidebar admin.
+  - Dedicated Mobile-First Buddy RPG Portal (`/buddy`, `/buddy/fgd`, `/buddy/bonus`, `/buddy/leaderboard`) untuk penilaian rubrik FGD dan monitoring bimbingan.
+  - Standarisasi data ke 9 Pos Resmi Kuis PKKMB di 6 Lantai aktif.
 
 ---
 
-## 🖥️ [FRONTEND ADMIN] Dashboard Scanner PIC Ormawa
+## 📌 Catatan Operasional & Pemeliharaan (Maintenance Notes)
 
-**Status:** ✅ SELESAI (lihat `frontend/admin/pages/ormawa/scan.vue`)
+1. **Sinkronisasi Database di VPS:**
+   * Setiap kali ada perubahan skema Drizzle ORM, container backend otomatis mengeksekusi `bun run db:push` saat startup container.
+   * Seeder data resmi dijalankan manual satu kali via:
+     ```bash
+     docker compose exec backend bun run db:seed
+     ```
 
-Dashboard scanner sudah dibuat di halaman `/ormawa/scan`. Namun saat ini menggunakan endpoint placeholder karena endpoint `POST /api/ormawa/scan-maba` belum ada.
-
-**Catatan untuk Backend:** Setelah endpoint `POST /api/ormawa/scan-maba` selesai, update URL fetch di `pages/ormawa/scan.vue` dari `'/ormawa/scan'` menjadi `'/ormawa/scan-maba'` dan sesuaikan payload `{ qrToken }` → `{ mabaNim }` atau `{ mabaQrToken }`.
+2. **Pembersihan Cache Pasca-Deploy:**
+   * Jika tampilan browser belum terupdate, jalankan:
+     ```bash
+     docker compose build --no-cache user admin
+     docker compose up -d --force-recreate user admin
+     ```
