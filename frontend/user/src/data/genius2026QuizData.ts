@@ -622,7 +622,7 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
     questions: [],
     ttsContent: {
       gridRows: 8,
-      gridCols: 14,
+      gridCols: 9,
       clues: [
         {
           id: 'tts-p4-1',
@@ -640,8 +640,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
           direction: 'across',
           clue: 'Kondisi tubuh yang bergantung terus-menerus pada suatu zat.',
           answer: 'KETAGIHAN',
-          row: 6,
-          col: 5,
+          row: 0,
+          col: 0,
           score: 20,
         },
         {
@@ -650,18 +650,18 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
           direction: 'down',
           clue: 'Lawan kata "kecanduan", kondisi bebas dari pengaruh zat terlarang.',
           answer: 'BEBAS',
-          row: 1,
+          row: 3,
           col: 6,
           score: 20,
         },
         {
           id: 'tts-p4-4',
           number: 4,
-          direction: 'down',
+          direction: 'across',
           clue: 'Tempat rehabilitasi bagi pengguna narkoba biasa disebut panti?',
           answer: 'REHAB',
-          row: 0,
-          col: 2,
+          row: 6,
+          col: 3,
           score: 20,
         },
         {
@@ -670,8 +670,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
           direction: 'down',
           clue: 'Sikap menolak dengan tegas terhadap penyalahgunaan narkoba?',
           answer: 'TOLAK',
-          row: 2,
-          col: 5,
+          row: 0,
+          col: 2,
           score: 20,
         },
       ],
@@ -965,7 +965,7 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
     stampColor: '#D97706',
     badgeTag: 'Navigasi Gedung',
     story:
-      'Setelah menjelajahi seluruh gedung 9 lantai UNU Yogyakarta, seberapa kenal kamu dengan letak fasilitas kampus? Tebak di lantai berapa lokasi foto sudut gedung berikut berada!',
+      'Setelah menjelajahi seluruh gedung UNU Yogyakarta, seberapa kenal kamu dengan letak fasilitas kampus? Tebak di lantai berapa lokasi foto sudut gedung berikut berada!',
     questions: [],
     tebakPosisiContent: {
       items: [

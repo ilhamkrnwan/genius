@@ -12,8 +12,9 @@ import {
   PhListChecks,
   PhFlag,
   PhQrCode,
-  PhSpinner,
   PhWarning,
+  PhHeart,
+  PhBookOpen,
   PhArrowLeft,
   PhSpeakerHigh,
   PhSpeakerSimpleSlash,
@@ -21,15 +22,11 @@ import {
   PhCalendarCheck,
   PhMapTrifold,
   PhIdentificationBadge,
-  PhHeart,
-  PhBookOpen,
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
 import { ORMAWA_STANDS } from '@/data/ormawaData';
 import { OrmawaStand } from '@/types/ormawa';
-import OrmawaQrModal from '@/components/ormawa/OrmawaQrModal.vue';
 import OrmawaInterestModal from '@/components/ormawa/OrmawaInterestModal.vue';
-import OrmawaStampGrid from '@/components/ormawa/OrmawaStampGrid.vue';
 import { soundEngine } from '@/lib/sound';
 import { api } from '@/lib/api';
 import { AVATAR_OPTIONS } from '@/data/mockData';
@@ -303,13 +300,17 @@ const getCategoryLabel = (category: string) => {
 <template>
   <div
     class="relative w-full min-h-[100dvh] overflow-y-auto font-pixel text-[#fbf6e9] select-none flex flex-col justify-between py-3 sm:py-5 px-3 sm:px-6"
-    style="
-      background-image: url('/games/background.png');
-      background-size: cover;
-      background-position: center bottom;
-      image-rendering: pixelated;
-    "
   >
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
     <!-- Dark Vignette Overlay -->
     <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
 
@@ -374,7 +375,7 @@ const getCategoryLabel = (category: string) => {
         <span>{{ apiError }}</span>
       </div>
 
-      <!-- 1. STATUS CARD MAHASISWA & PASPOR EXPO (Format Sama Persis Presensi) -->
+      <!-- 1. STATUS CARD MAHASISWA & PROFIL EXPO (Format Sama Persis Presensi) -->
       <section class="bg-[#19110a]/95 backdrop-blur-md border border-[#8b6f4e] rounded-xl p-3 shadow-lg space-y-2 text-left">
         <!-- Row A: Mahasiswa Info & Total Kunjungan -->
         <div class="flex items-center justify-between gap-2.5 pb-2 border-b border-[#4a2e14]/70">
@@ -404,14 +405,14 @@ const getCategoryLabel = (category: string) => {
           </div>
         </div>
 
-        <!-- Row B: Action Strip Buka QR Paspor -->
+        <!-- Row B: Action Strip Buka QR Profil -->
         <div class="flex items-center justify-between gap-2 bg-[#120a05]/70 rounded-lg px-2.5 py-1.5 border border-[#5a3a18]/60">
           <div class="flex items-center gap-2 min-w-0 flex-1">
             <div class="w-5 h-5 rounded-md bg-[#ca8a04]/20 border border-[#facc15] flex items-center justify-center text-[#facc15] shrink-0">
               <PhQrCode :size="13" weight="bold" />
             </div>
             <div class="min-w-0 flex-1">
-              <span class="text-[7.5px] text-[#a08060] font-sans block leading-none">Paspor Digital Mahasiswa:</span>
+              <span class="text-[7.5px] text-[#a08060] font-sans block leading-none">Profil Digital Mahasiswa:</span>
               <span class="text-[10px] sm:text-[11px] font-bold text-white block leading-tight truncate mt-0.5">
                 Tunjukkan QR ke Petugas Stan
               </span>
@@ -424,7 +425,7 @@ const getCategoryLabel = (category: string) => {
             class="text-[8px] sm:text-[8.5px] font-pixel text-[#140e08] font-bold bg-[#facc15] hover:bg-white px-2.5 py-1 rounded-lg transition-all cursor-pointer active:scale-95 shadow flex items-center gap-1 shrink-0"
           >
             <PhQrCode :size="11" weight="bold" />
-            <span>BUKA QR PASPOR</span>
+            <span>BUKA QR PROFIL</span>
           </button>
         </div>
 
@@ -600,12 +601,12 @@ const getCategoryLabel = (category: string) => {
         </RouterLink>
         <span>•</span>
         <RouterLink
-          to="/paspor"
+          to="/profile"
           @click="() => safeSound(() => soundEngine.playClick?.())"
           class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
         >
           <PhIdentificationBadge :size="12" />
-          <span>PASPOR</span>
+          <span>PROFIL</span>
         </RouterLink>
       </div>
     </footer>
@@ -622,7 +623,7 @@ const getCategoryLabel = (category: string) => {
         <div class="flex items-center justify-between border-b border-[#3d2714] pb-2.5">
           <div class="flex items-center gap-1.5 text-xs font-pixel text-[#facc15]">
             <PhQrCode :size="16" weight="fill" />
-            <span>PASPOR QR MAHASISWA</span>
+            <span>QR PROFIL MAHASISWA</span>
           </div>
           <button
             type="button"
@@ -652,7 +653,7 @@ const getCategoryLabel = (category: string) => {
         </div>
 
         <p class="text-xs text-[#e6d5bc]/90 font-sans leading-relaxed">
-          Tunjukkan QR Code ini ke petugas stan Ormawa/UKM Lantai 6 untuk dipindai (scan) agar lencana dan bonus XP langsung tercatat di paspormu!
+          Tunjukkan QR Code ini ke petugas stan Ormawa/UKM Lantai 6 untuk dipindai (scan) agar lencana dan bonus XP langsung tercatat di profilmu!
         </p>
 
         <button
@@ -708,7 +709,7 @@ const getCategoryLabel = (category: string) => {
           class="flex items-center gap-2 p-2.5 bg-[#142314] border border-[#22c55e] rounded-xl text-xs font-mono text-[#86efac]"
         >
           <PhCheckCircle :size="16" weight="fill" class="text-[#4ade80] shrink-0" />
-          <span>Kamu sudah mengunjungi stan ini! Lencana sudah tercatat di paspor.</span>
+          <span>Kamu sudah mengunjungi stan ini! Lencana sudah tercatat di profil.</span>
         </div>
 
         <!-- Location -->
@@ -779,24 +780,24 @@ const getCategoryLabel = (category: string) => {
           </div>
         </div>
 
-        <!-- CTA: Petunjuk Cara Mendapat Lencana -->
+        <!-- CTA: Petunjuk Cara Mendapat Lencana & Berminat -->
         <div class="pt-2 border-t border-[#3d2714] space-y-2">
           <p class="text-[10.5px] text-[#facc15]/80 font-mono text-center">
-            Datangi stan ini di Hall Lantai 6 & tunjukkan QR Code paspormu ke petugas untuk klaim lencana!
+            Datangi stan ini di Hall Lantai 6 & tunjukkan QR Code profilmu ke petugas untuk klaim lencana!
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
               v-if="!gameStore.isStandInterested(activeStandDetail.id)"
               type="button"
               @click="openInterestModal"
-              class="w-full h-9 bg-gradient-to-r from-[#166534] to-[#14532d] hover:from-[#14532d] hover:to-[#064e3b] text-[#86efac] font-pixel text-[10px] rounded border border-[#166534] shadow-[2px_2px_0px_#064e3b] active:translate-y-0.5 active:shadow-none cursor-pointer transition-all flex items-center justify-center gap-1"
+              class="w-full py-2 bg-gradient-to-r from-[#166534] to-[#14532d] hover:from-[#14532d] hover:to-[#064e3b] text-[#86efac] font-pixel text-[10px] rounded-xl border border-[#166534] shadow active:scale-98 cursor-pointer transition-all flex items-center justify-center gap-1.5"
             >
               <PhHeart weight="fill" :size="14" />
               <span>BERMINAT GABUNG</span>
             </button>
             <div 
               v-else 
-              class="w-full h-9 bg-[#142314] text-[#86efac] font-pixel text-[10px] rounded border border-[#22c55e] flex items-center justify-center gap-1 cursor-not-allowed opacity-80"
+              class="w-full py-2 bg-[#142314] text-[#86efac] font-pixel text-[10px] rounded-xl border border-[#22c55e] flex items-center justify-center gap-1.5 cursor-not-allowed opacity-80"
             >
               <PhCheckCircle :size="14" weight="fill" />
               <span>SUDAH BERMINAT</span>
@@ -805,7 +806,7 @@ const getCategoryLabel = (category: string) => {
             <button
               type="button"
               @click="closeStandDetail"
-              class="w-full h-9 bg-[#2a1d12] hover:bg-[#3d2919] text-amber-200 font-pixel text-[10px] rounded border border-[#6b4724] shadow-[2px_2px_0px_#1a1109] active:translate-y-0.5 active:shadow-none cursor-pointer transition-all"
+              class="w-full py-2 bg-[#2a1a0e] hover:bg-[#3d2714] text-[#facc15] font-pixel text-xs rounded-xl border border-[#8b6f4e] cursor-pointer transition-all active:scale-98 shadow"
             >
               TUTUP
             </button>
@@ -815,11 +816,6 @@ const getCategoryLabel = (category: string) => {
     </div>
 
     <!-- Modals -->
-    <OrmawaQrModal 
-      v-model="isQrModalOpen"
-      :standName="'Ormawa Pilihan'" 
-    />
-
     <OrmawaInterestModal
       v-if="activeStandDetail"
       v-model="isInterestModalOpen"

@@ -70,6 +70,11 @@ const validCellsMap = computed(() => {
   return map;
 });
 
+const crosswordCells = computed(() => Object.entries(validCellsMap.value).map(([key, cell]) => {
+  const [row, col] = key.split('-').map(Number);
+  return { key, row, col, cell };
+}));
+
 const handleCellChange = (r: number, c: number, value: string) => {
   if (isSubmitted.value) return;
   const char = value.slice(-1).toUpperCase();
@@ -168,52 +173,49 @@ const currentScore = computed(() => {
       <div class="bg-[#170f07] p-1.5 sm:p-2.5 border border-[#5a3a18] rounded-xl shadow-inner inline-block overflow-x-auto max-w-full">
         <div
           class="grid gap-1 select-none"
-          :style="{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }"
+          :style="{
+            gridTemplateColumns: `repeat(${cols}, minmax(1.75rem, 1fr))`,
+            gridTemplateRows: `repeat(${rows}, 1.75rem)`,
+          }"
         >
-          <template v-for="r in Array.from({ length: rows }).map((_, i) => i)" :key="`row-${r}`">
-            <template v-for="c in Array.from({ length: cols }).map((_, i) => i)" :key="`cell-${r}-${c}`">
-              <div
-                v-if="!validCellsMap[`${r}-${c}`]"
-                class="w-7 h-7 sm:w-8 sm:h-8 bg-[#120b06] border border-[#2d1b0e]/60 rounded opacity-30"
-              />
-              <div
-                v-else
-                @click="() => {
-                  if (validCellsMap[`${r}-${c}`].clueIds.length > 0) {
-                    activeClueId = validCellsMap[`${r}-${c}`].clueIds[0];
-                    if (gameStore.soundEnabled) soundEngine.playSelect();
-                  }
-                }"
-                :class="[
-                  'relative w-7 h-7 sm:w-8 sm:h-8 rounded border transition-all flex items-center justify-center cursor-pointer',
-                  activeClueId && validCellsMap[`${r}-${c}`].clueIds.includes(activeClueId)
-                    ? 'bg-[#3d2b1e] border-[#f0d060] shadow-[0_0_6px_rgba(240,208,96,0.5)]'
-                    : 'bg-[#281c12] border-[#5a3a18] hover:border-[#8b6f4e]'
-                ]"
-              >
-                <span
-                  v-if="validCellsMap[`${r}-${c}`].clueNumber"
-                  class="absolute top-0.5 left-0.5 text-[7px] font-pixel text-[#f0d060] leading-none pointer-events-none"
-                >
-                  {{ validCellsMap[`${r}-${c}`].clueNumber }}
-                </span>
+          <div
+            v-for="{ key, row, col, cell } in crosswordCells"
+            :key="key"
+            :style="{ gridColumn: col + 1, gridRow: row + 1 }"
+            @click="() => {
+              if (cell.clueIds.length > 0) {
+                activeClueId = cell.clueIds[0];
+                if (gameStore.soundEnabled) soundEngine.playSelect();
+              }
+            }"
+            :class="[
+              'relative w-7 h-7 sm:w-8 sm:h-8 rounded border transition-all flex items-center justify-center cursor-pointer',
+              activeClueId && cell.clueIds.includes(activeClueId)
+                ? 'bg-[#3d2b1e] border-[#f0d060] shadow-[0_0_6px_rgba(240,208,96,0.5)]'
+                : 'bg-[#281c12] border-[#5a3a18] hover:border-[#8b6f4e]'
+            ]"
+          >
+            <span
+              v-if="cell.clueNumber"
+              class="absolute top-0.5 left-0.5 text-[7px] font-pixel text-[#f0d060] leading-none pointer-events-none"
+            >
+              {{ cell.clueNumber }}
+            </span>
 
-                <input
-                  type="text"
-                  maxlength="1"
-                  :value="gridAnswers[`${r}-${c}`] || ''"
-                  :disabled="isSubmitted"
-                  @input="(e) => handleCellChange(r, c, (e.target as HTMLInputElement).value)"
-                  @focus="() => {
-                    if (validCellsMap[`${r}-${c}`].clueIds.length > 0) {
-                      activeClueId = validCellsMap[`${r}-${c}`].clueIds[0];
-                    }
-                  }"
-                  class="w-full h-full text-center bg-transparent font-pixel text-xs sm:text-sm font-bold text-white uppercase outline-none"
-                />
-              </div>
-            </template>
-          </template>
+            <input
+              type="text"
+              maxlength="1"
+              :value="gridAnswers[key] || ''"
+              :disabled="isSubmitted"
+              @input="(e) => handleCellChange(row, col, (e.target as HTMLInputElement).value)"
+              @focus="() => {
+                if (cell.clueIds.length > 0) {
+                  activeClueId = cell.clueIds[0];
+                }
+              }"
+              class="w-full h-full text-center bg-transparent font-pixel text-xs sm:text-sm font-bold text-white uppercase outline-none"
+            />
+          </div>
         </div>
       </div>
     </div>

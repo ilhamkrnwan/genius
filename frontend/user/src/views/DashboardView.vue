@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Navbar from '@/components/layout/Navbar.vue';
 import CrtScanlines from '@/components/layout/CrtScanlines.vue';
@@ -22,8 +22,8 @@ const levelInfo = computed(() => {
 });
 
 const progressPercent = computed(() => {
-  // Max floors = 9
-  return Math.min((completedFloorsCount.value / 9) * 100, 100);
+  // Max floors untuk pos kuis resmi = 6
+  return Math.min((completedFloorsCount.value / 6) * 100, 100);
 });
 
 const avatarImage = computed(() => {
@@ -33,15 +33,31 @@ const avatarImage = computed(() => {
   return '/character-cowok-avatar.png';
 });
 
+onMounted(() => {
+  gameStore.syncWithServer();
+});
+
 
 </script>
 
 <template>
-  <div class="min-h-[100dvh] flex flex-col bg-[#2d1b0e] text-[#f0e0c0] font-sans">
+  <div class="relative min-h-[100dvh] flex flex-col text-[#f0e0c0] font-sans">
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
+    <!-- Dark Vignette Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
     <CrtScanlines />
-    <Navbar />
+    <Navbar class="relative z-10" />
     
-    <main class="flex-1 flex flex-col p-4 sm:p-6 overflow-y-auto w-full max-w-4xl mx-auto z-10 animate-fade-in">
+    <main class="relative z-10 flex-1 flex flex-col p-4 sm:p-6 overflow-y-auto w-full max-w-4xl mx-auto animate-fade-in">
       
       <!-- Header & Avatar Section -->
       <section class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-6 bg-[#3a2818] p-5 sm:p-6 rounded-2xl border-4 border-[#5c4033] shadow-[0_6px_0_#1a0f08] transition-transform">
@@ -90,7 +106,7 @@ const avatarImage = computed(() => {
             </div>
             <div class="text-right flex flex-col gap-1">
               <span class="text-[9px] sm:text-[11px] font-pixel text-[#a89078] uppercase tracking-wider">Misi Utama</span>
-              <span class="text-[10px] sm:text-xs font-pixel text-white">{{ completedFloorsCount }} / 9 Lantai</span>
+              <span class="text-[10px] sm:text-xs font-pixel text-white">{{ completedFloorsCount }} / 6 Lantai (9 Pos)</span>
             </div>
           </div>
           <div class="w-full h-4 sm:h-5 bg-[#2d1b0e] rounded-full overflow-hidden border-2 border-[#0a0704] relative shadow-[0_2px_0_rgba(255,255,255,0.1)]">

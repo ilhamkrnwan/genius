@@ -71,9 +71,9 @@ const GUIDE_ITEMS: GuideItem[] = [
     categoryLabel: 'Alur Petualangan',
     icon: PhFootprints,
     iconColor: '#38bdf8',
-    title: 'Penjelajahan 9 Lantai Kampus',
+    title: 'Penjelajahan 6 Lantai Kampus',
     points: [
-      'Mahasiswa baru menjelajahi Lantai 1 hingga Lantai 9 Kampus Terpadu UNU Yogyakarta didampingi oleh Kakak Pendamping (Buddy) kelompok masing-masing.',
+      'Mahasiswa baru menjelajahi Lantai 1 hingga Lantai 6 Kampus Terpadu UNU Yogyakarta didampingi oleh Kakak Pendamping (Buddy) kelompok masing-masing.',
       'Setiap lantai mengangkat pilar keilmuan khusus dan diperkenalkan melalui prolog karakter pemandu sebelum memulai misi.',
       'Gunakan menu Peta Kampus untuk mengetahui tata letak ruangan, jalur tangga darurat, lift, dan toilet di setiap lantai.',
     ],
@@ -82,17 +82,17 @@ const GUIDE_ITEMS: GuideItem[] = [
   {
     id: 'aturan-stempel',
     category: 'PASPOR',
-    categoryLabel: 'Stempel & Paspor',
+    categoryLabel: 'Stempel & Profil',
     icon: PhSealCheck,
     iconColor: '#facc15',
     title: 'Syarat & Perolehan Stempel Emas',
     points: [
-      'Terdapat 2 spot tantangan interaktif di setiap lantai, dengan total 18 stempel digital yang harus dikumpulkan di Paspor.',
+      'Terdapat 9 pos misi tantangan interaktif di Lantai 1 hingga Lantai 6, dengan total 9 stempel digital yang harus dikumpulkan di Profil.',
       'Batas skor minimal kelulusan adalah 70% pada setiap mini-game untuk berhak mengklaim stempel emas.',
       'Jika skor belum mencapai 70%, kamu dapat langsung mengulang tantangan di spot tersebut tanpa batas percobaan.',
-      'Setiap stempel yang diraih otomatis tercatat di Paspor Digital dan menambah akumulasi poin kelompok di papan Leaderboard.',
+      'Setiap stempel yang diraih otomatis tercatat di Profil Digital dan menambah akumulasi poin kelompok di papan Leaderboard.',
     ],
-    tip: 'Periksa menu Paspor Digital untuk memantau kelengkapan stempel dan status sertifikat kelulusanmu.',
+    tip: 'Periksa menu Profil Digital untuk memantau kelengkapan stempel dan status sertifikat kelulusanmu.',
   },
   {
     id: 'stan-ormawa',
@@ -103,8 +103,8 @@ const GUIDE_ITEMS: GuideItem[] = [
     title: 'Kunjungan Expo Ormawa di Lantai 6',
     points: [
       'Seluruh stan UKM, organisasi mahasiswa, dan komunitas kampus berpusat di Hall dan Selasar Lantai 6.',
-      'Buka halaman Ormawa Expo pada menu, lalu pilih tombol "Buka QR Paspor".',
-      'Tunjukkan kode QR Paspor Mahasiswa tersebut kepada petugas stan untuk dipindai (scan) sebagai bukti kunjungan stan.',
+      'Buka halaman Ormawa Expo pada menu, lalu pilih tombol "Buka QR Profil".',
+      'Tunjukkan kode QR Profil Mahasiswa tersebut kepada petugas stan untuk dipindai (scan) sebagai bukti kunjungan stan.',
       'Kunjungi minimal 10 stan pilihan untuk melengkapi pencapaian lencana expo ormawa.',
     ],
     tip: 'Kamu dapat membaca deskripsi kegiatan, profil, dan kontak tiap organisasi langsung di halaman Ormawa.',
@@ -194,13 +194,17 @@ const filteredGuides = computed(() => {
 <template>
   <div
     class="relative w-full min-h-[100dvh] overflow-y-auto font-pixel text-[#fbf6e9] select-none flex flex-col justify-between py-3 sm:py-5 px-3 sm:px-6"
-    style="
-      background-image: url('/games/background.png');
-      background-size: cover;
-      background-position: center bottom;
-      image-rendering: pixelated;
-    "
   >
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
     <!-- Dark Vignette Overlay -->
     <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
 
@@ -210,7 +214,7 @@ const filteredGuides = computed(() => {
     <header class="relative z-20 w-full max-w-xl mx-auto flex items-center justify-between gap-2 pb-2 shrink-0">
       <!-- Left: Back to Menu -->
       <RouterLink
-        to="/play"
+        to="/main"
         @click="() => safeSound(() => soundEngine.playClick?.())"
         class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] hover:text-white transition-all text-[9.5px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer active:scale-95 shadow shrink-0"
         title="Kembali ke Menu Utama"
@@ -256,7 +260,7 @@ const filteredGuides = computed(() => {
               Panduan Orientasi & Aturan Main
             </h1>
             <p class="text-[9px] sm:text-[10px] text-[#c4956a] font-sans leading-tight mt-0.5">
-              Pedoman resmi penjelajahan 9 lantai, stempel, dan kegiatan PKKMB UNU 2026.
+              Pedoman resmi penjelajahan 6 lantai, 9 pos stempel, dan kegiatan PKKMB UNU 2026.
             </p>
           </div>
         </div>
@@ -265,11 +269,11 @@ const filteredGuides = computed(() => {
         <div class="grid grid-cols-3 gap-1 pt-1 border-t border-[#4a2e14]/70 text-center font-mono">
           <div class="bg-[#120a05] p-1.5 rounded-lg border border-[#3d2714]">
             <span class="text-[7.5px] text-[#a08060] block">Jelajah</span>
-            <span class="text-[9.5px] font-bold text-[#facc15]">9 Lantai</span>
+            <span class="text-[9.5px] font-bold text-[#facc15]">6 Lantai</span>
           </div>
           <div class="bg-[#120a05] p-1.5 rounded-lg border border-[#3d2714]">
             <span class="text-[7.5px] text-[#a08060] block">Target Misi</span>
-            <span class="text-[9.5px] font-bold text-[#86efac]">18 Stempel</span>
+            <span class="text-[9.5px] font-bold text-[#86efac]">9 Stempel</span>
           </div>
           <div class="bg-[#120a05] p-1.5 rounded-lg border border-[#3d2714]">
             <span class="text-[7.5px] text-[#a08060] block">Kelulusan</span>
@@ -417,12 +421,12 @@ const filteredGuides = computed(() => {
         </RouterLink>
         <span>•</span>
         <RouterLink
-          to="/paspor"
+          to="/profile"
           @click="() => safeSound(() => soundEngine.playClick?.())"
           class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
         >
           <PhIdentificationBadge :size="12" />
-          <span>PASPOR</span>
+          <span>PROFIL</span>
         </RouterLink>
       </div>
     </footer>

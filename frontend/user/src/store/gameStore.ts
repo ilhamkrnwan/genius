@@ -9,6 +9,52 @@ import { api } from '../lib/api';
 
 const STORAGE_KEY = 'genius_unu_user_storage_v1';
 
+export const OFFICIAL_LOCATION_ALIAS_MAP: Record<string, string> = {
+  'POS-L1-1': 'booth-1a',
+  'POS-L2-2': 'booth-2a',
+  'POS-L3-3': 'booth-3a',
+  'POS-L4-4': 'booth-4a',
+  'POS-L5-5': 'booth-5a',
+  'POS-L2-6': 'booth-2b',
+  'POS-L6-7': 'booth-6a',
+  'POS-L6-8': 'booth-6b',
+  'POS-L4-9': 'booth-4b',
+  'BOOTH-1': 'booth-1a',
+  'BOOTH-2': 'booth-2a',
+  'BOOTH-3': 'booth-3a',
+  'BOOTH-4': 'booth-4a',
+  'BOOTH-5': 'booth-5a',
+  'BOOTH-6': 'booth-2b',
+  'BOOTH-7': 'booth-6a',
+  'BOOTH-8': 'booth-6b',
+  'BOOTH-9': 'booth-4b',
+};
+
+export const OFFICIAL_MISSION_UUID_MAP: Record<string, string> = {
+  'bddbcea0-c115-470c-b241-0ab9a9e8f649': 'booth-1a',
+  'cda41578-47ef-481f-b241-0b34e82581d8': 'booth-2a',
+  'ce4ad838-7bb1-4e7e-8918-78a85c19ad92': 'booth-2b',
+  'c4fd7d58-33b2-4b2e-9403-f312c960f773': 'booth-3a',
+  'dcdfaa74-66ae-4535-aaf3-eb5f701ff574': 'booth-4a',
+  'fd988953-9869-4349-b9fb-b68ad45c6a0e': 'booth-4b',
+  'ce2510ce-512b-421c-81f6-5d1b46f9b563': 'booth-5a',
+  '85cf0860-f752-43dc-9555-62ea59e898e7': 'booth-6a',
+  '6cb9ae29-febe-4ad0-b620-6de0f91f89bd': 'booth-6b',
+};
+
+export function resolveCanonicalBoothId(idOrCode: string): string {
+  if (!idOrCode) return '';
+  if (BOOTHS_DATA[idOrCode]) return idOrCode;
+  const upper = idOrCode.toUpperCase();
+  if (OFFICIAL_LOCATION_ALIAS_MAP[upper]) return OFFICIAL_LOCATION_ALIAS_MAP[upper];
+  const lower = idOrCode.toLowerCase();
+  if (OFFICIAL_MISSION_UUID_MAP[lower]) return OFFICIAL_MISSION_UUID_MAP[lower];
+  const found = Object.values(BOOTHS_DATA).find(
+    (b) => b.code?.toUpperCase() === upper || b.id.toLowerCase() === lower
+  );
+  return found?.id || idOrCode;
+}
+
 export const DEFAULT_ATTENDANCE: AttendanceStoreMap = {
   1: {
     day: 1,
@@ -73,6 +119,8 @@ function loadInitialState() {
       const loadedParticipant = { ...INITIAL_PARTICIPANT, ...(parsed.participant || {}) } as Participant;
       if (!loadedParticipant.unlockedFloors) loadedParticipant.unlockedFloors = [];
       if (!loadedParticipant.unlockedFloors.includes(1)) loadedParticipant.unlockedFloors.push(1);
+      if (!Array.isArray(loadedParticipant.completedBooths)) loadedParticipant.completedBooths = [];
+      if (!loadedParticipant.stamps || typeof loadedParticipant.stamps !== 'object') loadedParticipant.stamps = {};
       
       const isLoggedIn = Boolean(parsed.isLoggedIn ?? (loadedParticipant.isRegistered && loadedParticipant.name));
       return {
@@ -117,8 +165,9 @@ export const useGameStore = defineStore('game', {
       const floor = FLOORS_DATA.find((f) => f.number === floorNumber);
       if (!floor) return 'not_started';
 
+      const completedBooths = state.participant?.completedBooths || [];
       const completedCount = floor.boothIds.filter((id) =>
-        id ? state.participant.completedBooths.includes(id) : false
+        id ? completedBooths.includes(id) : false
       ).length;
 
       if (completedCount === floor.boothIds.length && completedCount > 0) return 'completed';
@@ -127,14 +176,14 @@ export const useGameStore = defineStore('game', {
     },
 
     getCompletedFloorsCount: (state) => (): number => {
-      const completedBooths = state.participant.completedBooths;
+      const completedBooths = state.participant?.completedBooths || [];
       return FLOORS_DATA.filter((f) =>
         f.boothIds.every((bId) => (bId ? completedBooths.includes(bId) : false))
       ).length;
     },
 
     getCurrentLevel: (state) => (): PlayerLevel => {
-      const completedBooths = state.participant.completedBooths;
+      const completedBooths = state.participant?.completedBooths || [];
       const completedFloors = FLOORS_DATA.filter((f) =>
         f.boothIds.every((bId) => (bId ? completedBooths.includes(bId) : false))
       ).length;
@@ -142,11 +191,21 @@ export const useGameStore = defineStore('game', {
     },
 
     getTotalStampsCount: (state) => (): number => {
-      return state.participant.completedBooths.length;
+      const completedBooths = state.participant?.completedBooths || [];
+      const canonicalSet = new Set(
+        completedBooths.map((id) => resolveCanonicalBoothId(id)).filter(Boolean)
+      );
+      return canonicalSet.size;
     },
 
     isBoothCompleted: (state) => (boothId: string): boolean => {
-      return state.participant.completedBooths.includes(boothId);
+      if (!boothId) return false;
+      const canonical = resolveCanonicalBoothId(boothId);
+      const completedBooths = state.participant?.completedBooths || [];
+      return (
+        completedBooths.includes(boothId) ||
+        (Boolean(canonical) && completedBooths.includes(canonical))
+      );
     },
 
     getAttendanceForDay: (state) => (day: number) => {
@@ -217,6 +276,112 @@ export const useGameStore = defineStore('game', {
       }
     },
 
+    async syncWithServer() {
+      const target = this.participant.id || this.participant.nim;
+      if (!target) return;
+      try {
+        const res = await api.getUserProfile(target);
+        if (res.success && res.data) {
+          const serverScore = Number(res.data.totalScore || 0);
+          if (serverScore > this.participant.totalXp) {
+            this.participant.totalXp = serverScore;
+          }
+          if (res.data.id && !this.participant.id) {
+            this.participant.id = res.data.id;
+          }
+          if (res.data.teamId) {
+            this.participant.teamId = res.data.teamId;
+          }
+          if (res.data.teamName) {
+            this.participant.groupName = res.data.teamName;
+          }
+          if (res.data.buddyName) {
+            this.participant.buddyName = res.data.buddyName;
+          }
+
+          // Sync completed game missions to local stamps & completedBooths
+          const completedSessions = (res.data as any).completedSessions;
+          if (Array.isArray(completedSessions) && completedSessions.length > 0) {
+            const completedSet = new Set(this.participant.completedBooths);
+            const stamps = { ...this.participant.stamps };
+
+            for (const session of completedSessions) {
+              const canonicalId = resolveCanonicalBoothId(session.locationCode || session.missionId);
+              const booth = BOOTHS_DATA[canonicalId];
+              if (canonicalId) completedSet.add(canonicalId);
+              if (session.missionId) completedSet.add(session.missionId);
+              if (session.locationCode) completedSet.add(session.locationCode);
+
+              if (booth && !stamps[canonicalId]) {
+                stamps[canonicalId] = {
+                  boothId: canonicalId,
+                  boothName: booth.name,
+                  floorNumber: booth.floorNumber,
+                  stampTitle: booth.stampTitle,
+                  stampIcon: booth.stampIcon,
+                  stampColor: booth.stampColor,
+                  earnedAt: session.completedAt
+                    ? new Date(session.completedAt).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    : new Date().toLocaleDateString('id-ID'),
+                  score: typeof session.score === 'number' ? session.score : 100,
+                  totalQuestions: 8,
+                };
+              }
+            }
+
+            this.participant.completedBooths = Array.from(completedSet);
+            this.participant.stamps = stamps;
+          }
+
+          // Sync attendances from server
+          const serverAttendances = (res.data as any).attendances;
+          if (Array.isArray(serverAttendances)) {
+            for (const att of serverAttendances) {
+              const d = Number(att.day);
+              if (d && this.attendance[d]) {
+                if (att.checkInAt) this.attendance[d].checkInAt = new Date(att.checkInAt).toISOString();
+                if (att.checkInStatus) this.attendance[d].checkInStatus = att.checkInStatus;
+                if (att.checkOutAt) this.attendance[d].checkOutAt = new Date(att.checkOutAt).toISOString();
+                if (att.xpAwarded != null) this.attendance[d].xpAwarded = Number(att.xpAwarded);
+              }
+            }
+          }
+
+          this.saveToStorage();
+        }
+      } catch (err) {
+        console.warn('[gameStore] Server sync note:', err);
+      }
+    },
+
+    async syncAttendanceFromServer() {
+      const target = this.participant.id || this.participant.nim;
+      if (!target) return;
+      try {
+        const res = await api.getAttendanceStatus(target);
+        if (res.success && res.data) {
+          const daysMap = res.data.days || {};
+          for (const d of [1, 2, 3]) {
+            const rec = daysMap[d];
+            if (rec && this.attendance[d]) {
+              if (rec.checkInAt) this.attendance[d].checkInAt = new Date(rec.checkInAt).toISOString();
+              if (rec.checkInStatus) this.attendance[d].checkInStatus = rec.checkInStatus;
+              if (rec.checkOutAt) this.attendance[d].checkOutAt = new Date(rec.checkOutAt).toISOString();
+              if (rec.xpAwarded != null) this.attendance[d].xpAwarded = Number(rec.xpAwarded);
+            }
+          }
+          this.saveToStorage();
+        }
+        await this.syncWithServer();
+      } catch (err) {
+        console.warn('[gameStore] syncAttendanceFromServer note:', err);
+      }
+    },
+
     loginMaba(data?: Partial<Participant>) {
       this.isLoggedIn = true;
       if (data) {
@@ -226,6 +391,7 @@ export const useGameStore = defineStore('game', {
         };
       }
       this.saveToStorage();
+      this.syncWithServer();
     },
 
     completeProfile(data: { name: string; nim: string; faculty: string; prodi: string; avatar: string }) {
@@ -485,7 +651,8 @@ export const useGameStore = defineStore('game', {
     },
 
     completeBooth(boothId: string, score: number, totalQuestions: number, isServerSynced = false) {
-      const booth = BOOTHS_DATA[boothId];
+      const canonicalId = resolveCanonicalBoothId(boothId) || boothId;
+      const booth = BOOTHS_DATA[canonicalId] || BOOTHS_DATA[boothId];
       if (!booth) {
         return {
           isNewStamp: false,
@@ -496,16 +663,20 @@ export const useGameStore = defineStore('game', {
         };
       }
 
-      const isAlreadyCompleted = this.participant.completedBooths.includes(boothId);
+      const isAlreadyCompleted =
+        this.participant.completedBooths.includes(boothId) ||
+        this.participant.completedBooths.includes(canonicalId);
       const oldCompletedFloors = this.getCompletedFloorsCount();
       const oldLevel = calculateLevel(oldCompletedFloors);
 
-      const newCompletedBooths = isAlreadyCompleted
-        ? this.participant.completedBooths
-        : [...this.participant.completedBooths, boothId];
+      const uniqueCompleted = new Set(this.participant.completedBooths);
+      uniqueCompleted.add(canonicalId);
+      uniqueCompleted.add(boothId);
+      if (booth.code) uniqueCompleted.add(booth.code);
+      const newCompletedBooths = Array.from(uniqueCompleted);
 
       const stampRecord: StampRecord = {
-        boothId,
+        boothId: canonicalId,
         boothName: booth.name,
         floorNumber: booth.floorNumber,
         stampTitle: booth.stampTitle,
@@ -522,6 +693,7 @@ export const useGameStore = defineStore('game', {
 
       const newStamps = {
         ...this.participant.stamps,
+        [canonicalId]: stampRecord,
         [boothId]: stampRecord,
       };
 
@@ -563,10 +735,19 @@ export const useGameStore = defineStore('game', {
         }).then((res) => {
           if (res.success && res.data) {
             console.log('[Store] Live game score synced to PostgreSQL:', res.data);
+            if (typeof res.data.totalXp === 'number' && res.data.totalXp > this.participant.totalXp) {
+              this.participant.totalXp = res.data.totalXp;
+              this.saveToStorage();
+            }
           }
         }).catch((err) => {
           console.warn('[Store] Live score submission note:', err);
         });
+      } else if (isServerSynced) {
+        // If handled by server session, sync score after ledger is written
+        setTimeout(() => {
+          this.syncWithServer();
+        }, 1200);
       }
 
       return {
@@ -602,7 +783,7 @@ export const useGameStore = defineStore('game', {
       if (this.visitedOrmawa.includes(stand.id)) {
         return {
           success: false,
-          message: `Stan "${stand.shortName}" sudah pernah Anda kunjungi dan terdaftar di paspor.`,
+          message: `Stan "${stand.shortName}" sudah pernah Anda kunjungi dan terdaftar di profil.`,
           xpEarned: 0,
           stand,
           isCapped: this.visitedOrmawa.length >= 10,

@@ -115,7 +115,7 @@
             REKAPITULASI JUARA UMUM GENIUS 2026
           </h2>
           <p class="text-xs text-gray-300 font-sans max-w-lg mx-auto">
-            Berdasarkan akumulasi skor ekspedisi kampus, 18 pos mini-games, evaluasi 3 pilar FGD Aswaja, &amp; stan ormawa expo.
+            Berdasarkan akumulasi skor ekspedisi kampus, 9 pos mini-games, evaluasi 3 pilar FGD Aswaja, &amp; stan ormawa expo.
           </p>
         </div>
 
@@ -143,7 +143,7 @@
             <!-- Pedestal Block 2 (Height 120px) -->
             <div class="w-full h-28 sm:h-36 bg-gradient-to-t from-[#111827] to-[#1e293b] border-2 border-t-4 border-[#94a3b8] rounded-t-xl flex flex-col items-center justify-center p-2 shadow-xl">
               <span class="font-pixel text-2xl sm:text-4xl text-gray-300 font-bold opacity-60">2</span>
-              <span class="text-[9px] text-gray-400 font-mono mt-1">17 Pos Selesai</span>
+              <span class="text-[9px] text-gray-400 font-mono mt-1">{{ podiumData[1]?.completedStamps || 0 }}/9 Pos Selesai</span>
             </div>
           </div>
 
@@ -172,7 +172,7 @@
             <!-- Pedestal Block 1 (Height 170px) -->
             <div class="w-full h-40 sm:h-52 bg-gradient-to-t from-[#20140a] to-[#452712] border-2 border-t-4 border-[#facc15] rounded-t-xl flex flex-col items-center justify-center p-2 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
               <span class="font-pixel text-4xl sm:text-6xl text-[#facc15] font-bold">1</span>
-              <span class="text-[10px] text-[#86efac] font-mono mt-1 font-bold">18/18 Pos Sempurna</span>
+              <span class="text-[10px] text-[#86efac] font-mono mt-1 font-bold">{{ podiumData[0]?.completedStamps || 0 }}/9 Pos Selesai</span>
             </div>
           </div>
 
@@ -198,7 +198,7 @@
             <!-- Pedestal Block 3 (Height 100px) -->
             <div class="w-full h-24 sm:h-32 bg-gradient-to-t from-[#1a0c06] to-[#2f140a] border-2 border-t-4 border-[#ea580c] rounded-t-xl flex flex-col items-center justify-center p-2 shadow-xl">
               <span class="font-pixel text-2xl sm:text-4xl text-[#ea580c] font-bold opacity-60">3</span>
-              <span class="text-[9px] text-gray-400 font-mono mt-1">16 Pos Selesai</span>
+              <span class="text-[9px] text-gray-400 font-mono mt-1">{{ podiumData[2]?.completedStamps || 0 }}/9 Pos Selesai</span>
             </div>
           </div>
         </div>
@@ -244,7 +244,7 @@
                   {{ team.name }}
                 </span>
                 <span class="text-[10px] text-gray-400 font-mono">
-                  Buddy: {{ team.buddy }} &bull; {{ team.completedStamps }}/18 Pos
+                  Buddy: {{ team.buddy }} &bull; {{ team.completedStamps }}/9 Pos
                 </span>
               </div>
             </div>

@@ -9,7 +9,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "bun run dev:backend & bun run dev:user & bun run dev:admin",
+    "dev": "bun --filter '@genius-unu/backend' --filter '@genius-unu/user' --filter '@genius-unu/admin' --parallel run dev",
     "dev:user": "cd frontend/user && bun run dev",
     "dev:admin": "cd frontend/admin && bun run dev",
     "dev:backend": "cd backend && bun run dev",

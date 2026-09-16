@@ -141,7 +141,7 @@ export const monitoringRoutes = new Elysia({
 
     return {
       success: true,
-      message: "Protokol darurat aktif! Seluruh sesi permainan di 9 lantai kampus berhasil dijeda.",
+      message: "Protokol darurat aktif! Seluruh sesi permainan di kampus berhasil dijeda.",
     };
   });
 

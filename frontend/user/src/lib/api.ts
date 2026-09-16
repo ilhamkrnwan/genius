@@ -229,6 +229,20 @@ export const api = {
     });
   },
 
+  async getAttendanceStatus(participantId: string, day?: number) {
+    const q = day ? `?day=${day}` : '';
+    return this.request<{
+      days?: Record<number, any>;
+      records?: any[];
+      hasCheckedIn?: boolean;
+      hasCheckedOut?: boolean;
+      checkInAt?: string;
+      checkOutAt?: string;
+      checkInStatus?: string;
+      xpAwarded?: number;
+    }>(`/attendance/status/${encodeURIComponent(participantId)}${q}`);
+  },
+
   async getOrmawaBooths(category?: string) {
     const query = category ? '?category=' + encodeURIComponent(category) : '';
     return this.request('/ormawa/booths' + query);
@@ -302,6 +316,24 @@ export const api = {
     return this.request(`/leaderboard?limit=${limit}`);
   },
 
+  // User Profile & Score Sync
+  async getUserProfile(idOrNim: string) {
+    return this.request<{
+      id: string;
+      username: string;
+      fullName: string;
+      role: string;
+      totalScore: number;
+      teamId?: string;
+      teamName?: string;
+      teamCode?: string;
+      buddyName?: string;
+      buddy?: any;
+      scoreHistory?: any[];
+      attendances?: any[];
+    }>(`/users/${encodeURIComponent(idOrNim)}`);
+  },
+
   // Submit Game Score
   async submitScore(payload: {
     participantId: string;
@@ -310,7 +342,11 @@ export const api = {
     sourceType: string;
     reason?: string;
   }) {
-    return this.request('/scores', {
+    return this.request<{
+      transactionId?: string;
+      totalXp?: number;
+      amount?: number;
+    }>('/scores/award', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -339,6 +375,71 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  // Team & Regu Roster
+  async getMyTeam() {
+    return this.request<{
+      id: string;
+      name: string;
+      code: string;
+      captainId: string | null;
+      routeId: string | null;
+      routeName: string | null;
+      status: string;
+      totalScore: number;
+      members: Array<{
+        id: string;
+        userId: string;
+        username: string;
+        fullName: string;
+        role: 'BUDDY' | 'PARTICIPANT' | 'ADMIN';
+        gender: string;
+        faculty?: string;
+        prodi?: string;
+        characterClass?: string;
+        characterTitle?: string;
+        characterTier?: number;
+        unlockedTitles?: string[];
+        avatarUrl?: string;
+        isCaptain: boolean;
+        buddyRole?: 'PRIMARY' | 'ASSISTANT' | null;
+        totalScore: number;
+      }>;
+      scoreHistory: any[];
+    }>('/teams/my-team');
+  },
+
+  async getTeamById(id: string) {
+    return this.request<{
+      id: string;
+      name: string;
+      code: string;
+      captainId: string | null;
+      routeId: string | null;
+      routeName: string | null;
+      status: string;
+      totalScore: number;
+      members: Array<{
+        id: string;
+        userId: string;
+        username: string;
+        fullName: string;
+        role: 'BUDDY' | 'PARTICIPANT' | 'ADMIN';
+        gender: string;
+        faculty?: string;
+        prodi?: string;
+        characterClass?: string;
+        characterTitle?: string;
+        characterTier?: number;
+        unlockedTitles?: string[];
+        avatarUrl?: string;
+        isCaptain: boolean;
+        buddyRole?: 'PRIMARY' | 'ASSISTANT' | null;
+        totalScore: number;
+      }>;
+      scoreHistory: any[];
+    }>(`/teams/${encodeURIComponent(id)}`);
   },
 
   // Health check

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import {
   Trophy,
@@ -441,6 +441,10 @@ function formatDate(iso: string) {
   });
 }
 
+const { onEvent } = useRealtime();
+let lbRefreshInterval: ReturnType<typeof setInterval> | null = null;
+let unsubscribeWs: (() => void) | null = null;
+
 onMounted(() => {
   if (import.meta.client) {
     const savedFreeze = localStorage.getItem("genius_leaderboard_frozen");
@@ -449,6 +453,17 @@ onMounted(() => {
     }
   }
   fetchData();
+  unsubscribeWs = onEvent((event) => {
+    if (["SCORE_SUBMITTED", "XP_AWARDED", "LEADERBOARD_UPDATED", "GAME_SESSION_COMPLETED"].includes(event)) {
+      fetchData();
+    }
+  });
+  lbRefreshInterval = setInterval(fetchData, 15000);
+});
+
+onUnmounted(() => {
+  if (lbRefreshInterval) clearInterval(lbRefreshInterval);
+  if (unsubscribeWs) unsubscribeWs();
 });
 </script>
 

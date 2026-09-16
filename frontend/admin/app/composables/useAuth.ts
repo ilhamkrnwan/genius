@@ -1,6 +1,5 @@
 import { ref, computed } from "vue";
 import { navigateTo, useRuntimeConfig } from "#app";
-import { OFFICIAL_BUDDIES, findBuddyByQuery } from "~/lib/officialBuddies";
 import { useConfirm } from "./useConfirm";
 import { useToast } from "./useToast";
 
@@ -23,58 +22,11 @@ export interface User {
   faculty?: string;
   gender?: "MALE" | "FEMALE";
   avatarUrl?: string;
+  boothId?: string;
+  boothName?: string;
+  boothCode?: string;
+  category?: string;
 }
-
-export const defaultAdmin: User = {
-  id: "usr-admin",
-  username: "admin",
-  fullName: "Super Admin GENIUS 2026",
-  role: "ADMIN",
-  avatarUrl: "/unu.png",
-};
-
-export const defaultBuddy: User = {
-  id: OFFICIAL_BUDDIES[0].id,
-  username: OFFICIAL_BUDDIES[0].username,
-  fullName: OFFICIAL_BUDDIES[0].fullName,
-  role: "BUDDY",
-  teamId: OFFICIAL_BUDDIES[0].teamId,
-  teamName: OFFICIAL_BUDDIES[0].teamName,
-  assignedFloor: OFFICIAL_BUDDIES[0].assignedFloor,
-  prodi: OFFICIAL_BUDDIES[0].prodi,
-  faculty: OFFICIAL_BUDDIES[0].faculty,
-  gender: OFFICIAL_BUDDIES[0].gender,
-  avatarUrl: OFFICIAL_BUDDIES[0].avatarUrl,
-};
-
-export const DUMMY_ACCOUNTS = [
-  {
-    role: "ADMIN" as const,
-    username: "admin",
-    password: "admin2026",
-    label: "Super Admin (Full Control Center)",
-    user: defaultAdmin,
-  },
-  ...OFFICIAL_BUDDIES.map((b) => ({
-    role: "BUDDY" as const,
-    username: b.username,
-    password: "buddy2026",
-    label: `${b.fullName} (${b.teamName} - ${b.prodi})`,
-    user: {
-      id: b.id,
-      username: b.username,
-      fullName: b.fullName,
-      role: "BUDDY" as const,
-      teamId: b.teamId,
-      teamName: b.teamName,
-      assignedFloor: b.assignedFloor,
-      prodi: b.prodi,
-      faculty: b.faculty,
-      gender: b.gender,
-      avatarUrl: b.avatarUrl,
-    },
-  })),
-];
 
 const token = ref<string | null>(null);
 const user = ref<User | null>(null);
@@ -91,8 +43,6 @@ if (typeof window !== "undefined") {
     } catch {
       token.value = null;
       user.value = null;
-      localStorage.removeItem("genius_admin_token");
-      localStorage.removeItem("genius_admin_user");
     }
   }
 }
@@ -101,6 +51,7 @@ export function useAuth() {
   const isAuthenticated = computed(() => !!token.value && !!user.value);
   const isAdmin = computed(() => user.value?.role === "ADMIN");
   const isBuddy = computed(() => user.value?.role === "BUDDY");
+  const isOrmawaPic = computed(() => user.value?.role === "ORMAWA_PIC");
 
   const userInitials = computed(() => {
     if (!user.value?.fullName) return "GM";
@@ -166,7 +117,7 @@ export function useAuth() {
       if (res.data.user.role === "BUDDY") {
         navigateTo("/buddy");
       } else if (res.data.user.role === "ORMAWA_PIC") {
-        navigateTo("/ormawa/scan");
+        navigateTo("/ormawa/portal");
       } else {
         navigateTo("/");
       }
@@ -184,13 +135,16 @@ export function useAuth() {
     }
   }
 
-  async function loginAsPreset(presetUser: User) {
-    return login(presetUser.username, presetUser.role === "ADMIN" ? "admin2026" : "buddy2026");
+  async function loginAsPreset(presetUser: User, password?: string) {
+    const defaultPassword = password || (presetUser.role === "ADMIN" ? "admin2026" : presetUser.role === "BUDDY" ? "genius2026" : "ormawa2026");
+    return await login(presetUser.username, defaultPassword);
   }
 
-  async function switchRole(targetRole: "ADMIN" | "BUDDY") {
+  async function switchRole(targetRole: "ADMIN" | "BUDDY" | "ORMAWA_PIC") {
     if (targetRole === "BUDDY") {
       navigateTo("/buddy");
+    } else if (targetRole === "ORMAWA_PIC") {
+      navigateTo("/ormawa/portal");
     } else {
       navigateTo("/");
     }
@@ -207,21 +161,29 @@ export function useAuth() {
         }).catch(() => {});
       }
     } finally {
+      const wasOrmawa = user.value?.role === "ORMAWA_PIC";
       token.value = null;
       user.value = null;
       if (typeof window !== "undefined") {
         localStorage.removeItem("genius_admin_token");
         localStorage.removeItem("genius_admin_user");
       }
-      navigateTo("/login");
+      if (wasOrmawa) {
+        navigateTo("/ormawa/login");
+      } else {
+        navigateTo("/login");
+      }
     }
   }
 
   async function confirmLogout() {
+    const isPic = user.value?.role === "ORMAWA_PIC";
     const { show } = useConfirm();
     const confirmed = await show({
-      title: "Keluar dari Portal Admin?",
-      description: "Sesi aktif Anda akan diakhiri. Pastikan semua perubahan data telah tersimpan sebelum keluar.",
+      title: isPic ? "Keluar dari Portal Stan Ormawa?" : "Keluar dari Portal Admin?",
+      description: isPic
+        ? "Sesi aktif stan Anda akan diakhiri. Pastikan semua verifikasi stempel telah selesai."
+        : "Sesi aktif Anda akan diakhiri. Pastikan semua perubahan data telah tersimpan sebelum keluar.",
       confirmText: "Ya, Keluar",
       cancelText: "Batal",
       variant: "danger",
@@ -230,7 +192,7 @@ export function useAuth() {
 
     if (confirmed) {
       const toast = useToast();
-      toast.info("Sampai Jumpa!", "Anda telah keluar dari sesi admin.");
+      toast.info("Sampai Jumpa!", isPic ? "Anda telah keluar dari sesi stan ormawa." : "Anda telah keluar dari sesi admin.");
       await logout();
     }
   }
@@ -265,6 +227,7 @@ export function useAuth() {
     isAuthenticated,
     isAdmin,
     isBuddy,
+    isOrmawaPic,
     userInitials,
     login,
     loginAsPreset,

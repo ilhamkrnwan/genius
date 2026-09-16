@@ -32,28 +32,37 @@ onMounted(() => {
 });
 
 const booths = computed(() => {
-  // Hanya ambil sesi milik tim di Lantai 1
+  const boothIds = floor.value?.boothIds || ['booth-1a'];
   const f1Sessions = gameSessionStore.mySessions.filter((s: any) => 
     s.floorNumber === 1 || s.locationCode?.startsWith('POS-L1')
   );
-  
-  return f1Sessions.map((session: any) => {
-    // Gunakan template UI dari mockData berdasarkan zona
-    let templateId = 'booth-1a';
-    if (session.locationCode?.endsWith('A')) templateId = 'booth-1a';
-    if (session.locationCode?.endsWith('B')) templateId = 'booth-1b';
-    
-    const template = BOOTHS_DATA[templateId] || BOOTHS_DATA['booth-1a'];
+
+  return boothIds.map((bId) => {
+    const template = BOOTHS_DATA[bId] || BOOTHS_DATA['booth-1a'];
+    const matchingSessions = f1Sessions.filter((s: any) =>
+      s.locationCode === template.code ||
+      s.missionId === template.id ||
+      (template.code && s.locationCode?.startsWith(template.code))
+    );
+
+    const bestSession = matchingSessions.find((s: any) => s.status === 'COMPLETED')
+      || matchingSessions.find((s: any) => s.status === 'ACTIVE')
+      || matchingSessions.find((s: any) => s.status === 'READY')
+      || matchingSessions[matchingSessions.length - 1];
+
+    const isCompleted = gameStore.isBoothCompleted(bId) || bestSession?.status === 'COMPLETED';
 
     return {
-      id: session.missionId, // PENTING: Gunakan UUID Misi untuk URL
-      originalBoothId: templateId,
-      code: session.locationCode || template.code,
-      name: session.missionName || template.name,
-      story: `Misi: ${session.gameName}. Akses ini dibuka khusus untuk tim Anda.`,
+      id: bestSession?.missionId || bId,
+      originalBoothId: bId,
+      code: bestSession?.locationCode || template.code,
+      name: bestSession?.missionName || template.name,
+      story: bestSession?.gameName
+        ? `Misi: ${bestSession.gameName}. Akses ini dibuka khusus untuk tim Anda.`
+        : template.story,
       stampIcon: template.stampIcon,
-      tipe_game: session.gameType?.toLowerCase() || template.tipe_game,
-      status: session.status // ACTIVE, READY, PAUSED, COMPLETED
+      tipe_game: bestSession?.gameType?.toLowerCase() || template.tipe_game,
+      status: isCompleted ? 'COMPLETED' : (bestSession?.status || 'READY')
     };
   });
 });
@@ -85,11 +94,23 @@ const floorCompleted = computed(() => gameStore.getFloorStatus(1) === 'completed
 </script>
 
 <template>
-  <div class="min-h-[100dvh] flex flex-col bg-[#2d1b0e] text-[#f0e0c0] font-sans">
+  <div class="relative min-h-[100dvh] flex flex-col text-[#f0e0c0] font-sans">
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
+    <!-- Dark Vignette Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
     <CrtScanlines />
-    <Navbar />
+    <Navbar class="relative z-10" />
 
-    <main class="flex-1 flex flex-col w-full max-w-2xl mx-auto px-4 pb-10 pt-3 z-10 overflow-y-auto animate-fade-in">
+    <main class="relative z-10 flex-1 flex flex-col w-full max-w-2xl mx-auto px-4 pb-10 pt-3 overflow-y-auto animate-fade-in">
       
       <!-- Breadcrumb -->
       <div class="flex items-center justify-between mb-4 shrink-0">
@@ -101,7 +122,7 @@ const floorCompleted = computed(() => gameStore.getFloorStatus(1) === 'completed
           <span>Beranda</span>
         </RouterLink>
         <div class="flex items-center gap-2">
-          <PixelBadge variant="gold" size="sm">Lantai 1 dari 9</PixelBadge>
+          <PixelBadge variant="gold" size="sm">Lantai 1 dari 6</PixelBadge>
           <PixelBadge v-if="floorCompleted" variant="emerald" size="sm">
             <PhCheckCircle :size="10" weight="fill" class="inline" /> Tuntas
           </PixelBadge>
@@ -159,7 +180,7 @@ const floorCompleted = computed(() => gameStore.getFloorStatus(1) === 'completed
           <div class="flex items-center justify-center gap-3 bg-[#1a0f07]/60 border border-[#5a3a18] rounded-xl p-2.5 mt-2">
             <PhTrophy :size="20" weight="fill" class="text-[#f0d060] shrink-0" />
             <p class="font-pixel text-[9px] text-[#f0d060]">Total Reward Lantai 1:</p>
-            <p class="font-sans text-[11px] text-[#7ec850] font-bold">+750 XP &amp; 3 Stempel Emas</p>
+            <p class="font-sans text-[11px] text-[#7ec850] font-bold">+100 XP &amp; 1 Stempel Emas</p>
           </div>
         </div>
       </section>

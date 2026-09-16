@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import {
   PhFlagCheckered,
   PhTimer,
@@ -14,6 +14,7 @@ import { KuisBalapanContent } from '@/types/game';
 import { soundEngine } from '@/lib/sound';
 import { useGameStore } from '@/store/gameStore';
 import PixelBadge from '@/components/ui/PixelBadge.vue';
+import { shuffleQuestions } from '@/lib/shuffle-questions';
 
 interface Props {
   content?: KuisBalapanContent;
@@ -30,6 +31,7 @@ const emit = defineEmits<{
 
 const gameStore = useGameStore();
 const questions = computed(() => props.content?.questions || []);
+const shuffledQuestions = ref(shuffleQuestions(questions.value));
 const rivalIntervalSeconds = computed(() => props.content?.rivalIntervalSeconds || 8);
 
 const currentIndex = ref<number>(0);
@@ -44,10 +46,14 @@ const timerRemainingMs = ref<number>((props.content?.rivalIntervalSeconds || 8) 
 let timerInterval: ReturnType<typeof setInterval> | null = null;
 
 const currentQuestion = computed(() => questions.value[currentIndex.value]);
+watch(questions, (value) => {
+  shuffledQuestions.value = shuffleQuestions(value);
+}, { immediate: true });
+const activeQuestion = computed(() => shuffledQuestions.value[currentIndex.value]);
 const totalSteps = computed(() => Math.max(1, questions.value.length));
 
 const isSelectedCorrect = computed(() => {
-  return currentQuestion.value && selectedOptionIndex.value === currentQuestion.value.correctAnswerIndex;
+  return activeQuestion.value && selectedOptionIndex.value === activeQuestion.value.correctAnswerIndex;
 });
 
 // Calculate Percentage Position on Track (from 6% to 92%)
@@ -110,9 +116,9 @@ const handleSelectOption = (idx: number) => {
 };
 
 const handleCheckAnswer = () => {
-  if (selectedOptionIndex.value === null || !currentQuestion.value) return;
+  if (selectedOptionIndex.value === null || !activeQuestion.value) return;
 
-  const isCorrect = selectedOptionIndex.value === currentQuestion.value.correctAnswerIndex;
+  const isCorrect = selectedOptionIndex.value === activeQuestion.value.correctAnswerIndex;
   isRoundSubmitted.value = true;
 
   if (isCorrect) {
@@ -235,7 +241,7 @@ const handleNextRound = () => {
         <!-- Multiple Choice Options (2x2 Grid) -->
         <div class="grid grid-cols-2 gap-1.5 flex-1 overflow-y-auto py-0.5 custom-scrollbar">
           <button
-            v-for="(option, optIdx) in currentQuestion.options"
+            v-for="(option, optIdx) in activeQuestion.options"
             :key="optIdx"
             type="button"
             @click="handleSelectOption(optIdx)"
@@ -243,7 +249,7 @@ const handleNextRound = () => {
             :class="[
               'p-2 sm:p-2.5 rounded-lg border text-left transition-all flex items-center gap-1.5 cursor-pointer active:scale-98',
               isRoundSubmitted
-                ? optIdx === currentQuestion.correctAnswerIndex
+                ? optIdx === activeQuestion.correctAnswerIndex
                   ? 'bg-[#1f3a2b] border-[#7ec850] text-[#e0f0d0] shadow-md font-medium'
                   : selectedOptionIndex === optIdx
                     ? 'bg-[#3a1814] border-[#d44040] text-[#ffd0d0] shadow-md animate-shake'
@@ -260,7 +266,7 @@ const handleNextRound = () => {
               {{ option }}
             </span>
             <PhCheckCircle
-              v-if="isRoundSubmitted && optIdx === currentQuestion.correctAnswerIndex"
+              v-if="isRoundSubmitted && optIdx === activeQuestion.correctAnswerIndex"
               :size="16"
               weight="fill"
               class="text-[#7ec850] shrink-0 animate-pop"

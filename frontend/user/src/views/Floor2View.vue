@@ -55,11 +55,23 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
 </script>
 
 <template>
-  <div class="min-h-[100dvh] flex flex-col bg-[#2d1b0e] text-[#f0e0c0] font-sans">
+  <div class="relative min-h-[100dvh] flex flex-col text-[#f0e0c0] font-sans">
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
+    <!-- Dark Vignette Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
     <CrtScanlines />
-    <Navbar />
+    <Navbar class="relative z-10" />
 
-    <main class="flex-1 flex flex-col w-full max-w-2xl mx-auto px-4 pb-10 pt-3 z-10 overflow-y-auto animate-fade-in">
+    <main class="relative z-10 flex-1 flex flex-col w-full max-w-2xl mx-auto px-4 pb-10 pt-3 overflow-y-auto animate-fade-in">
       
       <!-- Breadcrumb -->
       <div class="flex items-center justify-between mb-4 shrink-0">
@@ -71,7 +83,7 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
           <span>Dashboard</span>
         </RouterLink>
         <div class="flex items-center gap-2">
-          <PixelBadge variant="gold" size="sm">Lantai 2 dari 9</PixelBadge>
+          <PixelBadge variant="gold" size="sm">Lantai 2 dari 6</PixelBadge>
           <PixelBadge v-if="floorCompleted" variant="emerald" size="sm">
             <PhCheckCircle :size="10" weight="fill" class="inline" /> Tuntas
           </PixelBadge>
@@ -169,7 +181,7 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
                     <div class="flex items-center gap-2 mb-0.5">
                       <span class="font-pixel text-[9px] text-[#7ec850] bg-[#071717] px-1.5 py-0.5 rounded border border-[#048b9f]">B2-A</span>
                       <span v-if="isCompleted2A" class="font-pixel text-[9px] text-[#7ec850]">✓ Selesai</span>
-                      <span v-else class="font-pixel text-[9px] text-[#06B6D4]">+250 XP</span>
+                      <span v-else class="font-pixel text-[9px] text-[#06B6D4]">Max 100 XP</span>
                     </div>
                     <h3 class="font-pixel text-[10px] sm:text-[11px] font-bold text-white leading-snug">{{ booth2A.name }}</h3>
                   </div>
@@ -225,7 +237,7 @@ const keyLearnings = computed(() => floor.value?.storyIntro?.keyLearning || []);
                     <div class="flex items-center gap-2 mb-0.5">
                       <span class="font-pixel text-[9px] text-[#06B6D4] bg-[#071717] px-1.5 py-0.5 rounded border border-[#048b9f]">B2-B</span>
                       <span v-if="isCompleted2B" class="font-pixel text-[9px] text-[#7ec850]">✓ Selesai</span>
-                      <span v-else class="font-pixel text-[9px] text-[#06B6D4]">+250 XP</span>
+                      <span v-else class="font-pixel text-[9px] text-[#06B6D4]">Max 100 XP</span>
                     </div>
                     <h3 class="font-pixel text-[10px] sm:text-[11px] font-bold text-white leading-snug">{{ booth2B.name }}</h3>
                   </div>

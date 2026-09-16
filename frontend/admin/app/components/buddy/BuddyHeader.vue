@@ -1,5 +1,5 @@
 <template>
-  <header class="sticky top-0 z-40 bg-[#2d1b0e]/98 border-b-3 border-[#5a3a18] backdrop-blur px-3 sm:px-4 py-2 flex items-center justify-between shadow-lg select-none">
+  <header class="sticky top-0 z-40 bg-[#2d1b0e]/90 border-b-2 border-[#5a3a18] backdrop-blur-md px-3 sm:px-4 py-2 flex items-center justify-between shadow-lg select-none">
     <!-- Left: Buddy Identity & Team Badge -->
     <div class="flex items-center gap-2.5 min-w-0">
       <div class="relative shrink-0">

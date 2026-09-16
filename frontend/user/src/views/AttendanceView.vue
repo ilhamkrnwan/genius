@@ -35,7 +35,7 @@ const rating = ref(5);
 const essayInsight = ref('');
 const isSubmitting = ref(false);
 
-// Roster Buddy Resmi per Regu
+// Roster Buddy Resmi per Regu (Fallback jika offline)
 const OFFICIAL_BUDDIES_MAP: Record<string, string> = {
   'Genius 01': 'Agnes Anggraini',
   'Genius 02': 'Agnesya Putri',
@@ -47,11 +47,22 @@ const OFFICIAL_BUDDIES_MAP: Record<string, string> = {
   'Genius 08': 'Dafa Alif Laguna',
   'Genius 09': 'Destiya Lintang',
   'Genius 10': 'Dzulfa Sindi',
+  'Genius 11': 'Fajar Nugraha',
+  'Genius 12': 'Farah Diba',
+  'Genius 13': 'Fathi Rizqy Ramadhan',
+  'Genius 14': 'Fitria Nur Azizah',
+  'Genius 15': 'Galih Prasetyo',
+  'Genius 16': 'Hani Amalia',
+  'Genius 17': 'Ilham Maulana',
+  'Genius 18': 'Indah Permatasari',
 };
 
 const buddyName = computed(() => {
-  const group = gameStore.participant.groupName || 'Genius 03';
-  return OFFICIAL_BUDDIES_MAP[group] || 'Ahmad Fadlil Munajad';
+  if (gameStore.participant.buddyName) {
+    return gameStore.participant.buddyName;
+  }
+  const group = gameStore.participant.groupName || 'Genius 01';
+  return OFFICIAL_BUDDIES_MAP[group] || 'Kakak Buddy Pendamping';
 });
 
 const avatarData = computed(() => {
@@ -99,7 +110,7 @@ const ALL_SESSIONS: SessionDefinition[] = [
     id: 'd2-checkout',
     day: 2,
     type: 'checkOut',
-    title: 'Sesi 4: Presensi Pulang Quest 9 Lantai',
+    title: 'Sesi 4: Presensi Pulang Quest',
     timeRange: '16:00 - 16:30 WIB',
     xpReward: 50,
   },
@@ -207,7 +218,9 @@ async function refreshAttendance() {
   safeSound(() => soundEngine.playClick?.());
   isRefreshing.value = true;
   try {
-    await new Promise((r) => setTimeout(r, 450));
+    await gameStore.syncAttendanceFromServer();
+    showNotification('info', 'Status presensi dan total skor diperbarui dari server.');
+  } catch (_) {
     showNotification('info', 'Status presensi diperbarui.');
   } finally {
     isRefreshing.value = false;
@@ -241,21 +254,26 @@ function submitReflection() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   activeDayTab.value = (gameStore.activeDay as 1 | 2 | 3) || 1;
+  await gameStore.syncAttendanceFromServer();
 });
 </script>
 
 <template>
   <div
     class="relative w-full min-h-[100dvh] overflow-y-auto font-pixel text-[#fbf6e9] select-none flex flex-col justify-between py-3 sm:py-5 px-3 sm:px-6"
-    style="
-      background-image: url('/games/background.png');
-      background-size: cover;
-      background-position: center bottom;
-      image-rendering: pixelated;
-    "
   >
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
     <!-- Dark Vignette Overlay -->
     <div class="fixed inset-0 bg-gradient-to-b from-black/65 via-black/45 to-black/80 pointer-events-none z-0" />
 
@@ -282,14 +300,8 @@ onMounted(() => {
         </span>
       </div>
 
-      <!-- Right: Sound, Refresh, XP Badge -->
+      <!-- Right: Refresh & Sound -->
       <div class="flex items-center gap-1.5 shrink-0">
-        <!-- XP Badge -->
-        <div class="bg-[#24170d] border border-[#d97706] px-2 py-0.5 rounded-lg flex items-center gap-1 text-[9.5px] sm:text-[10px] text-[#facc15] font-bold">
-          <PhSparkle :size="11" weight="fill" />
-          <span>+{{ totalXp }} XP</span>
-        </div>
-
         <!-- Refresh Button -->
         <button
           type="button"
@@ -558,21 +570,21 @@ onMounted(() => {
           </RouterLink>
           <span>•</span>
           <RouterLink
-            to="/paspor"
+            to="/profile"
             @click="() => safeSound(() => soundEngine.playClick?.())"
             class="hover:text-[#facc15] flex items-center gap-1 transition-colors"
           >
             <PhIdentificationBadge :size="12" />
-            <span>PASPOR</span>
+            <span>PROFIL & STEMPEL</span>
           </RouterLink>
           <span>•</span>
           <RouterLink
-            to="/profile"
+            to="/team"
             @click="() => safeSound(() => soundEngine.playClick?.())"
-            class="hover:text-[#86efac] flex items-center gap-1 transition-colors"
+            class="hover:text-[#38bdf8] flex items-center gap-1 transition-colors"
           >
             <PhUser :size="12" />
-            <span>PROFIL</span>
+            <span>REGU</span>
           </RouterLink>
         </div>
       </footer>

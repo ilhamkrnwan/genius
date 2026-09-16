@@ -12,7 +12,7 @@
     </TopbarActions>
 
     <!-- Header -->
-    <div class="px-4 md:px-6 pt-4 pb-3 border-b border-[#4a3624]/60">
+    <div class="px-4 md:px-6 pt-4 pb-3 border-b border-[#4a3624]/60 bg-[#15100c]/85 backdrop-blur-md">
       <h1 class="font-pixel text-xs sm:text-sm text-[#f59e0b] font-bold uppercase tracking-wider flex items-center gap-2">
         <QrCode class="h-4 w-4 text-[#c084fc]" />
         SCANNER PIC ORMAWA — VALIDASI KUNJUNGAN MABA
@@ -32,12 +32,12 @@
         <div class="space-y-4">
 
           <!-- Stan Aktif PIC -->
-          <div class="pixel-card p-4 border border-[#523e2b] bg-[#1a140f] space-y-2">
+          <div class="pixel-card p-4 border border-[#523e2b] bg-[#1a140f]/90 backdrop-blur-sm space-y-2">
             <div class="flex items-center gap-2 mb-2">
               <Store class="h-4 w-4 text-[#c084fc]" />
               <span class="font-pixel text-[10px] text-[#c084fc] uppercase">Stan Anda</span>
             </div>
-            <div class="bg-[#120d08] border border-[#ca8a04]/40 rounded-lg p-3 text-center">
+            <div class="bg-[#120d08]/90 border border-[#ca8a04]/40 rounded-lg p-3 text-center">
               <p class="font-pixel text-[#fef08a] text-sm font-bold">
                 {{ activeBooth?.name || 'Belum terhubung ke stan' }}
               </p>
@@ -51,7 +51,7 @@
           </div>
 
           <!-- Scanner Input Area -->
-          <div class="pixel-card p-4 border border-[#523e2b] bg-[#1a140f] space-y-4">
+          <div class="pixel-card p-4 border border-[#523e2b] bg-[#1a140f]/90 backdrop-blur-sm space-y-4">
             <div class="flex items-center gap-2">
               <QrCode class="h-4 w-4 text-[#facc15]" />
               <span class="font-pixel text-[10px] text-[#facc15] uppercase">Scan QR Mahasiswa</span>
@@ -123,12 +123,12 @@
 
           <!-- Statistik Kunjungan Hari Ini -->
           <div class="grid grid-cols-2 gap-3">
-            <div class="pixel-card p-3 border border-[#16a34a]/60 bg-[#0d1f10] space-y-1 text-center">
+            <div class="pixel-card p-3 border border-[#16a34a]/60 bg-[#0d1f10]/85 backdrop-blur-sm space-y-1 text-center">
               <CheckCircle2 class="h-5 w-5 text-[#4ade80] mx-auto" />
               <div class="font-pixel text-xl text-[#4ade80] font-bold">{{ todayScans.length }}</div>
               <p class="text-[9px] font-mono text-[#4ade80]/70 uppercase">Scan Sukses Hari Ini</p>
             </div>
-            <div class="pixel-card p-3 border border-[#ca8a04]/60 bg-[#1e1508] space-y-1 text-center">
+            <div class="pixel-card p-3 border border-[#ca8a04]/60 bg-[#1e1508]/85 backdrop-blur-sm space-y-1 text-center">
               <Star class="h-5 w-5 text-[#facc15] mx-auto" />
               <div class="font-pixel text-xl text-[#facc15] font-bold">{{ todayScans.length * 75 }}</div>
               <p class="text-[9px] font-mono text-[#facc15]/70 uppercase">Total XP Diberikan</p>

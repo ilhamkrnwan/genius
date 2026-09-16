@@ -42,7 +42,7 @@
     </TopbarActions>
 
     <!-- Subtitle / Info Header -->
-    <div class="px-4 md:px-6 pt-3 pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#4a3624]/60 text-xs text-muted-foreground bg-[#15100c] shrink-0 w-full">
+    <div class="px-4 md:px-6 pt-3 pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#4a3624]/60 text-xs text-muted-foreground bg-[#15100c]/85 backdrop-blur-md shrink-0 w-full">
       <div class="flex items-center gap-2 min-w-0">
         <NuxtLink to="/ormawa" class="text-gray-400 hover:text-[#f59e0b] shrink-0">STAN ORMAWA</NuxtLink>
         <span>/</span>
@@ -88,7 +88,7 @@
     <!-- Main Detail Content -->
     <template v-else>
       <!-- Hero / Profile Card Stan (Compact Top Section) -->
-      <div class="px-4 md:px-6 py-3 border-b border-[#3d2a1b] bg-[#1a1324] shrink-0 w-full">
+      <div class="px-4 md:px-6 py-3 border-b border-[#3d2a1b] bg-[#1a1324]/85 backdrop-blur-md shrink-0 w-full">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 w-full min-w-0">
           <!-- Left: Identity & Info -->
           <div class="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">

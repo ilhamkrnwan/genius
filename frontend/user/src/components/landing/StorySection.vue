@@ -130,7 +130,7 @@ onUnmounted(() => {
         </h2>
         
         <p class="font-sans text-sm sm:text-base text-[#d6c3ae] leading-relaxed">
-          Selamat datang di Kampus Terpadu 9 Lantai UNU Yogyakarta! Di sini, perjalanan orientasimu dirancang sebagai petualangan interaktif RPG. Kumpulkan pengetahuan, selesaikan misteri tiap lantai, dan upgrade dirimu menjadi generasi unggul siap masa depan.
+          Selamat datang di Kampus Terpadu UNU Yogyakarta! Di sini, perjalanan orientasimu dirancang sebagai petualangan interaktif RPG. Kumpulkan pengetahuan, selesaikan misteri tiap lantai, dan upgrade dirimu menjadi generasi unggul siap masa depan.
         </p>
       </div>
 

@@ -394,7 +394,7 @@ async function seed() {
   const teamDefinitions = [
     {
       code: "GENIUS-01",
-      name: "Genius 01",
+      name: "Jabu",
       captainNim: "26111101",
       primaryBuddyNim: "25111101",
       assistantBuddyNim: "25111102",
@@ -402,7 +402,7 @@ async function seed() {
     },
     {
       code: "GENIUS-02",
-      name: "Genius 02",
+      name: "Bolon",
       captainNim: "26111121",
       primaryBuddyNim: "25111103",
       assistantBuddyNim: "25111104",
@@ -410,7 +410,7 @@ async function seed() {
     },
     {
       code: "GENIUS-03",
-      name: "Genius 03",
+      name: "Gadang",
       captainNim: "26111141",
       primaryBuddyNim: "25111105",
       assistantBuddyNim: "25111106",
@@ -418,7 +418,7 @@ async function seed() {
     },
     {
       code: "GENIUS-04",
-      name: "Genius 04",
+      name: "Limas",
       captainNim: "26111161",
       primaryBuddyNim: "25111107",
       assistantBuddyNim: "25111108",
@@ -426,13 +426,26 @@ async function seed() {
     },
     {
       code: "GENIUS-05",
-      name: "Genius 05",
+      name: "Lontik",
       captainNim: "26111181",
       primaryBuddyNim: "25111109",
       assistantBuddyNim: "25111110",
       participantNims: OFFICIAL_PARTICIPANTS.slice(80, 100).map((p) => p.nim),
     },
   ];
+
+  const houseNames = [
+    "Jabu", "Bolon", "Gadang", "Limas", "Lontik", "Kajang", "Bubung", "Panggung", "Nuwo", "Baduy",
+    "Gudang", "Bapang", "Joglo", "Kampung", "Panggang", "Jompongan", "Jolopong", "Julang", "Tagog", "Badak",
+    "Capit", "Jubleg", "Tikel", "Baresan", "Crocogan", "Tengger", "Bale", "Lumbung", "Uma", "Omo",
+    "Sebua", "Hada", "Betang", "Lamin", "Baloy", "Banjar", "Tambi", "Laika", "Boyang", "Buton",
+    "Lego", "Lopo", "Mbaru", "Sao", "Musalaki", "Uma", "Honai", "Lopo", "Baileo", "Sasadu",
+  ];
+  teamDefinitions.push(...houseNames.slice(5).map((name, index) => ({
+    code: `GENIUS-${String(index + 6).padStart(2, "0")}`,
+    name,
+    participantNims: [],
+  })));
 
   for (const tDef of teamDefinitions) {
     const captainUser = createdParticipants.find((p) => p.username === tDef.captainNim);
@@ -796,7 +809,37 @@ async function seed() {
     },
   ];
 
+  const ormawaPassword = await hashPassword("ormawa2026");
+
   for (const ob of officialOrmawa) {
+    const picUsername = `pic_${ob.code.toLowerCase().replace('ormawa-', '').replace(/[^a-z0-9]/g, '_')}`;
+
+    let [picUser] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, picUsername))
+      .limit(1);
+
+    if (!picUser) {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          username: picUsername,
+          passwordHash: ormawaPassword,
+          fullName: `PIC ${ob.name}`,
+          role: "ORMAWA_PIC",
+          status: "ACTIVE",
+          characterTitle: "Penjaga Stan Ormawa",
+        })
+        .returning();
+      picUser = newUser;
+    }
+
+    const boothData = {
+      ...ob,
+      picUserId: picUser.id,
+    };
+
     const [existing] = await db
       .select()
       .from(ormawaBooths)
@@ -804,12 +847,12 @@ async function seed() {
       .limit(1);
 
     if (!existing) {
-      await db.insert(ormawaBooths).values(ob);
+      await db.insert(ormawaBooths).values(boothData);
     } else {
-      await db.update(ormawaBooths).set(ob).where(eq(ormawaBooths.id, existing.id));
+      await db.update(ormawaBooths).set(boothData).where(eq(ormawaBooths.id, existing.id));
     }
   }
-  console.log(`  ✅ ${officialOrmawa.length} Official Ormawa Booths seeded (Lantai 3, 4, 5)`);
+  console.log(`  ✅ ${officialOrmawa.length} Official Ormawa Booths & PIC accounts seeded (Lantai 3, 4, 5)`);
 
   // ============================================================
   // 9. SEED OFFICIAL QUIZ DATABASE (9 Pos dari quiz_database.csv)
@@ -829,7 +872,7 @@ async function seed() {
   console.log("👤 Admin       : admin (password: admin2026)");
   console.log("👥 Buddies (10): 25111101 s/d 25111110 (password: genius2026)");
   console.log("🎓 MABA (100)  : 26111101 s/d 26111200 (password: genius2026)");
-  console.log("🛡️ Kelompok (5): Genius 01 s/d Genius 05 (20 MABA + 2 Buddy/tim)");
+  console.log("🛡️ Kelompok (5): Jabu s/d Lontik (20 MABA + 2 Buddy/tim)");
   console.log("🎪 Ormawa (19) : 19 Official Booths (Lantai 3, 4, 5)");
   console.log("🧩 Kuis Resmi  : 9 Pos di 6 Lantai (51 Soal, 100 Poin/pos)");
   console.log("========================================================\n");

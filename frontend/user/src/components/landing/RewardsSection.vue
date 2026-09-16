@@ -220,7 +220,7 @@ onUnmounted(() => {
           Panggung Kehormatan <span class="text-[#f0d060]">Mahasiswa Terbaik</span>
         </h2>
         <p class="font-sans text-sm sm:text-base text-[#d6c3ae] leading-relaxed">
-          Dedikasi, ketajaman intelektual, dan kekompakan tim dari 9 lantai gedung terpadu UNU Yogyakarta mengantarkan mereka ke puncak kejayaan.
+          Dedikasi, ketajaman intelektual, dan kekompakan tim dari gedung terpadu UNU Yogyakarta mengantarkan mereka ke puncak kejayaan.
         </p>
       </div>
 
@@ -396,7 +396,7 @@ onUnmounted(() => {
                 <PhQuotes :size="16" weight="fill" class="shrink-0 text-[#f0d060] mt-0.5" />
                 <p class="font-sans italic text-xs sm:text-sm text-[#e6d5c3] leading-relaxed">
                   <span v-if="activeStep === 0">
-                    "Tiga petualang terbaik yang membuktikan ketekunan, integritas, dan kekompakan sepanjang rute 9 lantai."
+                    "Tiga petualang terbaik yang membuktikan ketekunan, integritas, dan kekompakan sepanjang rute."
                   </span>
                   <span v-else-if="activeStep === 1">
                     "{{ championsData.juara3.quote }}"
@@ -468,7 +468,7 @@ onUnmounted(() => {
               </h3>
 
               <p class="font-sans text-sm sm:text-base text-[#d6c3ae] leading-relaxed">
-                Orientasi mahasiswa baru PKKMB UNU 2026 bertajuk <strong class="text-[#f0d060]">Upgrade New You</strong> mengajak ribuan petualang menembus 9 lantai tematik dan menuntaskan 18 booth interaktif. Nilai tertinggi diraih lewat perpaduan kecepatan intelektual, moralitas luhur, dan ketajaman logika tim.
+                Orientasi mahasiswa baru PKKMB UNU 2026 bertajuk <strong class="text-[#f0d060]">Upgrade New You</strong> mengajak ribuan petualang menembus tematik dan menuntaskan 18 booth interaktif. Nilai tertinggi diraih lewat perpaduan kecepatan intelektual, moralitas luhur, dan ketajaman logika tim.
               </p>
 
               <!-- 4 Kriteria Penilaian Mahasiswa Terbaik (Open List, No Cards) -->
@@ -504,7 +504,7 @@ onUnmounted(() => {
                   <div>
                     <div class="font-pixel text-[11px] text-[#fbf6e9]">Solidaritas Tim</div>
                     <div class="text-xs text-[#a08060] font-sans mt-0.5 leading-normal">
-                      Seluruh anggota berkontribusi aktif menyelesaikan stempel paspor.
+                      Seluruh anggota berkontribusi aktif menyelesaikan stempel profil.
                     </div>
                   </div>
                 </div>

@@ -849,7 +849,17 @@ export const gameSessionRoutes = new Elysia({
           : (bodySubmissions.length > 0 ? bodySubmissions : storedAnswers))
         : (bodySubmissions.length > 0 ? bodySubmissions : storedAnswers);
 
-      const participantIds = Array.from(new Set(submittedAnswers.map((item: any) => item.participantId).filter(Boolean)));
+      let participantIds = Array.from(new Set(submittedAnswers.map((item: any) => item.participantId).filter(Boolean)));
+      if (participantIds.length === 0 && session.teamId) {
+        const teamParticipants = await db
+          .select({ userId: teamMembers.userId })
+          .from(teamMembers)
+          .innerJoin(users, eq(teamMembers.userId, users.id))
+          .where(and(eq(teamMembers.teamId, session.teamId), eq(users.role, "PARTICIPANT")));
+        if (teamParticipants.length > 0) {
+          participantIds = teamParticipants.map((tp) => tp.userId);
+        }
+      }
       const effectiveParticipantIds = participantIds.length > 0 ? participantIds : (user?.userId ? [user.userId] : ["team-player"]);
 
       const engineSubmissions = String(game.type) === "QUIZ" || String(game.type) === "TEAM_QUIZ"
@@ -864,9 +874,9 @@ export const gameSessionRoutes = new Elysia({
         : (submittedAnswers.length > 0
             ? submittedAnswers.map((item: any) => ({
                 ...item,
-                participantId: item.participantId || user?.userId || "team-player",
+                participantId: item.participantId || (effectiveParticipantIds[0] || user?.userId || "team-player"),
               }))
-            : [{ participantId: user?.userId || "team-player", action: "COMPLETE", answer: b, score: b.score }]
+            : effectiveParticipantIds.map((pid) => ({ participantId: pid, action: "COMPLETE", answer: b, score: b.score }))
           );
 
       // Evaluate via Game Engine
@@ -893,8 +903,55 @@ export const gameSessionRoutes = new Elysia({
         .returning();
 
       // Write Score Transactions to Point Ledger for each participant
-      if (metadata.isPractice !== true && evalResult.participantScores.length > 0) {
-        const txInserts = evalResult.participantScores.map((ps) => ({
+      let scoresToAward = evalResult.participantScores || [];
+      if (scoresToAward.length === 0 && evalResult.totalTeamScore > 0) {
+        scoresToAward = effectiveParticipantIds.map((pid) => ({
+          participantId: pid,
+          finalScore: evalResult.totalTeamScore,
+          baseScore: evalResult.totalTeamScore,
+          speedBonus: 0,
+          statBoostBonus: 0,
+          penalty: 0,
+          details: {},
+        }));
+      }
+
+      if (metadata.isPractice !== true && scoresToAward.length > 0) {
+        // Resolve valid user UUID for each participant to guarantee foreign key integrity
+        const resolvedParticipantScores = await Promise.all(
+          scoresToAward.map(async (ps) => {
+            const rawPid = ps.participantId;
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawPid);
+            if (isUuid) return { ...ps, participantId: rawPid };
+
+            // Look up by username/NIM
+            const [found] = await db
+              .select({ id: users.id })
+              .from(users)
+              .where(eq(users.username, rawPid))
+              .limit(1);
+            if (found) return { ...ps, participantId: found.id };
+
+            // Fall back to authenticated user ID
+            if (user?.userId) return { ...ps, participantId: user.userId };
+
+            // Fall back to first member of session's team
+            if (session.teamId) {
+              const [member] = await db
+                .select({ userId: teamMembers.userId })
+                .from(teamMembers)
+                .where(eq(teamMembers.teamId, session.teamId))
+                .limit(1);
+              if (member) return { ...ps, participantId: member.userId };
+            }
+
+            // Fall back to any active participant
+            const [firstUser] = await db.select({ id: users.id }).from(users).limit(1);
+            return { ...ps, participantId: firstUser?.id || rawPid };
+          })
+        );
+
+        const txInserts = resolvedParticipantScores.map((ps) => ({
           participantId: ps.participantId,
           teamId: session.teamId,
           amount: ps.finalScore,
@@ -903,7 +960,7 @@ export const gameSessionRoutes = new Elysia({
           reason: `Penyelesaian Misi Game ${game.name}`,
           stageId: session.stageId,
           gameSessionId: session.id,
-          createdBy: user?.userId || null,
+          createdBy: user?.userId || ps.participantId,
         }));
         try {
           await db.insert(scoreTransactions).values(txInserts);

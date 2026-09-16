@@ -80,28 +80,50 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-[100dvh] h-[100dvh] max-h-[100dvh] flex flex-col bg-[#2d1b0e] text-[#f0e0c0] w-full overflow-hidden">
+  <div class="relative min-h-[100dvh] flex flex-col text-[#f0e0c0] w-full overflow-y-auto">
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
+    <!-- Dark Vignette Overlay -->
+    <div class="fixed inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/85 pointer-events-none z-0" />
     <CrtScanlines />
-    <Navbar />
+    <Navbar class="relative z-10" />
 
-    <main class="max-w-2xl mx-auto px-2.5 sm:px-6 py-2 sm:py-3 flex-1 flex flex-col justify-between overflow-hidden w-full gap-2">
-      <!-- Navigation Breadcrumb -->
-      <div class="flex items-center justify-between shrink-0">
-        <RouterLink
-          to="/peta"
-          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-          class="inline-flex items-center gap-1.5 text-[11px] font-pixel text-[#c4956a] hover:text-[#f0d060] transition-colors"
-        >
-          <PhArrowLeft :size="14" weight="bold" />
-          <span>Peta</span>
-        </RouterLink>
+    <main class="relative z-10 max-w-2xl mx-auto px-2.5 sm:px-6 py-2 sm:py-3 flex-1 flex flex-col justify-between w-full gap-2">
+      <!-- Navigation Subheader / Breadcrumb -->
+      <div class="flex items-center justify-between shrink-0 py-0.5">
+        <div class="flex items-center gap-2">
+          <RouterLink
+            to="/peta"
+            @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+            class="px-2.5 py-1 rounded-xl bg-[#24170d]/90 hover:bg-[#342013] border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] text-[10px] font-pixel shadow transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+          >
+            <PhArrowLeft :size="12" weight="bold" />
+            <span>PETA KAMPUS</span>
+          </RouterLink>
+
+          <RouterLink
+            to="/play"
+            @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+            class="hidden sm:flex px-2 py-1 rounded-xl bg-[#1c120a]/80 hover:bg-[#2b180d] border border-[#5a3a18] hover:border-[#8b6f4e] text-[#c4956a] hover:text-[#f0e0c0] text-[9.5px] font-pixel shadow transition-all items-center gap-1"
+          >
+            <span>LOBBY</span>
+          </RouterLink>
+        </div>
 
         <div class="flex items-center gap-1.5">
-          <PixelBadge variant="gold" size="sm">
-            Lantai {{ floor.number }}
-          </PixelBadge>
+          <div class="px-2.5 py-1 rounded-xl bg-[#1c120a]/90 border border-[#f0d060]/70 text-[#f0d060] text-[10px] font-pixel font-bold shadow flex items-center gap-1">
+            <span>LANTAI {{ floor.number }}</span>
+          </div>
           <PixelBadge v-if="floorStatus === 'completed'" variant="emerald" size="sm">
-            Tuntas
+            TUNTAS
           </PixelBadge>
         </div>
       </div>
@@ -185,7 +207,7 @@ onMounted(() => {
               Tantangan di Lantai Ini:
             </span>
             <span class="font-pixel text-[8px] sm:text-[9px] text-[#7ec850]">
-              Total: +{{ floorBooths.length * 250 }} XP & {{ floorBooths.length }} Stempel
+              Total: +{{ floorBooths.length * 100 }} XP & {{ floorBooths.length }} Stempel
             </span>
           </div>
 
@@ -195,7 +217,7 @@ onMounted(() => {
               :key="b.id"
               :class="[
                 'floor-intro-spot p-2 rounded-xl border transition-all',
-                gameStore.participant.completedBooths.includes(b.id) || gameStore.participant.completedBooths.includes(b.code)
+                (gameStore.isBoothCompleted(b.id) || gameStore.isBoothCompleted(b.code))
                   ? 'bg-[#1a2e1a] border-[#7ec850]'
                   : 'bg-[#170f07] border-[#5a3a18]'
               ]"
@@ -205,19 +227,19 @@ onMounted(() => {
                   <div class="w-6 h-6 rounded-md bg-[#281c12] border border-[#f0d060] flex items-center justify-center shrink-0">
                     <StampIcon :name="b.stampIcon" :size="14" class="text-[#f0d060]" />
                   </div>
-                  <span :class="['font-pixel text-[8px] font-bold', (gameStore.participant.completedBooths.includes(b.id) || gameStore.participant.completedBooths.includes(b.code)) ? 'text-[#7ec850]' : 'text-[#f0d060]']">
+                  <span :class="['font-pixel text-[8px] font-bold', (gameStore.isBoothCompleted(b.id) || gameStore.isBoothCompleted(b.code)) ? 'text-[#7ec850]' : 'text-[#f0d060]']">
                     {{ b.code }}
                   </span>
                 </div>
 
                 <PhCheckCircle
-                  v-if="gameStore.participant.completedBooths.includes(b.id) || gameStore.participant.completedBooths.includes(b.code)"
+                  v-if="gameStore.isBoothCompleted(b.id) || gameStore.isBoothCompleted(b.code)"
                   :size="14"
                   weight="fill"
                   class="text-[#7ec850] shrink-0"
                 />
                 <span v-else class="text-[8px] font-pixel text-[#f0d060] bg-[#281c12] px-1 py-0.5 rounded border border-[#5a3a18]">
-                  +250 XP
+                  Max 100 XP
                 </span>
               </div>
 

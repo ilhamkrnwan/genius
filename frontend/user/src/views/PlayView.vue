@@ -24,6 +24,7 @@ import {
   PhShieldCheck,
   PhPencilSimple,
   PhCompass,
+  PhUsersThree,
 } from '@phosphor-icons/vue';
 import MabaAuthModal from '@/components/auth/MabaAuthModal.vue';
 
@@ -45,7 +46,7 @@ const characterFullImage = computed(() => {
 
 // Interactive character click & speech bubble
 const showCharBubble = ref(false);
-const charBubbleMessage = ref('Bismillah, siap jelajahi 9 lantai!');
+const charBubbleMessage = ref('Bismillah, siap jelajahi 6 lantai!');
 
 function handleCharacterClick() {
   if (gameStore.soundEnabled) {
@@ -53,9 +54,9 @@ function handleCharacterClick() {
   }
   const quotes = [
     `Semangat orientasi, ${gameStore.participant.name || 'Petualang'}!`,
-    'Bismillah, siap jelajahi 9 lantai UNU!',
+    'Bismillah, siap jelajahi 6 lantai UNU!',
     'Upgrade New You 2026!',
-    'Kumpulkan 18 stempel emas PKKMB!',
+    'Kumpulkan 9 stempel emas PKKMB!',
     'Jangan lupa presensi bersama Kakak Buddy!',
   ];
   charBubbleMessage.value = quotes[Math.floor(Math.random() * quotes.length)];
@@ -86,6 +87,7 @@ const nextFloor = computed(() => {
 });
 
 onMounted(async () => {
+  gameStore.syncWithServer();
   if (gameStore.soundEnabled && !isMuted.value) {
     try {
       soundEngine.playMenuMusic?.();
@@ -178,15 +180,19 @@ function openEditProfile() {
 <template>
   <div
     class="relative w-full min-h-[100dvh] h-[100dvh] max-h-[100dvh] overflow-hidden select-none font-pixel flex flex-col justify-between"
-    style="
-      background-image: url('/games/background.png');
-      background-size: cover;
-      background-position: center bottom;
-      image-rendering: pixelated;
-    "
   >
+    <!-- Fixed Background Wallpaper (Fixed in Viewport) -->
+    <div
+      class="fixed inset-0 pointer-events-none z-0"
+      style="
+        background-image: url('/games/background.png');
+        background-size: cover;
+        background-position: center bottom;
+        image-rendering: pixelated;
+      "
+    />
     <!-- Dark Vignette / Atmospheric Gradient Overlay -->
-    <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40 pointer-events-none z-0" />
+    <div class="fixed inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40 pointer-events-none z-0" />
 
     <!-- ================================================================= -->
     <!-- TOP HEADER: Clean Institutional Badge (Landing Page Style)        -->
@@ -448,7 +454,7 @@ function openEditProfile() {
                     {{ totalStamps > 0 ? `LANJUTKAN MISI LANTAI ${nextFloor}` : `MULAI MISI LANTAI 1` }}
                   </span>
                   <span class="text-[8.5px] sm:text-[9px] text-[#bbf7d0] font-sans block truncate">
-                    Progres: {{ totalStamps }}/18 Stempel • {{ completedFloorsCount }}/9 Lantai Tuntas
+                    Progres: {{ totalStamps }}/9 Stempel • {{ completedFloorsCount }}/6 Lantai Tuntas
                   </span>
                 </div>
               </div>
@@ -459,19 +465,41 @@ function openEditProfile() {
               </div>
             </button>
 
+            <!-- Regu / Tim Banner Strip -->
+            <div 
+              @click="navigateTo('/team')"
+              class="w-full mb-2.5 px-3 py-2 rounded-xl bg-[#22150b]/90 border border-[#8b6f4e] hover:border-[#f0d060] flex items-center justify-between cursor-pointer transition-all shadow-md group active:scale-98"
+            >
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-[#38761d]/40 border border-[#4ade80]/60 flex items-center justify-center text-[#86efac] shrink-0">
+                  <PhUsersThree :size="18" weight="bold" />
+                </div>
+                <div class="text-left min-w-0">
+                  <div class="text-[7.5px] text-[#a89279] uppercase font-pixel tracking-wider">Regu Kelompok Kamu:</div>
+                  <div class="text-[11px] font-bold text-[#facc15] font-pixel group-hover:text-white transition-colors truncate">
+                    {{ gameStore.participant.groupName || 'Genius 01' }}
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 text-[8.5px] font-pixel text-[#86efac] group-hover:text-[#fde047] shrink-0 bg-black/40 px-2 py-1 rounded-lg border border-[#86efac]/30">
+                <span>Lihat</span>
+                <PhCaretRight :size="10" weight="bold" />
+              </div>
+            </div>
+
             <!-- 3. GRID MENU: 6 Portal Fitur Gamifikasi PKKMB -->
             <div class="grid grid-cols-3 gap-2 sm:gap-2.5 w-full">
               <!-- 1. Peta Kampus -->
               <button
                 type="button"
-                @click="navigateTo('/peta')"
+                @click="navigateTo('/dashboard')"
                 class="p-2 sm:p-2.5 rounded-xl bg-[#23170e] hover:bg-[#322013] border border-[#5a3a18] hover:border-[#60a5fa] transition-all flex flex-col items-center justify-center text-center group cursor-pointer shadow active:scale-95"
               >
                 <PhMapTrifold :size="22" weight="fill" class="text-[#60a5fa] group-hover:scale-110 transition-transform mb-1" />
                 <span class="text-[8.5px] sm:text-[9.5px] text-[#e2e8f0] font-bold leading-tight block">
                   PETA KAMPUS
                 </span>
-                <span class="text-[7.5px] text-[#94a3b8] block mt-0.5 font-sans">9 Lantai</span>
+                <span class="text-[7.5px] text-[#94a3b8] block mt-0.5 font-sans">6 Lantai</span>
               </button>
 
               <!-- 2. Presensi (Di-absen Buddy) -->
@@ -507,17 +535,17 @@ function openEditProfile() {
                 <span class="text-[7.5px] text-[#94a3b8] block mt-0.5 font-sans">Stan UKM</span>
               </button>
 
-              <!-- 4. Paspor Digital -->
+              <!-- 4. Profil Digital & Stempel -->
               <button
                 type="button"
-                @click="navigateTo('/paspor')"
+                @click="navigateTo('/profile')"
                 class="p-2 sm:p-2.5 rounded-xl bg-[#23170e] hover:bg-[#322013] border border-[#5a3a18] hover:border-[#facc15] transition-all flex flex-col items-center justify-center text-center group cursor-pointer shadow active:scale-95"
               >
                 <PhIdentificationBadge :size="22" weight="bold" class="text-[#facc15] group-hover:scale-110 transition-transform mb-1" />
                 <span class="text-[8.5px] sm:text-[9.5px] text-[#e2e8f0] font-bold leading-tight block">
-                  PASPOR DIGITAL
+                  PROFIL DIGITAL
                 </span>
-                <span class="text-[7.5px] text-[#94a3b8] block mt-0.5 font-sans">{{ totalStamps }}/18 Stempel</span>
+                <span class="text-[7.5px] text-[#94a3b8] block mt-0.5 font-sans">{{ totalStamps }}/9 Stempel</span>
               </button>
 
               <!-- 5. Leaderboard XP -->
