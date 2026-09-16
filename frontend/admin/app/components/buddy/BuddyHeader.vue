@@ -1,32 +1,25 @@
 <template>
   <header class="sticky top-0 z-40 bg-[#2d1b0e]/90 border-b-2 border-[#5a3a18] backdrop-blur-md px-3 sm:px-4 py-2 flex items-center justify-between shadow-lg select-none">
-    <!-- Left: Buddy Identity & Team Badge -->
+    <!-- Left: Buddy Identity & Team -->
     <div class="flex items-center gap-2.5 min-w-0">
-      <div class="relative shrink-0">
-        <img
-          :src="buddyAvatar"
-          alt="Avatar Buddy"
-          class="h-9 w-9 rounded-lg border-2 border-[#f0d060] object-cover bg-black/40 shadow"
-        />
-        <div class="absolute -bottom-1 -right-1 bg-[#1a1008] border border-[#f0d060] rounded px-1 text-[6px] font-pixel text-[#facc15] font-bold">
-          BUDDY
-        </div>
-      </div>
+      <img
+        :src="buddyAvatar"
+        alt="Avatar Buddy"
+        class="h-9 w-9 rounded-lg border-2 border-[#f0d060] object-cover bg-black/40 shadow shrink-0"
+      />
 
       <div class="flex flex-col min-w-0 leading-tight">
-        <div class="flex items-center gap-1.5">
-          <span class="font-pixel text-xs text-[#f0d060] font-bold truncate">
-            {{ cleanBuddyName }}
-          </span>
-        </div>
-        <span class="text-[10px] text-[#86efac] font-sans truncate font-medium flex items-center gap-1">
+        <span class="font-pixel text-xs text-[#f0d060] font-bold truncate">
+          {{ cleanBuddyName }}
+        </span>
+        <span class="text-[10.5px] text-[#86efac] font-sans truncate font-medium flex items-center gap-1 mt-0.5">
           <Shield class="h-3 w-3 text-[#22c55e] inline shrink-0" />
           <span>{{ cleanTeamName }}</span>
         </span>
       </div>
     </div>
 
-    <!-- Right: Logout Button -->
+    <!-- Right: Logout -->
     <div class="flex items-center gap-1.5 shrink-0">
       <button
         type="button"
@@ -42,18 +35,18 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { Crown, Shield, LogOut } from "lucide-vue-next";
+import { Shield, LogOut } from "lucide-vue-next";
 import { useAuth } from "~/composables/useAuth";
 
 const { user, confirmLogout } = useAuth();
 
 const cleanBuddyName = computed(() => {
-  const raw = user.value?.fullName || "Agnes Anggraini Risdiyanto";
+  const raw = user.value?.fullName || "Game Master Buddy";
   return raw.replace(/^Kak(ak)?\s+/i, "").trim();
 });
 
 const cleanTeamName = computed(() => {
-  const raw = user.value?.teamName || "Genius 01";
+  const raw = user.value?.teamName || "Regu Saya";
   return raw.replace(/^Team\s+/i, "").trim();
 });
 

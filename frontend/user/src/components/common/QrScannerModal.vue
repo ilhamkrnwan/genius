@@ -8,8 +8,11 @@ import {
   PhLightning,
   PhCheckCircle,
   PhWarningCircle,
+  PhArrowsClockwise,
+  PhUploadSimple,
 } from '@phosphor-icons/vue';
 import { soundEngine } from '@/lib/sound';
+import jsQR from 'jsqr';
 
 const props = withDefaults(
   defineProps<{
@@ -41,10 +44,13 @@ const videoRef = ref<HTMLVideoElement | null>(null);
 const cameraStream = ref<MediaStream | null>(null);
 const cameraError = ref<string | null>(null);
 const isCameraActive = ref(false);
+const currentFacingMode = ref<'environment' | 'user'>('environment');
 const manualInput = ref('');
-const isScanningActive = ref(false);
+const fileInputRef = ref<HTMLInputElement | null>(null);
+const isDecodingImage = ref(false);
 
 let scanInterval: ReturnType<typeof setInterval> | null = null;
+const hiddenCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
 
 const closeModal = () => {
   stopCamera();
@@ -63,14 +69,14 @@ const startCamera = async () => {
   isCameraActive.value = false;
 
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-    cameraError.value = 'Peramban web tidak mendukung akses kamera langsung. Silakan gunakan input manual di bawah.';
+    cameraError.value = 'Peramban web tidak mendukung akses kamera langsung. Silakan gunakan input manual atau unggah foto di bawah.';
     return;
   }
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
-        facingMode: 'environment',
+        facingMode: currentFacingMode.value,
         width: { ideal: 640 },
         height: { ideal: 480 },
       },
@@ -88,9 +94,9 @@ const startCamera = async () => {
   } catch (err: any) {
     console.warn('[Camera] Gagal membuka kamera:', err);
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      cameraError.value = 'Izin akses kamera ditolak. Silakan izinkan kamera di setelan browser atau gunakan input manual.';
+      cameraError.value = 'Izin akses kamera ditolak. Silakan izinkan kamera di setelan browser atau gunakan input manual / unggah foto.';
     } else {
-      cameraError.value = 'Kamera tidak terdeteksi atau sedang digunakan aplikasi lain. Gunakan input manual.';
+      cameraError.value = 'Kamera tidak terdeteksi atau sedang digunakan aplikasi lain. Gunakan input manual atau unggah foto.';
     }
   }
 };
@@ -110,35 +116,112 @@ const stopCamera = () => {
   isCameraActive.value = false;
 };
 
-// Deteksi otomatis jika peramban memiliki BarcodeDetector API natif
+const flipCamera = async () => {
+  currentFacingMode.value = currentFacingMode.value === 'environment' ? 'user' : 'environment';
+  stopCamera();
+  await startCamera();
+};
+
+// Deteksi QR otomatis: coba BarcodeDetector natif terlebih dahulu, fallback instan ke jsQR canvas loop
 const startBarcodeDetection = () => {
   if (typeof window === 'undefined') return;
 
   const BarcodeDetectorAPI = (window as any).BarcodeDetector;
-  if (!BarcodeDetectorAPI) {
-    // BarcodeDetector belum didukung di peramban ini (fallback kamera aktif tapi manual / preset siap)
-    return;
+  let detector: any = null;
+  if (BarcodeDetectorAPI) {
+    try {
+      detector = new BarcodeDetectorAPI({ formats: ['qr_code'] });
+    } catch {
+      detector = null;
+    }
   }
 
-  try {
-    const detector = new BarcodeDetectorAPI({ formats: ['qr_code'] });
-    scanInterval = setInterval(async () => {
-      if (!videoRef.value || !isCameraActive.value) return;
+  scanInterval = setInterval(async () => {
+    if (!videoRef.value || !isCameraActive.value) return;
+
+    // 1. Coba BarcodeDetector natif jika didukung oleh browser
+    if (detector) {
       try {
         const barcodes = await detector.detect(videoRef.value);
         if (barcodes && barcodes.length > 0) {
           const rawValue = barcodes[0].rawValue;
           if (rawValue) {
             handleTokenSubmitted(rawValue);
+            return;
           }
         }
       } catch {
-        // Abaikan error per frame
+        // Abaikan error detector, lanjutkan ke jsQR
       }
-    }, 500);
-  } catch (err) {
-    console.warn('[BarcodeDetector] Error initializing detector:', err);
-  }
+    }
+
+    // 2. Fallback jsQR: Ekstraksi frame ke canvas tersembunyi (100% kompatibel di iOS Safari, Firefox, Desktop)
+    try {
+      const video = videoRef.value;
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0 && hiddenCanvas) {
+        const scale = Math.min(1, 480 / video.videoWidth);
+        const w = Math.floor(video.videoWidth * scale);
+        const h = Math.floor(video.videoHeight * scale);
+        hiddenCanvas.width = w;
+        hiddenCanvas.height = h;
+        const ctx = hiddenCanvas.getContext('2d', { willReadFrequently: true });
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, w, h);
+          const imageData = ctx.getImageData(0, 0, w, h);
+          const qrCode = jsQR(imageData.data, w, h, { inversionAttempts: 'dontInvert' });
+          if (qrCode && qrCode.data) {
+            handleTokenSubmitted(qrCode.data);
+          }
+        }
+      }
+    } catch {
+      // Abaikan error render frame
+    }
+  }, 250);
+};
+
+// Fallback Pemindaian Gambar / Screenshot dari Galeri
+const triggerFileUpload = () => {
+  fileInputRef.value?.click();
+};
+
+const handleFileUpload = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  isDecodingImage.value = true;
+  cameraError.value = null;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, img.width, img.height);
+          const qrCode = jsQR(imageData.data, img.width, img.height);
+          if (qrCode && qrCode.data) {
+            handleTokenSubmitted(qrCode.data);
+          } else {
+            cameraError.value = 'QR Code tidak terdeteksi pada gambar. Pastikan gambar jelas dan tidak buram.';
+          }
+        }
+      } catch (err: any) {
+        cameraError.value = 'Gagal memproses gambar: ' + (err?.message || 'Error');
+      } finally {
+        isDecodingImage.value = false;
+        target.value = '';
+      }
+    };
+    img.src = reader.result as string;
+  };
+  reader.readAsDataURL(file);
 };
 
 watch(
@@ -229,6 +312,19 @@ onBeforeUnmount(() => {
             class="pointer-events-none absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#4ade80] to-transparent shadow-[0_0_15px_#22c55e] animate-scanline z-10"
           />
 
+          <!-- Camera Controls Overlay (Flip Camera) -->
+          <div v-if="isCameraActive" class="absolute top-2 right-2 z-20 flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="flipCamera"
+              class="h-7 px-2 rounded bg-black/70 hover:bg-black/90 text-[#facc15] border border-[#8b6f4e] text-[9px] font-pixel flex items-center gap-1 backdrop-blur cursor-pointer active:scale-95 transition-all"
+              title="Ganti Kamera Depan / Belakang"
+            >
+              <PhArrowsClockwise :size="12" />
+              <span>PUTAR KAMERA</span>
+            </button>
+          </div>
+
           <!-- Overlay 2: HUD Reticle Corners (Pixel Target) -->
           <div class="pointer-events-none absolute inset-6 border border-emerald-500/30 rounded z-10">
             <!-- Top-Left Corner -->
@@ -264,6 +360,26 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
+        <!-- Section: Upload QR Image Fallback -->
+        <div>
+          <input
+            ref="fileInputRef"
+            type="file"
+            accept="image/*"
+            class="hidden"
+            @change="handleFileUpload"
+          />
+          <button
+            type="button"
+            @click="triggerFileUpload"
+            :disabled="isDecodingImage"
+            class="w-full py-1.5 px-3 bg-[#1e140c] hover:bg-[#2e1d0f] border border-[#784d24] text-[#facc15] font-pixel text-[9.5px] rounded-lg flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all shadow disabled:opacity-50"
+          >
+            <PhUploadSimple :size="13" weight="bold" />
+            <span>{{ isDecodingImage ? 'MEMINDAI GAMBAR...' : 'UNGGAH FOTO / SCREENSHOT QR' }}</span>
+          </button>
+        </div>
+
         <!-- Section: Manual Code Fallback -->
         <div class="bg-[#28180c] border border-[#614022] rounded-lg p-2.5 space-y-2">
           <div class="flex items-center gap-1.5 text-[10px] font-pixel text-[#f0d060]">
@@ -275,7 +391,7 @@ onBeforeUnmount(() => {
             <input
               v-model="manualInput"
               type="text"
-              placeholder="Ketik kode (mis: UNU-PRESENSI-H1-GATE-2026)"
+              placeholder="Ketik kode (mis: UNU-ORMAWA-HMTE-2026)"
               class="flex-1 h-8 px-2.5 bg-[#170e07] border border-[#523e2b] rounded text-xs font-mono text-[#f0e0c0] placeholder-[#8b6f4e] focus:outline-none focus:border-[#f59e0b]"
             />
             <button

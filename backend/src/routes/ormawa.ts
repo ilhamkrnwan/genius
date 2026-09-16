@@ -144,13 +144,23 @@ export const ormawaRoutes = new Elysia({
     }
   )
 
-  // GET /api/ormawa/my-booth — PIC ambil data stannya sendiri
+  // GET /api/ormawa/my-booth — PIC ambil data stannya sendiri (atau Admin memilih stan)
   .get(
     "/my-booth",
-    async ({ user, set }) => {
-      if (user?.role !== "ORMAWA_PIC") {
+    async ({ user, set, query }: any) => {
+      if (user?.role !== "ORMAWA_PIC" && user?.role !== "ADMIN") {
         set.status = 403;
-        return { success: false, error: { code: "FORBIDDEN", message: "Hanya PIC Ormawa yang dapat mengakses" } };
+        return { success: false, error: { code: "FORBIDDEN", message: "Hanya PIC Ormawa atau Admin yang dapat mengakses" } };
+      }
+
+      let boothCondition;
+      if (user?.role === "ADMIN" && query?.boothId) {
+        const isBoothIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query.boothId);
+        boothCondition = isBoothIdUuid ? eq(ormawaBooths.id, query.boothId) : eq(ormawaBooths.code, query.boothId);
+      } else if (user?.role === "ADMIN") {
+        boothCondition = eq(ormawaBooths.isActive, true);
+      } else {
+        boothCondition = eq(ormawaBooths.picUserId, user.userId);
       }
 
       const [booth] = await db
@@ -158,22 +168,45 @@ export const ormawaRoutes = new Elysia({
           id: ormawaBooths.id,
           name: ormawaBooths.name,
           category: ormawaBooths.category,
+          code: ormawaBooths.code,
+          qrCode: ormawaBooths.qrCode,
+          xpReward: ormawaBooths.xpReward,
           floorNumber: floors.number,
         })
         .from(ormawaBooths)
         .leftJoin(floors, eq(ormawaBooths.floorId, floors.id))
-        .where(eq(ormawaBooths.picUserId, user.userId))
+        .where(boothCondition)
         .limit(1);
+
+      // Ambil daftar seluruh stan aktif jika ADMIN agar bisa berpindah stan di scanner
+      let allBooths: any[] = [];
+      if (user?.role === "ADMIN") {
+        allBooths = await db
+          .select({
+            id: ormawaBooths.id,
+            name: ormawaBooths.name,
+            code: ormawaBooths.code,
+            category: ormawaBooths.category,
+            floorNumber: floors.number,
+          })
+          .from(ormawaBooths)
+          .leftJoin(floors, eq(ormawaBooths.floorId, floors.id))
+          .where(eq(ormawaBooths.isActive, true))
+          .orderBy(floors.number, ormawaBooths.name);
+      }
 
       if (!booth) {
         set.status = 404;
         return { success: false, error: { code: "NOT_FOUND", message: "Stan tidak ditemukan untuk akun ini" } };
       }
 
-      return { success: true, data: booth };
+      return { success: true, data: { ...booth, allBooths } };
     },
     {
-      detail: { summary: "Data stan PIC Ormawa yang sedang login" },
+      detail: { summary: "Data stan PIC Ormawa atau Admin yang sedang login" },
+      query: t.Optional(t.Object({
+        boothId: t.Optional(t.String()),
+      })),
     }
   )
 
@@ -533,11 +566,25 @@ export const ormawaRoutes = new Elysia({
         return { success: false, error: { code: "MISSING_PARTICIPANT", message: "ID Peserta wajib disertakan" } };
       }
 
-      // 1. Cari booth berdasarkan QR Code
+      // 1. Cari booth berdasarkan QR Code, code, atau id (fleksibel & case-insensitive)
+      const isBoothUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(qrCode);
+      const boothMatchConditions = [
+        ilike(ormawaBooths.qrCode, qrCode),
+        ilike(ormawaBooths.code, qrCode),
+      ];
+      if (isBoothUuid) {
+        boothMatchConditions.push(eq(ormawaBooths.id, qrCode));
+      }
+
       const [booth] = await db
         .select()
         .from(ormawaBooths)
-        .where(and(eq(ormawaBooths.qrCode, qrCode), eq(ormawaBooths.isActive, true)))
+        .where(
+          and(
+            eq(ormawaBooths.isActive, true),
+            or(...boothMatchConditions)
+          )
+        )
         .limit(1);
 
       if (!booth) {
@@ -751,33 +798,67 @@ export const ormawaRoutes = new Elysia({
     }
   )
 
-  // POST /api/ormawa/scan-maba — (BARU) PIC Ormawa scan QR maba
+  // POST /api/ormawa/scan-maba — PIC Ormawa atau Admin scan QR maba
   .post(
     "/scan-maba",
-    async ({ body, user, set }) => {
-      const { mabaNim, mabaQrToken } = body;
+    async ({ body, user, set }: any) => {
+      const { mabaNim, mabaQrToken, boothId } = body;
       
-      let identifier = mabaNim || "";
-      if (mabaQrToken) {
-         identifier = mabaQrToken.replace("GENIUS-MABA-", "");
-      }
+      const raw = (mabaNim || mabaQrToken || "").trim();
+      const identifier = raw.replace(/^GENIUS-MABA-/i, "").trim();
+
       if (!identifier) {
         set.status = 400;
         return { success: false, error: { code: "BAD_REQUEST", message: "mabaNim atau mabaQrToken diperlukan" } };
       }
 
-      // 1. Cari maba berdasarkan NIM (identifier)
-      const [maba] = await db.select().from(users).where(eq(users.username, identifier)).limit(1);
+      // 1. Cari maba berdasarkan NIM (username) atau ID peserta
+      const isMabaUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+      const userCondition = isMabaUuid
+        ? or(eq(users.username, identifier), eq(users.id, identifier))
+        : eq(users.username, identifier);
+
+      const [maba] = await db
+        .select()
+        .from(users)
+        .where(userCondition)
+        .limit(1);
+
       if (!maba) {
         set.status = 404;
-        return { success: false, error: { code: "NOT_FOUND", message: "Mahasiswa tidak ditemukan" } };
+        return {
+          success: false,
+          error: {
+            code: "NOT_FOUND",
+            message: `Mahasiswa dengan NIM / ID '${identifier}' tidak ditemukan di database.`,
+          },
+        };
       }
 
-      // 2. Cari booth berdasarkan picUserId yang login
-      const [booth] = await db.select().from(ormawaBooths).where(eq(ormawaBooths.picUserId, user?.userId!)).limit(1);
+      // 2. Cari booth berdasarkan picUserId yang login atau boothId jika ADMIN
+      let booth;
+      if (user?.role === "ADMIN" && boothId) {
+        const isBoothIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(boothId);
+        const condition = isBoothIdUuid ? eq(ormawaBooths.id, boothId) : eq(ormawaBooths.code, boothId);
+        const [found] = await db.select().from(ormawaBooths).where(condition).limit(1);
+        booth = found;
+      } else if (user?.role === "ADMIN") {
+        const [found] = await db.select().from(ormawaBooths).where(eq(ormawaBooths.isActive, true)).limit(1);
+        booth = found;
+      } else {
+        const [found] = await db.select().from(ormawaBooths).where(eq(ormawaBooths.picUserId, user?.userId!)).limit(1);
+        booth = found;
+      }
+
       if (!booth) {
         set.status = 403;
-        return { success: false, error: { code: "FORBIDDEN", message: "Akun Anda tidak terhubung dengan stan manapun." } };
+        return {
+          success: false,
+          error: {
+            code: "FORBIDDEN",
+            message: "Akun Anda tidak terhubung dengan stan manapun. Hubungi Super Admin.",
+          },
+        };
       }
 
       // 3. Cek duplikat
@@ -803,7 +884,7 @@ export const ormawaRoutes = new Elysia({
       
       const previousScanCount = Number(scanCountRow?.count || 0);
       const isEligibleForXp = previousScanCount < 10;
-      const xpEarned = isEligibleForXp ? booth.xpReward : 0;
+      const xpEarned = isEligibleForXp ? (booth.xpReward || 75) : 0;
 
       // 5. Insert scan
       const [newScan] = await db.insert(ormawaScans).values({
@@ -848,7 +929,7 @@ export const ormawaRoutes = new Elysia({
 
       return {
         success: true,
-        message: `Kunjungan mahasiswa ${maba.fullName} berhasil dicatat!`,
+        message: `Kunjungan mahasiswa ${maba.fullName} berhasil dicatat di ${booth.name}!`,
         data: {
           maba: {
             id: maba.id,
@@ -858,6 +939,7 @@ export const ormawaRoutes = new Elysia({
           booth: {
             id: booth.id,
             name: booth.name,
+            code: booth.code,
           },
           xpEarned,
           totalScanned: previousScanCount + 1,
@@ -867,10 +949,11 @@ export const ormawaRoutes = new Elysia({
     },
     {
       use: requireOrmawaOrAdmin,
-      detail: { summary: "PIC Ormawa scan QR maba" },
+      detail: { summary: "PIC Ormawa atau Admin scan QR maba" },
       body: t.Object({
         mabaNim: t.Optional(t.String()),
         mabaQrToken: t.Optional(t.String()),
+        boothId: t.Optional(t.String()),
       }),
     }
   )

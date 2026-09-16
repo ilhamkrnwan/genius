@@ -11,21 +11,20 @@ export interface ConfirmOptions {
   loading?: boolean;
 }
 
-const isOpen = ref(false);
-const isBusy = ref(false);
-const options = ref<ConfirmOptions>({
-  title: "Konfirmasi Tindakan",
-  description: "Apakah Anda yakin ingin melanjutkan tindakan ini?",
-  confirmText: "Konfirmasi",
-  cancelText: "Batal",
-  variant: "primary",
-  icon: "alert",
-  loading: false,
-});
-
 let resolvePromise: ((value: boolean) => void) | null = null;
 
 export function useConfirm() {
+  const isOpen = useState<boolean>("confirm_modal_open_state", () => false);
+  const isBusy = useState<boolean>("confirm_modal_busy_state", () => false);
+  const options = useState<ConfirmOptions>("confirm_modal_options_state", () => ({
+    title: "Konfirmasi Tindakan",
+    description: "Apakah Anda yakin ingin melanjutkan tindakan ini?",
+    confirmText: "Konfirmasi",
+    cancelText: "Batal",
+    variant: "primary",
+    icon: "alert",
+    loading: false,
+  }));
   function show(opts: ConfirmOptions): Promise<boolean> {
     // Intelligent auto-defaulting
     const inferredVariant: "danger" | "warning" | "info" | "primary" =

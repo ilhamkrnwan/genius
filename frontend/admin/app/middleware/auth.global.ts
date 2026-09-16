@@ -1,24 +1,39 @@
 /**
- * Global authentication & role middleware for Admin & Buddy Control Center.
+ * Global authentication & role middleware for Admin, Buddy, and Ormawa Portals.
  * Protects all routes except /login.
- * Separates access between Superadmin and Buddy roles.
+ * Redirects authenticated users to their respective role dashboards.
  */
 export default defineNuxtRouteMiddleware((to) => {
-  // Skip middleware on login pages to avoid redirect loops
-  if (to.path === "/login" || to.path === "/ormawa/login") return;
+  // If legacy /ormawa/login is accessed, redirect to unified /login
+  if (to.path === "/ormawa/login") {
+    return navigateTo({ path: "/login", query: to.query }, { replace: true });
+  }
 
-  // Check authentication status (client-side only)
+  // Client-side authentication checks
   if (import.meta.client) {
     const token = localStorage.getItem("genius_admin_token");
     const userRaw = localStorage.getItem("genius_admin_user");
 
-    if (!token || !userRaw) {
-      if (to.path.startsWith("/ormawa")) {
-        return navigateTo({
-          path: "/ormawa/login",
-          query: { redirect: to.fullPath },
-        });
+    // Handle /login route
+    if (to.path === "/login") {
+      if (token && userRaw) {
+        try {
+          const user = JSON.parse(userRaw);
+          const role = user?.role;
+          if (role === "BUDDY") return navigateTo("/buddy");
+          if (role === "ORMAWA_PIC") return navigateTo("/ormawa/portal");
+          if (role === "ADMIN") return navigateTo("/");
+        } catch {
+          // Token or user corrupted, stay on /login
+          localStorage.removeItem("genius_admin_token");
+          localStorage.removeItem("genius_admin_user");
+        }
       }
+      return;
+    }
+
+    // Protected routes: redirect unauthenticated users to /login
+    if (!token || !userRaw) {
       return navigateTo({
         path: "/login",
         query: { redirect: to.fullPath },
@@ -32,7 +47,7 @@ export default defineNuxtRouteMiddleware((to) => {
       if (role !== "ADMIN" && role !== "BUDDY" && role !== "ORMAWA_PIC") {
         localStorage.removeItem("genius_admin_token");
         localStorage.removeItem("genius_admin_user");
-        return navigateTo(to.path.startsWith("/ormawa") ? "/ormawa/login" : "/login");
+        return navigateTo("/login");
       }
 
       // If Ormawa PIC accesses superadmin or buddy routes, redirect them to /ormawa/portal
@@ -67,7 +82,9 @@ export default defineNuxtRouteMiddleware((to) => {
         }
       }
     } catch {
-      return navigateTo(to.path.startsWith("/ormawa") ? "/ormawa/login" : "/login");
+      localStorage.removeItem("genius_admin_token");
+      localStorage.removeItem("genius_admin_user");
+      return navigateTo("/login");
     }
   }
 });

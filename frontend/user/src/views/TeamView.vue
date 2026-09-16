@@ -128,6 +128,11 @@ function openMemberDetail(member: TeamMemberData) {
   isDetailModalOpen.value = true;
 }
 
+function closeMemberDetail() {
+  isDetailModalOpen.value = false;
+  selectedMember.value = null;
+}
+
 // Separate Buddies and Participants
 const buddies = computed<TeamMemberData[]>(() => {
   if (!teamData.value?.members) return [];
@@ -546,7 +551,7 @@ onMounted(() => {
       :isOpen="isDetailModalOpen"
       :member="selectedMember"
       :isCurrentUser="selectedMember ? isCurrentUser(selectedMember) : false"
-      @close="isDetailModalOpen = false"
+      @close="closeMemberDetail"
     />
   </div>
 </template>

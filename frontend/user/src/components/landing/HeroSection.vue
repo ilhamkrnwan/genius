@@ -195,7 +195,7 @@ onMounted(() => {
     const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
     tl.from('.hero-topbar', { y: -25, opacity: 0, duration: 0.55 })
       .from('.hero-title-wrap', { y: 25, opacity: 0, duration: 0.55, ease: 'back.out(1.4)' }, '-=0.2')
-      .from('.hero-char-box', { y: 20, opacity: 0, duration: 0.45 }, '-=0.25')
+      .from('.hero-char-box', { y: 20, opacity: 0, duration: 0.45, clearProps: 'all' }, '-=0.25')
       .from('.hero-cta-main', { scale: 0.92, y: 15, opacity: 0, duration: 0.4, ease: 'back.out(1.8)' }, '-=0.2')
       .from('.hero-awwwards-dock', { y: 25, opacity: 0, duration: 0.5, ease: 'back.out(1.2)', clearProps: 'all' }, '-=0.2');
 

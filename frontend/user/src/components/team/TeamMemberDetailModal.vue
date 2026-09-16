@@ -51,7 +51,7 @@ function handleClose() {
   try {
     if (gameStore.soundEnabled) soundEngine.playClick();
   } catch {
-    // Ignore sound audio errors
+    // audio failure should never prevent modal from closing
   } finally {
     emit('close');
   }
@@ -107,7 +107,7 @@ const formattedClass = computed(() => {
 <template>
   <div
     v-if="isOpen && member"
-    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#0a0604]/85 backdrop-blur-md animate-in fade-in duration-200 select-none font-sans"
+    class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-[#0a0604]/85 backdrop-blur-md animate-in fade-in duration-200 select-none font-sans"
     @click.self="handleClose"
   >
     <div
