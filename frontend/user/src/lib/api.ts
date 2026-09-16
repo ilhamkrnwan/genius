@@ -251,6 +251,13 @@ export const api = {
     return this.request('/ormawa/booths' + query);
   },
 
+  async scanOrmawa(qrToken: string, participantId?: string) {
+    return this.request('/ormawa/scan', {
+      method: 'POST',
+      body: JSON.stringify({ qrToken, participantId }),
+    });
+  },
+
   async getMyOrmawaProgress(participantId: string) {
     return this.request('/ormawa/progress/' + encodeURIComponent(participantId));
   },

@@ -13,11 +13,8 @@ export const ORMAWA_STANDS: OrmawaStand[] = [
     tagline: 'Inovasi Rekayasa Elektro Menuju Kemandirian Teknologi',
     description: 'Wadah aspirasi, kreativitas, riset keteknikan, dan pengembangan kompetensi mahasiswa Teknik Elektro UNU Yogyakarta.',
     instagram: '@hmte_unujogja',
-<<<<<<< HEAD
     badgeTitle: 'Cyber Electro Engineer',
     badgeColor: '#f59e0b',
-=======
->>>>>>> origin/fattach-ormawa
     activities: [
       'Pelatihan Robotika, IoT, dan Renewable Energy',
       'Klinik Rangkaian Elektronika & Mikrokontroler',
@@ -40,11 +37,8 @@ export const ORMAWA_STANDS: OrmawaStand[] = [
     tagline: 'Harmoni Melodi, Ekspresi Jiwa Kampus',
     description: 'Komunitas musisi kampus penampung minat band, akustik, aransemen lagu, audio engineering, dan panggung apresiasi nada.',
     instagram: '@musikflorence_unu',
-<<<<<<< HEAD
     badgeTitle: 'Sonic Maestro',
     badgeColor: '#a855f7',
-=======
->>>>>>> origin/fattach-ormawa
     activities: [
       'Latihan Rutin Band & Akustik',
       'Panggung Apresiasi & Parade Musik Kampus',
@@ -67,11 +61,8 @@ export const ORMAWA_STANDS: OrmawaStand[] = [
     tagline: 'Harmoni Nada Etnik, Religius, & Kebangsaan',
     description: 'Paduan suara resmi representasi universitas dalam kompetisi paduan suara, konser harmoni kebangsaan, dan protokoler wisuda.',
     instagram: '@psm_unujogja',
-<<<<<<< HEAD
     badgeTitle: 'Golden Melody',
     badgeColor: '#ec4899',
-=======
->>>>>>> origin/fattach-ormawa
     activities: [
       'Pelatihan Vokal & Solfeggio',
       'Paduan Suara Wisuda & Seremoni Resmi Kampus',
@@ -94,11 +85,8 @@ export const ORMAWA_STANDS: OrmawaStand[] = [
     tagline: 'Coding The Future, Innovating The Nation',
     description: 'Himpunan pemersatu mahasiswa informatika, pengembang software engineering, data science, cybersecurity, dan kompetisi Gemastik.',
     instagram: '@himatika_unujogja',
-<<<<<<< HEAD
     badgeTitle: 'Code Architect',
     badgeColor: '#2563eb',
-=======
->>>>>>> origin/fattach-ormawa
     activities: [
       'Bootcamp Pemrograman Web, Mobile, dan AI',
       'Hackathon Mahasiswa Informatika & Competitive Programming',
@@ -121,11 +109,8 @@ export const ORMAWA_STANDS: OrmawaStand[] = [
     tagline: 'Benteng Ulama & Bangsa, Pendekar Berakhlak Mulia',
     description: 'Kawah candradimuka pesilat Nahdlatul Ulama yang memadukan keindahan jurus tradisional, adu tanding fisik, dan nilai ksatria Aswaja.',
     instagram: '@silat_unujogja',
-<<<<<<< HEAD
     badgeTitle: 'Pendekar Aswaja',
     badgeColor: '#15803d',
-=======
->>>>>>> origin/fattach-ormawa
     activities: [
       'Latihan Jurus Baku & Tanding Prestasi',
       'Kejuaraan Pencak Silat Antar Kampus',
@@ -148,11 +133,8 @@ export const ORMAWA_STANDS: OrmawaStand[] = [
     tagline: 'Gerak Indah Pesona Tradisi & Ekspresi Kontemporer',
     description: 'Ruang gerak estetika dan koreografi penari muda dalam melestarikan tarian klasik nusantara serta kreasi tari kontemporer.',
     instagram: '@tari_unujogja',
-<<<<<<< HEAD
     badgeTitle: 'Graceful Dancer',
     badgeColor: '#f43f5e',
-=======
->>>>>>> origin/fattach-ormawa
     activities: [
       'Olah Tubuh & Koreografi Tari Tradisi Nusantara',
       'Pentas Seni & Tari Penyambutan Tamu Kehormatan',
@@ -177,7 +159,6 @@ export const ORMAWA_STANDS: OrmawaStand[] = [
     tagline: 'Farmasis Hebat, Cerdas, dan Berintegritas',
     description: 'Organisasi keprofesian dan keilmuan mahasiswa Farmasi dalam pengembangan sains obat halal, klinis, dan herbal nusantara.',
     instagram: '@himafar_unujogja',
-<<<<<<< HEAD
     badgeTitle: 'Master of Apothecary',
     badgeColor: '#10b981',
     activities: [
@@ -332,148 +313,6 @@ export const ORMAWA_STANDS: OrmawaStand[] = [
     requirements: [
       'Mahasiswa aktif UNU Yogyakarta asal/pemerhati kebudayaan Sumatera',
     ],
-=======
-    activities: [
-      'Edukasi Penggunaan Obat Rasional (DAGUSIBU)',
-      'Klinik Herbal Sains & Farmasi Halal',
-      'Seminar Kefarmasian & Lomba Konseling Pasien',
-    ],
-    requirements: [
-      'Mahasiswa aktif UNU Yogyakarta',
-      'Dedikasi pada pelayanan kesehatan dan sains obat',
-    ],
-    contactPerson: 'Roikhan Ziaulhaq Aula (NIM 243333057) - 082226332991',
-  },
-  {
-    id: 'ormawa-himagri',
-    name: 'Himpunan Mahasiswa Agribisnis (HIMAGRI)',
-    shortName: 'HIMAGRI',
-    category: 'Himpunan Mahasiswa',
-    floor: 4,
-    location: 'Selasar Lantai 4 — Stand E-07',
-    qrToken: 'UNU-ORMAWA-HIMAGRI-2026',
-    tagline: 'Agrososiopreneur Unggul Penggerak Ketahanan Pangan',
-    description: 'Penggerak agrososiopreneur modern, rantai pasok pangan berkelanjutan, dan pemberdayaan petani milenial berbasis inovasi cerdas.',
-    instagram: '@himagri_unujogja',
-    activities: [
-      'Bina Desa Pertanian & Praktik Lapangan Terpadu',
-      'Inkubasi Bisnis Produk Pangan Agribisnis',
-      'Seminar Nasional Pertanian Berkelanjutan',
-    ],
-    requirements: [
-      'Mahasiswa aktif UNU Yogyakarta',
-      'Peduli pada sektor pangan dan agribisnis berkelanjutan',
-    ],
-    contactPerson: 'Eka Aditya (NIM 243331011) - 08812451059',
-  },
-  {
-    id: 'ormawa-hmp-thp',
-    name: 'Himpunan Mahasiswa Teknologi Hasil Pertanian (HMP THP)',
-    shortName: 'HMP THP',
-    category: 'Himpunan Mahasiswa',
-    floor: 4,
-    location: 'Selasar Lantai 4 — Stand E-08',
-    qrToken: 'UNU-ORMAWA-HMP-THP-2026',
-    tagline: 'Inovasi Pengolahan Pangan Halal & Berkualitas',
-    description: 'Organisasi kemahasiswaan riset pengolahan pangan halal, bioteknologi pangan nusantara, mikrobiologi terapan, dan ketahanan pangan.',
-    instagram: '@hmpthp_unujogja',
-    activities: [
-      'Riset Formulasi Produk Olahan Pangan Lokal',
-      'Workshop Sertifikasi & Standarisasi Pangan Halal',
-      'Expo Produk Inovasi Olahan Hasil Tani',
-    ],
-    requirements: [
-      'Mahasiswa aktif UNU Yogyakarta',
-      'Antusias dalam bidang teknologi dan sains pangan',
-    ],
-    contactPerson: 'Muh. Naufal Rosyiq Ammar (NIM 243332036) - 0882003832116',
-  },
-  {
-    id: 'ormawa-badminton',
-    name: 'UKM Badminton UNU Yogyakarta',
-    shortName: 'UKM Badminton',
-    category: 'Olahraga',
-    floor: 4,
-    location: 'Selasar Lantai 4 — Stand E-11',
-    qrToken: 'UNU-ORMAWA-BADMINTON-2026',
-    tagline: 'Lincah, Tangkas, Raih Prestasi di Lapangan',
-    description: 'Wadah atlet dan peminat olahraga bulutangkis untuk pembinaan teknik, sparring berkala, dan kejuaraan pekan olahraga mahasiswa.',
-    instagram: '@badminton_unujogja',
-    activities: [
-      'Latihan Rutin Footwork & Pukulan Strategis',
-      'Sparring Match Antar Kampus Yogyakarta',
-      'Turnamen Internal & Seleksi Pomda',
-    ],
-    requirements: [
-      'Mahasiswa aktif UNU Yogyakarta',
-      'Memiliki raket pribadi dan semangat sportivitas',
-    ],
-    contactPerson: 'Riski Ramadhan (NIM 251113022) - 081351770669',
-  },
-  {
-    id: 'ormawa-mapala',
-    name: 'UKM Mahasiswa Pecinta Alam UNUYO (MAPALA)',
-    shortName: 'UKM MAPALA UNUYO',
-    category: 'Pecinta Alam & Lingkungan',
-    floor: 4,
-    location: 'Selasar Lantai 4 — Stand E-12',
-    qrToken: 'UNU-ORMAWA-MAPALA-2026',
-    tagline: 'Lestari Alamku, Tangguh Jiwaku',
-    description: 'Organisasi penggiat alam bebas, konservasi rimba gunung, susur gua (caving), rock climbing, dan tanggap darurat search & rescue.',
-    instagram: '@mapala_unuyo',
-    activities: [
-      'Diklatsar Navigasi Darat, Survival, & Caving',
-      'Ekspedisi Pendakian & Aksi Konservasi Lingkungan',
-      'Pelatihan SAR & Tanggap Bencana Darurat',
-    ],
-    requirements: [
-      'Mahasiswa aktif UNU Yogyakarta',
-      'Sehat jasmani dan memiliki komitmen konservasi',
-    ],
-    contactPerson: 'Aditya Firdaus Alfajar (NIM 231111047) - 082138047276',
-  },
-  {
-    id: 'ormawa-ksr',
-    name: 'UKM Korps Sukarela PMI Unit UNU Yogyakarta (KSR PMI)',
-    shortName: 'UKM KSR PMI UNUYO',
-    category: 'Sosial & Kemanusiaan',
-    floor: 4,
-    location: 'Selasar Lantai 4 — Stand E-17',
-    qrToken: 'UNU-ORMAWA-KSR-2026',
-    tagline: 'Tulus Berbakti Demi Kemanusiaan',
-    description: 'Garda terdepan kemanusiaan kampus dalam layanan P3K cepat tanggap, donor darah teratur, edukasi tanggap bencana, dan bakti kesehatan.',
-    instagram: '@ksrpmi_unujogja',
-    activities: [
-      'Pendidikan & Pelatihan Dasar Pertolongan Pertama',
-      'Aksi Rutin Donor Darah Kampus',
-      'Tim Medis Siaga di Kegiatan Besar Kampus',
-    ],
-    requirements: [
-      'Mahasiswa aktif UNU Yogyakarta',
-      'Memiliki jiwa kepedulian sosial & kerelawanan',
-    ],
-    contactPerson: 'Wahyu Nugroho (NIM 224442005) - 089514729547',
-  },
-  {
-    id: 'ormawa-permasum',
-    name: 'PERMASUM UNUYO (Persatuan Mahasiswa Sumatera UNU Yogyakarta)',
-    shortName: 'PERMASUM UNUYO',
-    category: 'Organisasi Daerah & Kebudayaan',
-    floor: 4,
-    location: 'Selasar Lantai 4 — Stand E-18',
-    qrToken: 'UNU-ORMAWA-PERMASUM-2026',
-    tagline: 'Satu Rasa, Satu Hati, Mahasiswa Rantau Sumatera',
-    description: 'Rumah kekeluargaan dan persatuan mahasiswa rantau asal pulau Sumatera di UNU Yogyakarta untuk pelestarian adat, seni, dan sinergi daerah.',
-    instagram: '@permasum_unuyo',
-    activities: [
-      'Malam Keakraban & Temu Kangen Rantau Sumatera',
-      'Gelar Budaya & Kuliner Khas Sumatera',
-      'Forum Diskusi Pemberdayaan Alumni & Mahasiswa Daerah',
-    ],
-    requirements: [
-      'Mahasiswa aktif UNU Yogyakarta asal/pemerhati kebudayaan Sumatera',
-    ],
->>>>>>> origin/fattach-ormawa
     contactPerson: 'Rifki Ramadani (NIM 235551056) - 083830130949',
   },
 

@@ -23,7 +23,6 @@ import {
   scoreTransactions,
   gameSessions,
   achievements,
-  ormawaInterests,
 } from "./db/schema";
 import { hashPassword } from "./lib/password";
 import { ensureOfficialOrmawaPics } from "./db/ensure-ormawa-pics";

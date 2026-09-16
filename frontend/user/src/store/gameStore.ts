@@ -4,6 +4,8 @@ import { BOOTHS_DATA, FLOORS_DATA, INITIAL_PARTICIPANT } from '../data/mockData'
 import { soundEngine } from '../lib/sound';
 import { AttendanceStoreMap, DailyReflectionData, AttendanceStatus } from '../types/attendance';
 import { api } from '../lib/api';
+import { ORMAWA_STANDS } from '../data/ormawaData';
+import { OrmawaScanResult, OrmawaStand } from '../types/ormawa';
 
 const STORAGE_KEY = 'genius_unu_user_storage_v1';
 

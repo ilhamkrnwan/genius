@@ -22,6 +22,7 @@
     "db:generate": "bun --filter @genius-unu/backend db:generate",
     "db:studio": "bun --filter @genius-unu/backend db:studio",
     "db:seed": "bun --filter @genius-unu/backend db:seed",
+    "db:seed:maba": "bun --filter @genius-unu/backend db:seed:maba",
     "db:seed:official": "bun --filter @genius-unu/backend db:seed:official",
     "db:seed:quiz": "bun --filter @genius-unu/backend db:seed:quiz",
     "db:repair:ormawa-pics": "bun --filter @genius-unu/backend db:repair:ormawa-pics"

@@ -35,6 +35,8 @@ export interface OrmawaStand {
   contactPerson?: string;
   contactPhone?: string;
   logoUrl?: string;
+  badgeTitle?: string;
+  badgeColor?: string;
 }
 
 export interface OrmawaInterest {
@@ -55,4 +57,12 @@ export interface OrmawaInterestPayload {
   instagramUsername: string;
   motivation?: string;
   experience?: string;
+}
+
+export interface OrmawaScanResult {
+  success: boolean;
+  message: string;
+  xpEarned: number;
+  stand?: OrmawaStand;
+  isCapped?: boolean;
 }

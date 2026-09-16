@@ -10,6 +10,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run src/seed.ts",
+    "db:seed:maba": "bun run scripts/seed_maba_2026.ts",
     "db:seed:official": "bun run scripts/seed_official_quiz.ts",
     "db:seed:quiz": "bun run scripts/seed_genius_2026_quiz.ts",
     "db:repair:ormawa-pics": "bun run src/db/ensure-ormawa-pics.ts",
