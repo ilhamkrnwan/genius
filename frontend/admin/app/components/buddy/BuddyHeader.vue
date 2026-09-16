@@ -19,9 +19,10 @@
       </div>
     </div>
 
-    <!-- Right: Logout -->
+    <!-- Right: Logout Button -->
     <div class="flex items-center gap-1.5 shrink-0">
       <button
+        type="button"
         @click="confirmLogout"
         class="h-7 w-7 rounded bg-[#2a1313] border border-red-800/80 text-red-400 hover:text-white hover:bg-red-900 flex items-center justify-center cursor-pointer transition-all active:scale-95"
         title="Keluar"

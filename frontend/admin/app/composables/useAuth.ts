@@ -167,6 +167,11 @@ export function useAuth() {
     }
   }
 
+  async function loginAsPreset(presetUser: User, password?: string) {
+    const defaultPassword = password || (presetUser.role === "ADMIN" ? "admin2026" : presetUser.role === "BUDDY" ? "buddy2026" : "ormawa2026");
+    return await login(presetUser.username, defaultPassword);
+  }
+
   async function switchRole(targetRole: "ADMIN" | "BUDDY" | "ORMAWA_PIC") {
     if (targetRole === "BUDDY") {
       navigateTo("/buddy");
@@ -202,11 +207,18 @@ export function useAuth() {
   }
 
   async function confirmLogout() {
+    const isBuddy = user.value?.role === "BUDDY";
     const isPic = user.value?.role === "ORMAWA_PIC";
     const { show } = useConfirm();
     const confirmed = await show({
-      title: isPic ? "Keluar dari Portal Stan Ormawa?" : "Keluar dari Portal Admin?",
-      description: isPic
+      title: isBuddy
+        ? "Keluar dari Sesi Buddy?"
+        : isPic
+        ? "Keluar dari Portal Stan Ormawa?"
+        : "Keluar dari Portal Admin?",
+      description: isBuddy
+        ? "Sesi aktif bimbingan Anda akan diakhiri. Pastikan seluruh penilaian dan presensi maba telah tersimpan."
+        : isPic
         ? "Sesi aktif stan Anda akan diakhiri. Pastikan semua verifikasi stempel telah selesai."
         : "Sesi aktif Anda akan diakhiri. Pastikan semua perubahan data telah tersimpan sebelum keluar.",
       confirmText: "Ya, Keluar",
@@ -217,7 +229,14 @@ export function useAuth() {
 
     if (confirmed) {
       const toast = useToast();
-      toast.info("Sampai Jumpa!", isPic ? "Anda telah keluar dari sesi stan ormawa." : "Anda telah keluar dari sesi admin.");
+      toast.info(
+        "Sampai Jumpa!",
+        isBuddy
+          ? "Anda telah keluar dari sesi pendamping buddy."
+          : isPic
+          ? "Anda telah keluar dari sesi stan ormawa."
+          : "Anda telah keluar dari sesi admin."
+      );
       await logout();
     }
   }
@@ -255,6 +274,7 @@ export function useAuth() {
     isOrmawaPic,
     userInitials,
     login,
+    loginAsPreset,
     switchRole,
     logout,
     confirmLogout,

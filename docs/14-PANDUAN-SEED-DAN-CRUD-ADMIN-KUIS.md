@@ -56,9 +56,9 @@ cd backend && bun run db:seed
 
 **Data yang Dihasilkan:**
 * 1 Akun Master Admin (`username: admin`, `password: admin2026`).
-* 10 Akun Buddy Resmi (`NIM 25111101` s/d `25111110`, `password: genius2026`).
+* 50 Akun Buddy Resmi (`username: buddy01` s/d `buddy50`, `password: buddy2026`).
 * 100 Akun Mahasiswa Baru (`NIM 26111101` s/d `26111200`, `password: genius2026`).
-* 5 Kelompok Resmi (`Genius 01` s/d `Genius 05`), masing-masing beranggotakan 20 Maba + 2 Buddy pendamping.
+* 50 Kelompok Resmi (`Genius 01` s/d `Genius 50`), masing-masing beranggotakan Maba + Buddy pendamping.
 * 19 Booth Ormawa / UKM Expo di Lantai 3, 4, dan 5 lengkap dengan QR presensi.
 * 1 Sesi Presensi Kehadiran Pagi Hari 1.
 * **Seluruh 51 butir soal resmi 9 Pos** (otomatis diintegrasikan pada langkah 9/9).

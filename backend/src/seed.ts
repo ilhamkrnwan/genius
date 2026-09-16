@@ -56,6 +56,7 @@ async function seed() {
   // Default Passwords
   const adminPassword = await hashPassword("admin2026");
   const defaultPassword = await hashPassword("genius2026");
+  const buddyPassword = await hashPassword("buddy2026");
 
   // ============================================================
   // 2. SEED ADMIN USER
@@ -74,14 +75,15 @@ async function seed() {
   console.log("  ✅ Admin created: username 'admin', password 'admin2026'");
 
   // ============================================================
-  // 3. SEED 10 BUDDY (NIM 25111101 - 25111110)
+  // 3. SEED 50 OFFICIAL BUDDIES (buddy01 - buddy50)
   // ============================================================
-  console.log("👥 [3/8] Creating 10 Official Buddies (NIM 25111101 - 25111110)...");
-  const buddyInserts = RAW_BUDDY_DATA.slice(0, 10).map((b, idx) => {
-    const nim = `251111${String(idx + 1).padStart(2, "0")}`;
+  console.log("👥 [3/8] Creating 50 Official Buddies (buddy01 - buddy50)...");
+  const buddyInserts = RAW_BUDDY_DATA.slice(0, 50).map((b, idx) => {
+    const padNum = String(idx + 1).padStart(2, "0");
+    const username = `buddy${padNum}`;
     return {
-      username: nim,
-      passwordHash: defaultPassword,
+      username,
+      passwordHash: buddyPassword,
       fullName: b.fullName,
       role: "BUDDY" as const,
       status: "ACTIVE" as const,
@@ -96,7 +98,7 @@ async function seed() {
   });
 
   const createdBuddies = await db.insert(users).values(buddyInserts).returning();
-  console.log(`  ✅ ${createdBuddies.length} Official Buddies registered with NIM 25111101 - 25111110 (Password: genius2026)`);
+  console.log(`  ✅ ${createdBuddies.length} Official Buddies registered with username buddy01 - buddy50 (Password: buddy2026)`);
 
   // ============================================================
   // 4. SEED 100 PARTICIPANTS (NIM 26111101 - 26111200)
@@ -394,45 +396,52 @@ async function seed() {
   // ============================================================
   console.log("🛡️ [7/8] Creating 5 Official Genius Teams & Linking 2 Buddies + 20 MABA per Team...");
 
-  const teamDefinitions = [
+  const teamDefinitions: Array<{
+    code: string;
+    name: string;
+    captainNim?: string;
+    primaryBuddyNim?: string;
+    assistantBuddyNim?: string;
+    participantNims: string[];
+  }> = [
     {
       code: "GENIUS-01",
       name: "Jabu",
       captainNim: "26111101",
-      primaryBuddyNim: "25111101",
-      assistantBuddyNim: "25111102",
+      primaryBuddyNim: "buddy01",
+      assistantBuddyNim: "buddy02",
       participantNims: OFFICIAL_PARTICIPANTS.slice(0, 20).map((p) => p.nim),
     },
     {
       code: "GENIUS-02",
       name: "Bolon",
       captainNim: "26111121",
-      primaryBuddyNim: "25111103",
-      assistantBuddyNim: "25111104",
+      primaryBuddyNim: "buddy03",
+      assistantBuddyNim: "buddy04",
       participantNims: OFFICIAL_PARTICIPANTS.slice(20, 40).map((p) => p.nim),
     },
     {
       code: "GENIUS-03",
       name: "Gadang",
       captainNim: "26111141",
-      primaryBuddyNim: "25111105",
-      assistantBuddyNim: "25111106",
+      primaryBuddyNim: "buddy05",
+      assistantBuddyNim: "buddy06",
       participantNims: OFFICIAL_PARTICIPANTS.slice(40, 60).map((p) => p.nim),
     },
     {
       code: "GENIUS-04",
       name: "Limas",
       captainNim: "26111161",
-      primaryBuddyNim: "25111107",
-      assistantBuddyNim: "25111108",
+      primaryBuddyNim: "buddy07",
+      assistantBuddyNim: "buddy08",
       participantNims: OFFICIAL_PARTICIPANTS.slice(60, 80).map((p) => p.nim),
     },
     {
       code: "GENIUS-05",
       name: "Lontik",
       captainNim: "26111181",
-      primaryBuddyNim: "25111109",
-      assistantBuddyNim: "25111110",
+      primaryBuddyNim: "buddy09",
+      assistantBuddyNim: "buddy10",
       participantNims: OFFICIAL_PARTICIPANTS.slice(80, 100).map((p) => p.nim),
     },
   ];
@@ -444,16 +453,21 @@ async function seed() {
     "Sebua", "Hada", "Betang", "Lamin", "Baloy", "Banjar", "Tambi", "Laika", "Boyang", "Buton",
     "Lego", "Lopo", "Mbaru", "Sao", "Musalaki", "Uma", "Honai", "Lopo", "Baileo", "Sasadu",
   ];
-  teamDefinitions.push(...houseNames.slice(5).map((name, index) => ({
-    code: `GENIUS-${String(index + 6).padStart(2, "0")}`,
-    name,
-    participantNims: [],
-  })));
+  teamDefinitions.push(...houseNames.slice(5).map((name, index) => {
+    const buddyNum = index + 11;
+    return {
+      code: `GENIUS-${String(index + 6).padStart(2, "0")}`,
+      name,
+      primaryBuddyNim: buddyNum <= 50 ? `buddy${String(buddyNum).padStart(2, "0")}` : undefined,
+      assistantBuddyNim: undefined,
+      participantNims: [],
+    };
+  }));
 
   for (const tDef of teamDefinitions) {
-    const captainUser = createdParticipants.find((p) => p.username === tDef.captainNim);
-    const primaryBuddy = createdBuddies.find((b) => b.username === tDef.primaryBuddyNim);
-    const assistantBuddy = createdBuddies.find((b) => b.username === tDef.assistantBuddyNim);
+    const captainUser = tDef.captainNim ? createdParticipants.find((p) => p.username === tDef.captainNim) : undefined;
+    const primaryBuddy = tDef.primaryBuddyNim ? createdBuddies.find((b) => b.username === tDef.primaryBuddyNim) : undefined;
+    const assistantBuddy = tDef.assistantBuddyNim ? createdBuddies.find((b) => b.username === tDef.assistantBuddyNim) : undefined;
 
     const [team] = await db
       .insert(teams)
@@ -873,9 +887,9 @@ async function seed() {
   console.log("🎉 GENIUS 2026 DATABASE SEEDING COMPLETED SUCCESSFULLY!");
   console.log("========================================================");
   console.log("👤 Admin       : admin (password: admin2026)");
-  console.log("👥 Buddies (10): 25111101 s/d 25111110 (password: genius2026)");
+  console.log("👥 Buddies (50): buddy01 s/d buddy50 (password: buddy2026 / genius2026)");
   console.log("🎓 MABA (100)  : 26111101 s/d 26111200 (password: genius2026)");
-  console.log("🛡️ Kelompok (5): Jabu s/d Lontik (20 MABA + 2 Buddy/tim)");
+  console.log("🛡️ Kelompok (50): Genius 01 s/d Genius 50 (Jabu s/d Sasadu)");
   console.log("🎪 Ormawa (19) : 19 Official Booths (Lantai 3, 4, 5)");
   console.log("🧩 Kuis Resmi  : 9 Pos di 6 Lantai (51 Soal, 100 Poin/pos)");
   console.log("========================================================\n");

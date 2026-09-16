@@ -52,22 +52,27 @@ function handleClose() {
     if (gameStore.soundEnabled) soundEngine.playClick();
   } catch {
     // audio failure should never prevent modal from closing
+  } finally {
+    emit('close');
   }
-  emit('close');
 }
 
-function onKeydown(e: KeyboardEvent) {
+function handleKeyDown(e: KeyboardEvent) {
   if (e.key === 'Escape' && props.isOpen) {
     handleClose();
   }
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', onKeydown);
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', handleKeyDown);
+  }
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', onKeydown);
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', handleKeyDown);
+  }
 });
 
 const displayAvatar = computed(() => {
