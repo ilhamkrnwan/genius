@@ -67,36 +67,6 @@
           </span>
         </div>
 
-        <!-- Dynamic Booth Selector from PostgreSQL -->
-        <div class="space-y-1.5 pt-0.5">
-          <div class="flex items-center justify-between text-[9px] font-pixel text-[#a08060] uppercase">
-            <span>PILIH STAN (DARI POSTGRESQL):</span>
-            <span v-if="boothsLoading" class="text-[8px] text-[#facc15] font-mono animate-pulse">Memuat...</span>
-            <span v-else class="text-[8px] text-[#c084fc] font-mono">{{ availableBooths.length }} Stan Aktif</span>
-          </div>
-
-          <div v-if="availableBooths.length > 0" class="grid grid-cols-3 gap-1.5 text-center font-mono max-h-36 overflow-y-auto custom-scrollbar p-1 bg-[#150d07] rounded-lg border border-[#5a3a18]">
-            <button
-              type="button"
-              v-for="b in availableBooths"
-              :key="b.id"
-              @click="selectBooth(b)"
-              :class="[
-                'p-1.5 rounded border text-[10px] transition-all cursor-pointer flex flex-col items-center gap-0.5',
-                selectedBoothId === b.id
-                  ? 'bg-[#3b1c5a] border-[#c084fc] text-[#f3e8ff] font-bold shadow-md ring-1 ring-[#c084fc]'
-                  : 'bg-[#18110b] border-[#5a3a18] text-[#c4956a] hover:border-[#c084fc]/60 hover:text-[#f3e8ff]'
-              ]"
-              :title="b.name"
-            >
-              <span class="font-pixel text-[8.5px] text-[#fef08a] truncate w-full">
-                {{ (b.shortName || b.code).replace('ORMAWA-', '') }}
-              </span>
-              <span class="text-[7.5px] text-[#a78bfa] truncate w-full">Lt. {{ b.floorNumber || 3 }}</span>
-            </button>
-          </div>
-        </div>
-
         <!-- Error Message Box -->
         <div
           v-if="errorMsg"
@@ -121,7 +91,7 @@
                 id="pic-username"
                 v-model="username"
                 type="text"
-                placeholder="Username PIC (contoh: pic_hmte)"
+                placeholder="Masukkan username PIC stan"
                 required
                 autocomplete="username"
                 :disabled="loading"
@@ -159,15 +129,6 @@
             </div>
           </div>
 
-          <!-- Helper Guidance Box -->
-          <div class="bg-[#191024]/80 border border-[#4c1d95]/50 rounded-lg p-2.5 text-[10.5px] text-[#ddd6fe] leading-relaxed flex items-start gap-2">
-            <Sparkles class="h-4 w-4 text-[#c084fc] shrink-0 mt-0.5" />
-            <div>
-              <span class="font-bold text-[#f3e8ff]">Koneksi Langsung Database:</span>
-              Kredensial diverifikasi secara real-time ke PostgreSQL backend GENIUS 2026.
-            </div>
-          </div>
-
           <!-- Submit Button -->
           <button
             type="submit"
@@ -175,7 +136,7 @@
             :disabled="loading"
           >
             <RotateCw v-if="loading" class="h-4 w-4 animate-spin text-white" />
-            <span v-if="loading">MEMVERIFIKASI KE POSTGRESQL...</span>
+            <span v-if="loading">MEMVERIFIKASI...</span>
             <span v-else>MASUK KE STAN SAYA ▶</span>
           </button>
         </form>
@@ -196,10 +157,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { User, Key, RotateCw, AlertTriangle, Store, Shield, Sparkles, Eye, EyeOff } from "lucide-vue-next";
+import { ref } from "vue";
+import { User, Key, RotateCw, AlertTriangle, Store, Shield, Eye, EyeOff } from "lucide-vue-next";
 import { useAuth } from "~/composables/useAuth";
-import { useApi } from "~/composables/useApi";
 
 definePageMeta({
   layout: false,
@@ -210,40 +170,12 @@ useHead({
 });
 
 const auth = useAuth();
-const api = useApi();
 
-const username = ref("pic_hmte");
-const password = ref("ormawa2026");
+const username = ref("");
+const password = ref("");
 const showPassword = ref(false);
 const errorMsg = ref("");
 const loading = ref(false);
-const boothsLoading = ref(false);
-const availableBooths = ref<any[]>([]);
-const selectedBoothId = ref<string>("");
-
-function selectBooth(booth: any) {
-  selectedBoothId.value = booth.id;
-  username.value = `pic_${booth.code.toLowerCase().replace('ormawa-', '').replace(/[^a-z0-9]/g, '_')}`;
-  password.value = "ormawa2026";
-  errorMsg.value = "";
-}
-
-onMounted(async () => {
-  boothsLoading.value = true;
-  try {
-    const res = await api.get<{ success: boolean; data: any[] }>("/api/ormawa/booths");
-    if (res.success && Array.isArray(res.data)) {
-      availableBooths.value = res.data;
-      if (res.data.length > 0) {
-        selectBooth(res.data[0]);
-      }
-    }
-  } catch (err) {
-    console.error("Gagal mengambil daftar stan dari PostgreSQL:", err);
-  } finally {
-    boothsLoading.value = false;
-  }
-});
 
 async function handleLogin() {
   errorMsg.value = "";
@@ -257,7 +189,7 @@ async function handleLogin() {
   try {
     const res = await auth.login(username.value.trim(), password.value);
     if (!res.success) {
-      errorMsg.value = res.error || "Gagal masuk ke stan. Periksa kembali kredensial stan Anda di database.";
+      errorMsg.value = res.error || "Gagal masuk ke stan. Periksa kembali username dan kata sandi.";
     }
   } catch (err: any) {
     errorMsg.value = err?.message || "Terjadi kesalahan koneksi saat verifikasi akun.";
