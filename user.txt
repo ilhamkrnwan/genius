@@ -1,0 +1,501 @@
+================================================================================
+              GENIUS UNU YOGYAKARTA 2026 — DAFTAR KREDENSIAL LOGIN & ROLE       
+================================================================================
+
+📌 RINGKASAN PORTAL & AKSES:
+--------------------------------------------------------------------------------
+1. PORTAL ADMIN, BUDDY & ORMAWA : http://localhost:3002/login (Production: :4002)
+   - Super Admin       ➔ Otomatis diarahkan ke Control Center Utama (/)
+   - Game Master Buddy ➔ Otomatis diarahkan ke Portal Mobile-First Buddy (/buddy)
+   - PIC Stan Ormawa   ➔ Otomatis diarahkan ke Portal Mandiri Stan (/ormawa/portal)
+
+2. APLIKASI USER MAHASISWA BARU : http://localhost:3000 (Production: :4000)
+   - Peserta Maba login menggunakan NIM dan kata sandi.
+--------------------------------------------------------------------------------
+
+================================================================================
+1. AKUN SUPER ADMINISTRATOR (KONTROL MASTER SISTEM)
+================================================================================
+Role       : ADMIN
+Portal URL : http://localhost:3002/login ➔ /
+Username   : admin
+Password   : admin2026
+Nama       : Administrator GENIUS 2026
+
+================================================================================
+2. AKUN GAME MASTER BUDDY (50 BUDDY — PENILAIAN FGD & PRESENSI REGU)
+================================================================================
+Role       : BUDDY
+Portal URL : http://localhost:3002/login ➔ /buddy
+Password   : buddy2026 (atau alternatif: genius2026)
+Catatan    : Login dapat menggunakan username resmi (buddy01..50) maupun alias NIM (25111101..25111150)
+
+[1] Username     : buddy01 (Alias NIM: 25111101) | Password: buddy2026
+    Nama Lengkap : Agnes Anggraini Risdiyanto
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Jabu (GENIUS-01) - Primary Buddy
+
+[2] Username     : buddy02 (Alias NIM: 25111102) | Password: buddy2026
+    Nama Lengkap : Agnesya Putri Triyana
+    Prodi/Fak    : Teknik Elektro (Fakultas Teknologi Informasi)
+    Penugasan    : Jabu (GENIUS-01) - Assistant Buddy
+
+[3] Username     : buddy03 (Alias NIM: 25111103) | Password: buddy2026
+    Nama Lengkap : Ahmad Fadlil Munajad
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Bolon (GENIUS-02) - Primary Buddy
+
+[4] Username     : buddy04 (Alias NIM: 25111104) | Password: buddy2026
+    Nama Lengkap : Ahmad Ichsan Maulana
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Bolon (GENIUS-02) - Assistant Buddy
+
+[5] Username     : buddy05 (Alias NIM: 25111105) | Password: buddy2026
+    Nama Lengkap : Aning Gusmi Rahayu
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Gadang (GENIUS-03) - Primary Buddy
+
+[6] Username     : buddy06 (Alias NIM: 25111106) | Password: buddy2026
+    Nama Lengkap : Arselia Sakina
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Gadang (GENIUS-03) - Assistant Buddy
+
+[7] Username     : buddy07 (Alias NIM: 25111107) | Password: buddy2026
+    Nama Lengkap : Asadurrahman Mujtaba Alhamidy
+    Prodi/Fak    : Pendidikan Bahasa Inggris (Fakultas Ilmu Pendidikan)
+    Penugasan    : Limas (GENIUS-04) - Primary Buddy
+
+[8] Username     : buddy08 (Alias NIM: 25111108) | Password: buddy2026
+    Nama Lengkap : Dafa Alif Laguna
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Limas (GENIUS-04) - Assistant Buddy
+
+[9] Username     : buddy09 (Alias NIM: 25111109) | Password: buddy2026
+    Nama Lengkap : Destiya Lintang Dwi Utami
+    Prodi/Fak    : Farmasi (Fakultas Ilmu Kesehatan)
+    Penugasan    : Lontik (GENIUS-05) - Primary Buddy
+
+[10] Username     : buddy10 (Alias NIM: 25111110) | Password: buddy2026
+    Nama Lengkap : Dzulfa Sindi Saputri
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Lontik (GENIUS-05) - Assistant Buddy
+
+[11] Username     : buddy11 (Alias NIM: 25111111) | Password: buddy2026
+    Nama Lengkap : Eka Setiawan
+    Prodi/Fak    : Teknik Elektro (Fakultas Teknologi Informasi)
+    Penugasan    : Kajang (GENIUS-06) - Primary Buddy
+
+[12] Username     : buddy12 (Alias NIM: 25111112) | Password: buddy2026
+    Nama Lengkap : Farazinia Aditiani Putri
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Bubung (GENIUS-07) - Primary Buddy
+
+[13] Username     : buddy13 (Alias NIM: 25111113) | Password: buddy2026
+    Nama Lengkap : Fathi Rizqy Ramadhan
+    Prodi/Fak    : Informatika (Fakultas Teknologi Informasi)
+    Penugasan    : Panggung (GENIUS-08) - Primary Buddy
+
+[14] Username     : buddy14 (Alias NIM: 25111114) | Password: buddy2026
+    Nama Lengkap : Fauza Ramadani
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Nuwo (GENIUS-09) - Primary Buddy
+
+[15] Username     : buddy15 (Alias NIM: 25111115) | Password: buddy2026
+    Nama Lengkap : Fina Nur Jayanti
+    Prodi/Fak    : Pendidikan Bahasa Inggris (Fakultas Ilmu Pendidikan)
+    Penugasan    : Baduy (GENIUS-10) - Primary Buddy
+
+[16] Username     : buddy16 (Alias NIM: 25111116) | Password: buddy2026
+    Nama Lengkap : Isna Shabrina Berliana
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Gudang (GENIUS-11) - Primary Buddy
+
+[17] Username     : buddy17 (Alias NIM: 25111117) | Password: buddy2026
+    Nama Lengkap : Istiqomah Kurniawati
+    Prodi/Fak    : Teknik Elektro (Fakultas Teknologi Informasi)
+    Penugasan    : Bapang (GENIUS-12) - Primary Buddy
+
+[18] Username     : buddy18 (Alias NIM: 25111118) | Password: buddy2026
+    Nama Lengkap : Jernikan Qalbi Zauqillah
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Joglo (GENIUS-13) - Primary Buddy
+
+[19] Username     : buddy19 (Alias NIM: 25111119) | Password: buddy2026
+    Nama Lengkap : Khansa Saifanah Khair
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Kampung (GENIUS-14) - Primary Buddy
+
+[20] Username     : buddy20 (Alias NIM: 25111120) | Password: buddy2026
+    Nama Lengkap : Khoirunnisa Aulia Rahmah
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Panggang (GENIUS-15) - Primary Buddy
+
+[21] Username     : buddy21 (Alias NIM: 25111121) | Password: buddy2026
+    Nama Lengkap : Moh. Dimas Adi Putra
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Jompongan (GENIUS-16) - Primary Buddy
+
+[22] Username     : buddy22 (Alias NIM: 25111122) | Password: buddy2026
+    Nama Lengkap : Mohamad Budi Wibowo
+    Prodi/Fak    : Informatika (Fakultas Teknologi Informasi)
+    Penugasan    : Jolopong (GENIUS-17) - Primary Buddy
+
+[23] Username     : buddy23 (Alias NIM: 25111123) | Password: buddy2026
+    Nama Lengkap : Mohammad Hilman Umami
+    Prodi/Fak    : Teknik Elektro (Fakultas Teknologi Informasi)
+    Penugasan    : Julang (GENIUS-18) - Primary Buddy
+
+[24] Username     : buddy24 (Alias NIM: 25111124) | Password: buddy2026
+    Nama Lengkap : Muhammad Ma'shum
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Tagog (GENIUS-19) - Primary Buddy
+
+[25] Username     : buddy25 (Alias NIM: 25111125) | Password: buddy2026
+    Nama Lengkap : Muhammad Naufal Rosyiq Ammar
+    Prodi/Fak    : Teknologi Hasil Pertanian (Fakultas Bioindustri)
+    Penugasan    : Badak (GENIUS-20) - Primary Buddy
+
+[26] Username     : buddy26 (Alias NIM: 25111126) | Password: buddy2026
+    Nama Lengkap : Muhammad Pradana Sidiq Nurcahyo
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Capit (GENIUS-21) - Primary Buddy
+
+[27] Username     : buddy27 (Alias NIM: 25111127) | Password: buddy2026
+    Nama Lengkap : Mutiara Nisa Cahya Kusuma
+    Prodi/Fak    : Farmasi (Fakultas Ilmu Kesehatan)
+    Penugasan    : Jubleg (GENIUS-22) - Primary Buddy
+
+[28] Username     : buddy28 (Alias NIM: 25111128) | Password: buddy2026
+    Nama Lengkap : Nazriel Rizky Fadilah
+    Prodi/Fak    : Pendidikan Bahasa Inggris (Fakultas Ilmu Pendidikan)
+    Penugasan    : Tikel (GENIUS-23) - Primary Buddy
+
+[29] Username     : buddy29 (Alias NIM: 25111129) | Password: buddy2026
+    Nama Lengkap : Nur Raihana Zulfa
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Baresan (GENIUS-24) - Primary Buddy
+
+[30] Username     : buddy30 (Alias NIM: 25111130) | Password: buddy2026
+    Nama Lengkap : Nurhidayah Irawan
+    Prodi/Fak    : Pendidikan Guru Sekolah Dasar (PGSD) (Fakultas Ilmu Pendidikan)
+    Penugasan    : Crocogan (GENIUS-25) - Primary Buddy
+
+[31] Username     : buddy31 (Alias NIM: 25111131) | Password: buddy2026
+    Nama Lengkap : Orryza Sativa Qurrota A'yun
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Tengger (GENIUS-26) - Primary Buddy
+
+[32] Username     : buddy32 (Alias NIM: 25111132) | Password: buddy2026
+    Nama Lengkap : Pandu Alfa Pratama
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Bale (GENIUS-27) - Primary Buddy
+
+[33] Username     : buddy33 (Alias NIM: 25111133) | Password: buddy2026
+    Nama Lengkap : Ramanda
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Lumbung (GENIUS-28) - Primary Buddy
+
+[34] Username     : buddy34 (Alias NIM: 25111134) | Password: buddy2026
+    Nama Lengkap : Refina Aprillia
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Uma (GENIUS-29) - Primary Buddy
+
+[35] Username     : buddy35 (Alias NIM: 25111135) | Password: buddy2026
+    Nama Lengkap : Rizka Sonia Octavia
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Omo (GENIUS-30) - Primary Buddy
+
+[36] Username     : buddy36 (Alias NIM: 25111136) | Password: buddy2026
+    Nama Lengkap : Rizki Nur Aini
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Sebua (GENIUS-31) - Primary Buddy
+
+[37] Username     : buddy37 (Alias NIM: 25111137) | Password: buddy2026
+    Nama Lengkap : Sakina Tasya
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Hada (GENIUS-32) - Primary Buddy
+
+[38] Username     : buddy38 (Alias NIM: 25111138) | Password: buddy2026
+    Nama Lengkap : Salis Nawalin Najah
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Betang (GENIUS-33) - Primary Buddy
+
+[39] Username     : buddy39 (Alias NIM: 25111139) | Password: buddy2026
+    Nama Lengkap : Sevia Mila Sari
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Lamin (GENIUS-34) - Primary Buddy
+
+[40] Username     : buddy40 (Alias NIM: 25111140) | Password: buddy2026
+    Nama Lengkap : Siti Via Syahrani Putri
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Baloy (GENIUS-35) - Primary Buddy
+
+[41] Username     : buddy41 (Alias NIM: 25111141) | Password: buddy2026
+    Nama Lengkap : Sovi Sarah
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Banjar (GENIUS-36) - Primary Buddy
+
+[42] Username     : buddy42 (Alias NIM: 25111142) | Password: buddy2026
+    Nama Lengkap : Sukma Maulana Pangesti
+    Prodi/Fak    : Studi Islam Interdisipliner (Fakultas Dirasat Islamiyah)
+    Penugasan    : Tambi (GENIUS-37) - Primary Buddy
+
+[43] Username     : buddy43 (Alias NIM: 25111143) | Password: buddy2026
+    Nama Lengkap : Talitha Zerlina Aurellia
+    Prodi/Fak    : Farmasi (Fakultas Ilmu Kesehatan)
+    Penugasan    : Laika (GENIUS-38) - Primary Buddy
+
+[44] Username     : buddy44 (Alias NIM: 25111144) | Password: buddy2026
+    Nama Lengkap : Usman Raya
+    Prodi/Fak    : Manajemen (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Boyang (GENIUS-39) - Primary Buddy
+
+[45] Username     : buddy45 (Alias NIM: 25111145) | Password: buddy2026
+    Nama Lengkap : Yoga Rama Indardy
+    Prodi/Fak    : Akuntansi (Fakultas Ekonomi dan Bisnis)
+    Penugasan    : Buton (GENIUS-40) - Primary Buddy
+
+[46] Username     : buddy46 (Alias NIM: 25111146) | Password: buddy2026
+    Nama Lengkap : Yulita Wahyu Utami
+    Prodi/Fak    : Pendidikan Guru Sekolah Dasar (PGSD) (Fakultas Ilmu Pendidikan)
+    Penugasan    : Lego (GENIUS-41) - Primary Buddy
+
+[47] Username     : buddy47 (Alias NIM: 25111147) | Password: buddy2026
+    Nama Lengkap : Zahra Audrina Fadhilah
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Lopo (GENIUS-42) - Primary Buddy
+
+[48] Username     : buddy48 (Alias NIM: 25111148) | Password: buddy2026
+    Nama Lengkap : Zahro Makhbubah
+    Prodi/Fak    : Agribisnis (Fakultas Bioindustri)
+    Penugasan    : Mbaru (GENIUS-43) - Primary Buddy
+
+[49] Username     : buddy49 (Alias NIM: 25111149) | Password: buddy2026
+    Nama Lengkap : Zakiya Aisyah Dealatifa
+    Prodi/Fak    : Teknik Elektro (Fakultas Teknologi Informasi)
+    Penugasan    : Sao (GENIUS-44) - Primary Buddy
+
+[50] Username     : buddy50 (Alias NIM: 25111150) | Password: buddy2026
+    Nama Lengkap : Zulaika
+    Prodi/Fak    : Farmasi (Fakultas Ilmu Kesehatan)
+    Penugasan    : Musalaki (GENIUS-45) - Primary Buddy
+
+================================================================================
+3. AKUN PIC STAN ORMAWA / UKM EXPO (19 STAN RESMI LANTAI 3, 4, 5)
+================================================================================
+Role       : ORMAWA_PIC
+Portal URL : http://localhost:3002/login ➔ /ormawa/portal
+Password   : ormawa2026
+
+[1] Username     : pic_badminton | Password: ormawa2026
+    Nama Stan    : UKM Badminton UNU Yogyakarta
+    Lokasi Stan  : Lantai 4 (Booth E-11)
+    Token QR     : UNU-ORMAWA-BADMINTON-2026
+
+[2] Username     : pic_hima_pgsd | Password: ormawa2026
+    Nama Stan    : Himpunan Mahasiswa Pendidikan Guru Sekolah Dasar (HIMA PGSD)
+    Lokasi Stan  : Lantai 5 (Booth E-15)
+    Token QR     : UNU-ORMAWA-HIMA-PGSD-2026
+
+[3] Username     : pic_himafar | Password: ormawa2026
+    Nama Stan    : Himpunan Mahasiswa Farmasi (HIMAFAR)
+    Lokasi Stan  : Lantai 4 (Booth E-02)
+    Token QR     : UNU-ORMAWA-HIMAFAR-2026
+
+[4] Username     : pic_himagri | Password: ormawa2026
+    Nama Stan    : Himpunan Mahasiswa Agribisnis (HIMAGRI)
+    Lokasi Stan  : Lantai 4 (Booth E-07)
+    Token QR     : UNU-ORMAWA-HIMAGRI-2026
+
+[5] Username     : pic_himasii | Password: ormawa2026
+    Nama Stan    : Himpunan Mahasiswa Studi Islam Interdisipliner (HIMASII)
+    Lokasi Stan  : Lantai 5 (Booth E-04)
+    Token QR     : UNU-ORMAWA-HIMASII-2026
+
+[6] Username     : pic_himatansi | Password: ormawa2026
+    Nama Stan    : Himpunan Mahasiswa Akuntansi (HIMATANSI)
+    Lokasi Stan  : Lantai 5 (Booth E-09)
+    Token QR     : UNU-ORMAWA-HIMATANSI-2026
+
+[7] Username     : pic_himatika | Password: ormawa2026
+    Nama Stan    : Himpunan Mahasiswa Informatika (HIMATIKA)
+    Lokasi Stan  : Lantai 3 (Booth E-06)
+    Token QR     : UNU-ORMAWA-HIMATIKA-2026
+
+[8] Username     : pic_hmp_pbi | Password: ormawa2026
+    Nama Stan    : Himpunan Mahasiswa Program Studi Pendidikan Bahasa Inggris (HMP PBI)
+    Lokasi Stan  : Lantai 5 (Booth E-16)
+    Token QR     : UNU-ORMAWA-HMP-PBI-2026
+
+[9] Username     : pic_hmp_thp | Password: ormawa2026
+    Nama Stan    : Himpunan Mahasiswa Teknologi Hasil Pertanian (HMP THP)
+    Lokasi Stan  : Lantai 4 (Booth E-08)
+    Token QR     : UNU-ORMAWA-HMP-THP-2026
+
+[10] Username     : pic_hmpm | Password: ormawa2026
+    Nama Stan    : Himpunan Mahasiswa Program Studi Manajemen UNU Yogyakarta (HMPM)
+    Lokasi Stan  : Lantai 5 (Booth E-19)
+    Token QR     : UNU-ORMAWA-HMPM-2026
+
+[11] Username     : pic_hmte | Password: ormawa2026
+    Nama Stan    : Himpunan Mahasiswa Teknik Elektro (HMTE)
+    Lokasi Stan  : Lantai 3 (Booth E-01)
+    Token QR     : UNU-ORMAWA-HMTE-2026
+
+[12] Username     : pic_jqh_iac | Password: ormawa2026
+    Nama Stan    : UKM Jam'iyyatul Qurro' wal Huffazh & Intercollegiate Arabic Club (JQH IAC)
+    Lokasi Stan  : Lantai 5 (Booth E-10)
+    Token QR     : UNU-ORMAWA-JQH-IAC-2026
+
+[13] Username     : pic_ksr | Password: ormawa2026
+    Nama Stan    : UKM Korps Sukarela PMI Unit UNU Yogyakarta (KSR PMI)
+    Lokasi Stan  : Lantai 4 (Booth E-17)
+    Token QR     : UNU-ORMAWA-KSR-2026
+
+[14] Username     : pic_mapala | Password: ormawa2026
+    Nama Stan    : UKM Mahasiswa Pecinta Alam UNUYO (MAPALA)
+    Lokasi Stan  : Lantai 4 (Booth E-12)
+    Token QR     : UNU-ORMAWA-MAPALA-2026
+
+[15] Username     : pic_musik | Password: ormawa2026
+    Nama Stan    : UKM Musik Florence UNU Yogyakarta
+    Lokasi Stan  : Lantai 3 (Booth E-03)
+    Token QR     : UNU-ORMAWA-MUSIK-2026
+
+[16] Username     : pic_padus | Password: ormawa2026
+    Nama Stan    : UKM Paduan Suara Mahasiswa (PSM) Gita Nusantara
+    Lokasi Stan  : Lantai 3 (Booth E-05)
+    Token QR     : UNU-ORMAWA-PADUS-2026
+
+[17] Username     : pic_permasum | Password: ormawa2026
+    Nama Stan    : PERMASUM UNUYO (Persatuan Mahasiswa Sumatera UNU Yogyakarta)
+    Lokasi Stan  : Lantai 4 (Booth E-18)
+    Token QR     : UNU-ORMAWA-PERMASUM-2026
+
+[18] Username     : pic_silat | Password: ormawa2026
+    Nama Stan    : UKM Pencak Silat Pagar Nusa UNU Yogyakarta
+    Lokasi Stan  : Lantai 3 (Booth E-13)
+    Token QR     : UNU-ORMAWA-SILAT-2026
+
+[19] Username     : pic_tari | Password: ormawa2026
+    Nama Stan    : UKM Seni Tari Tradisional & Modern UNU Yogyakarta
+    Lokasi Stan  : Lantai 3 (Booth E-14)
+    Token QR     : UNU-ORMAWA-TARI-2026
+
+================================================================================
+4. AKUN MAHASISWA BARU / PESERTA (100 MABA RESMI)
+================================================================================
+Role       : PARTICIPANT
+Portal URL : http://localhost:3000 (Aplikasi User Maba)
+Password   : genius2026 (Default untuk seluruh MABA)
+
+[001] NIM: 26111101 | Password: genius2026 | Nama: Aditya Pratama                 | Regu: Jabu (GENIUS-01)     | Prodi: Informatika
+[002] NIM: 26111102 | Password: genius2026 | Nama: Aisyah Putri Rahmawati         | Regu: Jabu (GENIUS-01)     | Prodi: Farmasi
+[003] NIM: 26111103 | Password: genius2026 | Nama: Ahmad Rizky Fauzi              | Regu: Jabu (GENIUS-01)     | Prodi: Manajemen
+[004] NIM: 26111104 | Password: genius2026 | Nama: Amanda Zahra Salsabila         | Regu: Jabu (GENIUS-01)     | Prodi: Agribisnis
+[005] NIM: 26111105 | Password: genius2026 | Nama: Alden Farhan Hidayat           | Regu: Jabu (GENIUS-01)     | Prodi: Teknik Elektro
+[006] NIM: 26111106 | Password: genius2026 | Nama: Annisa Dwi Lestari             | Regu: Jabu (GENIUS-01)     | Prodi: Akuntansi
+[007] NIM: 26111107 | Password: genius2026 | Nama: Alif Bintang Ramadhan          | Regu: Jabu (GENIUS-01)     | Prodi: Studi Islam Interdisipliner
+[008] NIM: 26111108 | Password: genius2026 | Nama: Arini Shofia Nur               | Regu: Jabu (GENIUS-01)     | Prodi: Pendidikan Bahasa Inggris
+[009] NIM: 26111109 | Password: genius2026 | Nama: Arya Sena Nugraha              | Regu: Jabu (GENIUS-01)     | Prodi: Teknik Komputer
+[010] NIM: 26111110 | Password: genius2026 | Nama: Asyifa Khairunnisa             | Regu: Jabu (GENIUS-01)     | Prodi: Teknologi Hasil Pertanian
+[011] NIM: 26111111 | Password: genius2026 | Nama: Bagas Tri Pamungkas            | Regu: Jabu (GENIUS-01)     | Prodi: Pendidikan Guru Sekolah Dasar (PGSD)
+[012] NIM: 26111112 | Password: genius2026 | Nama: Aura Citra Kirana              | Regu: Jabu (GENIUS-01)     | Prodi: Farmasi
+[013] NIM: 26111113 | Password: genius2026 | Nama: Bima Sakti Wijaya              | Regu: Jabu (GENIUS-01)     | Prodi: Informatika
+[014] NIM: 26111114 | Password: genius2026 | Nama: Bella Safitri                  | Regu: Jabu (GENIUS-01)     | Prodi: Manajemen
+[015] NIM: 26111115 | Password: genius2026 | Nama: Danang Cahyo Utomo             | Regu: Jabu (GENIUS-01)     | Prodi: Agribisnis
+[016] NIM: 26111116 | Password: genius2026 | Nama: Cantika Ayu Wardani            | Regu: Jabu (GENIUS-01)     | Prodi: Teknik Elektro
+[017] NIM: 26111117 | Password: genius2026 | Nama: Daffa Raditya Putra            | Regu: Jabu (GENIUS-01)     | Prodi: Akuntansi
+[018] NIM: 26111118 | Password: genius2026 | Nama: Chelsea Olivia Putri           | Regu: Jabu (GENIUS-01)     | Prodi: Studi Islam Interdisipliner
+[019] NIM: 26111119 | Password: genius2026 | Nama: Dimas Wahyu Pratama            | Regu: Jabu (GENIUS-01)     | Prodi: Pendidikan Bahasa Inggris
+[020] NIM: 26111120 | Password: genius2026 | Nama: Cindy Fatikasari               | Regu: Jabu (GENIUS-01)     | Prodi: Farmasi
+[021] NIM: 26111121 | Password: genius2026 | Nama: Dzaki Al-Ghifari               | Regu: Bolon (GENIUS-02)    | Prodi: Informatika
+[022] NIM: 26111122 | Password: genius2026 | Nama: Dea Ananda Maharani            | Regu: Bolon (GENIUS-02)    | Prodi: Manajemen
+[023] NIM: 26111123 | Password: genius2026 | Nama: Fadhil Muhammad Ihsan          | Regu: Bolon (GENIUS-02)    | Prodi: Studi Islam Interdisipliner
+[024] NIM: 26111124 | Password: genius2026 | Nama: Desi Ratnasari                 | Regu: Bolon (GENIUS-02)    | Prodi: Agribisnis
+[025] NIM: 26111125 | Password: genius2026 | Nama: Fajar Kurniawan                | Regu: Bolon (GENIUS-02)    | Prodi: Teknik Elektro
+[026] NIM: 26111126 | Password: genius2026 | Nama: Dinda Permatasari              | Regu: Bolon (GENIUS-02)    | Prodi: Akuntansi
+[027] NIM: 26111127 | Password: genius2026 | Nama: Faris Akbar Santoso            | Regu: Bolon (GENIUS-02)    | Prodi: Pendidikan Guru Sekolah Dasar (PGSD)
+[028] NIM: 26111128 | Password: genius2026 | Nama: Fadhilah Nur Aini              | Regu: Bolon (GENIUS-02)    | Prodi: Farmasi
+[029] NIM: 26111129 | Password: genius2026 | Nama: Galang Rambu Anarki            | Regu: Bolon (GENIUS-02)    | Prodi: Teknik Komputer
+[030] NIM: 26111130 | Password: genius2026 | Nama: Farah Diba Zahra               | Regu: Bolon (GENIUS-02)    | Prodi: Pendidikan Bahasa Inggris
+[031] NIM: 26111131 | Password: genius2026 | Nama: Gilang Ramadhan                | Regu: Bolon (GENIUS-02)    | Prodi: Manajemen
+[032] NIM: 26111132 | Password: genius2026 | Nama: Fitri Handayani                | Regu: Bolon (GENIUS-02)    | Prodi: Teknologi Hasil Pertanian
+[033] NIM: 26111133 | Password: genius2026 | Nama: Hafiz Syahputra                | Regu: Bolon (GENIUS-02)    | Prodi: Informatika
+[034] NIM: 26111134 | Password: genius2026 | Nama: Gita Gutawa Pertiwi            | Regu: Bolon (GENIUS-02)    | Prodi: Farmasi
+[035] NIM: 26111135 | Password: genius2026 | Nama: Hamzah Abdullah                | Regu: Bolon (GENIUS-02)    | Prodi: Studi Islam Interdisipliner
+[036] NIM: 26111136 | Password: genius2026 | Nama: Haniifah Zahrotun Nisa         | Regu: Bolon (GENIUS-02)    | Prodi: Akuntansi
+[037] NIM: 26111137 | Password: genius2026 | Nama: Ilham Maulana                  | Regu: Bolon (GENIUS-02)    | Prodi: Agribisnis
+[038] NIM: 26111138 | Password: genius2026 | Nama: Hanum Salsabila                | Regu: Bolon (GENIUS-02)    | Prodi: Teknik Elektro
+[039] NIM: 26111139 | Password: genius2026 | Nama: Iqbal Baihaqi                  | Regu: Bolon (GENIUS-02)    | Prodi: Teknik Komputer
+[040] NIM: 26111140 | Password: genius2026 | Nama: Inas Nabilla                   | Regu: Bolon (GENIUS-02)    | Prodi: Pendidikan Guru Sekolah Dasar (PGSD)
+[041] NIM: 26111141 | Password: genius2026 | Nama: Irfan Hakim Setiawan           | Regu: Gadang (GENIUS-03)   | Prodi: Informatika
+[042] NIM: 26111142 | Password: genius2026 | Nama: Indah Permata Sari             | Regu: Gadang (GENIUS-03)   | Prodi: Farmasi
+[043] NIM: 26111143 | Password: genius2026 | Nama: Jalu Surya Kencana             | Regu: Gadang (GENIUS-03)   | Prodi: Manajemen
+[044] NIM: 26111144 | Password: genius2026 | Nama: Intan Kusuma Dewi              | Regu: Gadang (GENIUS-03)   | Prodi: Agribisnis
+[045] NIM: 26111145 | Password: genius2026 | Nama: Kevin Sanjaya Putra            | Regu: Gadang (GENIUS-03)   | Prodi: Teknik Elektro
+[046] NIM: 26111146 | Password: genius2026 | Nama: Isyana Sarasvati Putri         | Regu: Gadang (GENIUS-03)   | Prodi: Pendidikan Bahasa Inggris
+[047] NIM: 26111147 | Password: genius2026 | Nama: M. Naufal Azka                 | Regu: Gadang (GENIUS-03)   | Prodi: Akuntansi
+[048] NIM: 26111148 | Password: genius2026 | Nama: Kayla Azzahra                  | Regu: Gadang (GENIUS-03)   | Prodi: Teknologi Hasil Pertanian
+[049] NIM: 26111149 | Password: genius2026 | Nama: M. Rafli Hidayatullah          | Regu: Gadang (GENIUS-03)   | Prodi: Studi Islam Interdisipliner
+[050] NIM: 26111150 | Password: genius2026 | Nama: Khadijah Binti Shalihah        | Regu: Gadang (GENIUS-03)   | Prodi: Farmasi
+[051] NIM: 26111151 | Password: genius2026 | Nama: M. Zaki Mubarak                | Regu: Gadang (GENIUS-03)   | Prodi: Informatika
+[052] NIM: 26111152 | Password: genius2026 | Nama: Larasati Sekar Kinanti         | Regu: Gadang (GENIUS-03)   | Prodi: Manajemen
+[053] NIM: 26111153 | Password: genius2026 | Nama: Malik Al-Fatih                 | Regu: Gadang (GENIUS-03)   | Prodi: Teknik Komputer
+[054] NIM: 26111154 | Password: genius2026 | Nama: Maulida Rahmawati              | Regu: Gadang (GENIUS-03)   | Prodi: Pendidikan Guru Sekolah Dasar (PGSD)
+[055] NIM: 26111155 | Password: genius2026 | Nama: Maulana Malik Ibrahim          | Regu: Gadang (GENIUS-03)   | Prodi: Agribisnis
+[056] NIM: 26111156 | Password: genius2026 | Nama: Maya Kartika                   | Regu: Gadang (GENIUS-03)   | Prodi: Teknik Elektro
+[057] NIM: 26111157 | Password: genius2026 | Nama: Mirza Ghulam Ahmad             | Regu: Gadang (GENIUS-03)   | Prodi: Studi Islam Interdisipliner
+[058] NIM: 26111158 | Password: genius2026 | Nama: Meutia Hatta Ningrum           | Regu: Gadang (GENIUS-03)   | Prodi: Akuntansi
+[059] NIM: 26111159 | Password: genius2026 | Nama: Muammar Qadhafi                | Regu: Gadang (GENIUS-03)   | Prodi: Pendidikan Bahasa Inggris
+[060] NIM: 26111160 | Password: genius2026 | Nama: Nabila Syakieb Putri           | Regu: Gadang (GENIUS-03)   | Prodi: Farmasi
+[061] NIM: 26111161 | Password: genius2026 | Nama: Muh. Yusuf Habibi              | Regu: Limas (GENIUS-04)    | Prodi: Informatika
+[062] NIM: 26111162 | Password: genius2026 | Nama: Nada Shofiyyah                 | Regu: Limas (GENIUS-04)    | Prodi: Manajemen
+[063] NIM: 26111163 | Password: genius2026 | Nama: Nabil Fakhriza                 | Regu: Limas (GENIUS-04)    | Prodi: Teknik Komputer
+[064] NIM: 26111164 | Password: genius2026 | Nama: Nadya Arina                    | Regu: Limas (GENIUS-04)    | Prodi: Agribisnis
+[065] NIM: 26111165 | Password: genius2026 | Nama: Pandu Dewantara                | Regu: Limas (GENIUS-04)    | Prodi: Teknik Elektro
+[066] NIM: 26111166 | Password: genius2026 | Nama: Najwa Shihabiah                | Regu: Limas (GENIUS-04)    | Prodi: Studi Islam Interdisipliner
+[067] NIM: 26111167 | Password: genius2026 | Nama: Raden Mas Bagus                | Regu: Limas (GENIUS-04)    | Prodi: Akuntansi
+[068] NIM: 26111168 | Password: genius2026 | Nama: Nayla Zahira                   | Regu: Limas (GENIUS-04)    | Prodi: Farmasi
+[069] NIM: 26111169 | Password: genius2026 | Nama: Rafi Ahmad Pratama             | Regu: Limas (GENIUS-04)    | Prodi: Pendidikan Guru Sekolah Dasar (PGSD)
+[070] NIM: 26111170 | Password: genius2026 | Nama: Nurul Izzati                   | Regu: Limas (GENIUS-04)    | Prodi: Pendidikan Bahasa Inggris
+[071] NIM: 26111171 | Password: genius2026 | Nama: Rangga Permana                 | Regu: Limas (GENIUS-04)    | Prodi: Informatika
+[072] NIM: 26111172 | Password: genius2026 | Nama: Putri Ayu Lestari              | Regu: Limas (GENIUS-04)    | Prodi: Teknologi Hasil Pertanian
+[073] NIM: 26111173 | Password: genius2026 | Nama: Rayhan Putra Darmawan          | Regu: Limas (GENIUS-04)    | Prodi: Manajemen
+[074] NIM: 26111174 | Password: genius2026 | Nama: Qonita Lutfiah                 | Regu: Limas (GENIUS-04)    | Prodi: Farmasi
+[075] NIM: 26111175 | Password: genius2026 | Nama: Rendi Saputra                  | Regu: Limas (GENIUS-04)    | Prodi: Agribisnis
+[076] NIM: 26111176 | Password: genius2026 | Nama: Raisa Andriana Dewi            | Regu: Limas (GENIUS-04)    | Prodi: Akuntansi
+[077] NIM: 26111177 | Password: genius2026 | Nama: Reza Fahlevi                   | Regu: Limas (GENIUS-04)    | Prodi: Teknik Elektro
+[078] NIM: 26111178 | Password: genius2026 | Nama: Rania Azzahra                  | Regu: Limas (GENIUS-04)    | Prodi: Studi Islam Interdisipliner
+[079] NIM: 26111179 | Password: genius2026 | Nama: Ridho Firmansyah               | Regu: Limas (GENIUS-04)    | Prodi: Teknik Komputer
+[080] NIM: 26111180 | Password: genius2026 | Nama: Rifa Rahadatul Aisy            | Regu: Limas (GENIUS-04)    | Prodi: Pendidikan Guru Sekolah Dasar (PGSD)
+[081] NIM: 26111181 | Password: genius2026 | Nama: Rio Hendrawan                  | Regu: Lontik (GENIUS-05)   | Prodi: Informatika
+[082] NIM: 26111182 | Password: genius2026 | Nama: Sabrina Chairunnisa            | Regu: Lontik (GENIUS-05)   | Prodi: Farmasi
+[083] NIM: 26111183 | Password: genius2026 | Nama: Salman Al-Farisi               | Regu: Lontik (GENIUS-05)   | Prodi: Studi Islam Interdisipliner
+[084] NIM: 26111184 | Password: genius2026 | Nama: Salma Nabilah                  | Regu: Lontik (GENIUS-05)   | Prodi: Manajemen
+[085] NIM: 26111185 | Password: genius2026 | Nama: Satria Baja Nusantara          | Regu: Lontik (GENIUS-05)   | Prodi: Teknik Elektro
+[086] NIM: 26111186 | Password: genius2026 | Nama: Sarah Fauziah                  | Regu: Lontik (GENIUS-05)   | Prodi: Agribisnis
+[087] NIM: 26111187 | Password: genius2026 | Nama: Surya Atmaja                   | Regu: Lontik (GENIUS-05)   | Prodi: Akuntansi
+[088] NIM: 26111188 | Password: genius2026 | Nama: Shafa Tasnim                   | Regu: Lontik (GENIUS-05)   | Prodi: Pendidikan Bahasa Inggris
+[089] NIM: 26111189 | Password: genius2026 | Nama: Syahrul Gunawan                | Regu: Lontik (GENIUS-05)   | Prodi: Pendidikan Guru Sekolah Dasar (PGSD)
+[090] NIM: 26111190 | Password: genius2026 | Nama: Siti Nurhaliza Putri           | Regu: Lontik (GENIUS-05)   | Prodi: Farmasi
+[091] NIM: 26111191 | Password: genius2026 | Nama: Taufiq Hidayat                 | Regu: Lontik (GENIUS-05)   | Prodi: Teknik Komputer
+[092] NIM: 26111192 | Password: genius2026 | Nama: Syifa Hadju Ramadhani          | Regu: Lontik (GENIUS-05)   | Prodi: Teknologi Hasil Pertanian
+[093] NIM: 26111193 | Password: genius2026 | Nama: Wahyu Tri Wibowo               | Regu: Lontik (GENIUS-05)   | Prodi: Manajemen
+[094] NIM: 26111194 | Password: genius2026 | Nama: Tiara Andini Kusuma            | Regu: Lontik (GENIUS-05)   | Prodi: Akuntansi
+[095] NIM: 26111195 | Password: genius2026 | Nama: Wildan Mukhalladun             | Regu: Lontik (GENIUS-05)   | Prodi: Informatika
+[096] NIM: 26111196 | Password: genius2026 | Nama: Vina Panduwinata               | Regu: Lontik (GENIUS-05)   | Prodi: Studi Islam Interdisipliner
+[097] NIM: 26111197 | Password: genius2026 | Nama: Yahya Ayyash                   | Regu: Lontik (GENIUS-05)   | Prodi: Agribisnis
+[098] NIM: 26111198 | Password: genius2026 | Nama: Yasmin Nabila                  | Regu: Lontik (GENIUS-05)   | Prodi: Teknik Elektro
+[099] NIM: 26111199 | Password: genius2026 | Nama: Zaidan Ali Akbar               | Regu: Lontik (GENIUS-05)   | Prodi: Teknik Komputer
+[100] NIM: 26111200 | Password: genius2026 | Nama: Zahra Amalia Putri             | Regu: Lontik (GENIUS-05)   | Prodi: Farmasi
+
+================================================================================
+Catatan Penting:
+- Seluruh akun di atas telah aktif dan tersinkronisasi di database PostgreSQL.
+- Halaman login admin (http://localhost:3002/login) otomatis mendeteksi peran akun dan mengarahkan ke dashboard yang sesuai:
+  • ADMIN       ➔ /
+  • BUDDY       ➔ /buddy
+  • ORMAWA_PIC  ➔ /ormawa/portal
+- Akun Mahasiswa Baru (PARTICIPANT) ditolak di portal admin dan hanya diizinkan di aplikasi peserta (http://localhost:3000).
+================================================================================

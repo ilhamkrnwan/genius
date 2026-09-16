@@ -22,6 +22,7 @@ import {
   scoreTransactions,
   gameSessions,
   achievements,
+  ormawaInterests,
 } from "./db/schema";
 import { hashPassword } from "./lib/password";
 import { ensureOfficialOrmawaPics } from "./db/ensure-ormawa-pics";
@@ -40,6 +41,7 @@ async function seed() {
   await db.update(ormawaBooths).set({ picUserId: null });
   await db.delete(dailyReflections);
   await db.delete(ormawaScans);
+  await db.delete(ormawaInterests);
   await db.delete(fgdEvaluations);
   await db.delete(attendances);
   await db.delete(attendanceSessions);
