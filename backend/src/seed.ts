@@ -12,6 +12,7 @@ import {
   routeStops,
   missions,
   ormawaBooths,
+  ormawaInterests,
   dailyReflections,
   ormawaScans,
   fgdEvaluations,
@@ -40,8 +41,8 @@ async function seed() {
   // Putuskan relasi PIC lebih dahulu agar penghapusan akun tidak melanggar FK.
   await db.update(ormawaBooths).set({ picUserId: null });
   await db.delete(dailyReflections);
-  await db.delete(ormawaScans);
   await db.delete(ormawaInterests);
+  await db.delete(ormawaScans);
   await db.delete(fgdEvaluations);
   await db.delete(attendances);
   await db.delete(attendanceSessions);

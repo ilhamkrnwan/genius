@@ -168,6 +168,10 @@ export function useAuth() {
     }
   }
 
+  async function loginAsPreset(presetUser: User, password?: string) {
+    const defaultPassword = password || (presetUser.role === "ADMIN" ? "admin2026" : presetUser.role === "BUDDY" ? "buddy2026" : (presetUser.role === "ORMAWA_PIC" ? "genius2026" : "genius2026"));
+    return await login(presetUser.username, defaultPassword);
+  }
   async function switchRole(targetRole: "ADMIN" | "BUDDY" | "ORMAWA_PIC") {
     if (targetRole === "BUDDY") {
       navigateTo("/buddy");
@@ -270,6 +274,7 @@ export function useAuth() {
     isOrmawaPic,
     userInitials,
     login,
+    loginAsPreset,
     switchRole,
     logout,
     confirmLogout,
