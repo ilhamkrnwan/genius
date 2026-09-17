@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3 pb-8 font-sans select-none text-[#f0e0c0]">
+  <div class="space-y-4 pb-12 font-sans select-none text-[#f0e0c0]">
     <!-- Toast Notification -->
     <Transition
       enter-active-class="transition duration-200 ease-out"
@@ -12,7 +12,7 @@
       <div
         v-if="toast"
         :class="[
-          'fixed top-4 inset-x-3 sm:inset-x-auto sm:right-6 z-50 p-2.5 rounded-xl border shadow-xl font-mono text-xs flex items-center gap-2 max-w-sm backdrop-blur-md',
+          'fixed top-4 inset-x-3 sm:inset-x-auto sm:right-6 z-50 p-3 rounded-xl border shadow-xl font-mono text-xs flex items-center gap-2 max-w-sm backdrop-blur-md',
           toast.type === 'success'
             ? 'bg-[#142612]/95 border-[#22c55e] text-[#86efac]'
             : toast.type === 'error'
@@ -26,46 +26,48 @@
       </div>
     </Transition>
 
-    <!-- Header Stan Ormawa (Stardew Valley Gold Banner) -->
-    <div class="sdv-card-gold p-3.5 space-y-2.5">
-      <div class="flex items-start justify-between gap-2">
+    <!-- ═════════════════════════════════════════════════════════════════════ -->
+    <!-- 1. HEADER IDENTITAS STAN ORMAWA (Stardew Valley Gold Banner)         -->
+    <!-- ═════════════════════════════════════════════════════════════════════ -->
+    <div class="sdv-card-gold p-4 space-y-3">
+      <div class="flex items-start justify-between gap-3">
         <div class="space-y-1 min-w-0">
           <div class="flex flex-wrap items-center gap-1.5">
-            <span class="border border-[#f0d060] bg-[#1a1008] px-1.5 py-0.5 text-[8px] font-pixel text-[#f0d060] uppercase tracking-wider rounded">
+            <span class="border border-[#f0d060] bg-[#1a1008] px-2 py-0.5 text-[8.5px] font-pixel text-[#f0d060] uppercase tracking-wider rounded">
               STAN ORMAWA
             </span>
-            <span class="border border-[#22c55e] bg-[#132215] px-1.5 py-0.5 text-[8px] font-pixel text-[#86efac] uppercase tracking-wider rounded">
+            <span class="border border-[#22c55e] bg-[#132215] px-2 py-0.5 text-[8.5px] font-pixel text-[#86efac] uppercase tracking-wider rounded">
               LANTAI {{ boothInfo.floorNumber }}
             </span>
           </div>
-          <h1 class="font-pixel text-sm sm:text-base text-[#fef08a] font-bold tracking-wide truncate">
+          <h1 class="font-pixel text-base sm:text-lg text-[#fef08a] font-bold tracking-wide truncate">
             {{ boothInfo.name }}
           </h1>
-          <p class="text-[10px] text-[#c4956a] font-mono">
+          <p class="text-xs text-[#c4956a] font-mono">
             PIC: <strong class="text-white">{{ user?.fullName || 'PIC Stan' }}</strong> &bull; Kategori: <strong class="text-[#f0d060]">{{ boothInfo.category }}</strong>
           </p>
         </div>
 
         <div class="text-right shrink-0">
-          <span class="font-pixel text-xs sm:text-sm text-[#86efac] font-bold block">
+          <span class="font-pixel text-sm sm:text-base text-[#86efac] font-bold block">
             {{ visitorCount }} MABA
           </span>
-          <span class="text-[9px] text-[#facc15] font-mono">Total Berkunjung</span>
+          <span class="text-[9.5px] text-[#facc15] font-mono">Total Berkunjung</span>
         </div>
       </div>
 
       <!-- Quick Metrics Strip -->
-      <div class="grid grid-cols-3 gap-1.5 text-center font-mono text-[10px] pt-2 border-t border-[#5a3a18]">
-        <div class="bg-[#170f07] py-1.5 px-1 rounded border border-[#5a3a18]">
-          <span class="text-[#a08060] text-[7.5px] block truncate uppercase">TOTAL PENGUNJUNG</span>
+      <div class="grid grid-cols-3 gap-2 text-center font-mono text-[10.5px] pt-2.5 border-t border-[#5a3a18]">
+        <div class="bg-[#170f07] py-2 px-1 rounded border border-[#5a3a18]">
+          <span class="text-[#a08060] text-[8px] block truncate uppercase">TOTAL PENGUNJUNG</span>
           <span class="font-pixel text-xs text-white">{{ visitorCount }}</span>
         </div>
-        <div class="bg-[#170f07] py-1.5 px-1 rounded border border-[#5a3a18]">
-          <span class="text-[#a08060] text-[7.5px] block truncate uppercase">TOTAL XP KAMPUS</span>
+        <div class="bg-[#170f07] py-2 px-1 rounded border border-[#5a3a18]">
+          <span class="text-[#a08060] text-[8px] block truncate uppercase">TOTAL XP KAMPUS</span>
           <span class="font-pixel text-xs text-[#86efac]">+{{ (visitorCount * (boothInfo.xpReward || 75)).toLocaleString('id-ID') }}</span>
         </div>
-        <div class="bg-[#170f07] py-1.5 px-1 rounded border border-[#5a3a18]">
-          <span class="text-[#a08060] text-[7.5px] block truncate uppercase">STATUS STAN</span>
+        <div class="bg-[#170f07] py-2 px-1 rounded border border-[#5a3a18]">
+          <span class="text-[#a08060] text-[8px] block truncate uppercase">STATUS STAN</span>
           <span class="font-pixel text-[10px] text-[#22c55e] flex items-center justify-center gap-1">
             <span class="h-1.5 w-1.5 rounded-full bg-[#22c55e] animate-pulse" />
             AKTIF
@@ -74,137 +76,211 @@
       </div>
     </div>
 
-    <!-- Main Action Button: Scanner Validasi Maba -->
-    <NuxtLink
-      to="/ormawa/scan"
-      class="rpg-btn-primary p-3.5 flex items-center justify-between gap-3 shadow-lg active:scale-98 transition-all block"
-    >
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-black/30 border border-[#f0d060] flex items-center justify-center shrink-0">
-          <ScanLine class="h-6 w-6 text-[#facc15]" />
-        </div>
-        <div class="text-left">
-          <div class="font-pixel text-xs sm:text-sm font-bold text-white uppercase flex items-center gap-1.5">
-            <span>BUKA SCANNER VALIDASI</span>
-            <span class="text-[9px] bg-[#facc15] text-black px-1.5 py-0.2 rounded font-mono font-bold">LIVE</span>
-          </div>
-          <p class="text-[10px] text-[#86efac] font-mono mt-0.5">
-            Scan QR Code mahasiswa yang hadir di stan ini
-          </p>
-        </div>
-      </div>
-      <ArrowRight class="h-5 w-5 text-[#f0d060] shrink-0" />
-    </NuxtLink>
-
-    <!-- Official Booth QR Code Card (Dipajang di Meja Expo) -->
-    <div class="sdv-card p-3.5 space-y-3">
-      <div class="flex items-center justify-between border-b border-[#5a3a18] pb-2">
+    <!-- ═════════════════════════════════════════════════════════════════════ -->
+    <!-- 2. PANEL UTAMA: PEMBERIAN XP TAMBAHAN MAHASISWA BARU                -->
+    <!-- ═════════════════════════════════════════════════════════════════════ -->
+    <div class="sdv-card p-4 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#5a3a18] pb-2.5">
         <div class="flex items-center gap-2">
-          <QrCode class="h-4 w-4 text-[#f0d060]" />
+          <Sparkles class="h-4 w-4 text-[#facc15]" />
           <div>
-            <h2 class="font-pixel text-[10px] sm:text-[11px] text-[#fef08a] font-bold uppercase">
-              QR CODE MEJA STAN EXPO
+            <h2 class="font-pixel text-xs sm:text-sm text-[#fef08a] font-bold uppercase">
+              BERI REWARD XP MAHASISWA BARU
             </h2>
-            <span class="text-[9px] text-[#c4956a]">Tunjukkan kepada mahasiswa yang berkunjung</span>
+            <p class="text-[10px] text-[#c4956a] font-mono mt-0.5">
+              Reward resmi kunjungan: <strong class="text-[#86efac]">+{{ boothInfo.xpReward || 75 }} XP</strong> per mahasiswa
+            </p>
           </div>
         </div>
-
-        <button
-          type="button"
-          @click="showFullQr = true"
-          class="h-6 px-2 bg-[#271d15] hover:bg-[#3d2d1e] border border-[#523e2b] text-[#facc15] font-pixel text-[8px] rounded flex items-center gap-1 cursor-pointer"
-        >
-          <Maximize2 class="h-2.5 w-2.5" />
-          <span>PERBESAR</span>
-        </button>
       </div>
 
-      <!-- QR Display Frame -->
-      <div class="flex flex-col items-center justify-center p-4 bg-[#140c06] rounded-xl border-2 border-[#5a3a18]">
-        <div class="bg-white p-2.5 rounded-lg shadow-md mb-2.5">
-          <img
-            :src="getQrImageUrl(boothInfo.qrCode)"
-            alt="QR Code Stan"
-            class="w-44 h-44 sm:w-48 sm:h-48 object-contain"
-          />
+      <!-- Action 1: Tombol Buka Kamera Scanner QR Maba -->
+      <NuxtLink
+        to="/ormawa/scan"
+        class="rpg-btn-primary p-3.5 flex items-center justify-between gap-3 shadow-lg active:scale-98 transition-all block rounded-xl"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-black/30 border border-[#f0d060] flex items-center justify-center shrink-0">
+            <ScanLine class="h-6 w-6 text-[#facc15]" />
+          </div>
+          <div class="text-left">
+            <div class="font-pixel text-xs sm:text-sm font-bold text-white uppercase flex items-center gap-1.5">
+              <span>BUKA SCANNER KAMERA</span>
+              <span class="text-[8.5px] bg-[#facc15] text-black px-1.5 py-0.2 rounded font-mono font-bold">LIVE QR</span>
+            </div>
+            <p class="text-[10.5px] text-[#86efac] font-mono mt-0.5">
+              Scan barcode / QR Code kartu identitas mahasiswa baru
+            </p>
+          </div>
+        </div>
+        <ArrowRight class="h-5 w-5 text-[#f0d060] shrink-0" />
+      </NuxtLink>
+
+      <div class="flex items-center gap-2 text-center text-xs text-[#a08060] font-mono">
+        <div class="flex-1 border-t border-[#422d18]"></div>
+        <span class="text-[9px] uppercase font-pixel tracking-wider">ATAU INPUT MANUAL</span>
+        <div class="flex-1 border-t border-[#422d18]"></div>
+      </div>
+
+      <!-- Action 2: Input Manual NIM Mahasiswa -->
+      <div class="bg-[#140c06] p-3.5 rounded-xl border border-[#5a3a18] space-y-2.5">
+        <label class="text-[10px] font-pixel text-[#e5b383] uppercase flex items-center justify-between">
+          <span>Ketik NIM Mahasiswa Baru:</span>
+          <span class="text-[8.5px] text-gray-500 font-mono">Tekan Enter atau klik tombol Beri XP</span>
+        </label>
+        
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="relative flex-1">
+            <input
+              v-model="manualNim"
+              type="text"
+              placeholder="Contoh: 26111101 atau NIM maba..."
+              class="w-full h-10 bg-[#0d0804] border border-[#523e2b] focus:border-[#f0d060] rounded-lg px-3 text-xs text-[#fef08a] placeholder:text-gray-600 outline-none font-mono"
+              @keydown.enter="submitManualNim"
+              :disabled="isProcessing"
+            />
+          </div>
+          <button
+            type="button"
+            @click="submitManualNim"
+            :disabled="!manualNim.trim() || isProcessing"
+            class="h-10 px-4 bg-[#ca8a04] hover:bg-[#eab308] text-[#140e08] font-pixel text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-md active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+          >
+            <Check v-if="!isProcessing" class="h-4 w-4 text-[#140e08]" />
+            <Loader2 v-else class="h-4 w-4 animate-spin text-[#140e08]" />
+            <span>BERI +{{ boothInfo.xpReward || 75 }} XP</span>
+          </button>
         </div>
 
-        <div class="text-center space-y-1">
-          <span class="text-[8px] font-pixel text-[#a08060] uppercase block">KODE TOKEN RESMI:</span>
-          <div class="inline-flex items-center gap-2 bg-[#22160d] px-3 py-1 rounded border border-[#5a3a18]">
-            <code class="font-pixel text-xs text-[#facc15] font-bold">{{ boothInfo.qrCode }}</code>
-            <button
-              type="button"
-              @click="copyToken"
-              class="text-[#86efac] hover:text-white cursor-pointer"
-              title="Salin Token"
-            >
-              <Copy class="h-3.5 w-3.5" />
-            </button>
+        <!-- Feedback Result Card -->
+        <Transition
+          enter-active-class="transition duration-150 ease-out"
+          enter-from-class="opacity-0 translate-y-1"
+          enter-to-class="opacity-100 translate-y-0"
+        >
+          <div
+            v-if="lastResult"
+            :class="[
+              'p-3 rounded-lg border font-mono text-xs flex items-start gap-2.5',
+              lastResult.success
+                ? 'bg-[#142612] border-[#22c55e] text-[#86efac]'
+                : 'bg-[#2a1210] border-red-600 text-red-300'
+            ]"
+          >
+            <CheckCircle2 v-if="lastResult.success" class="h-4 w-4 shrink-0 text-[#22c55e] mt-0.5" />
+            <AlertCircle v-else class="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+            <div class="space-y-0.5">
+              <p class="font-pixel text-[10px] leading-tight" :class="lastResult.success ? 'text-[#86efac]' : 'text-red-300'">
+                {{ lastResult.message }}
+              </p>
+              <p v-if="lastResult.mabaName" class="text-[9.5px] text-gray-300">
+                Mahasiswa: <strong>{{ lastResult.mabaName }}</strong> (NIM: {{ lastResult.mabaNim }})
+              </p>
+            </div>
           </div>
-          <p class="text-[9px] text-gray-400 font-mono mt-1">
-            Mahasiswa mendapatkan <strong class="text-[#86efac]">+{{ boothInfo.xpReward || 75 }} XP</strong> dan lencana UKM setelah scan stan ini.
-          </p>
-        </div>
+        </Transition>
       </div>
     </div>
 
-    <!-- Quick Links Grid -->
-    <div class="grid grid-cols-2 gap-2 font-mono">
-      <NuxtLink
-        to="/ormawa/portal/visitors"
-        class="sdv-card p-3 text-center flex flex-col items-center justify-center hover:border-[#f0d060] transition-all active:scale-95 group cursor-pointer"
-      >
-        <div class="w-8 h-8 rounded-lg bg-[#271d15] border border-[#f0d060] flex items-center justify-center text-[#facc15] mb-1.5 group-hover:scale-105 transition-transform">
-          <Users class="h-4 w-4" />
+    <!-- ═════════════════════════════════════════════════════════════════════ -->
+    <!-- 3. PANEL DATA: DAFTAR MAHASISWA YANG SUDAH BERKUNJUNG               -->
+    <!-- ═════════════════════════════════════════════════════════════════════ -->
+    <div class="sdv-card p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-[#5a3a18] pb-2.5 flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <Users class="h-4 w-4 text-[#facc15]" />
+          <div>
+            <h2 class="font-pixel text-xs sm:text-sm text-[#fef08a] font-bold uppercase">
+              DATA PENGUNJUNG STAN ({{ visitors.length }})
+            </h2>
+            <span class="text-[9.5px] text-[#c4956a] font-mono">Daftar mahasiswa yang telah divalidasi</span>
+          </div>
         </div>
-        <span class="font-pixel text-[9px] text-[#fef08a] block uppercase">LOG PENGUNJUNG</span>
-        <span class="text-[8px] text-[#c4956a]">Daftar maba hadir ({{ visitorCount }})</span>
-      </NuxtLink>
 
-      <NuxtLink
-        to="/qr-center"
-        class="sdv-card p-3 text-center flex flex-col items-center justify-center hover:border-[#f0d060] transition-all active:scale-95 group cursor-pointer"
-      >
-        <div class="w-8 h-8 rounded-lg bg-[#271d15] border border-[#ca8a04] flex items-center justify-center text-[#ca8a04] mb-1.5 group-hover:scale-105 transition-transform">
-          <Printer class="h-4 w-4" />
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            @click="loadBoothData"
+            :disabled="loadingVisitors"
+            class="h-7 px-2 bg-[#271d15] hover:bg-[#3d2d1e] border border-[#523e2b] text-[#c4956a] hover:text-white font-mono text-[9px] rounded flex items-center gap-1 cursor-pointer"
+            title="Muat Ulang Data"
+          >
+            <RefreshCw class="h-3 w-3" :class="{ 'animate-spin': loadingVisitors }" />
+            <span class="hidden sm:inline">REFRESH</span>
+          </button>
+
+          <button
+            type="button"
+            @click="exportVisitorsCsv"
+            :disabled="visitors.length === 0"
+            class="h-7 px-2.5 bg-[#271d15] hover:bg-[#3d2d1e] border border-[#f0d060] text-[#facc15] font-pixel text-[8.5px] rounded flex items-center gap-1 cursor-pointer shadow active:scale-95 disabled:opacity-40"
+          >
+            <Download class="h-3 w-3" />
+            <span>EXPORT CSV</span>
+          </button>
         </div>
-        <span class="font-pixel text-[9px] text-[#fef08a] block uppercase">PRINT QR STAN</span>
-        <span class="text-[8px] text-[#c4956a]">Format siap cetak A4</span>
-      </NuxtLink>
-    </div>
+      </div>
 
-    <!-- Fullscreen QR Modal -->
-    <div
-      v-if="showFullQr"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md select-none"
-      @click.self="showFullQr = false"
-    >
-      <div class="sdv-card-gold p-5 w-full max-w-sm text-center space-y-3 relative animate-in fade-in zoom-in-95 duration-150">
-        <button
-          @click="showFullQr = false"
-          class="absolute right-3 top-3 h-7 w-7 rounded bg-[#2a1313] border border-red-800 text-red-300 flex items-center justify-center cursor-pointer"
+      <!-- Search Input Filter -->
+      <div class="relative">
+        <Search class="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Cari nama atau NIM mahasiswa..."
+          class="h-8.5 w-full bg-[#140c06] border border-[#523e2b] rounded-lg pl-9 pr-3 text-xs font-mono text-white placeholder:text-gray-500 focus:outline-none focus:border-[#f0d060]"
+        />
+      </div>
+
+      <!-- Visitors List / Table -->
+      <div v-if="loadingVisitors" class="p-8 text-center text-[#c4956a] font-mono text-xs">
+        <div class="inline-block w-5 h-5 border-2 border-[#f0d060] border-t-transparent rounded-full animate-spin mb-2"></div>
+        <div>Memuat daftar pengunjung stan...</div>
+      </div>
+
+      <div v-else-if="filteredVisitors.length === 0" class="p-8 text-center text-[#c4956a] font-mono text-xs space-y-2 border border-dashed border-[#5a3a18] rounded-xl bg-[#140c06]">
+        <Users class="h-8 w-8 mx-auto text-[#a08060]/50" />
+        <p class="text-amber-200/80">Belum ada data kunjungan mahasiswa baru.</p>
+        <p class="text-[10px] text-gray-400">
+          Silakan scan barcode profil maba atau ketik NIM maba pada form di atas.
+        </p>
+      </div>
+
+      <div v-else class="space-y-1.5 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
+        <div
+          v-for="(visitor, idx) in filteredVisitors"
+          :key="visitor.scanId || visitor.id || idx"
+          class="p-2.5 rounded-lg bg-[#140c06] border border-[#5a3a18] flex items-center justify-between gap-2.5 hover:border-[#f0d060] transition-colors"
         >
-          <X class="h-4 w-4" />
-        </button>
+          <!-- Left: Number, Name & NIM -->
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="h-7 w-7 rounded bg-[#201309] border border-[#5a3a18] flex items-center justify-center font-pixel text-[10px] text-[#a08060] shrink-0">
+              {{ idx + 1 }}
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-xs text-[#fef08a] truncate block">
+                  {{ visitor.fullName || 'Mahasiswa' }}
+                </span>
+                <span v-if="visitor.teamName" class="text-[8.5px] bg-[#271d15] text-[#86efac] px-1.5 py-0.2 rounded font-pixel shrink-0">
+                  {{ visitor.teamName }}
+                </span>
+              </div>
+              <span class="text-[9.5px] text-[#a08060] font-mono block">
+                NIM: {{ visitor.username || visitor.nim || '-' }}
+              </span>
+            </div>
+          </div>
 
-        <div class="pt-2">
-          <h2 class="font-pixel text-xs sm:text-sm text-[#fef08a] font-bold uppercase">
-            {{ boothInfo.name }}
-          </h2>
-          <span class="text-[9px] text-[#86efac] font-mono">Pindai untuk validasi kunjungan</span>
-        </div>
-
-        <div class="bg-white p-4 rounded-xl shadow-2xl mx-auto inline-block">
-          <img
-            :src="getQrImageUrl(boothInfo.qrCode)"
-            alt="QR Code Fullscreen"
-            class="w-64 h-64 object-contain"
-          />
-        </div>
-
-        <div class="bg-[#140c06] p-2 rounded border border-[#5a3a18]">
-          <code class="font-pixel text-sm text-[#facc15] font-bold">{{ boothInfo.qrCode }}</code>
+          <!-- Right: XP & Time -->
+          <div class="text-right shrink-0">
+            <span class="font-pixel text-[10px] text-[#86efac] font-bold block">
+              +{{ visitor.xpEarned || boothInfo.xpReward || 75 }} XP
+            </span>
+            <span class="text-[8.5px] text-gray-400 font-mono">
+              {{ formatTime(visitor.scannedAt) }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -214,18 +290,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import {
-  Store,
-  QrCode,
   ScanLine,
   Users,
-  Printer,
   Sparkles,
   ArrowRight,
-  Maximize2,
-  Copy,
   CheckCircle2,
   AlertCircle,
-  X,
+  Check,
+  Loader2,
+  Download,
+  Search,
+  RefreshCw,
 } from "lucide-vue-next";
 import { useAuth } from "~/composables/useAuth";
 import { useApi } from "~/composables/useApi";
@@ -233,9 +308,21 @@ import { useApi } from "~/composables/useApi";
 const { user } = useAuth();
 const api = useApi();
 
-const showFullQr = ref(false);
 const visitorCount = ref(0);
-const toast = ref<{ type: 'success' | 'error'; message: string } | null>(null);
+const visitors = ref<any[]>([]);
+const loadingVisitors = ref(false);
+const searchQuery = ref("");
+const manualNim = ref("");
+const isProcessing = ref(false);
+
+const lastResult = ref<{
+  success: boolean;
+  message: string;
+  mabaName?: string;
+  mabaNim?: string;
+} | null>(null);
+
+const toast = ref<{ type: "success" | "error"; message: string } | null>(null);
 
 const boothInfo = ref({
   id: (user.value as any)?.boothId || "",
@@ -243,31 +330,155 @@ const boothInfo = ref({
   code: (user.value as any)?.boothCode || "ORMAWA",
   category: (user.value as any)?.category || "Stan Ormawa",
   floorNumber: (user.value as any)?.assignedFloor || 6,
-  qrCode: (user.value as any)?.qrCode || "",
   xpReward: 75,
 });
 
-function getQrImageUrl(code: string) {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(code || '')}`;
-}
+const filteredVisitors = computed(() => {
+  if (!searchQuery.value.trim()) return visitors.value;
+  const q = searchQuery.value.toLowerCase().trim();
+  return visitors.value.filter(
+    (v) =>
+      (v.fullName || "").toLowerCase().includes(q) ||
+      (v.username || v.nim || "").toLowerCase().includes(q) ||
+      (v.teamName || "").toLowerCase().includes(q)
+  );
+});
 
-async function copyToken() {
+// Audio synth feedback
+function playBeep(type: "success" | "error" = "success") {
+  if (typeof window === "undefined") return;
   try {
-    await navigator.clipboard.writeText(boothInfo.value.qrCode);
-    showToast("success", "Token QR Code berhasil disalin ke clipboard!");
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === "success") {
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } else {
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      osc.frequency.setValueAtTime(160, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    }
   } catch {
-    showToast("error", "Gagal menyalin token.");
+    // Ignore audio context restriction
   }
 }
 
-function showToast(type: 'success' | 'error', message: string) {
+function showToast(type: "success" | "error", message: string) {
   toast.value = { type, message };
   setTimeout(() => {
     toast.value = null;
   }, 3000);
 }
 
+function formatTime(isoString: string) {
+  if (!isoString) return "Baru saja";
+  try {
+    const d = new Date(isoString);
+    return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return isoString;
+  }
+}
+
+// ─── Manual NIM Submission & Give XP ─────────────────────────────────────────
+async function submitManualNim() {
+  const nim = manualNim.value.trim();
+  if (!nim || isProcessing.value) return;
+
+  isProcessing.value = true;
+  lastResult.value = null;
+
+  try {
+    const payload: Record<string, any> = {
+      mabaNim: nim,
+    };
+    if (boothInfo.value.id) {
+      payload.boothId = boothInfo.value.id;
+    }
+
+    const res = await api.post("/ormawa/scan-maba", payload);
+
+    if (res.success) {
+      playBeep("success");
+      const mabaName = res.data?.maba?.fullName || res.data?.participant?.fullName || `Mahasiswa (${nim})`;
+      const mabaNim = res.data?.maba?.username || res.data?.participant?.nim || nim;
+      const xpEarned = res.data?.xpEarned || boothInfo.value.xpReward || 75;
+
+      lastResult.value = {
+        success: true,
+        message: res.message || `Berhasil memberikan +${xpEarned} XP!`,
+        mabaName,
+        mabaNim,
+      };
+
+      showToast("success", `+${xpEarned} XP berhasil diberikan ke ${mabaName}!`);
+      manualNim.value = "";
+
+      // Refresh data pengunjung
+      await loadBoothData();
+    } else {
+      playBeep("error");
+      const msg = res.message || res.error?.message || "Gagal mencatat kunjungan mahasiswa.";
+      lastResult.value = {
+        success: false,
+        message: msg,
+      };
+      showToast("error", msg);
+    }
+  } catch (err: any) {
+    playBeep("error");
+    const msg = err?.data?.error?.message || err?.data?.message || err?.message || "Terjadi kesalahan saat memproses NIM.";
+    lastResult.value = {
+      success: false,
+      message: msg,
+    };
+    showToast("error", msg);
+  } finally {
+    isProcessing.value = false;
+  }
+}
+
+// ─── Export CSV ─────────────────────────────────────────────────────────────
+function exportVisitorsCsv() {
+  if (visitors.value.length === 0) return;
+  const headers = ["No", "NIM", "Nama Lengkap", "Regu", "Waktu Kunjungan", "XP"];
+  const rows = visitors.value.map((v, i) => [
+    i + 1,
+    `"${v.username || v.nim || ''}"`,
+    `"${(v.fullName || '').replace(/"/g, '""')}"`,
+    `"${(v.teamName || '').replace(/"/g, '""')}"`,
+    `"${formatTime(v.scannedAt)}"`,
+    v.xpEarned || boothInfo.value.xpReward || 75,
+  ]);
+  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `pengunjung-${boothInfo.value.code || 'stan'}-${Date.now()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// ─── Load Booth & Visitors ───────────────────────────────────────────────────
 async function loadBoothData() {
+  loadingVisitors.value = true;
   try {
     const res = await api.get<{ success: boolean; data: any }>("/api/ormawa/my-booth");
     if (res.success && res.data) {
@@ -283,7 +494,6 @@ async function loadBoothData() {
     }
     if ((user.value as any)?.boothCode) {
       boothInfo.value.code = (user.value as any).boothCode;
-      boothInfo.value.qrCode = (user.value as any).qrCode || `UNU-${(user.value as any).boothCode}-2026`;
     }
     if (user.value?.assignedFloor) {
       boothInfo.value.floorNumber = user.value.assignedFloor;
@@ -293,21 +503,26 @@ async function loadBoothData() {
     }
   }
 
-  // Load visitor count from PostgreSQL
+  // Load visitors
   try {
     const targetId = boothInfo.value.id || (user.value as any)?.boothId;
     if (targetId) {
-      const resVisitors = await api.get<{ success: boolean; data: { totalAttendees: number } }>(
+      const resVisitors = await api.get<{ success: boolean; data: { totalAttendees: number; attendees: any[] } }>(
         `/api/ormawa/booths/${targetId}/visitors`
       );
       if (resVisitors.success && resVisitors.data) {
         visitorCount.value = Number(resVisitors.data.totalAttendees || 0);
+        visitors.value = Array.isArray(resVisitors.data.attendees) ? resVisitors.data.attendees : [];
       }
     } else {
       visitorCount.value = 0;
+      visitors.value = [];
     }
   } catch {
     visitorCount.value = 0;
+    visitors.value = [];
+  } finally {
+    loadingVisitors.value = false;
   }
 }
 

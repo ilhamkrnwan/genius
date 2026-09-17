@@ -227,27 +227,6 @@
                 </button>
               </div>
             </div>
-
-            <!-- Tombol Cepat Uji Coba Demo (Preset NIM Maba) -->
-            <div class="space-y-1 pt-1">
-              <div class="flex items-center gap-1 text-[8.5px] font-pixel text-[#a08060] uppercase">
-                <Zap class="h-3 w-3 text-[#facc15]" />
-                <span>Uji Coba Cepat (Klik NIM Maba Demo):</span>
-              </div>
-              <div class="flex flex-wrap gap-1.5">
-                <button
-                  v-for="nimDemo in demoNims"
-                  :key="nimDemo"
-                  type="button"
-                  @click="quickScan(nimDemo)"
-                  :disabled="isProcessing"
-                  class="px-2 py-0.5 bg-[#20150d] hover:bg-[#3d2714] border border-[#5a3a18] hover:border-[#facc15] rounded text-[9px] font-mono text-[#fef08a] cursor-pointer active:scale-95 transition-all disabled:opacity-40"
-                >
-                  {{ nimDemo }}
-                </button>
-              </div>
-            </div>
-
           </div>
         </div>
 
@@ -375,7 +354,6 @@ import {
   Camera,
   RefreshCw,
   UploadCloud,
-  Zap,
 } from 'lucide-vue-next';
 import TopbarActions from '~/components/TopbarActions.vue';
 import { useAuth } from '~/composables/useAuth';
@@ -413,9 +391,6 @@ const lastScanResult = ref<{
 const lastScannedToken = ref('');
 
 const todayScans = ref<Array<{ id: string; fullName: string; nim: string; time: string; xpEarned: number }>>([]);
-
-// Daftar NIM demo maba untuk pengujian cepat
-const demoNims = ['26111101', '26111102', '26111103', '26111104', '26111105'];
 
 // ─── Web Audio API Synth Beep ──────────────────────────────────────────────────
 function playBeep(type: 'success' | 'error' = 'success') {
@@ -756,11 +731,6 @@ async function processScan(rawCode: string) {
 function submitManualScan() {
   if (!manualNim.value.trim()) return;
   processScan(manualNim.value.trim());
-}
-
-function quickScan(nim: string) {
-  manualNim.value = nim;
-  processScan(nim);
 }
 </script>
 
