@@ -1,8 +1,8 @@
 import { Elysia, t } from "elysia";
 import { authMiddleware, requireAdmin } from "../middleware/auth";
-import { broadcastAdminEvent, broadcastAnnouncement, broadcastToTopic, broadcastSystemSettings } from "../realtime";
+import { broadcastAdminEvent, broadcastAnnouncement, broadcastToTopic, broadcastSystemSettings, broadcastXpReset } from "../realtime";
 import { db } from "../db";
-import { scoreTransactions, gameSessions, attendances, dailyReflections } from "../db/schema";
+import { scoreTransactions, gameSessions, attendances, dailyReflections, fgdEvaluations } from "../db/schema";
 
 export interface EventSettings {
   activeDay: number;
@@ -189,21 +189,15 @@ export const systemRoutes = new Elysia({
       // 2. Bersihkan seluruh sesi permainan kuis
       await db.delete(gameSessions);
 
-      // 3. Bersihkan catatan absensi & refleksi harian
+      // 3. Bersihkan catatan absensi, refleksi harian, & evaluasi FGD
       await db.delete(attendances);
       await db.delete(dailyReflections);
+      await db.delete(fgdEvaluations);
 
       // 4. Siarkan sinyal reset XP ke seluruh HP Maba, portal Buddy, dan papan proyektor
-      broadcastToTopic("leaderboard:global", "XP_RESET", {
-        message: "Perolehan seluruh XP dan stempel telah di-reset oleh Game Master.",
-        resetAt: new Date().toISOString(),
-      });
+      broadcastXpReset();
       broadcastToTopic("leaderboard:global", "LEADERBOARD_UPDATED", {
         type: "XP_RESET",
-        timestamp: new Date().toISOString(),
-      });
-      broadcastAdminEvent("XP_RESET_TRIGGERED", {
-        by: user?.username || "ADMIN",
         timestamp: new Date().toISOString(),
       });
 

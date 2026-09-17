@@ -34,10 +34,10 @@ import { Users, FileEdit, Gift, Trophy } from "lucide-vue-next";
 const route = useRoute();
 
 const navItems = [
-  { label: "Anggota", to: "/buddy", icon: Users },
+  { label: "Presensi", to: "/buddy", icon: Users },
   { label: "Nilai FGD", to: "/buddy/fgd", icon: FileEdit },
-  { label: "Bonus H3", to: "/buddy/bonus", icon: Gift },
-  { label: "Leaderboard", to: "/buddy/leaderboard", icon: Trophy },
+  { label: "Hari Ke-3", to: "/buddy/bonus", icon: Gift },
+  { label: "Klasemen", to: "/buddy/leaderboard", icon: Trophy },
 ];
 
 const isActive = (to: string) => {

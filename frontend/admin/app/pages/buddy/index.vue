@@ -154,54 +154,6 @@
       </div>
     </div>
 
-    <!-- Quick Actions Hub -->
-    <div class="grid grid-cols-3 gap-1.5 sm:gap-2 font-mono">
-      <NuxtLink
-        to="/buddy/fgd"
-        class="pixel-card p-2 sm:p-2.5 text-center flex flex-col items-center justify-center hover:bg-[#2a1d13] hover:border-[#f0d060] transition-all active:scale-95 group cursor-pointer relative overflow-hidden"
-      >
-        <div class="absolute inset-0 bg-gradient-to-t from-[#f0d060]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#120a05] border-2 border-[#f0d060]/50 flex items-center justify-center text-[#facc15] mb-1.5 group-hover:scale-110 group-hover:border-[#f0d060] transition-all group-hover:shadow-[0_0_10px_rgba(240,208,96,0.3)]">
-          <FileEdit class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        </div>
-        <span
-          class="font-pixel text-[8px] sm:text-[9.5px] block uppercase mb-0.5 drop-shadow-md"
-          :class="isLocked || systemActiveDay === 2 ? 'text-amber-400' : 'text-[#fef08a]'"
-        >
-          NILAI FGD
-        </span>
-        <span
-          class="text-[7px] sm:text-[7.5px] transition-colors line-clamp-1"
-          :class="isLocked ? 'text-red-400' : (systemActiveDay === 2 ? 'text-amber-400' : 'text-[#c4956a] group-hover:text-[#e5b383]')"
-        >
-          {{ isLocked ? 'Dikunci Admin' : (systemActiveDay === 2 ? 'H2 Tidak Ada FGD' : 'Rubrik Sesi') }}
-        </span>
-      </NuxtLink>
-
-      <NuxtLink
-        to="/buddy/bonus"
-        class="pixel-card-gold p-2 sm:p-2.5 text-center flex flex-col items-center justify-center hover:bg-[#2a1d13] transition-all active:scale-95 group cursor-pointer relative overflow-hidden"
-      >
-        <div class="absolute inset-0 bg-gradient-to-t from-[#facc15]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#120a05] border-2 border-[#facc15] flex items-center justify-center text-[#facc15] mb-1.5 group-hover:scale-110 transition-all glow-gold">
-          <Gift class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        </div>
-        <span class="font-pixel text-[8px] sm:text-[9.5px] text-[#facc15] block uppercase mb-0.5 drop-shadow-md">BONUS H3</span>
-        <span class="text-[7px] sm:text-[7.5px] text-[#86efac] line-clamp-1">Apresiasi</span>
-      </NuxtLink>
-
-      <NuxtLink
-        to="/buddy/leaderboard"
-        class="pixel-card p-2 sm:p-2.5 text-center flex flex-col items-center justify-center hover:bg-[#2a1d13] hover:border-[#38bdf8] transition-all active:scale-95 group cursor-pointer relative overflow-hidden"
-      >
-        <div class="absolute inset-0 bg-gradient-to-t from-[#38bdf8]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#120a05] border-2 border-[#38bdf8]/50 flex items-center justify-center text-[#38bdf8] mb-1.5 group-hover:scale-110 group-hover:border-[#38bdf8] transition-all group-hover:shadow-[0_0_10px_rgba(56,189,248,0.3)]">
-          <Trophy class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        </div>
-        <span class="font-pixel text-[8px] sm:text-[9.5px] text-[#38bdf8] block uppercase mb-0.5 drop-shadow-md">KLASEMEN</span>
-        <span class="text-[7px] sm:text-[7.5px] text-[#c4956a] group-hover:text-[#e5b383] transition-colors line-clamp-1">Leaderboard</span>
-      </NuxtLink>
-    </div>
 
     <!-- Pos Gatekeeper & Server Timer Controller -->
     <BuddyPosController

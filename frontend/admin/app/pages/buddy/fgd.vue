@@ -23,6 +23,15 @@
               <span class="border border-[#38bdf8] bg-[#0c1c28] px-2 py-0.5 text-[8.5px] font-pixel text-[#38bdf8] rounded">
                 HARI {{ activeDay }}
               </span>
+              <button
+                type="button"
+                @click="loadData()"
+                :disabled="loading"
+                title="Muat Ulang Data Server"
+                class="p-1 rounded bg-[#120a05] border border-[#5a3a18] hover:border-[#f0d060] text-[#c4956a] hover:text-white transition-colors cursor-pointer"
+              >
+                <RefreshCw class="w-3.5 h-3.5" :class="loading ? 'animate-spin' : ''" />
+              </button>
               <span class="border-2 border-[#f0d060] bg-[#120a05] px-2.5 py-1 text-[9px] sm:text-[10px] font-pixel text-[#facc15] rounded-lg shadow-inner">
                 {{ fgdSessions.length > 0 ? selectedSession : 'TIDAK ADA SESI' }}
               </span>
@@ -118,9 +127,9 @@
               />
               <div class="min-w-0 relative z-10">
                 <div class="font-bold text-[11px] sm:text-xs truncate font-sans" :class="selectedMember?.id === m.id ? 'text-white' : 'text-[#e5b383] group-hover:text-white'">{{ m.fullName }}</div>
-                <div class="text-[9px] sm:text-[10px] text-[#c4956a] truncate font-mono mt-0.5">
-                  <span class="text-[#f0d060]">{{ m.prodi }}</span>
-                  <span v-if="m.evaluations?.some(e => e.sessionId === selectedSession)" class="ml-2 text-[#86efac]">✓ Dinilai</span>
+                <div class="text-[9px] sm:text-[10px] text-[#c4956a] truncate font-mono mt-0.5 flex items-center gap-2">
+                  <span class="opacity-80">NIM {{ m.username }}</span>
+                  <span v-if="m.evaluations?.some(e => e.sessionId === selectedSession)" class="text-[#86efac] font-bold">✓ Dinilai</span>
                 </div>
               </div>
             </button>
@@ -145,7 +154,7 @@
                   {{ selectedMember.fullName }}
                 </h2>
                 <span class="text-[10px] sm:text-[11px] text-[#c4956a] font-mono mt-0.5 block">
-                  NIM {{ selectedMember.username }} <span class="mx-1 text-[#5a3a18]">|</span> {{ selectedMember.prodi }}
+                  NIM {{ selectedMember.username }}
                 </span>
               </div>
             </div>
@@ -168,16 +177,18 @@
                 </label>
                 <span class="font-pixel text-[11px] sm:text-xs text-[#86efac] font-bold">{{ scoreKeaktifan }}/5</span>
               </div>
-              <div class="grid grid-cols-5 gap-1.5 sm:gap-2 font-pixel text-[11px] sm:text-xs">
+              <div class="grid grid-cols-6 gap-1 sm:gap-1.5 font-pixel text-[11px] sm:text-xs">
                 <button
-                  v-for="val in 5"
+                  v-for="val in [0, 1, 2, 3, 4, 5]"
                   :key="val"
                   type="button"
                   @click="scoreKeaktifan = val"
                   :class="[
-                    'h-8 sm:h-10 rounded border-2 transition-all cursor-pointer font-bold active:scale-95',
+                    'h-8 sm:h-9 rounded border-2 transition-all cursor-pointer font-bold active:scale-95',
                     scoreKeaktifan === val
-                      ? 'bg-[#ca8a04] text-[#120a05] border-[#facc15] shadow-[0_0_8px_rgba(250,204,21,0.5)] scale-105'
+                      ? (val === 0
+                          ? 'bg-red-950/80 text-red-300 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] scale-105'
+                          : 'bg-[#ca8a04] text-[#120a05] border-[#facc15] shadow-[0_0_8px_rgba(250,204,21,0.5)] scale-105')
                       : 'bg-[#2a1d13] text-[#c4956a] border-[#4a3624] hover:border-[#f0d060] hover:text-[#f0e0c0]'
                   ]"
                 >
@@ -195,16 +206,18 @@
                 </label>
                 <span class="font-pixel text-[11px] sm:text-xs text-[#38bdf8] font-bold">{{ scoreKedalaman }}/5</span>
               </div>
-              <div class="grid grid-cols-5 gap-1.5 sm:gap-2 font-pixel text-[11px] sm:text-xs">
+              <div class="grid grid-cols-6 gap-1 sm:gap-1.5 font-pixel text-[11px] sm:text-xs">
                 <button
-                  v-for="val in 5"
+                  v-for="val in [0, 1, 2, 3, 4, 5]"
                   :key="val"
                   type="button"
                   @click="scoreKedalaman = val"
                   :class="[
-                    'h-8 sm:h-10 rounded border-2 transition-all cursor-pointer font-bold active:scale-95',
+                    'h-8 sm:h-9 rounded border-2 transition-all cursor-pointer font-bold active:scale-95',
                     scoreKedalaman === val
-                      ? 'bg-[#0284c7] text-white border-[#7dd3fc] shadow-[0_0_8px_rgba(56,189,248,0.5)] scale-105'
+                      ? (val === 0
+                          ? 'bg-red-950/80 text-red-300 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] scale-105'
+                          : 'bg-[#0284c7] text-white border-[#7dd3fc] shadow-[0_0_8px_rgba(56,189,248,0.5)] scale-105')
                       : 'bg-[#2a1d13] text-[#c4956a] border-[#4a3624] hover:border-[#38bdf8] hover:text-[#f0e0c0]'
                   ]"
                 >
@@ -222,16 +235,18 @@
                 </label>
                 <span class="font-pixel text-[11px] sm:text-xs text-[#ec4899] font-bold">{{ scoreAdab }}/5</span>
               </div>
-              <div class="grid grid-cols-5 gap-1.5 sm:gap-2 font-pixel text-[11px] sm:text-xs max-w-md mx-auto xl:max-w-none">
+              <div class="grid grid-cols-6 gap-1 sm:gap-1.5 font-pixel text-[11px] sm:text-xs max-w-md mx-auto xl:max-w-none">
                 <button
-                  v-for="val in 5"
+                  v-for="val in [0, 1, 2, 3, 4, 5]"
                   :key="val"
                   type="button"
                   @click="scoreAdab = val"
                   :class="[
-                    'h-8 sm:h-10 rounded border-2 transition-all cursor-pointer font-bold active:scale-95',
+                    'h-8 sm:h-9 rounded border-2 transition-all cursor-pointer font-bold active:scale-95',
                     scoreAdab === val
-                      ? 'bg-[#db2777] text-white border-[#fbcfe8] shadow-[0_0_8px_rgba(244,114,182,0.5)] scale-105'
+                      ? (val === 0
+                          ? 'bg-red-950/80 text-red-300 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] scale-105'
+                          : 'bg-[#db2777] text-white border-[#fbcfe8] shadow-[0_0_8px_rgba(244,114,182,0.5)] scale-105')
                       : 'bg-[#2a1d13] text-[#c4956a] border-[#4a3624] hover:border-[#f472b6] hover:text-[#f0e0c0]'
                   ]"
                 >
@@ -239,21 +254,6 @@
                 </button>
               </div>
             </div>
-          </div>
-
-          <!-- Catatan Buddy Singkat -->
-          <div class="space-y-1.5 pt-2 border-t border-[#5a3a18]/50">
-            <label class="font-pixel text-[9px] sm:text-[10px] text-[#e5b383] uppercase flex items-center gap-1.5">
-              <div class="w-1.5 h-1.5 bg-[#f0d060] rotate-45"></div>
-              CATATAN APRESIASI (OPSIONAL):
-            </label>
-            <input
-              v-model="feedbackNotes"
-              type="text"
-              :disabled="isLocked"
-              placeholder="Berikan catatan motivasi singkat untuk mahasiswa ini..."
-              class="w-full bg-[#120a05] border-2 border-[#5a3a18] focus:border-[#f0d060] rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-white outline-none font-sans shadow-inner transition-colors focus:shadow-[0_0_10px_rgba(240,208,96,0.1)] disabled:opacity-50 disabled:cursor-not-allowed"
-            />
           </div>
 
           <!-- Submit Action Button -->
@@ -266,7 +266,7 @@
             :class="submitting ? 'opacity-70 pointer-events-none' : 'hover:border-[#f0d060] hover:text-[#fef08a]'"
           >
             <CheckCircle2 class="h-4 w-4 sm:h-5 sm:w-5" :class="submitting ? 'animate-pulse' : 'text-[#86efac]'" />
-            <span>{{ submitting ? 'MENYIMPAN DATA...' : `SIMPAN NILAI FGD (+${calculatedXp} XP)` }}</span>
+            <span>{{ submitting ? 'MENYIMPAN DATA...' : (calculatedXp === 0 ? 'SIMPAN NILAI FGD (0 XP / PASIF)' : `SIMPAN NILAI FGD (+${calculatedXp} XP)`) }}</span>
           </button>
           
           <div v-else class="w-full h-11 sm:h-12 font-pixel text-[11px] sm:text-xs font-bold flex items-center justify-center gap-2 bg-[#2a1210] text-red-400 border-2 border-red-900 rounded opacity-70">
@@ -300,6 +300,7 @@ import {
   HeartHandshake,
   CheckCircle2,
   Lock,
+  RefreshCw,
 } from "lucide-vue-next";
 import { useAuth } from "~/composables/useAuth";
 import { useApi } from "~/composables/useApi";
@@ -348,13 +349,12 @@ const isFgdEffectivelyLocked = computed(() => {
 const scoreKeaktifan = ref(5);
 const scoreKedalaman = ref(4);
 const scoreAdab = ref(5);
-const feedbackNotes = ref("Aktif berdiskusi dan santun");
 const toastMessage = ref<string | null>(null);
 
 const currentSessionInfo = computed(() => allFgdSessions.find((s) => s.id === selectedSession.value));
 
 const totalScore = computed(() => scoreKeaktifan.value + scoreKedalaman.value + scoreAdab.value);
-// Rumus konversi XP: (skala 3-15) -> +40 s/d +200 XP
+// Rumus konversi XP: (skala 0-15) -> 0 s/d +200 XP (0 XP jika pasif)
 const calculatedXp = computed(() => Math.round((totalScore.value / 15) * 200));
 
 function selectMember(m: FgdMember) {
@@ -388,16 +388,14 @@ function loadMemberEvaluation(participantId: string, sessionId: string) {
   const found = member?.evaluations?.find((e: any) => e.sessionId === sessionId);
 
   if (found && found.rubricScores) {
-    scoreKeaktifan.value = found.rubricScores.keaktifan || 5;
-    scoreKedalaman.value = found.rubricScores.kedalaman || 4;
-    scoreAdab.value = found.rubricScores.adab || 5;
-    feedbackNotes.value = found.feedbackNotes || "";
+    scoreKeaktifan.value = found.rubricScores.keaktifan !== undefined ? found.rubricScores.keaktifan : 5;
+    scoreKedalaman.value = found.rubricScores.kedalaman !== undefined ? found.rubricScores.kedalaman : 4;
+    scoreAdab.value = found.rubricScores.adab !== undefined ? found.rubricScores.adab : 5;
   } else {
     // Defaults for new rubric
     scoreKeaktifan.value = 5;
     scoreKedalaman.value = 4;
     scoreAdab.value = 5;
-    feedbackNotes.value = "Aktif berdiskusi dan santun";
   }
 }
 
@@ -417,12 +415,13 @@ async function submitFgdEvaluation() {
           kedalaman: scoreKedalaman.value,
           adab: scoreAdab.value,
         },
-        feedbackNotes: feedbackNotes.value,
       }
     );
 
     if (res.success) {
-      toastMessage.value = res.message || `Nilai ${selectedMember.value.fullName} berhasil disimpan! (+${calculatedXp.value} XP)`;
+      toastMessage.value = res.message || (calculatedXp.value === 0
+        ? `Nilai ${selectedMember.value.fullName} berhasil disimpan! (0 XP / Pasif)`
+        : `Nilai ${selectedMember.value.fullName} berhasil disimpan! (+${calculatedXp.value} XP)`);
 
       // Update in-memory evaluations for the member
       if (!selectedMember.value.evaluations) selectedMember.value.evaluations = [];
@@ -434,7 +433,6 @@ async function submitFgdEvaluation() {
           kedalaman: scoreKedalaman.value,
           adab: scoreAdab.value,
         },
-        feedbackNotes: feedbackNotes.value,
         xpAwarded: calculatedXp.value,
       };
       if (idx >= 0) {
@@ -502,7 +500,7 @@ async function loadData() {
           id: m.userId || m.id,
           fullName: m.fullName || "Mahasiswa",
           username: m.username || "-",
-          prodi: m.characterClass || m.characterTitle || "Informatika",
+          prodi: m.prodi || "",
           avatarUrl: m.avatarUrl || "/character-cowok-avatar.png",
           evaluations: evalMap.get(m.userId || m.id) || [],
         }));
@@ -514,6 +512,15 @@ async function loadData() {
         const found = teamMembers.value.find((m) => m.id === queryParticipantId);
         if (found) {
           selectMember(found);
+          return;
+        }
+      }
+
+      // If already selecting a member, refresh with latest data
+      if (selectedMember.value) {
+        const foundCurrent = teamMembers.value.find((m) => m.id === selectedMember.value?.id);
+        if (foundCurrent) {
+          selectMember(foundCurrent);
           return;
         }
       }
@@ -546,7 +553,18 @@ onMounted(() => {
       if (payload?.activeDay !== undefined) {
         activeDay.value = Number(payload.activeDay);
       }
-    } else if (event === "XP_RESET") {
+    } else if (
+      event === "XP_RESET" ||
+      data?.type === "XP_RESET" ||
+      (event === "ADMIN_FEED_EVENT" && (data?.action === "XP_RESET_TRIGGERED" || data?.action === "XP_RESET"))
+    ) {
+      teamMembers.value.forEach((m) => {
+        m.evaluations = [];
+      });
+      if (selectedMember.value) {
+        selectedMember.value.evaluations = [];
+        loadMemberEvaluation(selectedMember.value.id, selectedSession.value);
+      }
       loadData();
     }
   });

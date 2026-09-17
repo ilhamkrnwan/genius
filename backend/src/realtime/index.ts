@@ -115,6 +115,30 @@ export const broadcastSystemSettings = (settings: any) => {
   }
 };
 
+export const broadcastXpReset = () => {
+  const payload = {
+    message: "Perolehan seluruh XP, stempel, presensi, dan FGD telah di-reset oleh Game Master.",
+    resetAt: new Date().toISOString(),
+  };
+  broadcastToTopic("leaderboard:global", "XP_RESET", payload);
+  broadcastToTopic("admin:feed", "XP_RESET", payload);
+  broadcastAdminEvent("XP_RESET_TRIGGERED", payload);
+
+  const rawMsg = JSON.stringify({
+    event: "XP_RESET",
+    topic: "system:global",
+    data: payload,
+    timestamp: new Date().toISOString(),
+  });
+  for (const [ws] of activeSockets.entries()) {
+    try {
+      ws.send(rawMsg);
+    } catch {
+      // ignore
+    }
+  }
+};
+
 export const broadcastGameSessionEvent = (sessionId: string, event: string, payload: any) => {
   broadcastToTopic(`game-session:${sessionId}`, event, payload);
   if (payload?.teamId) {

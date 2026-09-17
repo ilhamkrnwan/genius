@@ -196,7 +196,7 @@ export const fgdRoutes = new Elysia({
   // POST /api/buddy/evaluations — Buddy submit evaluasi rubrik 3 pilar FGD
   .post(
     "/",
-    async ({ body, user, set }) => {
+    async ({ body, user, set }: any) => {
       return handleEvaluationSubmit({ body, user, set });
     },
     {
@@ -210,9 +210,9 @@ export const fgdRoutes = new Elysia({
         nim: t.Optional(t.String()),
         teamId: t.Optional(t.String()),
         rubricScores: t.Object({
-          keaktifan: t.Number({ minimum: 1, maximum: 5 }),
-          kedalaman: t.Number({ minimum: 1, maximum: 5 }),
-          adab: t.Number({ minimum: 1, maximum: 5 }),
+          keaktifan: t.Number({ minimum: 0, maximum: 5 }),
+          kedalaman: t.Number({ minimum: 0, maximum: 5 }),
+          adab: t.Number({ minimum: 0, maximum: 5 }),
         }),
         feedbackNotes: t.Optional(t.String()),
       }),
@@ -222,7 +222,7 @@ export const fgdRoutes = new Elysia({
   // POST /api/buddy/evaluations/submit — Endpoint alias sesuai REST API Spec
   .post(
     "/submit",
-    async ({ body, user, set }) => {
+    async ({ body, user, set }: any) => {
       return handleEvaluationSubmit({ body, user, set });
     },
     {
@@ -235,9 +235,9 @@ export const fgdRoutes = new Elysia({
         nim: t.Optional(t.String()),
         teamId: t.Optional(t.String()),
         rubricScores: t.Object({
-          keaktifan: t.Number({ minimum: 1, maximum: 5 }),
-          kedalaman: t.Number({ minimum: 1, maximum: 5 }),
-          adab: t.Number({ minimum: 1, maximum: 5 }),
+          keaktifan: t.Number({ minimum: 0, maximum: 5 }),
+          kedalaman: t.Number({ minimum: 0, maximum: 5 }),
+          adab: t.Number({ minimum: 0, maximum: 5 }),
         }),
         feedbackNotes: t.Optional(t.String()),
       }),
@@ -339,5 +339,202 @@ export const fgdRoutes = new Elysia({
         description: "Menampilkan seluruh riwayat penilaian FGD yang diperoleh oleh mahasiswa dari Buddy pendampingnya.",
       },
       params: t.Object({ participantId: t.String() }),
+    }
+  )
+
+  // GET /api/buddy/evaluations/day-3/team/:teamId — Ambil status penilaian individu Hari Ke-3 regu
+  .get(
+    "/day-3/team/:teamId",
+    async ({ params, set }) => {
+      const { teamId } = params;
+
+      // 1. Ambil seluruh anggota regu
+      const members = await db
+        .select({
+          userId: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          avatarUrl: users.avatarUrl,
+        })
+        .from(teamMembers)
+        .innerJoin(users, eq(teamMembers.userId, users.id))
+        .where(eq(teamMembers.teamId, teamId));
+
+      // 2. Ambil seluruh evaluasi Hari Ke-3
+      const evals = await db
+        .select()
+        .from(fgdEvaluations)
+        .where(
+          and(
+            eq(fgdEvaluations.teamId, teamId),
+            eq(fgdEvaluations.sessionId, "DAY-3-INDIVIDUAL")
+          )
+        );
+
+      const evalMap = new Map(evals.map((e) => [e.participantId, e]));
+
+      const mapped = members.map((m) => {
+        const ev = evalMap.get(m.userId);
+        return {
+          id: m.userId,
+          fullName: m.fullName,
+          username: m.username,
+          avatarUrl: m.avatarUrl,
+          isEvaluated: !!ev,
+          xpAwarded: ev ? ev.xpAwarded : null,
+          submittedAt: ev ? ev.submittedAt : null,
+        };
+      });
+
+      return {
+        success: true,
+        data: {
+          teamId,
+          totalMembers: members.length,
+          evaluatedCount: evals.length,
+          members: mapped,
+        },
+      };
+    },
+    {
+      detail: {
+        summary: "Status penilaian individu Hari Ke-3 per regu",
+      },
+      params: t.Object({ teamId: t.String() }),
+    }
+  )
+
+  // POST /api/buddy/evaluations/day-3 — Submit penilaian individu Hari Ke-3 (batch atau satuan)
+  .post(
+    "/day-3",
+    async ({ body, user, set }: any) => {
+      const settings = getSystemSettings();
+      if (settings.activeDay !== 3) {
+        set.status = 403;
+        return {
+          success: false,
+          error: {
+            code: "DAY_NOT_ACTIVE",
+            message: `Penilaian Hari Ke-3 sedang terkunci. Saat ini sistem berada pada Hari ${settings.activeDay}.`,
+          },
+        };
+      }
+
+      if (settings.isBuddyEvaluationLocked) {
+        set.status = 403;
+        return {
+          success: false,
+          error: {
+            code: "EVALUATION_LOCKED",
+            message: "Penilaian Hari Ke-3 sedang dikunci oleh Super Admin di Control Center.",
+          },
+        };
+      }
+
+      const buddyId = user?.userId;
+      const { teamId, evaluations } = body;
+
+      if (!evaluations || !Array.isArray(evaluations) || evaluations.length === 0) {
+        set.status = 400;
+        return { success: false, error: { code: "BAD_REQUEST", message: "Daftar evaluasi tidak boleh kosong." } };
+      }
+
+      const results = [];
+
+      for (const item of evaluations) {
+        const { participantId, xp } = item;
+        const finalXp = Math.max(0, Math.min(200, Math.round(Number(xp))));
+
+        // Cek evaluasi eksisting
+        const [existing] = await db
+          .select()
+          .from(fgdEvaluations)
+          .where(
+            and(
+              eq(fgdEvaluations.sessionId, "DAY-3-INDIVIDUAL"),
+              eq(fgdEvaluations.participantId, participantId)
+            )
+          )
+          .limit(1);
+
+        const oldXp = existing ? existing.xpAwarded : 0;
+        const xpDelta = finalXp - oldXp;
+
+        if (existing) {
+          await db
+            .update(fgdEvaluations)
+            .set({
+              rubricScores: { xp: finalXp },
+              totalScore: finalXp,
+              xpAwarded: finalXp,
+              submittedAt: new Date(),
+              buddyId: buddyId || existing.buddyId,
+            })
+            .where(eq(fgdEvaluations.id, existing.id));
+        } else {
+          await db.insert(fgdEvaluations).values({
+            sessionId: "DAY-3-INDIVIDUAL",
+            participantId,
+            teamId,
+            buddyId: buddyId || participantId,
+            rubricScores: { xp: finalXp },
+            totalScore: finalXp,
+            xpAwarded: finalXp,
+          });
+        }
+
+        // Catat mutasi delta ke ledger skor jika ada perubahan poin
+        if (xpDelta !== 0) {
+          await db.insert(scoreTransactions).values({
+            participantId,
+            teamId,
+            amount: xpDelta,
+            sourceType: "BONUS",
+            reason: `Penilaian Individu Hari Ke-3 (${finalXp} XP)`,
+            createdBy: buddyId || participantId,
+          });
+
+          broadcastLeaderboardUpdate({
+            type: "DAY3_EVALUATION_AWARDED",
+            sessionId: "DAY-3-INDIVIDUAL",
+            participantId,
+            teamId,
+            amount: xpDelta,
+            finalXp,
+          });
+        }
+
+        results.push({ participantId, xp: finalXp, delta: xpDelta });
+      }
+
+      broadcastAdminEvent("DAY3_EVALUATION_SAVED", {
+        teamId,
+        count: results.length,
+        evaluatedBy: buddyId,
+      });
+
+      return {
+        success: true,
+        message: `Penilaian Hari Ke-3 untuk ${results.length} mahasiswa berhasil disimpan!`,
+        data: {
+          teamId,
+          savedCount: results.length,
+          evaluations: results,
+        },
+      };
+    },
+    {
+      detail: {
+        summary: "Simpan penilaian individu Hari Ke-3 (mendukung bobot 0 XP untuk pasif)",
+      },
+      body: t.Object({
+        teamId: t.String(),
+        evaluations: t.Array(
+          t.Object({
+            participantId: t.String(),
+            xp: t.Number({ minimum: 0, maximum: 200 }),
+          })
+        ),
+      }),
     }
   );

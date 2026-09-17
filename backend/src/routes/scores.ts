@@ -24,9 +24,9 @@ export const scoreRoutes = new Elysia({
     async ({ body, user, set }: any) => {
       const { participantId, amount, reason, sourceType, teamId, stageId, gameSessionId } = body;
 
-      if (!amount || amount === 0) {
+      if (amount === undefined || amount === null || typeof amount !== "number" || isNaN(amount)) {
         set.status = 400;
-        return { success: false, error: { code: "INVALID_AMOUNT", message: "Jumlah XP tidak boleh 0" } };
+        return { success: false, error: { code: "INVALID_AMOUNT", message: "Jumlah XP tidak valid" } };
       }
 
       // 1. Resolve participant (bisa berupa UUID atau NIM/username)
@@ -159,9 +159,9 @@ export const scoreRoutes = new Elysia({
       const { body, user, set } = context;
       const { participantId, amount, reason, sourceType, teamId, stageId, gameSessionId } = body;
 
-      if (!amount || amount === 0) {
+      if (amount === undefined || amount === null || typeof amount !== "number" || isNaN(amount)) {
         set.status = 400;
-        return { success: false, error: { code: "INVALID_AMOUNT", message: "Jumlah XP tidak boleh 0" } };
+        return { success: false, error: { code: "INVALID_AMOUNT", message: "Jumlah XP tidak valid" } };
       }
 
       const targetId = participantId || user?.userId;
@@ -383,7 +383,7 @@ export const scoreRoutes = new Elysia({
       body: t.Object({
         participantId: t.Optional(t.String()),
         teamId: t.Optional(t.String()),
-        amount: t.Number({ minimum: 1 }),
+        amount: t.Number({ minimum: 0 }),
         sourceType: t.Optional(t.String()),
         reason: t.Optional(t.String()),
         stageId: t.Optional(t.String()),
