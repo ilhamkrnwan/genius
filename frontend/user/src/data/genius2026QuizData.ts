@@ -202,7 +202,7 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
     stampColor: '#10B981',
     badgeTag: 'Integritas Kampus',
     story:
-      'Lantai 1 menguji integritasmu melalui 8 studi kasus dilema etika mahasiswa: pengelolaan sisa dana kegiatan, mitigasi gratifikasi, whistleblowing, etika bermedia sosial, hingga pencegahan intoleransi dan kekerasan di lingkungan kampus.',
+      'Di lingkungan kampus, seorang mahasiswa wajib mengutamakan integritas, kejujuran, dan transparansi dalam mengelola keuangan, menyajikan data, serta mengambil keputusan. Selain itu, sikap kritis dan objektivitas sangat diperlukan agar setiap tindakan dapat dipertanggungjawabkan serta tidak memicu konflik atau penyalahgunaan wewenang.',
     questions: [
       {
         id: 'q-pos1-1',
@@ -373,7 +373,7 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
     stampColor: '#06B6D4',
     badgeTag: 'Leadership',
     story:
-      'Kepemimpinan sejati diuji saat menghadapi masalah nyata. Balik dan cocokkan 5 pasang kartu konsep kepemimpinan dengan tindakan praktis di organisasi!',
+      'Dalam kehidupan kampus, mahasiswa perlu memiliki karakter dasar yang mendukung kemampuan dalam mengelola tugas, menangani berbagai kondisi anggota, menyusun perencanaan secara terarah, serta mengambil keputusan dengan tepat. Kemampuan tersebut diperlukan agar mahasiswa dapat menjalankan tanggung jawab secara terorganisir, mampu menghadapi berbagai situasi, dan menyelesaikan permasalahan secara bertanggung jawab.',
     questions: [],
     memoryMatchContent: {
       pairs: [
@@ -432,7 +432,7 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
     stampColor: '#3B82F6',
     badgeTag: 'Komunikasi Digital',
     story:
-      'Sebagai mahasiswa di era digital, kecakapan berkomunikasi santun, menyaring informasi hoaks, dan menjaga jejak digital positif adalah kunci kesuksesan akademik dan profesional.',
+      'Dalam menggunakan media sosial, mahasiswa perlu memahami pentingnya menjaga etika, privasi, dan cara berkomunikasi yang baik. Setiap unggahan dapat menjadi bagian dari jejak digital, sehingga informasi perlu diperiksa sebelum dibagikan untuk menghindari hoaks dan misinformasi. Mahasiswa juga perlu menerapkan netiket, membangun personal branding yang positif, serta melakukan klarifikasi secara bijak apabila terjadi kesalahpahaman atau penyebaran informasi yang keliru.',
     questions: [
       {
         id: 'q-pos6-1',
@@ -520,7 +520,7 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
     stampColor: '#F59E0B',
     badgeTag: 'Karakter Pancasila',
     story:
-      'Internalisasi 6 dimensi Profil Pelajar Pancasila: Beriman & Bertakwa, Berkebhinekaan Global, Bergotong Royong, Mandiri, Bernalar Kritis, dan Kreatif. Tentukan apakah pernyataan berikut Benar atau Salah!',
+      'Dalam kehidupan kampus, mahasiswa diharapkan mampu menerapkan nilai-nilai Profil Pelajar Pancasila melalui sikap beriman dan berakhlak mulia, menghargai keberagaman, serta membangun kerja sama dengan orang lain. Mahasiswa juga perlu menunjukkan kemandirian, kemampuan berpikir kritis, dan kreativitas dalam menghadapi berbagai persoalan, sehingga mampu mengambil keputusan secara bertanggung jawab dan memberikan kontribusi positif bagi lingkungan sekitar.',
     questions: [],
     benarSalahContent: {
       statements: [
@@ -618,7 +618,7 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
     stampColor: '#EF4444',
     badgeTag: 'Anti Narkoba',
     story:
-      'Kampus bersih narkoba melindungi masa depan generasi bangsa. Pecahkan 5 kata kunci teka-teki silang seputar pencegahan adiksi dan pemulihan ketergantungan!',
+      'Narkoba merupakan zat berbahaya yang dapat merusak sistem saraf dan memicu kondisi ketagihan, yaitu saat tubuh bergantung secara terus-menerus pada zat tersebut. Oleh karena itu, kita harus memiliki sikap tegas untuk menolak segala bentuk penyalahgunaan narkoba sejak dini. Bagi para pengguna yang sudah terlanjur terjerat, proses pemulihan dapat dilakukan di panti rehab agar mereka bisa pulih dan kembali hidup bebas dari pengaruh zat terlarang.',
     questions: [],
     ttsContent: {
       gridRows: 8,
@@ -780,7 +780,7 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
     stampColor: '#8B5CF6',
     badgeTag: 'Anti Plagiat',
     story:
-      'Karya tulis ilmiah mahasiswa wajib mengedepankan orisinalitas dan etika sitasi. Pecahkan 5 teka-teki kata "Siapakah Aku?" seputar kejujuran akademik!',
+      'Dalam menjalankan kegiatan akademik, mahasiswa perlu memahami berbagai bentuk plagiarisme serta pentingnya menjaga etika dan integritas dalam setiap karya. Mahasiswa harus mampu menerapkan teknik sitasi dan pengutipan yang tepat, menuliskan daftar pustaka atau referensi secara benar, serta memahami bahwa penggunaan kembali karya sendiri tanpa ketentuan yang jelas juga dapat termasuk self-plagiarism. Dengan demikian, setiap karya akademik dapat dipertanggungjawabkan dan mencerminkan kejujuran intelektual.',
     questions: [],
     tebakKataContent: {
       items: [

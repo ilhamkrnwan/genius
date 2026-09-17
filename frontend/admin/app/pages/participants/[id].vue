@@ -638,9 +638,9 @@ const participant = ref<any>(null);
 
 const characterSpriteUrl = computed(() => {
   if (participant.value?.gender === "FEMALE") {
-    return "/character-cewek.png";
+    return "/character-cewek.avif";
   }
-  return "/character-cowok.png";
+  return "/character-cowok.avif";
 });
 
 const characterAvatarUrl = computed(() => {

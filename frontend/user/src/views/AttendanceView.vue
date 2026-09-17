@@ -268,7 +268,7 @@ onMounted(async () => {
     <div
       class="fixed inset-0 pointer-events-none z-0"
       style="
-        background-image: url('/games/background.png');
+        background-image: url('/games/background.avif');
         background-size: cover;
         background-position: center bottom;
         image-rendering: pixelated;

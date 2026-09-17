@@ -40,8 +40,8 @@ const characterFullImage = computed(() => {
     gameStore.participant.avatar === 'character_cewek' ||
     gameStore.participant.gender === 'perempuan';
   return isFemale
-    ? '/mascots/character-cewek.png'
-    : '/mascots/character-cowok.png';
+    ? '/mascots/character-cewek.avif'
+    : '/mascots/character-cowok.avif';
 });
 
 // Interactive character click & speech bubble
@@ -185,7 +185,7 @@ function openEditProfile() {
     <div
       class="fixed inset-0 pointer-events-none z-0"
       style="
-        background-image: url('/games/background.png');
+        background-image: url('/games/background.avif');
         background-size: cover;
         background-position: center bottom;
         image-rendering: pixelated;

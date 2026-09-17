@@ -2,7 +2,7 @@ FROM oven/bun:1.3-alpine AS base
 WORKDIR /app
 
 # Copy root workspace and package manifests
-COPY package.json bun.lock* tsconfig.base.json ./
+COPY package.json bun.lock* tsconfig.base.json maba_2026.csv* ./
 COPY packages/ ./packages/
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
