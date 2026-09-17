@@ -3,7 +3,7 @@ import { db } from "../db";
 import { ormawaBooths, ormawaScans, ormawaInterests, users, teams, teamMembers, scoreTransactions, floors } from "../db/schema";
 import { eq, and, sql, desc, or, ilike, inArray } from "drizzle-orm";
 import { authMiddleware, requireAdmin, requireOrmawaOrAdmin, requireUser } from "../middleware/auth";
-import { broadcastLeaderboardUpdate, broadcastAdminEvent } from "../realtime";
+import { broadcastLeaderboardUpdate, broadcastAdminEvent, broadcastXpCelebration } from "../realtime";
 import {
   normalizeInstagramUsername,
   ORMAWA_INTEREST_XP,
@@ -846,6 +846,18 @@ export const ormawaRoutes = new Elysia({
         totalVisited: previousScanCount + 1,
       });
 
+      if (xpEarned > 0) {
+        broadcastXpCelebration(participantId, {
+          type: "ORMAWA",
+          title: `Stan ${booth.name}`,
+          giverName: booth.name,
+          giverRole: `Stan Ormawa / UKM Expo`,
+          xp: xpEarned,
+          message: `Selamat! Kunjungan stan ${booth.name} berhasil divalidasi!`,
+          icon: "Stamp",
+        });
+      }
+
       const message = `Selamat! Stamp ${booth.name} berhasil dicatat. Anda memperoleh +${xpEarned} XP Ormawa dan lencana stan!`;
 
       return {
@@ -1120,6 +1132,18 @@ export const ormawaRoutes = new Elysia({
         boothName: booth.name,
         totalVisited: previousScanCount + 1,
       });
+
+      if (xpEarned > 0) {
+        broadcastXpCelebration(maba.id, {
+          type: "ORMAWA",
+          title: `Stan ${booth.name}`,
+          giverName: booth.name,
+          giverRole: `Stan Ormawa / UKM Expo`,
+          xp: xpEarned,
+          message: `Selamat! Kunjungan stan ${booth.name} berhasil divalidasi!`,
+          icon: "Stamp",
+        });
+      }
 
       return {
         success: true,

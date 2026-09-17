@@ -6,6 +6,7 @@ import { AttendanceStoreMap, DailyReflectionData, AttendanceStatus } from '../ty
 import { api } from '../lib/api';
 import { ORMAWA_STANDS } from '../data/ormawaData';
 import { OrmawaScanResult, OrmawaStand } from '../types/ormawa';
+import { XpCelebrationItem } from '../types/celebration';
 
 const STORAGE_KEY = 'genius_unu_user_storage_v1';
 
@@ -191,6 +192,8 @@ export const useGameStore = defineStore('game', {
     ambientEffects: true,
     activeDay: 1 as 1 | 2 | 3,
     isLeaderboardFrozen: false,
+    celebrationQueue: [] as XpCelebrationItem[],
+    currentCelebration: null as XpCelebrationItem | null,
   }),
 
   getters: {
@@ -290,6 +293,35 @@ export const useGameStore = defineStore('game', {
   },
 
   actions: {
+    triggerCelebration(item: XpCelebrationItem) {
+      if (!item) return;
+      // Prevent rapid duplicate celebration triggers
+      if (this.currentCelebration && this.currentCelebration.id === item.id) return;
+      if (this.celebrationQueue.some((q) => q.id === item.id)) return;
+
+      this.celebrationQueue.push(item);
+      if (!this.currentCelebration) {
+        this.nextCelebration();
+      }
+    },
+
+    nextCelebration() {
+      if (this.celebrationQueue.length > 0) {
+        this.currentCelebration = this.celebrationQueue.shift() || null;
+      } else {
+        this.currentCelebration = null;
+      }
+    },
+
+    dismissCelebration() {
+      this.currentCelebration = null;
+      if (this.celebrationQueue.length > 0) {
+        setTimeout(() => {
+          this.nextCelebration();
+        }, 300);
+      }
+    },
+
     saveToStorage() {
       if (typeof window === 'undefined') return;
       try {

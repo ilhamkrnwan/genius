@@ -3,7 +3,7 @@ import { db } from "../db";
 import { fgdEvaluations, users, teams, teamMembers, scoreTransactions } from "../db/schema";
 import { eq, and, sql, desc, or } from "drizzle-orm";
 import { authMiddleware } from "../middleware/auth";
-import { broadcastLeaderboardUpdate, broadcastAdminEvent } from "../realtime";
+import { broadcastLeaderboardUpdate, broadcastAdminEvent, broadcastXpCelebration } from "../realtime";
 import { getSystemSettings } from "./system";
 
 async function handleEvaluationSubmit({
@@ -177,6 +177,29 @@ async function handleEvaluationSubmit({
     xpAwarded,
     evaluatedBy: buddyId,
   });
+
+  // Cari nama buddy evaluator
+  let fgdGiverName = "Game Master Buddy";
+  if (buddyId) {
+    const [evalGiver] = await db
+      .select({ fullName: users.fullName })
+      .from(users)
+      .where(eq(users.id, buddyId))
+      .limit(1);
+    if (evalGiver?.fullName) fgdGiverName = evalGiver.fullName;
+  }
+
+  if (xpAwarded > 0) {
+    broadcastXpCelebration(participantId, {
+      type: "FGD",
+      title: `Evaluasi ${sessionId}`,
+      giverName: fgdGiverName,
+      giverRole: "Game Master Buddy",
+      xp: xpAwarded,
+      message: `Nilai FGD berhasil diberikan (${totalScore}/15 pts: Keaktifan ${keaktifan}, Kedalaman ${kedalaman}, Adab ${adab})!`,
+      icon: "Sparkle",
+    });
+  }
 
   return {
     success: true,
@@ -441,6 +464,16 @@ export const fgdRoutes = new Elysia({
 
       const results = [];
 
+      let day3BuddyName = "Game Master Buddy";
+      if (buddyId) {
+        const [evalGiver] = await db
+          .select({ fullName: users.fullName })
+          .from(users)
+          .where(eq(users.id, buddyId))
+          .limit(1);
+        if (evalGiver?.fullName) day3BuddyName = evalGiver.fullName;
+      }
+
       for (const item of evaluations) {
         const { participantId, xp } = item;
         const finalXp = Math.max(0, Math.min(200, Math.round(Number(xp))));
@@ -457,17 +490,16 @@ export const fgdRoutes = new Elysia({
           )
           .limit(1);
 
-        const oldXp = existing ? existing.xpAwarded : 0;
-        const xpDelta = finalXp - oldXp;
+        let xpDelta = finalXp;
 
         if (existing) {
+          xpDelta = finalXp - Number(existing.xpAwarded);
           await db
             .update(fgdEvaluations)
             .set({
               rubricScores: { xp: finalXp },
               totalScore: finalXp,
               xpAwarded: finalXp,
-              submittedAt: new Date(),
               buddyId: buddyId || existing.buddyId,
             })
             .where(eq(fgdEvaluations.id, existing.id));
@@ -501,6 +533,18 @@ export const fgdRoutes = new Elysia({
             teamId,
             amount: xpDelta,
             finalXp,
+          });
+        }
+
+        if (finalXp > 0) {
+          broadcastXpCelebration(participantId, {
+            type: "DAY_3",
+            title: "Penilaian Hari Ke-3",
+            giverName: day3BuddyName,
+            giverRole: "Game Master Buddy",
+            xp: finalXp,
+            message: `Penilaian refleksi & keaktifan penutup Hari Ke-3 berhasil dicatat!`,
+            icon: "Trophy",
           });
         }
 

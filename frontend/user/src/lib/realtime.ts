@@ -40,12 +40,16 @@ function connect() {
         socket?.send(JSON.stringify({ action: 'SUBSCRIBE', topic: 'leaderboard:global' }));
         socket?.send(JSON.stringify({ action: 'SUBSCRIBE', topic: 'announcements:global' }));
         
-        const rawUser = localStorage.getItem('genius_user');
+        const rawUser = localStorage.getItem('genius_user') || localStorage.getItem('genius_user_profile');
         if (rawUser) {
           try {
             const parsed = JSON.parse(rawUser);
             if (parsed?.teamId) {
               socket?.send(JSON.stringify({ action: 'SUBSCRIBE', topic: `team:${parsed.teamId}` }));
+            }
+            const uid = parsed?.id || parsed?.userId;
+            if (uid) {
+              socket?.send(JSON.stringify({ action: 'SUBSCRIBE', topic: `user:${uid}` }));
             }
           } catch (_) {}
         }
@@ -106,7 +110,16 @@ function connect() {
           return;
         }
 
-        // 2. Global state and attendance sync events
+        // 2. Real-time XP Celebration Modal Popup
+        if (eventType === 'XP_AWARDED_CELEBRATION' && msg.data) {
+          const gameStore = useGameStore();
+          gameStore.triggerCelebration(msg.data);
+          void gameStore.syncWithServer();
+          void gameStore.syncAttendanceFromServer();
+          return;
+        }
+
+        // 3. Global state and attendance sync events
         const relevantEvents = [
           'ATTENDANCE_CHECK_IN',
           'ATTENDANCE_CHECK_OUT',

@@ -84,6 +84,55 @@ export const broadcastAttendanceEvent = (event: "ATTENDANCE_CHECK_IN" | "ATTENDA
   }
 };
 
+export interface XpCelebrationPayload {
+  type: "ATTENDANCE_IN" | "ATTENDANCE_OUT" | "FGD" | "DAY_3" | "ORMAWA" | "OTHER";
+  title: string;
+  giverName: string;
+  giverRole?: string;
+  xp: number;
+  totalXp?: number;
+  message?: string;
+  icon?: string;
+}
+
+export const broadcastXpCelebration = (participantId: string, payload: XpCelebrationPayload) => {
+  const fullData = {
+    ...payload,
+    id: `xp-celeb-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    participantId,
+    timestamp: new Date().toISOString(),
+  };
+
+  // 1. Broadcast to specific user topic
+  broadcastToTopic(`user:${participantId}`, "XP_AWARDED_CELEBRATION", fullData);
+
+  // 2. Notify global leaderboard channel
+  broadcastToTopic("leaderboard:global", "XP_AWARDED", {
+    participantId,
+    xpAwarded: payload.xp,
+    source: payload.title,
+    giverName: payload.giverName,
+  });
+
+  // 3. Direct socket push to guaranteed connected client
+  const rawMsg = JSON.stringify({
+    event: "XP_AWARDED_CELEBRATION",
+    topic: `user:${participantId}`,
+    data: fullData,
+    timestamp: new Date().toISOString(),
+  });
+
+  for (const [ws, client] of activeSockets.entries()) {
+    if (client.user?.userId === participantId) {
+      try {
+        ws.send(rawMsg);
+      } catch {
+        // ignore
+      }
+    }
+  }
+};
+
 export const broadcastLocationOccupancy = (locationId: string, status: string, locationData?: any) => {
   broadcastToTopic(`location:${locationId}`, "LOCATION_OCCUPANCY_CHANGED", { locationId, status, ...locationData });
   broadcastToTopic("admin:feed", "LOCATION_STATUS_UPDATE", { locationId, status, ...locationData });

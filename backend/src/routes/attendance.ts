@@ -2,8 +2,7 @@ import { Elysia, t } from "elysia";
 import { db } from "../db";
 import { attendances, attendanceSessions, users, teams, teamMembers, scoreTransactions } from "../db/schema";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
-import { authMiddleware } from "../middleware/auth";
-import { broadcastLeaderboardUpdate, broadcastAdminEvent, broadcastAttendanceEvent } from "../realtime";
+import { broadcastLeaderboardUpdate, broadcastAdminEvent, broadcastAttendanceEvent, broadcastXpCelebration } from "../realtime";
 import { getSystemSettings } from "./system";
 
 function generateSecureSessionToken(type: string = "CHECK_IN"): string {
@@ -843,6 +842,30 @@ export const attendanceRoutes = new Elysia({
         totalXp: currentTotalXp,
       });
 
+      // Cari nama buddy/giver jika ada
+      let checkInGiverName = "Game Master Buddy";
+      let checkInGiverRole = "Buddy Pendamping";
+      if (user?.userId) {
+        const [giver] = await db
+          .select({ fullName: users.fullName, role: users.role })
+          .from(users)
+          .where(eq(users.id, user.userId))
+          .limit(1);
+        if (giver?.fullName) checkInGiverName = giver.fullName;
+        if (giver?.role === "ADMIN") checkInGiverRole = "Admin Pusat";
+      }
+
+      broadcastXpCelebration(participantId, {
+        type: "ATTENDANCE_IN",
+        title: `Presensi Masuk Hari ${day}`,
+        giverName: checkInGiverName,
+        giverRole: checkInGiverRole,
+        xp: xpAwarded,
+        totalXp: currentTotalXp,
+        message: `Presensi masuk ${checkInStatus === "ON_TIME" ? "Tepat Waktu" : "Terlambat"} berhasil dicatat!`,
+        icon: "CheckCircle",
+      });
+
       broadcastLeaderboardUpdate({
         type: "ATTENDANCE_CHECK_IN",
         participantId,
@@ -1036,6 +1059,30 @@ export const attendanceRoutes = new Elysia({
         day,
         xpAwarded,
         totalXp: currentTotalXp,
+      });
+
+      // Cari nama buddy/giver jika ada
+      let checkOutGiverName = "Game Master Buddy";
+      let checkOutGiverRole = "Buddy Pendamping";
+      if (user?.userId) {
+        const [giver] = await db
+          .select({ fullName: users.fullName, role: users.role })
+          .from(users)
+          .where(eq(users.id, user.userId))
+          .limit(1);
+        if (giver?.fullName) checkOutGiverName = giver.fullName;
+        if (giver?.role === "ADMIN") checkOutGiverRole = "Admin Pusat";
+      }
+
+      broadcastXpCelebration(participantId, {
+        type: "ATTENDANCE_OUT",
+        title: `Presensi Pulang Hari ${day}`,
+        giverName: checkOutGiverName,
+        giverRole: checkOutGiverRole,
+        xp: xpAwarded,
+        totalXp: currentTotalXp,
+        message: `Presensi pulang & evaluasi hari ke-${day} berhasil dicatat!`,
+        icon: "CheckCircle",
       });
 
       broadcastLeaderboardUpdate({

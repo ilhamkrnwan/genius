@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { RouterView, useRoute, useRouter } from 'vue-router';
 import MabaAuthModal from '@/components/auth/MabaAuthModal.vue';
+import XpCelebrationModal from '@/components/ui/XpCelebrationModal.vue';
 import MobileBottomNav from '@/components/layout/MobileBottomNav.vue';
 import { useGameStore } from '@/store/gameStore';
 import { initUserRealtime } from '@/lib/realtime';
@@ -59,5 +60,6 @@ const hideBottomNav = computed(() => {
     <RouterView :key="viewVersion" />
     <MobileBottomNav v-if="!hideBottomNav" />
     <MabaAuthModal v-if="needsLogin" :isOpen="true" reauthenticate @close="handleDismissLogin" @complete="resumePage" />
+    <XpCelebrationModal />
   </div>
 </template>
