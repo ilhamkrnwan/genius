@@ -309,10 +309,21 @@ export const useGameStore = defineStore('game', {
     },
 
     async syncWithServer() {
-      const target = this.participant.id || this.participant.nim;
+      let target = this.participant.id || this.participant.nim;
       if (!target) return;
       try {
-        const res = await api.getUserProfile(target);
+        let res = await api.getUserProfile(target);
+
+        // Fallback: If UUID returns 404/NOT_FOUND (e.g. after DB reseed) and NIM is available, retry with NIM
+        if (!res.success && this.participant.nim && target !== this.participant.nim) {
+          const fallbackRes = await api.getUserProfile(this.participant.nim);
+          if (fallbackRes.success && fallbackRes.data) {
+            res = fallbackRes;
+            // Update the stored ID with the fresh UUID from the DB
+            this.participant.id = fallbackRes.data.id;
+          }
+        }
+
         if (res.success && res.data) {
           const serverScore = Number(res.data.totalScore || 0);
           this.participant.totalXp = serverScore;

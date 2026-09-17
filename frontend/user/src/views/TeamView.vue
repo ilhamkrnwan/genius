@@ -79,23 +79,25 @@ async function loadTeamData() {
     }
 
     let res = await api.getMyTeam();
+ 
+     // Retry once with auto-relogin if session expired or stale token resulted in NO_TEAM / UNAUTHORIZED
+     if (!res.success && (res.error?.code === 'UNAUTHORIZED' || res.error?.code === 'NO_TEAM') && nim) {
+       const authRes = await api.registerMaba({
+         nim,
+         name: gameStore.participant?.name || 'Mahasiswa Baru',
+         faculty: gameStore.participant?.faculty,
+         prodi: gameStore.participant?.prodi,
+       });
+       if (authRes.success) {
+         res = await api.getMyTeam();
+       }
+     }
 
-    // Retry once with auto-relogin if session expired
-    if (!res.success && res.error?.code === 'UNAUTHORIZED' && nim) {
-      const authRes = await api.registerMaba({
-        nim,
-        name: gameStore.participant?.name || 'Mahasiswa Baru',
-      });
-      if (authRes.success) {
-        res = await api.getMyTeam();
-      }
-    }
-
-    if (res.success && res.data) {
-      teamData.value = res.data;
-    } else {
-      errorMessage.value = res.error?.message || 'Gagal memuat data regu.';
-    }
+     if (res.success && res.data) {
+       teamData.value = res.data;
+     } else {
+       errorMessage.value = res.error?.message || 'Gagal memuat data regu.';
+     }
   } catch (err: any) {
     errorMessage.value = 'Terjadi kendala saat menyambung ke server.';
     console.warn('[TeamView] load error:', err);
