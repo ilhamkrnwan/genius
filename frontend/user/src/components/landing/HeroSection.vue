@@ -374,7 +374,7 @@ onUnmounted(() => {
       <!-- Grand Title -->
       <div class="hero-title-wrap w-full flex justify-center mb-2.5 sm:mb-4">
         <img
-          src="/genius-logo-with-tagline.png"
+          src="/genius-logo-with-tagline.avif"
           alt="Genius UNU Jogja Grow 2026"
           class="w-[min(94vw,640px)] h-auto max-h-[28dvh] object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.85)]"
           width="1400"

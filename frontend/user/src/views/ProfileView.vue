@@ -116,8 +116,8 @@ const characterFullImage = computed(() => {
     gameStore.participant.avatar === 'character_cewek' ||
     gameStore.participant.gender === 'perempuan';
   return isFemale
-    ? '/mascots/character-cewek.png'
-    : '/mascots/character-cowok.png';
+    ? '/mascots/character-cewek.avif'
+    : '/mascots/character-cowok.avif';
 });
 
 const currentLevelStr = computed(() => gameStore.getCurrentLevel());
@@ -227,7 +227,7 @@ watch(showCertificate, (val) => {
     <div
       class="fixed inset-0 pointer-events-none z-0"
       style="
-        background-image: url('/games/background.png');
+        background-image: url('/games/background.avif');
         background-size: cover;
         background-position: center bottom;
         image-rendering: pixelated;
@@ -305,7 +305,7 @@ watch(showCertificate, (val) => {
         <div class="bg-gradient-to-r from-[#170e07] via-[#2f1c0f] to-[#170e07] border-b border-[#8b6f4e] px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
           <div class="flex items-center gap-2.5">
             <img
-              src="/logo/unu.png"
+              src="/logo/unu.avif"
               alt="Logo UNU"
               class="h-7 sm:h-8 w-auto object-contain brightness-110 drop-shadow"
             />

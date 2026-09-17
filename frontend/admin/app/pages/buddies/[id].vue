@@ -746,7 +746,7 @@ const buddySpriteUrl = computed(() => {
     buddy.value?.fullName?.toLowerCase().includes("rina") ||
     buddy.value?.fullName?.toLowerCase().includes("putri") ||
     buddy.value?.fullName?.toLowerCase().includes("sari");
-  return isFemale ? "/character-cewek.png" : "/character-cowok.png";
+  return isFemale ? "/character-cewek.avif" : "/character-cowok.avif";
 });
 
 const buddyAvatarUrl = computed(() => {
