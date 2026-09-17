@@ -1,6 +1,8 @@
 import { Elysia, t } from "elysia";
 import { authMiddleware, requireAdmin } from "../middleware/auth";
-import { broadcastAdminEvent, broadcastAnnouncement } from "../realtime";
+import { broadcastAdminEvent, broadcastAnnouncement, broadcastToTopic, broadcastSystemSettings } from "../realtime";
+import { db } from "../db";
+import { scoreTransactions, gameSessions, attendances, dailyReflections } from "../db/schema";
 
 export interface EventSettings {
   activeDay: number;
@@ -14,6 +16,7 @@ export interface EventSettings {
   gateCheckInOpen: boolean;
   gateCheckOutOpen: boolean;
   isBuddyEvaluationLocked: boolean;
+  activeFgdSession: string;
   updatedAt: string;
 }
 
@@ -30,6 +33,7 @@ let currentSettings: EventSettings = {
   gateCheckInOpen: true,
   gateCheckOutOpen: true,
   isBuddyEvaluationLocked: false,
+  activeFgdSession: "AUTO",
   updatedAt: new Date().toISOString(),
 };
 
@@ -71,9 +75,7 @@ export const systemRoutes = new Elysia({
         updatedAt: new Date().toISOString(),
       };
 
-      broadcastAdminEvent("SYSTEM_SETTINGS_UPDATED", {
-        settings: currentSettings,
-      });
+      broadcastSystemSettings(currentSettings);
 
       return {
         success: true,
@@ -94,6 +96,7 @@ export const systemRoutes = new Elysia({
         gateCheckInOpen: t.Optional(t.Boolean()),
         gateCheckOutOpen: t.Optional(t.Boolean()),
         isBuddyEvaluationLocked: t.Optional(t.Boolean()),
+        activeFgdSession: t.Optional(t.String()),
       }),
     }
   )
@@ -167,6 +170,52 @@ export const systemRoutes = new Elysia({
       detail: {
         summary: "Buka kembali pembekuan leaderboard (Unfreeze Mode)",
         description: "Mengembalikan leaderboard proyektor panggung dan HP maba ke pembaruan ranking real-time.",
+      },
+    }
+  )
+
+  // POST /api/system/reset-xp — Reset perolehan seluruh XP & progres kuis peserta (Testing Control)
+  .post(
+    "/reset-xp",
+    async ({ user, set }: any) => {
+      if (!user || user.role !== "ADMIN") {
+        set.status = 403;
+        return { success: false, error: { code: "FORBIDDEN", message: "Hanya Super Admin yang dapat me-reset skor seluruh peserta." } };
+      }
+
+      // 1. Bersihkan seluruh transaksi skor di ledger
+      await db.delete(scoreTransactions);
+
+      // 2. Bersihkan seluruh sesi permainan kuis
+      await db.delete(gameSessions);
+
+      // 3. Bersihkan catatan absensi & refleksi harian
+      await db.delete(attendances);
+      await db.delete(dailyReflections);
+
+      // 4. Siarkan sinyal reset XP ke seluruh HP Maba, portal Buddy, dan papan proyektor
+      broadcastToTopic("leaderboard:global", "XP_RESET", {
+        message: "Perolehan seluruh XP dan stempel telah di-reset oleh Game Master.",
+        resetAt: new Date().toISOString(),
+      });
+      broadcastToTopic("leaderboard:global", "LEADERBOARD_UPDATED", {
+        type: "XP_RESET",
+        timestamp: new Date().toISOString(),
+      });
+      broadcastAdminEvent("XP_RESET_TRIGGERED", {
+        by: user?.username || "ADMIN",
+        timestamp: new Date().toISOString(),
+      });
+
+      return {
+        success: true,
+        message: "Seluruh perolehan XP, stempel pos kuis, dan riwayat presensi berhasil di-reset ke 0!",
+      };
+    },
+    {
+      detail: {
+        summary: "Reset seluruh perolehan XP & kuis peserta (Super Admin Testing)",
+        description: "Menghapus riwayat transaksi skor, game sessions, dan log kehadiran agar sistem dapat diuji ulang dari awal.",
       },
     }
   );

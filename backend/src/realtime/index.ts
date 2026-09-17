@@ -93,6 +93,28 @@ export const broadcastAdminEvent = (action: string, details: any) => {
   broadcastToTopic("admin:feed", "ADMIN_FEED_EVENT", { action, details, timestamp: new Date().toISOString() });
 };
 
+export const broadcastSystemSettings = (settings: any) => {
+  broadcastToTopic("leaderboard:global", "SYSTEM_SETTINGS_UPDATED", settings);
+  broadcastToTopic("announcements:global", "SYSTEM_SETTINGS_UPDATED", settings);
+  broadcastToTopic("admin:feed", "SYSTEM_SETTINGS_UPDATED", settings);
+  broadcastAdminEvent("SYSTEM_SETTINGS_UPDATED", { settings });
+
+  // Broadcast unconditionally to all active websocket connections
+  const rawMsg = JSON.stringify({
+    event: "SYSTEM_SETTINGS_UPDATED",
+    topic: "system:global",
+    data: settings,
+    timestamp: new Date().toISOString(),
+  });
+  for (const [ws] of activeSockets.entries()) {
+    try {
+      ws.send(rawMsg);
+    } catch {
+      // ignore
+    }
+  }
+};
+
 export const broadcastGameSessionEvent = (sessionId: string, event: string, payload: any) => {
   broadcastToTopic(`game-session:${sessionId}`, event, payload);
   if (payload?.teamId) {

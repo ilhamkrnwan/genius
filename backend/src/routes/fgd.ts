@@ -26,9 +26,29 @@ async function handleEvaluationSubmit({
   const { sessionId, rubricScores, feedbackNotes } = body;
   let teamId = body.teamId;
 
-  if (getSystemSettings().isBuddyEvaluationLocked) {
+  const currentSettings = getSystemSettings();
+  if (currentSettings.isBuddyEvaluationLocked) {
     set.status = 403;
     return { success: false, error: { code: "EVALUATION_LOCKED", message: "Evaluasi FGD telah dikunci oleh Admin." } };
+  }
+
+  // Pemetaan resmi sesi FGD ke Hari PKKMB:
+  // Hari 1: FGD-1 & FGD-2 | Hari 2: Tidak Ada FGD | Hari 3: FGD-6
+  const sessionDayMap: Record<string, number> = {
+    "FGD-1": 1,
+    "FGD-2": 1,
+    "FGD-6": 3,
+  };
+  const sessionDay = sessionDayMap[sessionId];
+  if (sessionDay && sessionDay !== currentSettings.activeDay && user?.role !== "ADMIN") {
+    set.status = 403;
+    return {
+      success: false,
+      error: {
+        code: "SESSION_DAY_MISMATCH",
+        message: `Sesi ${sessionId} hanya dapat dinilai saat Hari ${sessionDay} aktif. Sistem saat ini berada di Hari ${currentSettings.activeDay}.`,
+      },
+    };
   }
 
   // 1. Verifikasi peserta via UUID atau NIM/Username

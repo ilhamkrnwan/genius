@@ -19,13 +19,18 @@
               </h1>
             </div>
             
-            <span class="border-2 border-[#f0d060] bg-[#120a05] px-2.5 py-1 text-[9px] sm:text-[10px] font-pixel text-[#facc15] rounded-lg shrink-0 shadow-inner">
-              {{ selectedSession }}
-            </span>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="border border-[#38bdf8] bg-[#0c1c28] px-2 py-0.5 text-[8.5px] font-pixel text-[#38bdf8] rounded">
+                HARI {{ activeDay }}
+              </span>
+              <span class="border-2 border-[#f0d060] bg-[#120a05] px-2.5 py-1 text-[9px] sm:text-[10px] font-pixel text-[#facc15] rounded-lg shadow-inner">
+                {{ fgdSessions.length > 0 ? selectedSession : 'TIDAK ADA SESI' }}
+              </span>
+            </div>
           </div>
 
           <!-- Sesi Selector Tabs -->
-          <div class="grid grid-cols-3 gap-1.5 sm:gap-2 text-center text-xs relative z-10">
+          <div v-if="fgdSessions.length > 0" class="grid gap-1.5 sm:gap-2 text-center text-xs relative z-10" :class="fgdSessions.length === 1 ? 'grid-cols-1' : 'grid-cols-2'">
             <button
               v-for="s in fgdSessions"
               :key="s.id"
@@ -43,8 +48,12 @@
             </button>
           </div>
 
+          <div v-else class="p-2.5 rounded-lg border border-amber-600/40 bg-[#1f1208] text-center text-[10px] font-mono text-[#f0d060] relative z-10">
+            <span>Hari 2 (Campus Quest): Tidak ada evaluasi FGD hari ini.</span>
+          </div>
+
           <!-- Topic Pill -->
-          <div class="px-2.5 py-1.5 bg-[#120a05] border border-[#ca8a04]/30 rounded-lg flex items-center justify-between text-[11px] relative z-10 shadow-inner">
+          <div v-if="currentSessionInfo" class="px-2.5 py-1.5 bg-[#120a05] border border-[#ca8a04]/30 rounded-lg flex items-center justify-between text-[11px] relative z-10 shadow-inner">
             <span class="text-[#86efac] font-bold truncate drop-shadow-[0_0_2px_#86efac]">{{ currentSessionInfo?.topic }}</span>
             <span class="text-[9px] text-[#facc15] font-mono shrink-0 ml-2 border border-[#facc15]/30 bg-[#2a1d08] px-1 rounded">Maks +200 XP</span>
           </div>
@@ -65,13 +74,17 @@
         </div>
 
         <!-- Locked Banner -->
-        <div v-else-if="isLocked" class="bg-red-950/60 border border-red-500/50 rounded-lg p-3 sm:p-4 mb-4 flex items-start sm:items-center gap-3 shadow-lg">
+        <div v-else-if="isFgdEffectivelyLocked" class="bg-red-950/60 border border-red-500/50 rounded-lg p-3 sm:p-4 mb-4 flex items-start sm:items-center gap-3 shadow-lg">
           <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-red-900/80 border-2 border-red-400 flex items-center justify-center shrink-0">
-            <span class="text-lg sm:text-xl leading-none">🔒</span>
+            <Lock class="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
           </div>
           <div class="min-w-0">
-            <h3 class="font-pixel text-[10px] sm:text-xs text-red-400 uppercase tracking-widest mb-0.5">SISTEM DIKUNCI ADMIN</h3>
-            <p class="text-[9px] sm:text-[10px] text-red-200/80 font-mono leading-tight">Penilaian FGD telah ditutup oleh Admin.</p>
+            <h3 class="font-pixel text-[10px] sm:text-xs text-red-400 uppercase tracking-widest mb-0.5">
+              {{ fgdSessions.length === 0 ? 'TIDAK ADA SESI FGD HARI INI' : 'EVALUASI FGD DIKUNCI ADMIN' }}
+            </h3>
+            <p class="text-[9px] sm:text-[10px] text-red-200/80 font-mono leading-tight">
+              {{ fgdSessions.length === 0 ? 'Hari 2 (Campus Quest) fokus penjelajahan pos kuis lantai. Evaluasi FGD diadakan pada Hari 1 dan Hari 3.' : 'Penilaian FGD telah ditutup oleh Admin Pusat.' }}
+            </p>
           </div>
         </div>
 
@@ -245,7 +258,7 @@
 
           <!-- Submit Action Button -->
           <button
-            v-if="!isLocked"
+            v-if="!isFgdEffectivelyLocked"
             type="button"
             @click="submitFgdEvaluation"
             :disabled="submitting"
@@ -257,8 +270,8 @@
           </button>
           
           <div v-else class="w-full h-11 sm:h-12 font-pixel text-[11px] sm:text-xs font-bold flex items-center justify-center gap-2 bg-[#2a1210] text-red-400 border-2 border-red-900 rounded opacity-70">
-            <span class="text-lg leading-none">🔒</span>
-            <span>TERKUNCI</span>
+            <Lock class="h-4 w-4 text-red-400" />
+            <span>{{ fgdSessions.length === 0 ? 'TIDAK ADA SESI FGD HARI INI' : 'TERKUNCI OLEH ADMIN' }}</span>
           </div>
         </div>
       </div>
@@ -278,7 +291,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import {
   FileEdit,
@@ -286,19 +299,22 @@ import {
   Lightbulb,
   HeartHandshake,
   CheckCircle2,
+  Lock,
 } from "lucide-vue-next";
 import { useAuth } from "~/composables/useAuth";
 import { useApi } from "~/composables/useApi";
+import { useRealtime } from "~/composables/useRealtime";
 
-const { user } = useAuth();
-const api = useApi();
-const route = useRoute();
-
-const fgdSessions = [
-  { id: "FGD-1", dayLabel: "H-1 Pagi", topic: "Ke UNU Apa Yang Kau Cari?" },
-  { id: "FGD-2", dayLabel: "H-1 Siang", topic: "Agent of Change & Bela Negara" },
-  { id: "FGD-6", dayLabel: "H-3 Siang", topic: "Refleksi & Aksi Nyata Mahasiswa" },
+const allFgdSessions = [
+  { id: "FGD-1", dayLabel: "H-1 Pagi", topic: "Ke UNU Apa Yang Kau Cari?", day: 1 },
+  { id: "FGD-2", dayLabel: "H-1 Siang", topic: "Agent of Change & Bela Negara", day: 1 },
+  { id: "FGD-6", dayLabel: "H-3 Siang", topic: "Refleksi & Aksi Nyata Mahasiswa", day: 3 },
 ];
+
+const activeDay = ref(1);
+
+// Only show FGD sessions matching active day
+const fgdSessions = computed(() => allFgdSessions.filter((s) => s.day === activeDay.value));
 
 const selectedSession = ref("FGD-1");
 
@@ -311,13 +327,23 @@ interface FgdMember {
   evaluations?: any[];
 }
 
+const { user } = useAuth();
+const api = useApi();
+const route = useRoute();
+const { onEvent } = useRealtime();
+
 const loading = ref(true);
 const isLocked = ref(false);
+const isGlobalLocked = ref(false);
 const submitting = ref(false);
 const activeTeamId = ref<string>("");
 const teamMembers = ref<FgdMember[]>([]);
 const selectedMember = ref<FgdMember | null>(null);
 
+// FGD is locked if admin globally locked OR no FGD sessions available for current day
+const isFgdEffectivelyLocked = computed(() => {
+  return isGlobalLocked.value || isLocked.value || fgdSessions.value.length === 0;
+});
 
 const scoreKeaktifan = ref(5);
 const scoreKedalaman = ref(4);
@@ -325,7 +351,7 @@ const scoreAdab = ref(5);
 const feedbackNotes = ref("Aktif berdiskusi dan santun");
 const toastMessage = ref<string | null>(null);
 
-const currentSessionInfo = computed(() => fgdSessions.find((s) => s.id === selectedSession.value));
+const currentSessionInfo = computed(() => allFgdSessions.find((s) => s.id === selectedSession.value));
 
 const totalScore = computed(() => scoreKeaktifan.value + scoreKedalaman.value + scoreAdab.value);
 // Rumus konversi XP: (skala 3-15) -> +40 s/d +200 XP
@@ -336,9 +362,23 @@ function selectMember(m: FgdMember) {
   loadMemberEvaluation(m.id, selectedSession.value);
 }
 
+watch(
+  fgdSessions,
+  (newSessions) => {
+    if (newSessions.length > 0) {
+      if (!newSessions.some((s) => s.id === selectedSession.value)) {
+        selectedSession.value = newSessions[0].id;
+      }
+    } else {
+      selectedSession.value = "";
+    }
+  },
+  { immediate: true }
+);
+
 // When session changes, reload scores for selected member
 watch(selectedSession, (newSession) => {
-  if (selectedMember.value) {
+  if (selectedMember.value && newSession) {
     loadMemberEvaluation(selectedMember.value.id, newSession);
   }
 });
@@ -438,7 +478,11 @@ async function loadData() {
       ]);
 
       if (settingsRes.status === "fulfilled" && settingsRes.value.success) {
-        isLocked.value = settingsRes.value.data.isBuddyEvaluationLocked || false;
+        const settings = settingsRes.value.data;
+        isLocked.value = Boolean(settings.isBuddyEvaluationLocked);
+        if (settings.activeDay) {
+          activeDay.value = Number(settings.activeDay);
+        }
       }
 
       const evalMap = new Map<string, any[]>();
@@ -486,7 +530,32 @@ async function loadData() {
   }
 }
 
+let unsubscribeRealtime: (() => void) | null = null;
+
 onMounted(() => {
   loadData();
+  unsubscribeRealtime = onEvent((event, data) => {
+    if (
+      event === "SYSTEM_SETTINGS_UPDATED" ||
+      (event === "ADMIN_FEED_EVENT" && data?.action === "SYSTEM_SETTINGS_UPDATED")
+    ) {
+      const payload = data?.details?.settings || data?.settings || data?.details || data;
+      if (payload?.isBuddyEvaluationLocked !== undefined) {
+        isLocked.value = Boolean(payload.isBuddyEvaluationLocked);
+      }
+      if (payload?.activeDay !== undefined) {
+        activeDay.value = Number(payload.activeDay);
+      }
+    } else if (event === "XP_RESET") {
+      loadData();
+    }
+  });
+});
+
+onUnmounted(() => {
+  if (unsubscribeRealtime) {
+    unsubscribeRealtime();
+    unsubscribeRealtime = null;
+  }
 });
 </script>

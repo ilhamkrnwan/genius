@@ -4,6 +4,7 @@ import { attendances, attendanceSessions, users, teams, teamMembers, scoreTransa
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { authMiddleware } from "../middleware/auth";
 import { broadcastLeaderboardUpdate, broadcastAdminEvent, broadcastAttendanceEvent } from "../realtime";
+import { getSystemSettings } from "./system";
 
 function generateSecureSessionToken(type: string = "CHECK_IN"): string {
   const randomSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
@@ -682,6 +683,18 @@ export const attendanceRoutes = new Elysia({
       const participantId = body.participantId || user?.userId;
       const { day, qrToken, status: customStatus } = body;
 
+      const systemSettings = getSystemSettings();
+      if (Number(day) !== systemSettings.activeDay && user?.role !== "ADMIN") {
+        set.status = 403;
+        return {
+          success: false,
+          error: {
+            code: "DAY_INACTIVE",
+            message: `Presensi Hari ${day} terkunci. Sistem saat ini berjalan pada Hari ${systemSettings.activeDay}.`,
+          },
+        };
+      }
+
       if (!participantId) {
         set.status = 400;
         return { success: false, error: { code: "MISSING_PARTICIPANT", message: "ID Peserta wajib disertakan" } };
@@ -880,6 +893,18 @@ export const attendanceRoutes = new Elysia({
     async ({ body, user, set }) => {
       const participantId = body.participantId || user?.userId;
       const { day, qrToken } = body;
+
+      const systemSettings = getSystemSettings();
+      if (Number(day) !== systemSettings.activeDay && user?.role !== "ADMIN") {
+        set.status = 403;
+        return {
+          success: false,
+          error: {
+            code: "DAY_INACTIVE",
+            message: `Presensi Pulang Hari ${day} terkunci. Sistem saat ini berjalan pada Hari ${systemSettings.activeDay}.`,
+          },
+        };
+      }
 
       if (!participantId) {
         set.status = 400;

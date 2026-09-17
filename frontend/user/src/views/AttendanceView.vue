@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   PhCalendarCheck,
@@ -164,10 +164,9 @@ function showNotification(type: 'success' | 'info', message: string) {
 
 function getSessionStatus(session: SessionDefinition) {
   const dayRecord = gameStore.getAttendanceForDay(session.day);
-  if (!dayRecord) return { state: 'locked', label: 'Belum Dibuka' };
 
   if (session.type === 'checkIn') {
-    if (dayRecord.checkInAt) {
+    if (dayRecord?.checkInAt) {
       return {
         state: 'verified',
         label: 'Terverifikasi Hadir',
@@ -175,7 +174,7 @@ function getSessionStatus(session: SessionDefinition) {
       };
     }
   } else {
-    if (dayRecord.checkOutAt) {
+    if (dayRecord?.checkOutAt) {
       return {
         state: 'verified',
         label: 'Terverifikasi Pulang',
@@ -185,14 +184,14 @@ function getSessionStatus(session: SessionDefinition) {
   }
 
   if (session.day === gameStore.activeDay) {
-    return { state: 'in_progress', label: 'Menunggu Buddy' };
+    return { state: 'in_progress', label: 'Menunggu Presensi Buddy' };
   }
 
   if (session.day < gameStore.activeDay) {
-    return { state: 'missed', label: 'Selesai' };
+    return { state: 'missed', label: 'Sesi Selesai' };
   }
 
-  return { state: 'locked', label: 'Belum Dimulai' };
+  return { state: 'locked', label: 'Terkunci (Belum Dibuka)' };
 }
 
 function formatTime(isoString?: string | null) {
@@ -217,6 +216,15 @@ async function refreshAttendance() {
     isRefreshing.value = false;
   }
 }
+
+watch(
+  () => gameStore.activeDay,
+  (newDay) => {
+    if (newDay) {
+      activeDayTab.value = newDay as 1 | 2 | 3;
+    }
+  }
+);
 
 onMounted(async () => {
   activeDayTab.value = (gameStore.activeDay as 1 | 2 | 3) || 1;
@@ -364,28 +372,50 @@ onMounted(async () => {
       </section>
 
       <!-- 2. TAB HARI 1 - 3 (Simple Segmented Control) -->
-      <section class="grid grid-cols-3 gap-1.5 bg-[#140c06]/90 p-1 rounded-xl border border-[#5a3a18]">
-        <button
-          v-for="item in DAYS"
-          :key="item.day"
-          type="button"
-          @click="() => {
-            safeSound(() => soundEngine.playSelect?.());
-            activeDayTab = item.day;
-          }"
-          :class="[
-            'py-1.5 px-1.5 rounded-lg transition-all flex flex-col items-center justify-center text-center cursor-pointer active:scale-95',
-            activeDayTab === item.day
-              ? 'bg-[#38761d] text-white border border-[#f0d060] font-bold shadow'
-              : 'text-[#c4956a] hover:text-[#f0d060]'
-          ]"
+      <section class="space-y-1.5">
+        <div class="grid grid-cols-3 gap-1.5 bg-[#140c06]/90 p-1 rounded-xl border border-[#5a3a18]">
+          <button
+            v-for="item in DAYS"
+            :key="item.day"
+            type="button"
+            @click="() => {
+              safeSound(() => soundEngine.playSelect?.());
+              activeDayTab = item.day;
+            }"
+            :class="[
+              'py-1.5 px-1.5 rounded-lg transition-all flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 relative',
+              activeDayTab === item.day
+                ? 'bg-[#38761d] text-white border border-[#f0d060] font-bold shadow'
+                : 'text-[#c4956a] hover:text-[#f0d060]'
+            ]"
+          >
+            <div class="flex items-center gap-1 text-[10px]">
+              <span>{{ item.label }}</span>
+              <span v-if="item.day === gameStore.activeDay" class="w-1.5 h-1.5 rounded-full bg-[#4ade80] animate-pulse" title="Hari Aktif Sekarang" />
+              <span v-else-if="item.day < gameStore.activeDay" class="text-[8px] text-[#86efac]">✓</span>
+              <PhLockKey v-else :size="10" class="text-[#8a6b52]" />
+            </div>
+            <span class="text-[7.5px] opacity-80 font-sans">{{ item.date }} • {{ item.subtitle }}</span>
+          </button>
+        </div>
+
+        <!-- Non-active day notice banner -->
+        <div
+          v-if="activeDayTab !== gameStore.activeDay"
+          class="px-2.5 py-1.5 rounded-lg bg-[#1a110a]/90 border border-[#5a3a18] text-[8.5px] sm:text-[9px] text-[#c4956a] flex items-center justify-between font-mono"
         >
-          <div class="flex items-center gap-1 text-[10px]">
-            <span>{{ item.label }}</span>
-            <span v-if="gameStore.isDayCheckedIn(item.day)" class="w-1.5 h-1.5 rounded-full bg-[#86efac]" />
-          </div>
-          <span class="text-[7.5px] opacity-80 font-sans">{{ item.date }} • {{ item.subtitle }}</span>
-        </button>
+          <span class="flex items-center gap-1.5 truncate">
+            <PhLockKey :size="12" class="text-[#f59e0b] shrink-0" />
+            <span class="truncate">Hari {{ activeDayTab }} {{ activeDayTab > gameStore.activeDay ? 'belum aktif' : 'sudah selesai' }}. Sistem di Hari {{ gameStore.activeDay }}.</span>
+          </span>
+          <button
+            type="button"
+            @click="activeDayTab = (gameStore.activeDay as 1 | 2 | 3)"
+            class="text-[#facc15] hover:underline font-bold shrink-0 ml-2"
+          >
+            Ke Hari {{ gameStore.activeDay }} →
+          </button>
+        </div>
       </section>
 
       <!-- 3. LIST SESI PRESENSI (Full Title Visibility, No Truncation) -->

@@ -7,10 +7,13 @@ import {
   scoreTransactions,
   users,
   stages,
+  floors,
+  attendances,
 } from "../db/schema";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, asc, and } from "drizzle-orm";
 import { requireAdmin } from "../middleware/auth";
 import { broadcastToTopic, broadcastAdminEvent, broadcastAnnouncement } from "../realtime";
+import { getSystemSettings } from "./system";
 
 export const monitoringRoutes = new Elysia({
   prefix: "/api/monitoring",
@@ -22,6 +25,8 @@ export const monitoringRoutes = new Elysia({
 
   // GET /api/monitoring/stats — Overall live event health and summary counters
   .get("/stats", async () => {
+    const currentSettings = getSystemSettings();
+
     // 1. Total & Active Teams
     const [{ totalTeams }] = await db
       .select({ totalTeams: sql<number>`count(*)` })
@@ -32,11 +37,16 @@ export const monitoringRoutes = new Elysia({
       .from(teams)
       .where(eq(teams.status, "ACTIVE"));
 
-    // 2. Total Participants
+    // 2. Total Participants & Buddies
     const [{ totalParticipants }] = await db
       .select({ totalParticipants: sql<number>`count(*)` })
       .from(users)
       .where(eq(users.role, "PARTICIPANT"));
+
+    const [{ totalBuddies }] = await db
+      .select({ totalBuddies: sql<number>`count(*)` })
+      .from(users)
+      .where(eq(users.role, "BUDDY"));
 
     // 3. Location Occupancy
     const [{ totalLocations }] = await db
@@ -71,7 +81,49 @@ export const monitoringRoutes = new Elysia({
       .where(eq(stages.status, "ACTIVE"))
       .limit(1);
 
-    // 7. Recent Activity Feed (Latest 10 score events)
+    // 7. Attendance stats for active day
+    const [{ checkedInToday }] = await db
+      .select({ checkedInToday: sql<number>`COUNT(DISTINCT ${attendances.participantId})` })
+      .from(attendances)
+      .where(and(eq(attendances.day, currentSettings.activeDay), sql`check_in_at IS NOT NULL`));
+
+    const [{ checkedOutToday }] = await db
+      .select({ checkedOutToday: sql<number>`COUNT(DISTINCT ${attendances.participantId})` })
+      .from(attendances)
+      .where(and(eq(attendances.day, currentSettings.activeDay), sql`check_out_at IS NOT NULL`));
+
+    // 8. Real Floor Occupancy & Congestion Matrix (L1 - L9)
+    const rawFloors = await db
+      .select({
+        level: floors.number,
+        name: floors.name,
+        highlight: floors.description,
+        teamsCount: sql<number>`COUNT(DISTINCT ${gameSessions.teamId})`,
+        completedCount: sql<number>`COUNT(DISTINCT ${gameSessions.id}) FILTER (WHERE ${gameSessions.status} = 'COMPLETED')`,
+      })
+      .from(floors)
+      .leftJoin(locations, eq(locations.floorId, floors.id))
+      .leftJoin(gameSessions, eq(gameSessions.locationId, locations.id))
+      .groupBy(floors.number, floors.name, floors.description)
+      .orderBy(asc(floors.number));
+
+    const floorOccupancy = rawFloors.map((fl) => {
+      const tc = Number(fl.teamsCount || 0);
+      let status: "normal" | "dense" | "bottleneck" = "normal";
+      if (tc > 10) status = "bottleneck";
+      else if (tc >= 8) status = "dense";
+
+      return {
+        level: fl.level,
+        name: fl.name,
+        highlight: fl.highlight || `Lantai ${fl.level}`,
+        teamsCount: tc,
+        completedCount: Number(fl.completedCount || 0),
+        status,
+      };
+    });
+
+    // 9. Recent Activity Feed (Latest 15 score events)
     const recentActivity = await db
       .select({
         id: scoreTransactions.id,
@@ -86,7 +138,7 @@ export const monitoringRoutes = new Elysia({
       .innerJoin(users, eq(scoreTransactions.participantId, users.id))
       .innerJoin(teams, eq(scoreTransactions.teamId, teams.id))
       .orderBy(desc(scoreTransactions.createdAt))
-      .limit(10);
+      .limit(15);
 
     return {
       success: true,
@@ -95,13 +147,18 @@ export const monitoringRoutes = new Elysia({
           totalTeams: Number(totalTeams),
           activeTeams: Number(activeTeams),
           totalParticipants: Number(totalParticipants),
+          totalBuddies: Number(totalBuddies),
           totalLocations: Number(totalLocations),
           occupiedLocations: Number(occupiedLocations),
           activeSessions: Number(activeSessions),
           completedSessions: Number(completedSessions),
           totalScoreDistributed: Number(totalScore),
+          checkedInToday: Number(checkedInToday),
+          checkedOutToday: Number(checkedOutToday),
         },
+        systemSettings: currentSettings,
         activeStage: activeStage || null,
+        floorOccupancy,
         recentActivity,
       },
     };

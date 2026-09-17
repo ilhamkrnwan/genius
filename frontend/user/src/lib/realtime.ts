@@ -62,10 +62,16 @@ function connect() {
           'SCORE_SUBMITTED',
           'LEADERBOARD_UPDATED',
           'GAME_SESSION_COMPLETED',
+          'SYSTEM_SETTINGS_UPDATED',
+          'XP_RESET',
         ];
 
         if (relevantEvents.includes(eventType)) {
           const gameStore = useGameStore();
+          const payload = msg.data?.settings || msg.data;
+          if (payload?.activeDay) {
+            gameStore.activeDay = Number(payload.activeDay) as 1 | 2 | 3;
+          }
           // Immediately sync updated XP, stamps, and attendance status from database
           void gameStore.syncWithServer();
           void gameStore.syncAttendanceFromServer();

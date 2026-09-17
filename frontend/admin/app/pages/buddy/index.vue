@@ -81,30 +81,58 @@
     </div>
 
     <!-- Day Navigation Bar (Synchronized with Maba View: Hari 1, 2, 3) -->
-    <div class="grid grid-cols-3 gap-1.5 bg-[#140c06]/90 p-1.5 rounded-xl border border-[#5a3a18]">
-      <button
-        v-for="item in DAYS"
-        :key="item.day"
-        type="button"
-        @click="selectDay(item.day)"
-        :class="[
-          'py-2 px-1.5 rounded-lg transition-all flex flex-col items-center justify-center text-center cursor-pointer active:scale-95',
-          activeDayTab === item.day
-            ? 'bg-[#38761d] text-white border border-[#f0d060] font-bold shadow'
-            : 'text-[#c4956a] hover:text-[#f0d060] hover:bg-[#20140c]'
-        ]"
+    <div class="space-y-1.5">
+      <div class="grid grid-cols-3 gap-1.5 bg-[#140c06]/90 p-1.5 rounded-xl border border-[#5a3a18]">
+        <button
+          v-for="item in DAYS"
+          :key="item.day"
+          type="button"
+          @click="selectDay(item.day)"
+          :class="[
+            'py-2 px-1.5 rounded-lg transition-all flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 relative',
+            activeDayTab === item.day
+              ? 'bg-[#38761d] text-white border border-[#f0d060] font-bold shadow'
+              : 'text-[#c4956a] hover:text-[#f0d060] hover:bg-[#20140c]'
+          ]"
+        >
+          <div class="flex items-center gap-1 text-[11px]">
+            <span class="font-pixel">{{ item.label }}</span>
+            <span
+              v-if="item.day === systemActiveDay"
+              class="w-1.5 h-1.5 rounded-full bg-[#4ade80] animate-pulse"
+              title="Hari Aktif Sistem"
+            />
+            <span
+              v-else-if="dayAttendanceCount[item.day] > 0"
+              class="text-[8px] px-1 py-0.2 rounded-full bg-[#142612] text-[#86efac] border border-[#22c55e]/40 font-mono"
+            >
+              {{ dayAttendanceCount[item.day] }}
+            </span>
+            <Lock v-else-if="item.day > systemActiveDay" class="w-2.5 h-2.5 text-[#8a6b52]" />
+          </div>
+          <span class="text-[8px] opacity-85 font-sans mt-0.5">{{ item.date }} &bull; {{ item.subtitle }}</span>
+        </button>
+      </div>
+
+      <!-- Non-active day notice banner -->
+      <div
+        v-if="activeDayTab !== systemActiveDay"
+        class="p-2 sm:p-2.5 rounded-lg bg-[#1a110a] border border-[#5a3a18] text-[9px] sm:text-[10px] text-[#c4956a] flex items-center justify-between font-mono"
       >
-        <div class="flex items-center gap-1 text-[11px]">
-          <span class="font-pixel">{{ item.label }}</span>
-          <span
-            v-if="dayAttendanceCount[item.day] > 0"
-            class="text-[8px] px-1 py-0.2 rounded-full bg-[#142612] text-[#86efac] border border-[#22c55e]/40 font-mono"
-          >
-            {{ dayAttendanceCount[item.day] }}
+        <div class="flex items-center gap-2 truncate">
+          <Lock class="w-3.5 h-3.5 text-[#f59e0b] shrink-0" />
+          <span class="truncate">
+            Melihat arsip Hari {{ activeDayTab }}. Presensi masuk & pulang dinonaktifkan (Sistem di Hari {{ systemActiveDay }}).
           </span>
         </div>
-        <span class="text-[8px] opacity-85 font-sans mt-0.5">{{ item.date }} &bull; {{ item.subtitle }}</span>
-      </button>
+        <button
+          type="button"
+          @click="selectDay(systemActiveDay)"
+          class="text-[#facc15] hover:underline font-bold shrink-0 ml-2 font-pixel text-[8px] sm:text-[8.5px]"
+        >
+          KE HARI {{ systemActiveDay }} →
+        </button>
+      </div>
     </div>
 
     <!-- Status Presensi Regu Hari Berjalan -->
@@ -136,8 +164,18 @@
         <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#120a05] border-2 border-[#f0d060]/50 flex items-center justify-center text-[#facc15] mb-1.5 group-hover:scale-110 group-hover:border-[#f0d060] transition-all group-hover:shadow-[0_0_10px_rgba(240,208,96,0.3)]">
           <FileEdit class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
-        <span class="font-pixel text-[8px] sm:text-[9.5px] text-[#fef08a] block uppercase mb-0.5 drop-shadow-md">NILAI FGD</span>
-        <span class="text-[7px] sm:text-[7.5px] text-[#c4956a] group-hover:text-[#e5b383] transition-colors line-clamp-1">Rubrik Sesi</span>
+        <span
+          class="font-pixel text-[8px] sm:text-[9.5px] block uppercase mb-0.5 drop-shadow-md"
+          :class="isLocked || systemActiveDay === 2 ? 'text-amber-400' : 'text-[#fef08a]'"
+        >
+          NILAI FGD
+        </span>
+        <span
+          class="text-[7px] sm:text-[7.5px] transition-colors line-clamp-1"
+          :class="isLocked ? 'text-red-400' : (systemActiveDay === 2 ? 'text-amber-400' : 'text-[#c4956a] group-hover:text-[#e5b383]')"
+        >
+          {{ isLocked ? 'Dikunci Admin' : (systemActiveDay === 2 ? 'H2 Tidak Ada FGD' : 'Rubrik Sesi') }}
+        </span>
       </NuxtLink>
 
       <NuxtLink
@@ -291,20 +329,20 @@
                 <div v-if="!m.checkInTime" class="flex items-center gap-1 shrink-0">
                   <button
                     type="button"
-                    :disabled="isLocked || m.processingIn"
+                    :disabled="isLocked || activeDayTab !== systemActiveDay || m.processingIn"
                     @click="markCheckIn(m, 'ON_TIME')"
                     class="pixel-btn h-6 px-2 font-pixel text-[7.5px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                    :title="isLocked ? 'Sistem dikunci admin' : 'Tandai Hadir Tepat Waktu (+100 XP)'"
+                    :title="isLocked ? 'Sistem dikunci admin' : (activeDayTab !== systemActiveDay ? `Hari ${activeDayTab} tidak aktif (Sistem di Hari ${systemActiveDay})` : 'Tandai Hadir Tepat Waktu (+100 XP)')"
                   >
-                    <Lock v-if="isLocked" class="w-2.5 h-2.5 text-red-400" />
+                    <Lock v-if="isLocked || activeDayTab !== systemActiveDay" class="w-2.5 h-2.5 text-red-400" />
                     <span>+ HADIR</span>
                   </button>
                   <button
                     type="button"
-                    :disabled="isLocked || m.processingIn"
+                    :disabled="isLocked || activeDayTab !== systemActiveDay || m.processingIn"
                     @click="markCheckIn(m, 'LATE')"
                     class="h-6 px-1.5 rounded bg-[#2a1d08] border border-[#f59e0b]/60 hover:border-[#f59e0b] text-[#facc15] font-pixel text-[7px] font-bold shadow cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                    :title="isLocked ? 'Sistem dikunci admin' : 'Tandai Terlambat (+50 XP)'"
+                    :title="isLocked ? 'Sistem dikunci admin' : (activeDayTab !== systemActiveDay ? `Hari ${activeDayTab} tidak aktif` : 'Tandai Terlambat (+50 XP)')"
                   >
                     <span>TELAT</span>
                   </button>
@@ -353,12 +391,12 @@
                 <div v-if="!m.hasCheckedOut" class="shrink-0">
                   <button
                     type="button"
-                    :disabled="isLocked || m.processingOut || !m.checkInTime"
+                    :disabled="isLocked || activeDayTab !== systemActiveDay || m.processingOut || !m.checkInTime"
                     @click="markCheckOut(m)"
                     class="pixel-btn h-6 px-2.5 font-pixel text-[7.5px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                    :title="!m.checkInTime ? 'Mahasiswa wajib presensi masuk terlebih dahulu' : (isLocked ? 'Sistem dikunci admin' : 'Tandai Selesai & Pulang (+50 XP)')"
+                    :title="!m.checkInTime ? 'Mahasiswa wajib presensi masuk terlebih dahulu' : (isLocked ? 'Sistem dikunci admin' : (activeDayTab !== systemActiveDay ? `Hari ${activeDayTab} tidak aktif` : 'Tandai Selesai & Pulang (+50 XP)'))"
                   >
-                    <Lock v-if="isLocked" class="w-2.5 h-2.5 text-red-400" />
+                    <Lock v-if="isLocked || activeDayTab !== systemActiveDay" class="w-2.5 h-2.5 text-red-400" />
                     <span>+ PULANG</span>
                   </button>
                 </div>
@@ -434,6 +472,8 @@ const DAYS = [
 ];
 
 const activeDayTab = ref<number>(1);
+const systemActiveDay = ref<number>(1);
+const hasInitializedDay = ref(false);
 const loading = ref(true);
 const isLocked = ref(false);
 const teamData = ref<any>(null);
@@ -505,6 +545,10 @@ async function markCheckIn(member: BuddyMember, status: "ON_TIME" | "LATE" = "ON
     showToast("error", "Sistem absensi telah dikunci admin.");
     return;
   }
+  if (activeDayTab.value !== systemActiveDay.value) {
+    showToast("error", `Presensi Hari ${activeDayTab.value} terkunci. Sistem sedang berjalan pada Hari ${systemActiveDay.value}.`);
+    return;
+  }
   member.processingIn = true;
   try {
     const res = await api.post<{ success: boolean; data: any; message?: string }>(
@@ -547,6 +591,10 @@ async function markCheckIn(member: BuddyMember, status: "ON_TIME" | "LATE" = "ON
 async function markCheckOut(member: BuddyMember) {
   if (isLocked.value) {
     showToast("error", "Sistem absensi telah dikunci admin.");
+    return;
+  }
+  if (activeDayTab.value !== systemActiveDay.value) {
+    showToast("error", `Presensi Pulang Hari ${activeDayTab.value} terkunci. Sistem sedang berjalan pada Hari ${systemActiveDay.value}.`);
     return;
   }
   if (!member.checkInTime) {
@@ -629,7 +677,15 @@ async function loadData() {
       }
 
       if (settingsRes.status === "fulfilled" && settingsRes.value.success) {
-        isLocked.value = settingsRes.value.data.isBuddyEvaluationLocked || false;
+        const settings = settingsRes.value.data;
+        isLocked.value = Boolean(settings.isBuddyEvaluationLocked);
+        if (settings.activeDay) {
+          systemActiveDay.value = Number(settings.activeDay);
+          if (!hasInitializedDay.value) {
+            activeDayTab.value = Number(settings.activeDay);
+            hasInitializedDay.value = true;
+          }
+        }
       }
 
       const fgdEvalsMap = new Map<string, number>();
@@ -719,8 +775,21 @@ let unsubscribeWs: (() => void) | null = null;
 
 onMounted(() => {
   loadData();
-  unsubscribeWs = onEvent((event) => {
+  unsubscribeWs = onEvent((event, data) => {
     if (
+      event === "SYSTEM_SETTINGS_UPDATED" ||
+      (event === "ADMIN_FEED_EVENT" && data?.action === "SYSTEM_SETTINGS_UPDATED")
+    ) {
+      const payload = data?.details?.settings || data?.settings || data?.details || data;
+      if (payload?.isBuddyEvaluationLocked !== undefined) {
+        isLocked.value = Boolean(payload.isBuddyEvaluationLocked);
+      }
+      if (payload?.activeDay !== undefined) {
+        systemActiveDay.value = Number(payload.activeDay);
+        activeDayTab.value = Number(payload.activeDay);
+      }
+      loadData();
+    } else if (
       [
         "SCORE_SUBMITTED",
         "XP_AWARDED",
@@ -730,6 +799,7 @@ onMounted(() => {
         "ATTENDANCE_CHECK_OUT",
         "ATTENDANCE_BATCH_CHECK_IN",
         "ATTENDANCE_BATCH_CHECK_OUT",
+        "XP_RESET",
       ].includes(event)
     ) {
       loadData();
