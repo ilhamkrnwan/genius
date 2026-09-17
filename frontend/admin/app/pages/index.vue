@@ -335,6 +335,7 @@
               <li>Seluruh sesi permainan pos kuis dihapus.</li>
               <li>Seluruh riwayat presensi dihapus.</li>
               <li>Seluruh evaluasi FGD dihapus.</li>
+              <li>Seluruh log kunjungan & pendaftaran stan Ormawa dihapus.</li>
             </ul>
           </div>
           <div class="space-y-1.5">

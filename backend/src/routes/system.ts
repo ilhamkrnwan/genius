@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { authMiddleware, requireAdmin } from "../middleware/auth";
 import { broadcastAdminEvent, broadcastAnnouncement, broadcastToTopic, broadcastSystemSettings, broadcastXpReset } from "../realtime";
 import { db } from "../db";
-import { scoreTransactions, gameSessions, attendances, dailyReflections, fgdEvaluations } from "../db/schema";
+import { scoreTransactions, gameSessions, attendances, dailyReflections, fgdEvaluations, ormawaScans, ormawaInterests } from "../db/schema";
 
 export interface EventSettings {
   activeDay: number;
@@ -194,16 +194,21 @@ export const systemRoutes = new Elysia({
       await db.delete(dailyReflections);
       await db.delete(fgdEvaluations);
 
-      // 4. Siarkan sinyal reset XP ke seluruh HP Maba, portal Buddy, dan papan proyektor
+      // 4. Bersihkan data kunjungan dan pendaftaran minat stan Ormawa Expo
+      await db.delete(ormawaScans);
+      await db.delete(ormawaInterests);
+
+      // 5. Siarkan sinyal reset XP ke seluruh HP Maba, portal Buddy, dan papan proyektor
       broadcastXpReset();
       broadcastToTopic("leaderboard:global", "LEADERBOARD_UPDATED", {
         type: "XP_RESET",
         timestamp: new Date().toISOString(),
       });
+      broadcastAdminEvent("ORMAWA_RESET", { timestamp: new Date().toISOString() });
 
       return {
         success: true,
-        message: "Seluruh perolehan XP, stempel pos kuis, dan riwayat presensi berhasil di-reset ke 0!",
+        message: "Seluruh perolehan XP, stempel pos kuis, riwayat presensi, dan kunjungan stan Ormawa berhasil di-reset ke 0!",
       };
     },
     {
