@@ -45,7 +45,7 @@ services:
         condition: service_healthy
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: genius_minio
     restart: unless-stopped
     ports:

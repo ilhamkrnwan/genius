@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { db } from "../db";
 import { attendances, attendanceSessions, users, teams, teamMembers, scoreTransactions } from "../db/schema";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
+import { authMiddleware } from "../middleware/auth";
 import { broadcastLeaderboardUpdate, broadcastAdminEvent, broadcastAttendanceEvent, broadcastXpCelebration } from "../realtime";
 import { getSystemSettings } from "./system";
 
