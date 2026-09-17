@@ -83,45 +83,36 @@ Setiap Pos bernilai akumulasi tepat **100 Poin**, dengan total nilai ekspedisi k
 
 ---
 
-## 3. Integrasi Media Google Drive Berbasis Iframe Preview
+## 3. Integrasi Media MinIO Object Storage (Self-Hosted S3)
 
-Untuk memudahkan panitia dan admin dalam menyiapkan gambar soal tanpa perlu mengunggah ulang file gambar/audio berukuran besar ke server, sistem mendukung **penyematan otomatis berbasis Google Drive File ID**.
+Untuk menyajikan gambar kuis dengan performa maksimal, tanpa batasan iframe, dan tidak bergantung pada login Google Drive, sistem telah beralih menggunakan **MinIO Object Storage Service**.
 
-### A. Cara Kerja Integrasi
-1. **Input di Sisi Admin (`questions.vue`):**
-   * Admin cukup menempelkan URL file Google Drive (misal: `https://drive.google.com/file/d/1vN78n3Z.../view?usp=drivesdk`) atau langsung File ID-nya (`1vN78n3Z...`).
-   * Dashboard Admin otomatis mengekstrak File ID menggunakan regex:
-     ```ts
-     const match = input.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-     const fileId = match ? match[1] : input.trim();
-     ```
-   * File ID disimpan ke dalam array `tags` pada tabel database PostgreSQL dengan format: `gdrive:${fileId}`.
+### A. Cara Kerja Integrasi MinIO
+1. **Penyimpanan Objek & Bucket (`docker-compose.yml` & `backend/src/storage/minio.ts`):**
+   * Service MinIO berjalan pada port `9000` (API S3) dan `9001` (Web Console).
+   * Bucket default `genius-assets` diatur dengan policy **Public Read** sehingga aset gambar dapat langsung di-render melalui URL publik tanpa otentikasi rumit.
+   * Endpoint upload resmi backend: `POST /api/storage/upload` menerima file gambar/audio dan mengembalikan URL serta Object Key.
 
-2. **Penyajian di Sisi Pengguna (Maba):**
-   * Komponen game ([`TebakGambarGame.vue`](file:///home/fauzan/Projects/genius/genius-unu/frontend/user/src/components/minigames/TebakGambarGame.vue) dan [`TebakPosisiGame.vue`](file:///home/fauzan/Projects/genius/genius-unu/frontend/user/src/components/minigames/TebakPosisiGame.vue)) mendeteksi keberadaan tag `gdrive:` atau link Google Drive.
-   * Komponen menyusun URL embed standar:
-     ```
-     https://drive.google.com/file/d/{FILE_ID}/preview
-     ```
-   * Merender pratinjau dalam container responsif:
+2. **Input di Sisi Admin (`questions.vue`):**
+   * Admin dapat langsung mengunggah file gambar/audio kuis via tombol **Upload File** di modal form soal.
+   * Dashboard Admin otomatis mengunggah file ke MinIO melalui `/api/storage/upload` dan menyimpan tag `minio:<objectKey>` serta `media:<url>` ke database.
+
+3. **Penyajian di Sisi Pengguna (Maba):**
+   * Komponen game ([`TebakGambarGame.vue`](file:///c:/KAIRAV/project/genius_project/frontend/user/src/components/minigames/TebakGambarGame.vue) dan [`TebakPosisiGame.vue`](file:///c:/KAIRAV/project/genius_project/frontend/user/src/components/minigames/TebakPosisiGame.vue)) merender gambar secara **native** via tag `<img>`:
      ```html
-     <iframe
-       :src="gdriveEmbedUrl"
-       class="w-full h-full border-0 rounded-lg pointer-events-none"
-       allow="autoplay"
-       sandbox="allow-scripts allow-same-origin"
+     <img
+       v-if="resolvedMediaUrl"
+       :src="resolvedMediaUrl"
+       :alt="currentItem.imageAlt"
+       class="w-full h-full object-cover object-center filter brightness-[0.95]"
        loading="lazy"
      />
      ```
+   * Loading instan, bebas blokir cookie browser, dan tetap memiliki fallback lokal di `/images/quiz/...`.
 
-### B. Pengecualian Folder TTS
-> [!IMPORTANT]
-> Tautan `https://drive.google.com/drive/folders/1da1JDYvj5RpNv4Io7qnMpJhLCG71OWVS` pada Pos 4 adalah tautan **Folder Google Drive**, bukan single file gambar. Link ini merupakan rujukan arsip dokumen panitia dan **tidak** di-embed ke dalam iframe. Permainan TTS Pos 4 dirender murni secara interaktif via komponen Vue canvas [`TtsGame.vue`](file:///home/fauzan/Projects/genius/genius-unu/frontend/user/src/components/minigames/TtsGame.vue).
-
-### C. Syarat Akses File Google Drive
-Agar gambar/audio dapat tampil di iframe mahasiswa tanpa login Google:
-1. Klik kanan file di Google Drive $\rightarrow$ **Bagikan (Share)** $\rightarrow$ **Akses Umum**.
-2. Ubah dari *Dibatasi (Restricted)* menjadi **Siapa saja yang memiliki link (Anyone with the link)** sebagai **Pelihat (Viewer)**.
+### B. Pengecualian Folder TTS Pos 4
+> [!NOTE]
+> Permainan TTS Pos 4 dirender murni secara interaktif via komponen Vue canvas [`TtsGame.vue`](file:///c:/KAIRAV/project/genius_project/frontend/user/src/components/minigames/TtsGame.vue) tanpa memerlukan media gambar latar.
 
 ---
 

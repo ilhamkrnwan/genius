@@ -699,7 +699,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
       items: [
         {
           id: 'tg-p9-1',
-          gdriveId: '1S0ZOeETjD1l9xPpoE6KnvIC-_L32vlzL',
+          imageUrl: '/images/quiz/pos9/soal_1_internet_center.png',
+          minioKey: 'quiz/pos9/soal_1_internet_center.png',
           imageIcon: 'monitor',
           imageAlt: 'Papan dinding fasilitas internet kampus',
           prompt: 'Soal (Gambar 1): Tulisan apakah ini?',
@@ -710,7 +711,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tg-p9-2',
-          gdriveId: '1yJ9kD3DW9WMNNOaea8RKCVixVGANmQEO',
+          imageUrl: '/images/quiz/pos9/soal_2_creative_corner.png',
+          minioKey: 'quiz/pos9/soal_2_creative_corner.png',
           imageIcon: 'palette',
           imageAlt: 'Mural sudut kreatif mahasiswa',
           prompt: 'Soal (Gambar 2): Tulisan apakah ini?',
@@ -721,7 +723,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tg-p9-3',
-          gdriveId: '1J1v_rdHQm7aw_YDemSLYiuJMAaecED4P',
+          imageUrl: '/images/quiz/pos9/soal_3_bright_future.png',
+          minioKey: 'quiz/pos9/soal_3_bright_future.png',
           imageIcon: 'sparkle',
           imageAlt: 'Slogan motivasi dinding kampus',
           prompt: 'Soal (Gambar 3): Tulisan apakah ini?',
@@ -732,7 +735,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tg-p9-4',
-          gdriveId: '1QDVanLV67fUH8cRn769xUdYPo7ce17bY',
+          imageUrl: '/images/quiz/pos9/soal_4_build_startup.png',
+          minioKey: 'quiz/pos9/soal_4_build_startup.png',
           imageIcon: 'rocket',
           imageAlt: 'Poster program kewirausahaan',
           prompt: 'Soal (Gambar 4): Tulisan apakah ini?',
@@ -743,7 +747,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tg-p9-5',
-          gdriveId: '1Q3Cht2fn4Sn9VxArIEnXH8e3HGwI7t9y',
+          imageUrl: '/images/quiz/pos9/soal_5_tokoh_muassis_nu.png',
+          minioKey: 'quiz/pos9/soal_5_tokoh_muassis_nu.png',
           imageIcon: 'scroll',
           imageAlt: 'Potret 3 Ulama Muassis Nahdlatul Ulama',
           prompt: 'Soal (Gambar 5): Siapa nama 3 tokoh ini? Harus urut!',
@@ -893,7 +898,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
       items: [
         {
           id: 'tg-p7-1',
-          gdriveId: '1gSO19MNNdMX5qpbn7At81Fp8ZNKmjiBu',
+          imageUrl: '/images/quiz/pos7/soal_1_mbg_bahlil.jpg',
+          minioKey: 'quiz/pos7/soal_1_mbg_bahlil.jpg',
           imageIcon: 'speaker-high',
           imageAlt: 'Audio/Lagu perjuangan',
           prompt: 'Soal: Lagu apa yang cocok untukku? dan siapakah aku?',
@@ -904,7 +910,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tg-p7-2',
-          gdriveId: '1Ov580yOxG6Wt3350XnQcHFaeC8JdSo2m',
+          imageUrl: '/images/quiz/pos7/soal_2_jokowi_solo.jpg',
+          minioKey: 'quiz/pos7/soal_2_jokowi_solo.jpg',
           imageIcon: 'calendar',
           imageAlt: 'Peringatan hari besar',
           prompt: 'Soal: Hari ini di jogja saya akan lawan, Siapakah diriku? dan mana asalku?',
@@ -915,7 +922,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tg-p7-3',
-          gdriveId: '1rPBsyOTf8FBT1IYOj0TZCvzIb6GWB1F9',
+          imageUrl: '/images/quiz/pos7/soal_3_prabowo_nyawit.jpg',
+          minioKey: 'quiz/pos7/soal_3_prabowo_nyawit.jpg',
           imageIcon: 'user-circle',
           imageAlt: 'Foto tokoh bangsa',
           prompt: 'Soal: Siapa tokoh bersejarah ini? Dan apa kalimat motivasi nya?',
@@ -926,7 +934,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tg-p7-4',
-          gdriveId: '1a6p4BbTwVNhLoulpsjlf7w7e6Hi6vm59',
+          imageUrl: '/images/quiz/pos7/soal_4_monyet_saudara.jpg',
+          minioKey: 'quiz/pos7/soal_4_monyet_saudara.jpg',
           imageIcon: 'shield',
           imageAlt: 'Lambang organisasi kemahasiswaan',
           prompt: 'Soal: Aku adalah saudaramu, siapakah aku?',
@@ -937,7 +946,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tg-p7-5',
-          gdriveId: '1K_JfdcvOdBC-rmtSmCUdyzH_OMzgE7xH',
+          imageUrl: '/images/quiz/pos7/soal_5_suara_ajeng_febri.jpg',
+          minioKey: 'quiz/pos7/soal_5_suara_ajeng_febri.jpg',
           imageIcon: 'waveform',
           imageAlt: 'Suara audio fenomena',
           prompt: 'Suaraku merdu seperti Ajeng Febri, siapakah aku? Dan bagaimana suaraku?',
@@ -971,7 +981,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
       items: [
         {
           id: 'tp-p8-1',
-          gdriveId: '1Yyxf7m4tb83xOGe0IH4q72t4lSQsG2yW',
+          imageUrl: '/images/quiz/pos8/soal_1_amphiteater_lt2.jpg',
+          minioKey: 'quiz/pos8/soal_1_amphiteater_lt2.jpg',
           prompt: 'Pertanyaan : Ada di lantai berapakah aku?',
           imageAlt: 'Amphiteater megah kampus UNU',
           options: ['Lantai 2 amphiteater', 'Lantai 1', 'Lantai 3', 'Lantai 4'],
@@ -981,7 +992,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tp-p8-2',
-          gdriveId: '1alaoLPnHhU-nbpyGPt2UtsV0O9s7P26E',
+          imageUrl: '/images/quiz/pos8/soal_2_student_hub_lt4.jpg',
+          minioKey: 'quiz/pos8/soal_2_student_hub_lt4.jpg',
           prompt: 'Pertanyaan : Ada dilantai berapakah aku?',
           imageAlt: 'Koridor Student Hub & Layanan',
           options: ['Lantai 4', 'Lantai 2', 'Lantai 3', 'Lantai 5'],
@@ -991,7 +1003,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tp-p8-3',
-          gdriveId: '1AeC5fxt5jaWec-QrNY0XItnka6K3HW-Q',
+          imageUrl: '/images/quiz/pos8/soal_3_lobby_lt1.jpg',
+          minioKey: 'quiz/pos8/soal_3_lobby_lt1.jpg',
           prompt: 'Pertanyaan : Ada di lantai berapakah aku?',
           imageAlt: 'Lobby utama megah lantai 1',
           options: ['Lantai  1', 'Lantai 2', 'Lantai 3', 'Lantai 4'],
@@ -1001,7 +1014,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tp-p8-4',
-          gdriveId: '1Ksd55wXqi0DsP7hzjZMmJToKdiFwOSuU',
+          imageUrl: '/images/quiz/pos8/soal_4_kolaborasi_lt4.jpg',
+          minioKey: 'quiz/pos8/soal_4_kolaborasi_lt4.jpg',
           prompt: 'Pertanyaan : Ada di lantai berapakah aku?',
           imageAlt: 'Ruang Kolaborasi Lantai 4',
           options: ['Lantai 4', 'Lantai 2', 'Lantai 3', 'Lantai 5'],
@@ -1011,7 +1025,8 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
         },
         {
           id: 'tp-p8-5',
-          gdriveId: '1wRZ-7UQjUqCKdsBCd8mgN3aIgnEyyHLb',
+          imageUrl: '/images/quiz/pos8/soal_5_fti_lab_lt3.jpg',
+          minioKey: 'quiz/pos8/soal_5_fti_lab_lt3.jpg',
           prompt: 'Pertanyaan : Ada di lantai berapakah aku?',
           imageAlt: 'Selasar FTI dan Lab Komputer',
           options: ['Lantai 3', 'Lantai 2', 'Lantai 4', 'Lantai 5'],

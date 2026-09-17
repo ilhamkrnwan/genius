@@ -31,9 +31,37 @@ services:
       DATABASE_URL: "postgres://genius:genius2026@postgres:5432/genius_2026"
       JWT_SECRET: "genius-2026-super-secret-key-local-development"
       JWT_EXPIRES_IN: "24h"
+      MINIO_ENDPOINT: "minio"
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: "genius_minio"
+      MINIO_SECRET_KEY: "genius_minio_secret_2026"
+      MINIO_BUCKET: "genius-assets"
+      MINIO_PUBLIC_URL: "http://localhost:9000/genius-assets"
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio:latest
+    container_name: genius_minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: genius_minio
+      MINIO_ROOT_PASSWORD: genius_minio_secret_2026
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   user:
     build:
@@ -59,3 +87,4 @@ services:
 
 volumes:
   postgres_data:
+  minio_data:

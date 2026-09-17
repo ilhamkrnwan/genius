@@ -188,11 +188,17 @@
                 <span>•</span>
                 <span class="text-[#4ade80]">+{{ q.points || 10 }} pts</span>
                 <span
-                  v-if="getGdriveTag(q)"
-                  class="px-1.5 py-0.2 rounded text-[8px] font-pixel border border-sky-500 bg-sky-950/80 text-sky-300"
-                  :title="`Google Drive File ID: ${getGdriveTag(q)}`"
+                  v-if="getMediaTag(q)"
+                  :class="[
+                    'px-1.5 py-0.5 rounded text-[8px] font-pixel border inline-flex items-center gap-1',
+                    getMediaTag(q)?.type === 'minio' || getMediaTag(q)?.type === 'media'
+                      ? 'border-emerald-500 bg-emerald-950/80 text-emerald-300'
+                      : 'border-sky-500 bg-sky-950/80 text-sky-300'
+                  ]"
+                  :title="`Media: ${getMediaTag(q)?.url}`"
                 >
-                  📁 GDRIVE IFRAME
+                  <span v-if="getMediaTag(q)?.type === 'minio' || getMediaTag(q)?.type === 'media'">🖼️ MINIO ASSET</span>
+                  <span v-else>📁 GDRIVE</span>
                 </span>
               </div>
             </td>
@@ -325,19 +331,57 @@
             </div>
           </div>
 
-          <!-- Google Drive File ID / URL input -->
-          <div class="space-y-1">
+          <!-- Media / MinIO File Upload (Opsional) -->
+          <div class="space-y-1.5 p-2.5 rounded border border-[#3e2d1d] bg-[#1a120c]">
             <Label class="text-xs font-semibold flex items-center justify-between">
-              <span>Google Drive File ID / Link (Opsional):</span>
-              <span class="text-[9px] text-[#38bdf8] font-mono">Untuk Soal Bergambar/Audio</span>
+              <span class="text-[#facc15] flex items-center gap-1.5">
+                <span>🖼️ Media Kuis (MinIO Object Storage)</span>
+              </span>
+              <span class="text-[9px] text-[#4ade80] font-mono">Untuk Soal Visual/Audio</span>
             </Label>
-            <input
-              v-model="form.gdriveId"
-              placeholder="Contoh: 1S0ZOeETjD1l9xPpoE6KnvIC-_L32vlzL atau URL drive lengkap"
-              class="w-full h-8 px-2 bg-[#15100c] border border-[#523e2b] text-foreground text-xs focus:outline-none focus:border-[#f59e0b]"
-            />
-            <p class="text-[9.5px] text-gray-400">
-              *Jika diisi, pada aplikasi peserta akan otomatis ditampilkan iframe preview gambar/audio langsung dari Google Drive.
+            
+            <div class="flex items-center gap-2">
+              <input
+                v-model="form.mediaUrl"
+                placeholder="URL atau Path (contoh: /images/quiz/pos9/soal_1_internet_center.png atau key MinIO)"
+                class="flex-1 h-8 px-2 bg-[#15100c] border border-[#523e2b] text-foreground text-xs focus:outline-none focus:border-[#f59e0b]"
+              />
+              <label class="h-8 px-3 bg-[#3a2818] hover:bg-[#4a3420] border border-[#d4a373] text-[#fbf6e9] text-xs font-pixel flex items-center gap-1 cursor-pointer transition-colors shrink-0">
+                <span v-if="uploadingMedia">⏳ Uploading...</span>
+                <span v-else>📁 Upload File</span>
+                <input
+                  type="file"
+                  accept="image/*,audio/*"
+                  class="hidden"
+                  :disabled="uploadingMedia"
+                  @change="handleFileUpload"
+                />
+              </label>
+            </div>
+
+            <!-- Preview if available -->
+            <div v-if="form.mediaUrl" class="mt-2 flex items-center gap-2 p-1.5 bg-[#120b06] rounded border border-[#523e2b]">
+              <img
+                v-if="!form.mediaUrl.endsWith('.mp3')"
+                :src="form.mediaUrl"
+                class="w-12 h-12 object-cover rounded border border-[#8b6f4e]"
+                alt="Preview"
+              />
+              <div class="flex-1 overflow-hidden">
+                <p class="text-[10px] text-gray-300 font-mono truncate">{{ form.mediaUrl }}</p>
+                <p class="text-[9px] text-emerald-400">✅ Terhubung ke Media Storage</p>
+              </div>
+              <button
+                type="button"
+                @click="form.mediaUrl = ''; form.minioKey = '';"
+                class="text-[10px] text-red-400 hover:text-red-300 px-1.5 py-0.5 border border-red-500/40 rounded"
+              >
+                Hapus
+              </button>
+            </div>
+            
+            <p class="text-[9px] text-gray-400">
+              *Mendukung file gambar PNG/JPG/WebP atau audio yang tersimpan di MinIO ataupun path lokal.
             </p>
           </div>
 
@@ -596,6 +640,8 @@ const pageSize = ref(10);
 const showQuestionModal = ref(false);
 const isEditing = ref(false);
 
+const uploadingMedia = ref(false);
+
 const form = ref({
   id: "",
   questionText: "",
@@ -604,14 +650,50 @@ const form = ref({
   options: ["", "", "", ""],
   correctOptionIndex: 0,
   points: 10,
+  mediaUrl: "",
+  minioKey: "",
   gdriveId: "",
   tags: [] as string[],
 });
 
-function getGdriveTag(q: any): string | null {
+function getMediaTag(q: any): { type: "minio" | "media" | "gdrive"; url: string } | null {
   if (!q.tags || !Array.isArray(q.tags)) return null;
-  const tag = q.tags.find((t: string) => typeof t === "string" && t.startsWith("gdrive:"));
-  return tag ? tag.replace("gdrive:", "") : null;
+  const minioTag = q.tags.find((t: string) => typeof t === "string" && t.startsWith("minio:"));
+  if (minioTag) return { type: "minio", url: minioTag.replace("minio:", "") };
+  const mediaTag = q.tags.find((t: string) => typeof t === "string" && t.startsWith("media:"));
+  if (mediaTag) return { type: "media", url: mediaTag.replace("media:", "") };
+  const gdriveTag = q.tags.find((t: string) => typeof t === "string" && t.startsWith("gdrive:"));
+  if (gdriveTag) return { type: "gdrive", url: gdriveTag.replace("gdrive:", "") };
+  return null;
+}
+
+function getGdriveTag(q: any): string | null {
+  const media = getMediaTag(q);
+  return media ? media.url : null;
+}
+
+async function handleFileUpload(e: Event) {
+  const input = e.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+  const file = input.files[0];
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("folder", "quiz");
+  uploadingMedia.value = true;
+  try {
+    const res = await api.post<any>("/api/storage/upload", formData);
+    if (res.success && res.data?.url) {
+      form.value.mediaUrl = res.data.url;
+      form.value.minioKey = res.data.key;
+      toast.success("Gambar berhasil diunggah ke MinIO!");
+    } else {
+      toast.error("Gagal mengunggah file");
+    }
+  } catch (err: any) {
+    toast.error("Gagal upload: " + (err.data?.error?.message || err.message));
+  } finally {
+    uploadingMedia.value = false;
+  }
 }
 
 const filteredQuestions = computed(() => {
@@ -686,6 +768,8 @@ function openCreateModal() {
     options: ["", "", "", ""],
     correctOptionIndex: 0,
     points: 10,
+    mediaUrl: "",
+    minioKey: "",
     gdriveId: "",
     tags: [],
   };
@@ -695,7 +779,15 @@ function openCreateModal() {
 function openEditModal(q: any) {
   isEditing.value = true;
   const existingTags = Array.isArray(q.tags) ? [...q.tags] : [];
+  const foundMedia = existingTags.find((t: string) => typeof t === "string" && (t.startsWith("media:") || t.startsWith("minio:")));
   const foundGdrive = existingTags.find((t: string) => typeof t === "string" && t.startsWith("gdrive:"));
+  const minioTag = existingTags.find((t: string) => typeof t === "string" && t.startsWith("minio:"));
+
+  let mediaUrl = "";
+  if (foundMedia) {
+    mediaUrl = foundMedia.startsWith("media:") ? foundMedia.replace("media:", "") : foundMedia.replace("minio:", "");
+  }
+
   form.value = {
     id: q.id,
     questionText: q.questionText,
@@ -704,6 +796,8 @@ function openEditModal(q: any) {
     options: Array.isArray(q.options) ? [...q.options] : ["", "", "", ""],
     correctOptionIndex: Number(q.correctOptionIndex) || 0,
     points: q.baseScore || q.points || 10,
+    mediaUrl,
+    minioKey: minioTag ? minioTag.replace("minio:", "") : "",
     gdriveId: foundGdrive ? foundGdrive.replace("gdrive:", "") : "",
     tags: existingTags,
   };
@@ -713,8 +807,15 @@ function openEditModal(q: any) {
 async function submitQuestionForm() {
   saving.value = true;
   try {
-    const activeTags = (form.value.tags || []).filter((t: string) => !t.startsWith("gdrive:"));
-    if (form.value.gdriveId?.trim()) {
+    const activeTags = (form.value.tags || []).filter(
+      (t: string) => !t.startsWith("gdrive:") && !t.startsWith("minio:") && !t.startsWith("media:")
+    );
+    if (form.value.minioKey?.trim()) {
+      activeTags.push(`minio:${form.value.minioKey.trim()}`);
+    }
+    if (form.value.mediaUrl?.trim()) {
+      activeTags.push(`media:${form.value.mediaUrl.trim()}`);
+    } else if (form.value.gdriveId?.trim()) {
       activeTags.push(`gdrive:${form.value.gdriveId.trim()}`);
     }
 

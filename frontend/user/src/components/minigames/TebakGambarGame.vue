@@ -52,6 +52,12 @@ const isSelectedCorrect = computed(() => {
   return activeItem.value && selectedOptionIndex.value === activeItem.value.correctOptionIndex;
 });
 
+const resolvedMediaUrl = computed(() => {
+  if (!currentItem.value) return null;
+  const item = currentItem.value as any;
+  return item.imageUrl || item.mediaUrl || (item.minioKey ? `/images/${item.minioKey}` : null);
+});
+
 function extractGdriveEmbed(input?: string): string | null {
   if (!input) return null;
   const trimmed = input.trim();
@@ -68,7 +74,8 @@ function extractGdriveEmbed(input?: string): string | null {
 const gdriveEmbedUrl = computed(() => {
   if (!currentItem.value) return null;
   const item = currentItem.value as any;
-  return extractGdriveEmbed(item.gdriveId || item.driveUrl || item.imageUrl);
+  if (resolvedMediaUrl.value) return null; // Prioritize MinIO / local media
+  return extractGdriveEmbed(item.gdriveId || item.driveUrl);
 });
 
 const handleSelectOption = (idx: number) => {
@@ -135,22 +142,23 @@ const handleNextRound = () => {
         <!-- Picture / Visual Motif Card -->
         <div class="sdv-card-elevated overflow-hidden p-2 sm:p-2.5 space-y-1.5 shrink-0 transition-transform">
           <div class="relative w-full h-36 sm:h-44 rounded-lg overflow-hidden border border-[#8b6f4e] shadow bg-[#120b06] flex items-center justify-center">
-            <!-- Google Drive Iframe Preview -->
+            <!-- Direct Image/Media from MinIO or Local -->
+            <img
+              v-if="resolvedMediaUrl"
+              :src="resolvedMediaUrl"
+              :alt="currentItem.imageAlt || 'Visual Tantangan'"
+              class="w-full h-full object-cover object-center filter brightness-[0.95]"
+              loading="lazy"
+            />
+
+            <!-- Google Drive Iframe Preview (Fallback) -->
             <iframe
-              v-if="gdriveEmbedUrl"
+              v-else-if="gdriveEmbedUrl"
               :src="gdriveEmbedUrl"
               class="w-full h-full border-0 rounded-lg pointer-events-auto bg-[#1a110a]"
               allow="autoplay"
               loading="lazy"
             ></iframe>
-
-            <!-- Real Image if Available -->
-            <img
-              v-else-if="currentItem.imageUrl"
-              :src="currentItem.imageUrl"
-              :alt="currentItem.imageAlt || 'Visual Tantangan'"
-              class="w-full h-full object-cover object-center filter brightness-[0.95]"
-            />
 
             <!-- High-Quality Phosphor Themed Visual Badge (Anti-Emoji Compliance) -->
             <div v-else class="w-full h-full bg-gradient-to-b from-[#23160c] via-[#1a0f07] to-[#120b06] flex items-center justify-center relative">

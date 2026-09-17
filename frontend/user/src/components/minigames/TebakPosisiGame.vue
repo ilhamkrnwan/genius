@@ -48,6 +48,12 @@ const isSelectedCorrect = computed(() => {
   return activeItem.value && selectedOptionIndex.value === activeItem.value.correctOptionIndex;
 });
 
+const resolvedMediaUrl = computed(() => {
+  if (!currentItem.value) return null;
+  const item = currentItem.value as any;
+  return item.imageUrl || item.mediaUrl || (item.minioKey ? `/images/${item.minioKey}` : null);
+});
+
 function extractGdriveEmbed(input?: string): string | null {
   if (!input) return null;
   const trimmed = input.trim();
@@ -64,7 +70,8 @@ function extractGdriveEmbed(input?: string): string | null {
 const gdriveEmbedUrl = computed(() => {
   if (!currentItem.value) return null;
   const item = currentItem.value as any;
-  return extractGdriveEmbed(item.gdriveId || item.driveUrl || item.imageUrl);
+  if (resolvedMediaUrl.value) return null;
+  return extractGdriveEmbed(item.gdriveId || item.driveUrl);
 });
 
 const handleSelectOption = (idx: number) => {
@@ -128,16 +135,27 @@ const handleNextRound = () => {
     <!-- Visual Photo & Prompt Card -->
     <div class="sdv-card-elevated overflow-hidden p-2 sm:p-2.5 space-y-1.5 shrink-0">
       <div class="relative w-full h-36 sm:h-44 rounded-lg overflow-hidden border border-[#8b6f4e] shadow bg-[#120b06]">
+        <!-- Real Image from MinIO or Local -->
+        <img
+          v-if="resolvedMediaUrl || currentItem.imageUrl"
+          :src="resolvedMediaUrl || currentItem.imageUrl || '/unu-hero.jpeg'"
+          :alt="currentItem.imageAlt || 'Spot Kampus UNU'"
+          class="w-full h-full object-cover object-center filter brightness-[0.95]"
+          loading="lazy"
+        />
+
+        <!-- Google Drive Iframe Preview (Fallback) -->
         <iframe
-          v-if="gdriveEmbedUrl"
+          v-else-if="gdriveEmbedUrl"
           :src="gdriveEmbedUrl"
           class="w-full h-full border-0 rounded-lg pointer-events-auto bg-[#1a110a]"
           allow="autoplay"
           loading="lazy"
         ></iframe>
+
         <img
           v-else
-          :src="currentItem.imageUrl || '/unu-hero.jpeg'"
+          src="/unu-hero.jpeg"
           :alt="currentItem.imageAlt || 'Spot Kampus UNU'"
           class="w-full h-full object-cover object-center filter brightness-[0.95]"
         />

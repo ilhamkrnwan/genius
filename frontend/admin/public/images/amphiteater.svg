@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" width="100%" height="100%">
+  <rect width="400" height="250" fill="#1b120c"/>
+  <rect x="10" y="10" width="380" height="230" fill="#281c12" stroke="#eab308" stroke-width="2" rx="8"/>
+  <!-- Stage Steps -->
+  <path d="M 50 180 Q 200 230 350 180" fill="none" stroke="#78350f" stroke-width="20"/>
+  <path d="M 70 150 Q 200 195 330 150" fill="none" stroke="#92400e" stroke-width="18"/>
+  <path d="M 90 120 Q 200 160 310 120" fill="none" stroke="#b45309" stroke-width="16"/>
+  <path d="M 120 90 Q 200 125 280 90" fill="none" stroke="#d97706" stroke-width="14"/>
+  <!-- Podium / Stage -->
+  <ellipse cx="200" cy="70" rx="45" ry="15" fill="#facc15"/>
+  <text x="200" y="74" font-family="monospace" font-size="10" font-weight="bold" fill="#16110d" text-anchor="middle">STAGE</text>
+  <!-- Label -->
+  <rect x="100" y="200" width="200" height="26" fill="#170f07" stroke="#eab308" rx="4"/>
+  <text x="200" y="217" font-family="monospace" font-size="11" font-weight="bold" fill="#facc15" text-anchor="middle">AMPHITEATER KAMPUS</text>
+</svg>

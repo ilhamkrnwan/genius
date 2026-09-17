@@ -813,7 +813,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "MBG, Mas Bahlil Ganteng",
       explanation: "Jawab: MBG, Mas Bahlil Ganteng",
       baseScore: 20,
-      tags: ["pos:7", "lantai:6", "gdrive:1gSO19MNNdMX5qpbn7At81Fp8ZNKmjiBu"],
+      tags: ["pos:7", "lantai:6", "minio:quiz/pos7/soal_1_mbg_bahlil.jpg", "media:/images/quiz/pos7/soal_1_mbg_bahlil.jpg"],
     },
     {
       category: "Fun Pos",
@@ -824,7 +824,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Jokowi Pria Solo",
       explanation: "Jawab: Jokowi Pria Solo",
       baseScore: 20,
-      tags: ["pos:7", "lantai:6", "gdrive:1Ov580yOxG6Wt3350XnQcHFaeC8JdSo2m"],
+      tags: ["pos:7", "lantai:6", "minio:quiz/pos7/soal_2_jokowi_solo.jpg", "media:/images/quiz/pos7/soal_2_jokowi_solo.jpg"],
     },
     {
       category: "Fun Pos",
@@ -835,7 +835,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Prabowo, Saatnya untuk nyawit",
       explanation: "Jawab: Prabowo, Saatnya untuk nyawit",
       baseScore: 20,
-      tags: ["pos:7", "lantai:6", "gdrive:1rPBsyOTf8FBT1IYOj0TZCvzIb6GWB1F9"],
+      tags: ["pos:7", "lantai:6", "minio:quiz/pos7/soal_3_prabowo_nyawit.jpg", "media:/images/quiz/pos7/soal_3_prabowo_nyawit.jpg"],
     },
     {
       category: "Fun Pos",
@@ -846,7 +846,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "monyet",
       explanation: "Jawab: monyet",
       baseScore: 20,
-      tags: ["pos:7", "lantai:6", "gdrive:1a6p4BbTwVNhLoulpsjlf7w7e6Hi6vm59"],
+      tags: ["pos:7", "lantai:6", "minio:quiz/pos7/soal_4_monyet_saudara.jpg", "media:/images/quiz/pos7/soal_4_monyet_saudara.jpg"],
     },
     {
       category: "Fun Pos",
@@ -857,7 +857,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Sapi, mohhh",
       explanation: "Jawab: Sapi, mohhh",
       baseScore: 20,
-      tags: ["pos:7", "lantai:6", "gdrive:1K_JfdcvOdBC-rmtSmCUdyzH_OMzgE7xH"],
+      tags: ["pos:7", "lantai:6", "minio:quiz/pos7/soal_5_suara_ajeng_febri.jpg", "media:/images/quiz/pos7/soal_5_suara_ajeng_febri.jpg"],
     },
 
     // --- POS 8: Ingat Aku (Tebak Posisi) Gambar ada di sebelah mana atau lantai berapa ---
@@ -870,7 +870,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Lantai 2 amphiteater",
       explanation: "jawaban Lantai 2 amphiteater",
       baseScore: 20,
-      tags: ["pos:8", "lantai:6", "gdrive:1Yyxf7m4tb83xOGe0IH4q72t4lSQsG2yW"],
+      tags: ["pos:8", "lantai:6", "minio:quiz/pos8/soal_1_amphiteater_lt2.jpg", "media:/images/quiz/pos8/soal_1_amphiteater_lt2.jpg"],
     },
     {
       category: "Ingat Aku - Posisi",
@@ -881,7 +881,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Lantai 4",
       explanation: "jawaban Lantai 4",
       baseScore: 20,
-      tags: ["pos:8", "lantai:6", "gdrive:1alaoLPnHhU-nbpyGPt2UtsV0O9s7P26E"],
+      tags: ["pos:8", "lantai:6", "minio:quiz/pos8/soal_2_student_hub_lt4.jpg", "media:/images/quiz/pos8/soal_2_student_hub_lt4.jpg"],
     },
     {
       category: "Ingat Aku - Posisi",
@@ -892,7 +892,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Lantai 1",
       explanation: "jawaban Lantai  1",
       baseScore: 20,
-      tags: ["pos:8", "lantai:6", "gdrive:1AeC5fxt5jaWec-QrNY0XItnka6K3HW-Q"],
+      tags: ["pos:8", "lantai:6", "minio:quiz/pos8/soal_3_lobby_lt1.jpg", "media:/images/quiz/pos8/soal_3_lobby_lt1.jpg"],
     },
     {
       category: "Ingat Aku - Posisi",
@@ -903,7 +903,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Lantai 4",
       explanation: "jawaban Lantai 4",
       baseScore: 20,
-      tags: ["pos:8", "lantai:6", "gdrive:1Ksd55wXqi0DsP7hzjZMmJToKdiFwOSuU"],
+      tags: ["pos:8", "lantai:6", "minio:quiz/pos8/soal_4_kolaborasi_lt4.jpg", "media:/images/quiz/pos8/soal_4_kolaborasi_lt4.jpg"],
     },
     {
       category: "Ingat Aku - Posisi",
@@ -914,7 +914,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Lantai 3",
       explanation: "jawaban Lantai 3",
       baseScore: 20,
-      tags: ["pos:8", "lantai:6", "gdrive:1wRZ-7UQjUqCKdsBCd8mgN3aIgnEyyHLb"],
+      tags: ["pos:8", "lantai:6", "minio:quiz/pos8/soal_5_fti_lab_lt3.jpg", "media:/images/quiz/pos8/soal_5_fti_lab_lt3.jpg"],
     },
 
     // --- POS 9: Ingat Aku (Tebak Tulisan) Teks Gambar di Blur ---
@@ -927,7 +927,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Internet Center",
       explanation: "Jawab: Internet Center",
       baseScore: 20,
-      tags: ["pos:9", "lantai:4", "gdrive:1S0ZOeETjD1l9xPpoE6KnvIC-_L32vlzL"],
+      tags: ["pos:9", "lantai:4", "minio:quiz/pos9/soal_1_internet_center.png", "media:/images/quiz/pos9/soal_1_internet_center.png"],
     },
     {
       category: "Ingat Aku - Tulisan",
@@ -938,7 +938,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Creative Corner",
       explanation: "Jawab: Creative Corner",
       baseScore: 20,
-      tags: ["pos:9", "lantai:4", "gdrive:1yJ9kD3DW9WMNNOaea8RKCVixVGANmQEO"],
+      tags: ["pos:9", "lantai:4", "minio:quiz/pos9/soal_2_creative_corner.png", "media:/images/quiz/pos9/soal_2_creative_corner.png"],
     },
     {
       category: "Ingat Aku - Tulisan",
@@ -949,7 +949,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Your Bright Future Starts Here",
       explanation: "Jawab: Your Bright Future Starts Here",
       baseScore: 20,
-      tags: ["pos:9", "lantai:4", "gdrive:1J1v_rdHQm7aw_YDemSLYiuJMAaecED4P"],
+      tags: ["pos:9", "lantai:4", "minio:quiz/pos9/soal_3_bright_future.png", "media:/images/quiz/pos9/soal_3_bright_future.png"],
     },
     {
       category: "Ingat Aku - Tulisan",
@@ -960,7 +960,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "Build Ur Own Startup",
       explanation: "Jawab: Build Ur Own Startup",
       baseScore: 20,
-      tags: ["pos:9", "lantai:4", "gdrive:1QDVanLV67fUH8cRn769xUdYPo7ce17bY"],
+      tags: ["pos:9", "lantai:4", "minio:quiz/pos9/soal_4_build_startup.png", "media:/images/quiz/pos9/soal_4_build_startup.png"],
     },
     {
       category: "Ingat Aku - Tulisan",
@@ -976,7 +976,7 @@ export async function seedOfficialQuizDatabase() {
       correctAnswer: "1. KH. M Hasyim Asyaari, 2. KH. Bisri Syansuri, 3. KH. Abdul Wahab Chasbullah",
       explanation: "Jawab: 1. KH. M Hasyim Asyaari\n2. KH. Bisri Syansuri\n3. KH. Abdul Wahab Chasbullah",
       baseScore: 20,
-      tags: ["pos:9", "lantai:4", "gdrive:1Q3Cht2fn4Sn9VxArIEnXH8e3HGwI7t9y"],
+      tags: ["pos:9", "lantai:4", "minio:quiz/pos9/soal_5_tokoh_muassis_nu.png", "media:/images/quiz/pos9/soal_5_tokoh_muassis_nu.png"],
     },
   ];
 

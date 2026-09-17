@@ -26,6 +26,8 @@ import { fgdRoutes } from "./routes/fgd";
 import { ormawaRoutes } from "./routes/ormawa";
 import { reflectionRoutes } from "./routes/reflections";
 import { systemRoutes } from "./routes/system";
+import { storageRoutes } from "./routes/storage";
+import { ensureBucketExists } from "./storage/minio";
 import { realtimeRoutes, setGlobalWsApp } from "./realtime";
 import { swagger } from "@elysiajs/swagger";
 
@@ -150,6 +152,7 @@ const app = new Elysia()
   .use(ormawaRoutes)
   .use(reflectionRoutes)
   .use(systemRoutes)
+  .use(storageRoutes)
 
   // Favicon handler to prevent 404 noise
   .get("/favicon.ico", ({ set }) => {
@@ -216,6 +219,11 @@ const app = new Elysia()
     console.log(`🚀 GENIUS 2026 Backend running at http://${serverInstance.hostname}:${serverInstance.port}`);
     console.log(`⚡ WebSocket Server listening on ws://${serverInstance.hostname}:${serverInstance.port}/ws`);
     console.log(`📊 Health check available at http://${serverInstance.hostname}:${serverInstance.port}/api/health`);
+    
+    // Background ensure MinIO bucket ready
+    ensureBucketExists().catch((err) => {
+      console.warn("⚠️ MinIO storage initialization skipped (not ready yet):", err.message);
+    });
   });
 
 setGlobalWsApp(app);

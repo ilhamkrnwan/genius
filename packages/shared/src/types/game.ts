@@ -75,6 +75,9 @@ export interface TebakPosisiItem {
   id: string;
   prompt: string;
   imageUrl?: string;
+  mediaUrl?: string;
+  minioKey?: string;
+  /** @deprecated Gunakan imageUrl atau mediaUrl berbasis MinIO */
   gdriveId?: string;
   imageAlt: string;
   options: string[];
@@ -93,6 +96,9 @@ export interface TebakGambarItem {
   id: string;
   imageIcon?: string;
   imageUrl?: string;
+  mediaUrl?: string;
+  minioKey?: string;
+  /** @deprecated Gunakan imageUrl atau mediaUrl berbasis MinIO */
   gdriveId?: string;
   imageAlt?: string;
   prompt: string;
