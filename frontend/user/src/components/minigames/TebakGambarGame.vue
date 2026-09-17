@@ -55,8 +55,23 @@ const isSelectedCorrect = computed(() => {
 const resolvedMediaUrl = computed(() => {
   if (!currentItem.value) return null;
   const item = currentItem.value as any;
-  return item.imageUrl || item.mediaUrl || (item.minioKey ? `/images/${item.minioKey}` : null);
+  const raw = item.imageUrl || item.mediaUrl || (item.minioKey ? `/images/${item.minioKey}` : null);
+  if (!raw) return null;
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  if (raw.startsWith('quiz/')) return `/images/${raw}`;
+  if (raw.startsWith('/')) return raw;
+  return `/images/${raw}`;
 });
+
+function handleImageError(e: Event) {
+  const target = e.target as HTMLImageElement;
+  if (!target) return;
+  const item = currentItem.value as any;
+  const key = item?.minioKey || (item?.imageUrl?.includes('quiz/') ? item.imageUrl.replace(/^\/images\//, '') : null);
+  if (key && !target.src.includes(':9000')) {
+    target.src = `http://localhost:9000/genius-assets/${key}`;
+  }
+}
 
 function extractGdriveEmbed(input?: string): string | null {
   if (!input) return null;
@@ -146,6 +161,7 @@ const handleNextRound = () => {
             <img
               v-if="resolvedMediaUrl"
               :src="resolvedMediaUrl"
+              @error="handleImageError"
               :alt="currentItem.imageAlt || 'Visual Tantangan'"
               class="w-full h-full object-cover object-center filter brightness-[0.95]"
               loading="lazy"

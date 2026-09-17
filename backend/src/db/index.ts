@@ -127,6 +127,7 @@ if (usePglite) {
     max: Number(process.env.DB_MAX_CONNECTIONS || 25),
     idle_timeout: 30,
     connect_timeout: 10,
+    onnotice: () => {},
   });
 
   // Docker/PostgreSQL also needs the same additive compatibility migration.

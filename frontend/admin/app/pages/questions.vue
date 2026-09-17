@@ -363,10 +363,17 @@
             <div v-if="form.mediaUrl" class="mt-2 flex items-center gap-2 p-1.5 bg-[#120b06] rounded border border-[#523e2b]">
               <img
                 v-if="!form.mediaUrl.endsWith('.mp3')"
-                :src="form.mediaUrl"
+                :src="previewImageUrl"
+                @error="handleImagePreviewError"
                 class="w-12 h-12 object-cover rounded border border-[#8b6f4e]"
                 alt="Preview"
               />
+              <audio
+                v-else
+                controls
+                :src="previewImageUrl"
+                class="h-8 max-w-[140px]"
+              ></audio>
               <div class="flex-1 overflow-hidden">
                 <p class="text-[10px] text-gray-300 font-mono truncate">{{ form.mediaUrl }}</p>
                 <p class="text-[9px] text-emerald-400">✅ Terhubung ke Media Storage</p>
@@ -656,6 +663,44 @@ const form = ref({
   tags: [] as string[],
 });
 
+const previewImageUrl = computed(() => {
+  if (!form.value.mediaUrl) return "";
+  const raw = form.value.mediaUrl.trim();
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    return raw;
+  }
+  if (raw.startsWith("quiz/")) {
+    return `/images/${raw}`;
+  }
+  if (raw.startsWith("/images/")) {
+    return raw;
+  }
+  if (raw.startsWith("/")) {
+    return raw;
+  }
+  return `/images/${raw}`;
+});
+
+function handleImagePreviewError(e: Event) {
+  const target = e.target as HTMLImageElement;
+  if (!target) return;
+  const raw = form.value.mediaUrl?.trim() || "";
+  if (!raw) return;
+
+  // Fallback 1: Jika gagal dari path lokal Nuxt, coba MinIO direct storage
+  if (!target.src.includes(":9000")) {
+    const cleanKey = raw.replace(/^\/+/, "").replace(/^images\//, "");
+    target.src = `http://localhost:9000/genius-assets/${cleanKey}`;
+    return;
+  }
+
+  // Fallback 2: Jika gagal dari MinIO, coba path /images/pos... (tanpa prefix quiz)
+  if (target.src.includes("quiz/")) {
+    const withoutQuiz = raw.replace(/^quiz\//, "").replace(/^\/images\/quiz\//, "");
+    target.src = `/images/${withoutQuiz}`;
+  }
+}
+
 function getMediaTag(q: any): { type: "minio" | "media" | "gdrive"; url: string } | null {
   if (!q.tags || !Array.isArray(q.tags)) return null;
   const minioTag = q.tags.find((t: string) => typeof t === "string" && t.startsWith("minio:"));
@@ -779,13 +824,15 @@ function openCreateModal() {
 function openEditModal(q: any) {
   isEditing.value = true;
   const existingTags = Array.isArray(q.tags) ? [...q.tags] : [];
-  const foundMedia = existingTags.find((t: string) => typeof t === "string" && (t.startsWith("media:") || t.startsWith("minio:")));
-  const foundGdrive = existingTags.find((t: string) => typeof t === "string" && t.startsWith("gdrive:"));
+  const mediaTag = existingTags.find((t: string) => typeof t === "string" && t.startsWith("media:"));
   const minioTag = existingTags.find((t: string) => typeof t === "string" && t.startsWith("minio:"));
+  const foundGdrive = existingTags.find((t: string) => typeof t === "string" && t.startsWith("gdrive:"));
 
   let mediaUrl = "";
-  if (foundMedia) {
-    mediaUrl = foundMedia.startsWith("media:") ? foundMedia.replace("media:", "") : foundMedia.replace("minio:", "");
+  if (mediaTag) {
+    mediaUrl = mediaTag.replace("media:", "");
+  } else if (minioTag) {
+    mediaUrl = minioTag.replace("minio:", "");
   }
 
   form.value = {
