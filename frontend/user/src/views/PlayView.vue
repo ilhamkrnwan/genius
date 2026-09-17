@@ -36,9 +36,12 @@ const activeTeamSessionFloor = ref<number | null>(null);
 
 // Full body character image from /mascots folder (clean transparent PNGs)
 const characterFullImage = computed(() => {
+  const g = (gameStore.participant.gender || '').toUpperCase();
   const isFemale =
-    gameStore.participant.avatar === 'character_cewek' ||
-    gameStore.participant.gender === 'perempuan';
+    g === 'FEMALE' ||
+    g === 'P' ||
+    g === 'PEREMPUAN' ||
+    gameStore.participant.avatar === 'character_cewek';
   return isFemale
     ? '/mascots/character-cewek.avif'
     : '/mascots/character-cowok.avif';

@@ -51,6 +51,14 @@ function getFacultyByProdi(prodi?: string): string {
   return "Universitas Nahdlatul Ulama Yogyakarta";
 }
 
+const HOUSE_NAMES = [
+  "Jabu", "Bolon", "Gadang", "Limas", "Lontik", "Kajang", "Bubung", "Panggung", "Nuwo", "Baduy",
+  "Gudang", "Bapang", "Joglo", "Kampung", "Panggang", "Jompongan", "Jolopong", "Julang", "Tagog", "Badak",
+  "Capit", "Jubleg", "Tikel", "Baresan", "Crocogan", "Tengger", "Bale", "Lumbung", "Uma", "Omo",
+  "Sebua", "Hada", "Betang", "Lamin", "Baloy", "Banjar", "Tambi", "Laika", "Boyang", "Buton",
+  "Lego", "Lopo", "Mbaru", "Sao", "Musalaki", "Uma - Sumba", "Honai", "Lopo - Timor", "Baileo", "Sasadu",
+];
+
 async function seed() {
   console.log("🌱 Starting GENIUS 2026 Database Seeding (Clean Slate)...");
 
@@ -79,7 +87,6 @@ async function seed() {
   // Default Passwords
   const adminPassword = await hashPassword("admin2026");
   const defaultPassword = await hashPassword("genius2026");
-  const buddyPassword = await hashPassword("buddy2026");
 
   // ============================================================
   // 2. SEED ADMIN USER
@@ -98,15 +105,21 @@ async function seed() {
   console.log("  ✅ Admin created: username 'admin', password 'admin2026'");
 
   // ============================================================
-  // 3. SEED 50 OFFICIAL BUDDIES (buddy01 - buddy50)
+  // 3. SEED 50 OFFICIAL BUDDIES (NIM dari buddy.csv, Password: nama kelompok)
   // ============================================================
-  console.log("👥 [3/8] Creating 50 Official Buddies (buddy01 - buddy50)...");
-  const buddyInserts = RAW_BUDDY_DATA.slice(0, 50).map((b, idx) => {
+  console.log("👥 [3/8] Creating 50 Official Buddies (NIM as username, group password)...");
+  const buddyInserts = [];
+  for (let idx = 0; idx < 50; idx++) {
+    const b = RAW_BUDDY_DATA[idx];
     const padNum = String(idx + 1).padStart(2, "0");
-    const username = `buddy${padNum}`;
-    return {
-      username,
-      passwordHash: buddyPassword,
+    const houseName = HOUSE_NAMES[idx] || `Regu ${idx + 1}`;
+    const cleanHouseName = houseName.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const rawBuddyPassword = `${cleanHouseName}${padNum}`;
+    const buddyPasswordHash = await hashPassword(rawBuddyPassword);
+
+    buddyInserts.push({
+      username: b.nim,
+      passwordHash: buddyPasswordHash,
       fullName: b.fullName,
       role: "BUDDY" as const,
       status: "ACTIVE" as const,
@@ -117,11 +130,11 @@ async function seed() {
       characterTitle: "Pemandu Mahasiswa",
       characterTier: 2,
       avatarUrl: b.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png",
-    };
-  });
+    });
+  }
 
   const createdBuddies = await db.insert(users).values(buddyInserts).returning();
-  console.log(`  ✅ ${createdBuddies.length} Official Buddies registered with username buddy01 - buddy50 (Password: buddy2026)`);
+  console.log(`  ✅ ${createdBuddies.length} Official Buddies registered with NIM as username & group password!`);
 
   // ============================================================
   // 4. SEED 403 PARTICIPANTS DARI maba_2026.csv
@@ -139,6 +152,7 @@ async function seed() {
   const fnIdx = mabaHeaders.indexOf("full_name");
   const gIdx = mabaHeaders.indexOf("gender");
   const pIdx = mabaHeaders.indexOf("prodi");
+  const pwIdx = mabaHeaders.indexOf("password_hash");
 
   const parsedMaba = mabaLines.slice(1).map((line) => {
     const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map((c) =>
@@ -146,30 +160,42 @@ async function seed() {
     );
     const rawProdi = pIdx !== -1 ? cols[pIdx] : undefined;
     const gender = (cols[gIdx]?.toUpperCase() === "FEMALE" ? "FEMALE" : "MALE") as "MALE" | "FEMALE";
+    const rawPw = pwIdx !== -1 ? cols[pwIdx] : "genius2026";
+    const cleanPw = rawPw ? rawPw.toLowerCase().replace(/\s+/g, "") : "genius2026";
     return {
       username: cols[uIdx],
       fullName: cols[fnIdx],
       gender,
+      cleanPw,
       prodi: rawProdi,
       faculty: getFacultyByProdi(rawProdi),
     };
   });
 
-  const participantInserts = parsedMaba.map((p) => ({
-    username: p.username,
-    passwordHash: defaultPassword,
-    fullName: p.fullName,
-    role: "PARTICIPANT" as const,
-    status: "ACTIVE" as const,
-    gender: p.gender,
-    faculty: p.faculty,
-    prodi: p.prodi,
-    characterClass: "CYBER_KNIGHT",
-    characterTitle: "Novice Adventurer",
-    characterTier: 1,
-    unlockedTitles: ["Novice Adventurer"],
-    avatarUrl: p.gender === "FEMALE" ? "/character-cewek.avif" : "/character-cowok.avif",
-  }));
+  const mabaHashCache = new Map<string, string>();
+  const participantInserts = [];
+  for (const p of parsedMaba) {
+    let pwHash = mabaHashCache.get(p.cleanPw);
+    if (!pwHash) {
+      pwHash = await Bun.password.hash(p.cleanPw, { algorithm: "bcrypt", cost: 10 });
+      mabaHashCache.set(p.cleanPw, pwHash);
+    }
+    participantInserts.push({
+      username: p.username,
+      passwordHash: pwHash,
+      fullName: p.fullName,
+      role: "PARTICIPANT" as const,
+      status: "ACTIVE" as const,
+      gender: p.gender,
+      faculty: p.faculty,
+      prodi: p.prodi,
+      characterClass: "CYBER_KNIGHT",
+      characterTitle: "Novice Adventurer",
+      characterTier: 1,
+      unlockedTitles: ["Novice Adventurer"],
+      avatarUrl: p.gender === "FEMALE" ? "/character-cewek.avif" : "/character-cowok.avif",
+    });
+  }
 
   const createdParticipants = [];
   const batchSize = 100;
@@ -178,7 +204,7 @@ async function seed() {
     const res = await db.insert(users).values(batch).returning();
     createdParticipants.push(...res);
   }
-  console.log(`  ✅ ${createdParticipants.length} Official Participants registered from CSV (Password: genius2026)`);
+  console.log(`  ✅ ${createdParticipants.length} Official Participants registered from CSV (Password: Tanggal Lahir lowercase tanpa spasi)`);
 
   // ============================================================
   // 5. SEED MASTER DATA: Floors & 18 Locations
@@ -453,25 +479,14 @@ async function seed() {
   // ============================================================
   console.log("🛡️ [7/8] Creating 50 Official Genius Teams (1 Primary Buddy, No Captains, 403 MABA)...");
 
-  const houseNames = [
-    "Jabu", "Bolon", "Gadang", "Limas", "Lontik", "Kajang", "Bubung", "Panggung", "Nuwo", "Baduy",
-    "Gudang", "Bapang", "Joglo", "Kampung", "Panggang", "Jompongan", "Jolopong", "Julang", "Tagog", "Badak",
-    "Capit", "Jubleg", "Tikel", "Baresan", "Crocogan", "Tengger", "Bale", "Lumbung", "Uma", "Omo",
-    "Sebua", "Hada", "Betang", "Lamin", "Baloy", "Banjar", "Tambi", "Laika", "Boyang", "Buton",
-    "Lego", "Lopo", "Mbaru", "Sao", "Musalaki", "Uma - Sumba", "Honai", "Lopo - Timor", "Baileo", "Sasadu",
-  ];
-
   // Identifikasi mahasiswa khusus
   const tazkiyah = createdParticipants.find((p) => p.fullName.toUpperCase().includes("TAZKIYAH NUR ASHIFA"));
   const vina = createdParticipants.find((p) => p.fullName.toUpperCase().includes("VINA SUGIARTI"));
 
-  // Sort buddies by username (buddy01 s/d buddy50)
-  createdBuddies.sort((a, b) => a.username.localeCompare(b.username));
-
   const createdTeams = [];
   for (let i = 0; i < 50; i++) {
     const code = `GENIUS-${String(i + 1).padStart(2, "0")}`;
-    const name = houseNames[i] || `Regu ${i + 1}`;
+    const name = HOUSE_NAMES[i] || `Regu ${i + 1}`;
 
     const [team] = await db
       .insert(teams)
@@ -900,8 +915,8 @@ async function seed() {
   console.log("🎉 GENIUS 2026 DATABASE SEEDING COMPLETED SUCCESSFULLY!");
   console.log("========================================================");
   console.log("👤 Admin       : admin (password: admin2026)");
-  console.log("👥 Buddies (50): buddy01 s/d buddy50 (password: buddy2026 / genius2026)");
-  console.log("🎓 MABA (403)  : Sesuai maba_2026.csv (password: genius2026)");
+  console.log("👥 Buddies (50): Sesuai NIM buddy.csv (password: [kelompok][nomor], contoh: jabu01)");
+  console.log("🎓 MABA (403)  : Sesuai maba_2026.csv (password: tanggal lahir lowercase tanpa spasi, contoh: 26mei2006)");
   console.log("🛡️ Kelompok (50): Genius 01 s/d Genius 50 (Jabu s/d Sasadu, 1 Primary Buddy/kelompok, No Captain)");
   console.log("🎪 Ormawa (19) : 19 Official Booths (Lantai 3, 4, 5)");
   console.log("🧩 Kuis Resmi  : 9 Pos di 6 Lantai (51 Soal, 100 Poin/pos)");

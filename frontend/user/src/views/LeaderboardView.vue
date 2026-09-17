@@ -12,6 +12,8 @@ import {
   PhSpeakerSimpleSlash,
   PhCaretDown,
   PhCaretUp,
+  PhCaretLeft,
+  PhCaretRight,
   PhMapTrifold,
   PhIdentificationBadge,
   PhCalendarCheck,
@@ -60,7 +62,7 @@ async function refreshLeaderboard() {
   safeSound(() => soundEngine.playClick?.());
   try {
     gameStore.syncWithServer();
-    const res = await api.getLeaderboard(50);
+    const res = await api.getLeaderboard(500);
     if (res.success && res.data) {
       liveLeaderboard.value = res.data;
       const myEntry = res.data.participantLeaderboard?.find(
@@ -94,7 +96,7 @@ onMounted(async () => {
   gameStore.syncWithServer();
 
   try {
-    const res = await api.getLeaderboard(50);
+    const res = await api.getLeaderboard(500);
     if (res.success && res.data) {
       liveLeaderboard.value = res.data;
       const myEntry = res.data.participantLeaderboard?.find(
@@ -122,6 +124,9 @@ watch(activeTab, () => {
 });
 
 const getAvatarImage = (avatarId: string) => {
+  if (avatarId && (avatarId.startsWith('/') || avatarId.startsWith('http'))) {
+    return avatarId;
+  }
   const opt = AVATAR_OPTIONS.find((a) => a.id === avatarId);
   return opt ? opt.avatarImage : '/character-cowok-avatar.png';
 };
@@ -129,21 +134,28 @@ const getAvatarImage = (avatarId: string) => {
 // Compute live individual leaderboard including current user from real database
 const individualList = computed<LeaderboardUser[]>(() => {
   if (liveLeaderboard.value?.participantLeaderboard?.length > 0) {
-    const list: LeaderboardUser[] = liveLeaderboard.value.participantLeaderboard.map((item: any, index: number) => ({
-      id: item.participantId,
-      rank: item.rank || index + 1,
-      name: item.participantName || item.username,
-      nim: item.username,
-      faculty: 'UNU Yogyakarta',
-      prodi: item.characterClass || 'Mahasiswa Baru',
-      avatar: item.gender === 'FEMALE' ? 'character_cewek' : 'character_cowok',
-      totalXp: item.totalScore || 0,
-      stampsCount: Math.min(item.transactionCount || 0, 9),
-      completedFloors: Math.min(Math.floor((item.transactionCount || 0) / 1.5), 6),
-      isCurrentUser: item.username === gameStore.participant?.nim || item.participantId === gameStore.participant?.id,
-      groupId: item.teamId || 'group-01',
-      groupName: item.teamName || 'Genius 01',
-    }));
+    const list: LeaderboardUser[] = liveLeaderboard.value.participantLeaderboard.map((item: any, index: number) => {
+      const isCurrentUser = item.username === gameStore.participant?.nim || item.participantId === gameStore.participant?.id;
+      return {
+        id: item.participantId,
+        rank: item.rank || index + 1,
+        name: item.participantName || item.username,
+        nim: item.username,
+        faculty: item.faculty || '-',
+        prodi: item.prodi || item.characterClass || '-',
+        avatar: item.avatarUrl ? item.avatarUrl : (item.gender === 'FEMALE' ? 'character_cewek' : 'character_cowok'),
+        totalXp: item.totalScore || 0,
+        stampsCount: isCurrentUser
+          ? (gameStore.getTotalStampsCount?.() || 0)
+          : Math.min(item.stampsCount != null ? Number(item.stampsCount) : (item.transactionCount || 0), 9),
+        completedFloors: isCurrentUser
+          ? (gameStore.getCompletedFloorsCount?.() || 0)
+          : Math.min(Math.floor((item.stampsCount != null ? Number(item.stampsCount) : (item.transactionCount || 0)) / 1.5), 6),
+        isCurrentUser,
+        groupId: item.teamId || '',
+        groupName: item.teamName || 'Regu Maba',
+      };
+    });
 
     const hasCurrentUser = list.some((u) => u.isCurrentUser);
     if (!hasCurrentUser && gameStore.participant?.nim) {
@@ -152,15 +164,15 @@ const individualList = computed<LeaderboardUser[]>(() => {
         rank: list.length + 1,
         name: `${gameStore.participant.name || 'Mahasiswa Baru'} (Kamu)`,
         nim: gameStore.participant.nim,
-        faculty: gameStore.participant.faculty || 'UNU Yogyakarta',
-        prodi: gameStore.participant.prodi || 'Informatika',
+        faculty: gameStore.participant.faculty || '-',
+        prodi: gameStore.participant.prodi || '-',
         avatar: gameStore.participant.avatar || 'character_cowok',
         totalXp: gameStore.participant.totalXp || 0,
         stampsCount: gameStore.getTotalStampsCount?.() || 0,
         completedFloors: gameStore.getCompletedFloorsCount?.() || 0,
         isCurrentUser: true,
-        groupId: gameStore.participant.groupId || 'group-01',
-        groupName: gameStore.participant.groupName || 'Genius 01',
+        groupId: gameStore.participant.groupId || '',
+        groupName: gameStore.participant.groupName || 'Regu Maba',
       });
     }
 
@@ -175,15 +187,15 @@ const individualList = computed<LeaderboardUser[]>(() => {
         rank: 1,
         name: `${gameStore.participant?.name || 'Mahasiswa Baru'} (Kamu)`,
         nim: gameStore.participant?.nim || '',
-        faculty: gameStore.participant?.faculty || 'UNU Yogyakarta',
-        prodi: gameStore.participant?.prodi || 'Informatika',
+        faculty: gameStore.participant?.faculty || '-',
+        prodi: gameStore.participant?.prodi || '-',
         avatar: gameStore.participant?.avatar || 'character_cowok',
         totalXp: gameStore.participant?.totalXp || 0,
         stampsCount: gameStore.getTotalStampsCount?.() || 0,
         completedFloors: gameStore.getCompletedFloorsCount?.() || 0,
         isCurrentUser: true,
-        groupId: gameStore.participant?.groupId || 'group-01',
-        groupName: gameStore.participant?.groupName || 'Genius 01',
+        groupId: gameStore.participant?.groupId || '',
+        groupName: gameStore.participant?.groupName || 'Regu Maba',
       },
     ];
   }
@@ -202,12 +214,35 @@ const filteredIndividuals = computed(() => {
   );
 });
 
+const currentPage = ref(1);
+const pageSize = ref(20);
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredIndividuals.value.length / pageSize.value)));
+const paginatedIndividuals = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  return filteredIndividuals.value.slice(start, start + pageSize.value);
+});
+
+watch([searchQuery, activeTab], () => {
+  currentPage.value = 1;
+});
+
+function changePage(delta: number) {
+  const next = currentPage.value + delta;
+  if (next >= 1 && next <= totalPages.value) {
+    currentPage.value = next;
+    safeSound(() => soundEngine.playClick?.());
+    nextTick(() => {
+      staggerFadeUp('.lb-item-card', 0.02);
+    });
+  }
+}
+
 // Compute live group leaderboard from real database
 const groupList = computed<LeaderboardGroup[]>(() => {
   if (liveLeaderboard.value?.teamLeaderboard?.length > 0) {
     return liveLeaderboard.value.teamLeaderboard.map((team: any, index: number) => {
-      const myTeamName = gameStore.participant?.groupName || 'Genius 03';
-      const isMyTeam = team.teamName === myTeamName;
+      const myTeamName = gameStore.participant?.groupName || '';
+      const isMyTeam = Boolean(myTeamName) && (team.teamName === myTeamName || (team.teamCode && myTeamName.includes(team.teamCode)));
 
       return {
         id: team.teamId,
@@ -225,7 +260,7 @@ const groupList = computed<LeaderboardGroup[]>(() => {
                 totalXp: gameStore.participant?.totalXp || 0,
                 stampsCount: gameStore.getTotalStampsCount?.() || 0,
                 isCurrentUser: true,
-                prodi: gameStore.participant?.prodi || 'Informatika',
+                prodi: gameStore.participant?.prodi || '-',
               },
             ]
           : [
@@ -415,7 +450,7 @@ const currentUserRankInfo = computed(() => {
         <!-- List Cards -->
         <div class="space-y-1.5 w-full max-h-[48vh] sm:max-h-[52vh] overflow-y-auto pr-0.5">
           <div
-            v-for="user in filteredIndividuals"
+            v-for="user in paginatedIndividuals"
             :key="user.id"
             :class="[
               'lb-item-card p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-2.5 transition-all w-full shadow',
@@ -495,6 +530,39 @@ const currentUserRankInfo = computed(() => {
             class="p-6 text-center bg-[#19110a]/90 border border-[#5a3a18] rounded-xl font-sans text-xs text-[#a08060]"
           >
             Tidak ada peserta yang cocok.
+          </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div
+          v-if="filteredIndividuals.length > pageSize"
+          class="flex items-center justify-between gap-2 px-1 pt-1 font-pixel text-[9px] sm:text-[10px] text-[#c4956a]"
+        >
+          <span>
+            {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, filteredIndividuals.length) }} dari {{ filteredIndividuals.length }} Maba
+          </span>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              :disabled="currentPage <= 1"
+              @click="changePage(-1)"
+              class="px-2 py-1 rounded-lg bg-[#19110a]/95 border border-[#5a3a18] text-[#f0d060] hover:border-[#f0d060] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <PhCaretLeft :size="12" weight="bold" />
+              <span>Prev</span>
+            </button>
+            <span class="px-2 py-0.5 bg-[#120a05] border border-[#f0d060]/50 rounded text-[#fef08a]">
+              {{ currentPage }}/{{ totalPages }}
+            </span>
+            <button
+              type="button"
+              :disabled="currentPage >= totalPages"
+              @click="changePage(1)"
+              class="px-2 py-1 rounded-lg bg-[#19110a]/95 border border-[#5a3a18] text-[#f0d060] hover:border-[#f0d060] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <span>Next</span>
+              <PhCaretRight :size="12" weight="bold" />
+            </button>
           </div>
         </div>
       </div>
@@ -620,7 +688,7 @@ const currentUserRankInfo = computed(() => {
                     {{ member.totalXp }} XP
                   </div>
                   <div class="font-sans text-[8.5px] text-[#7ec850]">
-                    {{ member.stampsCount }} Stempel
+                    {{ member.stampsCount }}/9 Stempel
                   </div>
                 </div>
               </div>

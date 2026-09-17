@@ -4,6 +4,7 @@ import { RouterView, useRoute, useRouter } from 'vue-router';
 import MabaAuthModal from '@/components/auth/MabaAuthModal.vue';
 import MobileBottomNav from '@/components/layout/MobileBottomNav.vue';
 import { useGameStore } from '@/store/gameStore';
+import { initUserRealtime } from '@/lib/realtime';
 
 const route = useRoute();
 const router = useRouter();
@@ -12,9 +13,14 @@ const gameStore = useGameStore();
 const needsLogin = ref(false);
 const viewVersion = ref(0);
 const requestLogin = () => { needsLogin.value = true; };
+let syncInterval: ReturnType<typeof setInterval> | null = null;
+
 function resumePage() {
   needsLogin.value = false;
   viewVersion.value += 1;
+  initUserRealtime();
+  gameStore.syncWithServer();
+  gameStore.syncAttendanceFromServer();
 }
 function handleDismissLogin() {
   needsLogin.value = false;
@@ -24,9 +30,18 @@ function handleDismissLogin() {
 }
 onMounted(() => {
   window.addEventListener('genius:auth-required', requestLogin);
+  initUserRealtime();
   gameStore.syncWithServer();
+  gameStore.syncAttendanceFromServer();
+  syncInterval = setInterval(() => {
+    gameStore.syncWithServer();
+    gameStore.syncAttendanceFromServer();
+  }, 12000);
 });
-onUnmounted(() => window.removeEventListener('genius:auth-required', requestLogin));
+onUnmounted(() => {
+  window.removeEventListener('genius:auth-required', requestLogin);
+  if (syncInterval) clearInterval(syncInterval);
+});
 
 // Hide bottom nav on full-screen game views or intros to preserve game immersion
 const hideBottomNav = computed(() => {

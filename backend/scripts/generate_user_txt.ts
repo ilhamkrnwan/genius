@@ -35,18 +35,31 @@ async function main() {
   out += "Nama       : Administrator GENIUS 2026\n\n";
 
   out += "================================================================================\n";
-  out += "2. AKUN GAME MASTER BUDDY (10 BUDDY — PENILAIAN FGD & PRESENSI REGU)\n";
+  out += "2. AKUN GAME MASTER BUDDY (50 BUDDY — PENILAIAN FGD & PRESENSI REGU)\n";
   out += "================================================================================\n";
   out += "Role       : BUDDY\n";
   out += "Portal URL : http://localhost:3002/login ➔ /buddy\n";
-  out += "Password   : genius2026\n\n";
+  out += "Keterangan : Username menggunakan NIM, Password menggunakan nama kelompok (e.g. jabu01)\n\n";
 
-  const buddies = allUsers.filter((u) => u.role === "BUDDY").sort((a, b) => a.username.localeCompare(b.username));
+  const buddies = allUsers.filter((u) => u.role === "BUDDY");
+  // Sort buddies by assigned team code (GENIUS-01 s/d GENIUS-50)
+  buddies.sort((a, b) => {
+    const memA = allMembers.find((m) => m.userId === a.id);
+    const teamA = memA ? allTeams.find((t) => t.id === memA.teamId) : null;
+    const memB = allMembers.find((m) => m.userId === b.id);
+    const teamB = memB ? allTeams.find((t) => t.id === memB.teamId) : null;
+    return (teamA?.code || "").localeCompare(teamB?.code || "");
+  });
+
   buddies.forEach((b, idx) => {
     const teamMem = allMembers.find((m) => m.userId === b.id);
     const team = teamMem ? allTeams.find((t) => t.id === teamMem.teamId) : null;
-    const teamStr = team ? team.name + " (" + team.code + ")" : "Regu Pendamping";
-    out += `[${idx + 1}] NIM/Username : ${b.username} | Password: genius2026\n`;
+    const teamStr = team ? `${team.name} (${team.code})` : "Regu Pendamping";
+    const padNum = team ? team.code.replace("GENIUS-", "").trim() : String(idx + 1).padStart(2, "0");
+    const cleanHouseName = team ? team.name.toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+    const buddyPassword = `${cleanHouseName}${padNum}`;
+
+    out += `[${idx + 1}] NIM/Username : ${b.username} | Password: ${buddyPassword}\n`;
     out += `    Nama Lengkap : ${b.fullName}\n`;
     out += `    Penugasan    : ${teamStr}\n\n`;
   });
@@ -72,19 +85,43 @@ async function main() {
     out += `    Token QR     : ${qrCode}\n\n`;
   });
 
+  // Baca CSV maba_2026.csv untuk memetakan password tanggal lahir maba
+  const csvPath = path.resolve(__dirname, "../../maba_2026.csv");
+  const mabaPasswordMap = new Map<string, string>();
+  if (fs.existsSync(csvPath)) {
+    const csvContent = fs.readFileSync(csvPath, "utf8");
+    const mabaLines = csvContent.trim().split(/\r?\n/).filter(Boolean);
+    const headers = mabaLines[0].split(",").map((h) => h.replace(/["\r]/g, "").trim());
+    const uIdx = headers.indexOf("username");
+    const pwIdx = headers.indexOf("password_hash");
+    for (const line of mabaLines.slice(1)) {
+      const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map((c) =>
+        c.replace(/^"|"$/g, "").trim()
+      );
+      const nim = cols[uIdx];
+      const rawPw = cols[pwIdx] || "genius2026";
+      const cleanPw = rawPw.toLowerCase().replace(/\s+/g, "");
+      if (nim) {
+        mabaPasswordMap.set(nim, cleanPw);
+      }
+    }
+  }
+
+  const mabas = allUsers.filter((u) => u.role === "PARTICIPANT").sort((a, b) => a.username.localeCompare(b.username));
+
   out += "================================================================================\n";
-  out += "4. AKUN MAHASISWA BARU / PESERTA (100 MABA RESMI)\n";
+  out += `4. AKUN MAHASISWA BARU / PESERTA (${mabas.length} MABA RESMI)\n`;
   out += "================================================================================\n";
   out += "Role       : PARTICIPANT\n";
   out += "Portal URL : http://localhost:3000 (Aplikasi User Maba)\n";
-  out += "Password   : genius2026 (Default untuk seluruh MABA)\n\n";
+  out += "Password   : Tanggal Lahir (Format: Huruf kecil & tanpa spasi, contoh: 26mei2006)\n\n";
 
-  const mabas = allUsers.filter((u) => u.role === "PARTICIPANT").sort((a, b) => a.username.localeCompare(b.username));
   mabas.forEach((m, idx) => {
     const teamMem = allMembers.find((tm) => tm.userId === m.id);
     const team = teamMem ? allTeams.find((t) => t.id === teamMem.teamId) : null;
     const teamStr = team ? team.name + " (" + team.code + ")" : "-";
-    out += `[${String(idx + 1).padStart(3, "0")}] NIM: ${m.username} | Password: genius2026 | Nama: ${m.fullName.padEnd(30, " ")} | Regu: ${teamStr.padEnd(20, " ")} | Prodi: ${m.prodi || "-"}\n`;
+    const mabaPw = mabaPasswordMap.get(m.username) || "genius2026";
+    out += `[${String(idx + 1).padStart(3, "0")}] NIM: ${m.username} | Password: ${mabaPw.padEnd(14, " ")} | Nama: ${m.fullName.padEnd(32, " ")} | Regu: ${teamStr.padEnd(20, " ")} | Prodi: ${m.prodi || "-"}\n`;
   });
 
   out += "\n================================================================================\n";

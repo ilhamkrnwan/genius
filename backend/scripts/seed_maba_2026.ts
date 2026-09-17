@@ -61,6 +61,7 @@ async function runSeedMabaAndTeams() {
   const fullNameIdx = headers.indexOf("full_name");
   const genderIdx = headers.indexOf("gender");
   const prodiIdx = headers.indexOf("prodi");
+  const pwIdx = headers.indexOf("password_hash");
 
   const parsedParticipants = lines.slice(1).map((line) => {
     const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map((c) =>
@@ -68,10 +69,13 @@ async function runSeedMabaAndTeams() {
     );
     const rawProdi = prodiIdx !== -1 ? cols[prodiIdx] : undefined;
     const gender = (cols[genderIdx]?.toUpperCase() === "FEMALE" ? "FEMALE" : "MALE") as "MALE" | "FEMALE";
+    const rawPw = pwIdx !== -1 ? cols[pwIdx] : "genius2026";
+    const cleanPw = rawPw ? rawPw.toLowerCase().replace(/\s+/g, "") : "genius2026";
     return {
       username: cols[usernameIdx],
       fullName: cols[fullNameIdx],
       gender,
+      cleanPw,
       prodi: rawProdi,
       faculty: getFacultyByProdi(rawProdi),
     };
@@ -79,38 +83,45 @@ async function runSeedMabaAndTeams() {
 
   console.log(`  ✅ Terbaca ${parsedParticipants.length} mahasiswa dari CSV.`);
 
-  // 2. Identifikasi Peserta Khusus
+  // 2. Identifikasi Peserta Penugasan Khusus
   const tazkiyah = parsedParticipants.find((p) => p.fullName.toUpperCase().includes("TAZKIYAH NUR ASHIFA"));
   const vina = parsedParticipants.find((p) => p.fullName.toUpperCase().includes("VINA SUGIARTI"));
 
   if (!tazkiyah || !vina) {
-    console.error("❌ Mahasiswa khusus (TAZKIYAH NUR ASHIFA / VINA SUGIARTI) tidak ditemukan di CSV!");
+    console.error("❌ Peserta penugasan khusus (TAZKIYAH NUR ASHIFA / VINA SUGIARTI) tidak ditemukan di CSV!");
     process.exit(1);
   }
 
-  console.log("  🎯 Mahasiswa Khusus Teridentifikasi:");
-  console.log(`     - ${tazkiyah.fullName} (NIM: ${tazkiyah.username}, Kebutuhan Khusus: Autoimun Lupus)`);
-  console.log(`     - ${vina.fullName} (NIM: ${vina.username}, Kebutuhan Khusus: Tuna Rungu)`);
+  console.log("  🎯 Peserta Penugasan Khusus Teridentifikasi:");
+  console.log(`     - ${tazkiyah.fullName} (NIM: ${tazkiyah.username})`);
+  console.log(`     - ${vina.fullName} (NIM: ${vina.username})`);
 
   // 3. Masukkan / Upsert Akun Mahasiswa Baru ke DB
-  console.log("\n🔐 [2/5] Menyiapkan kredensial default ('genius2026') & avatar AVIF...");
-  const defaultPasswordHash = await hashPassword("genius2026");
-
-  const usersToInsert = parsedParticipants.map((p) => ({
-    username: p.username,
-    fullName: p.fullName,
-    passwordHash: defaultPasswordHash,
-    role: "PARTICIPANT" as const,
-    status: "ACTIVE" as const,
-    gender: p.gender,
-    faculty: p.faculty,
-    prodi: p.prodi,
-    characterClass: "CYBER_KNIGHT",
-    characterTitle: "Novice Adventurer",
-    characterTier: 1,
-    unlockedTitles: ["Novice Adventurer"],
-    avatarUrl: p.gender === "FEMALE" ? "/character-cewek.avif" : "/character-cowok.avif",
-  }));
+  console.log("\n🔐 [2/5] Menyiapkan kredensial tanggal lahir (lowercase tanpa spasi) & avatar AVIF...");
+  const mabaHashCache = new Map<string, string>();
+  const usersToInsert = [];
+  for (const p of parsedParticipants) {
+    let pwHash = mabaHashCache.get(p.cleanPw);
+    if (!pwHash) {
+      pwHash = await Bun.password.hash(p.cleanPw, { algorithm: "bcrypt", cost: 10 });
+      mabaHashCache.set(p.cleanPw, pwHash);
+    }
+    usersToInsert.push({
+      username: p.username,
+      fullName: p.fullName,
+      passwordHash: pwHash,
+      role: "PARTICIPANT" as const,
+      status: "ACTIVE" as const,
+      gender: p.gender,
+      faculty: p.faculty,
+      prodi: p.prodi,
+      characterClass: "CYBER_KNIGHT",
+      characterTitle: "Novice Adventurer",
+      characterTier: 1,
+      unlockedTitles: ["Novice Adventurer"],
+      avatarUrl: p.gender === "FEMALE" ? "/character-cewek.avif" : "/character-cowok.avif",
+    });
+  }
 
   console.log(`🚀 [3/5] Memasukkan ${usersToInsert.length} Mahasiswa Baru ke tabel users...`);
   const batchSize = 100;

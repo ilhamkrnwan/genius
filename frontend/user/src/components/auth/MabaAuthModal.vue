@@ -12,9 +12,11 @@ import {
   PhGenderFemale,
   PhCheckCircle,
   PhSignOut,
+  PhUsersThree,
+  PhGraduationCap,
+  PhSparkle,
 } from '@phosphor-icons/vue';
 import { useGameStore } from '@/store/gameStore';
-import { AVATAR_OPTIONS, UNU_FACULTIES } from '@/data/mockData';
 import { soundEngine } from '@/lib/sound';
 import { api } from '@/lib/api';
 
@@ -37,20 +39,30 @@ const emit = defineEmits<{
 
 const gameStore = useGameStore();
 
-// Flow step: 'login' -> 'profile' -> finish (Landing Page)
+// Flow step: 'login' | 'profile'
 const currentStep = ref<'login' | 'profile'>(props.initialStep);
 
 // Login Form State
 const loginNim = ref(gameStore.participant.nim || '');
 const loginPassword = ref('');
 const loginError = ref('');
+const isSubmitting = ref(false);
 
-// Profile Form State
-const profileName = ref(gameStore.participant.name || '');
-const profileNim = ref(gameStore.participant.nim || '');
-const profileFaculty = ref(gameStore.participant.faculty || UNU_FACULTIES[1].name);
-const profileProdi = ref(gameStore.participant.prodi || 'Informatika');
-const profileAvatar = ref(gameStore.participant.avatar || 'character_cowok');
+const isUserFemale = computed(() => {
+  const g = (gameStore.participant.gender || '').toUpperCase();
+  return (
+    g === 'FEMALE' ||
+    g === 'P' ||
+    g === 'PEREMPUAN' ||
+    gameStore.participant.avatar === 'character_cewek'
+  );
+});
+
+const avatarImg = computed(() => {
+  return isUserFemale.value
+    ? '/character-cewek-avatar.png'
+    : '/character-cowok-avatar.png';
+});
 
 watch(
   () => props.isOpen,
@@ -60,11 +72,6 @@ watch(
       loginNim.value = gameStore.participant.nim || '';
       loginPassword.value = '';
       loginError.value = '';
-      profileName.value = gameStore.participant.name || '';
-      profileNim.value = gameStore.participant.nim || '';
-      profileFaculty.value = gameStore.participant.faculty || UNU_FACULTIES[1].name;
-      profileProdi.value = gameStore.participant.prodi || 'Informatika';
-      profileAvatar.value = gameStore.participant.avatar || 'character_cowok';
     }
   }
 );
@@ -90,15 +97,6 @@ const canDismiss = computed(() => {
   return true;
 });
 
-const handleFacultyChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  profileFaculty.value = target.value;
-  const facObj = UNU_FACULTIES.find((f) => f.name === target.value);
-  if (facObj && facObj.prodi.length > 0) {
-    profileProdi.value = facObj.prodi[0];
-  }
-};
-
 const handleLoginSubmit = async (e: Event) => {
   e.preventDefault();
   if (!loginNim.value.trim()) {
@@ -110,62 +108,50 @@ const handleLoginSubmit = async (e: Event) => {
     return;
   }
   loginError.value = '';
+  isSubmitting.value = true;
   if (gameStore.soundEnabled) soundEngine.playClick();
 
-  const response = await api.loginMaba(loginNim.value.trim(), loginPassword.value);
-  if (!response.success || !response.data?.user) {
-    loginError.value = response.error?.message || 'Login gagal. Periksa kembali NIM dan kata sandi Anda.';
-    return;
-  }
+  try {
+    const response = await api.loginMaba(loginNim.value.trim(), loginPassword.value);
+    if (!response.success || !response.data?.user) {
+      loginError.value = response.error?.message || 'Login gagal. Periksa kembali NIM dan kata sandi Anda.';
+      return;
+    }
 
-  const user = response.data.user as any;
-  gameStore.loginMaba({
-    id: user.id,
-    name: user.fullName || loginNim.value.trim(),
-    nim: user.username || loginNim.value.trim(),
-    isRegistered: true,
-    teamId: user.teamId || undefined,
-    groupId: user.teamId || undefined,
-    avatar: user.avatarUrl || gameStore.participant.avatar,
-    totalXp: Number(user.totalScore || user.totalXp || 0),
-  });
-  void gameStore.syncWithServer();
+    const user = response.data.user as any;
+    const userGender = (user.gender || '').toUpperCase();
+    const isFemale = userGender === 'FEMALE' || userGender === 'P' || userGender === 'PEREMPUAN';
+    const lockedAvatar = isFemale ? 'character_cewek' : 'character_cowok';
 
-  if (props.reauthenticate || (user.fullName && (user.faculty || user.prodi))) {
+    const groupNameFormatted = user.teamName
+      ? (user.teamCode ? `${user.teamName} (${user.teamCode})` : user.teamName)
+      : undefined;
+
+    gameStore.loginMaba({
+      id: user.id,
+      name: user.fullName || loginNim.value.trim(),
+      nim: user.username || loginNim.value.trim(),
+      isRegistered: true,
+      teamId: user.teamId || undefined,
+      groupId: user.teamId || undefined,
+      groupName: groupNameFormatted,
+      faculty: user.faculty || undefined,
+      prodi: user.prodi || undefined,
+      gender: user.gender,
+      avatar: lockedAvatar,
+      totalXp: Number(user.totalScore || user.totalXp || 0),
+    });
+
+    if (gameStore.soundEnabled) soundEngine.playCorrect();
+
+    void gameStore.syncWithServer();
     emit('complete');
     emit('close');
-    return;
+  } catch (err: any) {
+    loginError.value = err.message || 'Terjadi kesalahan saat masuk ke sistem.';
+  } finally {
+    isSubmitting.value = false;
   }
-
-  // Sinkronkan NIM ke profile form
-  profileNim.value = loginNim.value.trim();
-  profileName.value = user.fullName || profileName.value;
-
-  // Lanjut ke Langkah 2: Mengisi Profil
-  currentStep.value = 'profile';
-};
-
-const handleProfileSubmit = (e: Event) => {
-  e.preventDefault();
-  if (!profileName.value.trim()) return;
-
-  gameStore.completeProfile({
-    name: profileName.value.trim(),
-    nim: profileNim.value.trim() || '2611101',
-    faculty: profileFaculty.value,
-    prodi: profileProdi.value,
-    avatar: profileAvatar.value,
-  });
-
-  if (gameStore.soundEnabled) soundEngine.playCorrect();
-
-  emit('complete');
-  emit('close');
-};
-
-const selectAvatar = (avId: string) => {
-  profileAvatar.value = avId;
-  if (gameStore.soundEnabled) soundEngine.playSelect();
 };
 </script>
 
@@ -178,7 +164,7 @@ const selectAvatar = (avId: string) => {
     <div
       class="w-full max-w-lg max-h-[94dvh] overflow-y-auto custom-scrollbar bg-gradient-to-b from-[#2d1b0e] to-[#1a1008] border-[3.5px] border-[#f0d060] rounded-2xl p-4 sm:p-6 shadow-[inset_0_0_0_2px_#6b4f2e,0_16px_40px_rgba(0,0,0,0.85),0_0_30px_rgba(240,208,96,0.3)] relative text-[#f0e0c0]"
     >
-      <!-- Close button only if already registered -->
+      <!-- Close button only if allowed -->
       <button
         v-if="canDismiss"
         type="button"
@@ -188,32 +174,6 @@ const selectAvatar = (avId: string) => {
       >
         <PhX :size="14" weight="bold" />
       </button>
-
-      <!-- Top Steps Indicator Pill -->
-      <div v-if="!reauthenticate" class="flex items-center justify-center gap-2 mb-3">
-        <div
-          :class="[
-            'px-2.5 py-0.5 rounded-full font-pixel text-[8px] uppercase tracking-wider flex items-center gap-1 border',
-            currentStep === 'login'
-              ? 'bg-[#f0d060] text-[#1b120a] border-[#f0d060] font-bold shadow'
-              : 'bg-[#1e130a] text-[#86efac] border-[#22c55e]'
-          ]"
-        >
-          <span>1. MASUK MABA</span>
-          <PhCheckCircle v-if="currentStep === 'profile'" :size="11" weight="fill" class="text-[#22c55e]" />
-        </div>
-        <div class="w-4 h-[2px] bg-[#5a3a18]" />
-        <div
-          :class="[
-            'px-2.5 py-0.5 rounded-full font-pixel text-[8px] uppercase tracking-wider flex items-center gap-1 border',
-            currentStep === 'profile'
-              ? 'bg-[#f0d060] text-[#1b120a] border-[#f0d060] font-bold shadow'
-              : 'bg-[#1e130a] text-[#a08060] border-[#5a3a18]'
-          ]"
-        >
-          <span>2. ISI PROFIL &amp; KARAKTER</span>
-        </div>
-      </div>
 
       <!-- ======================================================= -->
       <!-- STEP 1: MODAL LOGIN MAHASISWA BARU                     -->
@@ -228,11 +188,11 @@ const selectAvatar = (avId: string) => {
             PORTAL LOGIN MAHASISWA BARU
           </h2>
           <p class="text-[10px] text-[#c4956a]">
-            Selamat datang di PKKMB UNU Yogyakarta 2026. Masuk untuk memulai petualangan.
+            PKKMB UNU Yogyakarta 2026. Masuk menggunakan data resmi Anda.
           </p>
         </div>
 
-        <!-- Manual Login Form -->
+        <!-- Login Form -->
         <form @submit="handleLoginSubmit" class="space-y-3 font-mono">
           <div v-if="loginError" class="p-2 rounded bg-red-950/80 border border-red-600 text-red-300 text-xs text-center">
             {{ loginError }}
@@ -240,7 +200,7 @@ const selectAvatar = (avId: string) => {
 
           <div class="space-y-1">
             <label class="block font-pixel text-[8px] text-[#c4956a] uppercase">
-              NIM / NOMOR PENDAFTARAN
+              NIM (Nomor Induk Mahasiswa)
             </label>
             <div class="relative">
               <PhIdentificationCard :size="16" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#f0d060]" />
@@ -248,7 +208,7 @@ const selectAvatar = (avId: string) => {
                 type="text"
                 v-model="loginNim"
                 required
-                placeholder="Masukkan NIM Anda"
+                placeholder="Contoh: 262221041"
                 class="w-full pl-8 pr-3 py-2 bg-[#170f07] border-2 border-[#5a3a18] focus:border-[#f0d060] rounded-lg text-xs text-white outline-none"
               />
             </div>
@@ -272,156 +232,109 @@ const selectAvatar = (avId: string) => {
 
           <button
             type="submit"
-            class="rpg-btn-primary w-full py-3 px-4 font-pixel text-xs font-bold uppercase flex items-center justify-center gap-2 cursor-pointer shadow-lg mt-2"
+            :disabled="isSubmitting"
+            class="rpg-btn-primary w-full py-3 px-4 font-pixel text-xs font-bold uppercase flex items-center justify-center gap-2 cursor-pointer shadow-lg mt-2 disabled:opacity-50"
           >
             <PhSignIn :size="16" weight="bold" />
-            <span>{{ reauthenticate ? 'MASUK & LANJUTKAN PERMAINAN ▶' : 'MASUK & LANJUT KE PROFIL ▶' }}</span>
+            <span>{{ isSubmitting ? 'MEMVERIFIKASI...' : 'MASUK KE PERMAINAN ▶' }}</span>
           </button>
         </form>
       </div>
 
       <!-- ======================================================= -->
-      <!-- STEP 2: MODAL PENGISIAN PROFIL MAHASISWA BARU           -->
+      <!-- STEP 2: VERIFIED DIGITAL IDENTITY CARD (READ-ONLY)      -->
       <!-- ======================================================= -->
-      <div v-else-if="currentStep === 'profile'" class="space-y-3.5">
+      <div v-else-if="currentStep === 'profile'" class="space-y-4">
         <!-- Header -->
         <div class="text-center space-y-1">
-          <div class="inline-block bg-[#14230f] border border-[#7ec850] text-[#7ec850] font-pixel text-[8px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-            LANGKAH 2 DARI 2
+          <div class="inline-flex items-center gap-1.5 bg-[#162713] border border-[#22c55e] text-[#86efac] font-pixel text-[8.5px] px-3 py-1 rounded-full uppercase tracking-wider">
+            <PhCheckCircle :size="12" weight="fill" class="text-[#22c55e]" />
+            <span>DATA TERVERIFIKASI RESMI</span>
           </div>
           <h2 class="font-pixel text-xs sm:text-sm text-[#fef08a] font-bold tracking-wide uppercase">
-            PENGISIAN PROFIL PETUALANG
+            IDENTITAS MAHASISWA BARU
           </h2>
           <p class="text-[10px] text-[#c4956a]">
-            Pilih karakter dan pastikan data diri Anda sesuai sebelum ke Landing Page.
+            Biodata dan karakter telah terkunci secara otomatis sesuai database resmi.
           </p>
         </div>
 
-        <form @submit="handleProfileSubmit" class="space-y-3 font-sans">
-          <!-- 1. Character Selection (Official Portrait Cards) -->
-          <div>
-            <label class="block font-pixel text-[8.5px] text-[#f0d060] mb-1.5 uppercase flex items-center gap-1">
-              <span>PILIH KARAKTER RPG (COWOK / CEWEK):</span>
-            </label>
-            <div class="grid grid-cols-2 gap-2.5">
-              <button
-                v-for="av in AVATAR_OPTIONS"
-                :key="av.id"
-                type="button"
-                @click="selectAvatar(av.id)"
-                :class="[
-                  'p-2 sm:p-2.5 rounded-xl border-2 text-left transition-all flex flex-col items-center gap-2 cursor-pointer relative shadow',
-                  profileAvatar === av.id
-                    ? 'bg-gradient-to-b from-[#3d7828] to-[#255018] border-[#f0d060] shadow-[0_0_15px_rgba(126,200,80,0.5)] scale-[1.01]'
-                    : 'bg-[#170f07] border-[#5a3a18] hover:border-[#8b6f4e]'
-                ]"
-              >
-                <!-- Selected Badge -->
-                <div
-                  v-if="profileAvatar === av.id"
-                  class="absolute top-1.5 right-1.5 bg-[#f0d060] text-[#1b120a] rounded-full p-0.5 shadow"
-                >
-                  <PhCheck :size="10" weight="bold" />
-                </div>
+        <!-- Read-Only Identity Card -->
+        <div class="space-y-3 font-sans">
+          <!-- Karakter RPG Terkunci Sesuai Gender -->
+          <div class="p-3 rounded-xl border-2 border-[#f0d060] bg-gradient-to-r from-[#28180c] via-[#331e0f] to-[#1c1108] flex items-center gap-3.5 shadow-md">
+            <!-- Portrait Container -->
+            <div class="w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-[#120a05] border-2 border-[#f0d060] shrink-0 relative shadow-inner">
+              <img
+                :src="avatarImg"
+                alt="Avatar"
+                class="w-full h-full object-cover object-top"
+              />
+            </div>
 
-                <!-- Portrait Container -->
-                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-[#120a05] border-2 border-[#f0d060] shrink-0 relative shadow-inner">
-                  <img
-                    :src="av.avatarImage"
-                    :alt="av.name"
-                    class="w-full h-full object-cover object-top"
-                  />
-                </div>
-
-                <!-- Identity Label -->
-                <div class="text-center w-full min-w-0">
-                  <div class="font-pixel text-[9px] text-white font-bold flex items-center justify-center gap-1">
-                    <span>{{ av.gender === 'pria' ? 'Cowok' : 'Cewek' }}</span>
-                    <PhGenderMale v-if="av.gender === 'pria'" :size="12" weight="bold" class="text-[#60a8d8]" />
-                    <PhGenderFemale v-else :size="12" weight="bold" class="text-[#ff8080]" />
-                  </div>
-                  <span class="text-[9px] text-[#fef08a] block truncate font-mono mt-0.5">
-                    {{ av.gender === 'pria' ? 'Peci & Jas UNU' : 'Hijab & Jas UNU' }}
-                  </span>
-                </div>
-              </button>
+            <!-- Identity Details -->
+            <div class="text-left flex-1 min-w-0">
+              <div class="font-pixel text-[10px] sm:text-[11px] text-white font-bold flex items-center gap-1.5">
+                <span>{{ isUserFemale ? 'Mahasiswi (Cewek)' : 'Mahasiswa (Cowok)' }}</span>
+                <PhGenderFemale v-if="isUserFemale" :size="13" weight="bold" class="text-[#f472b6]" />
+                <PhGenderMale v-else :size="13" weight="bold" class="text-[#38bdf8]" />
+              </div>
+              <div class="text-[9px] text-[#fef08a] font-mono mt-0.5">
+                {{ isUserFemale ? 'Hijab Putih & Jas Almamater UNU' : 'Peci Hitam & Jas Almamater UNU' }}
+              </div>
+              <div class="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#3b7829]/30 border border-[#7ec850]/50 text-[#86efac] text-[7.5px] font-pixel">
+                <PhCheck :size="10" weight="bold" />
+                <span>Karakter Terkunci Sesuai Gender Resmi</span>
+              </div>
             </div>
           </div>
 
-          <!-- 2. Form Inputs: Nama, NIM, Fakultas, Prodi -->
+          <!-- Academic & Regu Details (Read-only Grid) -->
           <div class="space-y-2 bg-[#20140c] p-3 rounded-xl border border-[#5a3a18]">
-            <!-- Nama -->
-            <div>
-              <label class="block font-pixel text-[8px] text-[#c4956a] mb-1 uppercase">
-                Nama Lengkap Mahasiswa:
-              </label>
-              <div class="relative">
-                <PhUser :size="15" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#f0d060]" />
-                <input
-                  type="text"
-                  v-model="profileName"
-                  required
-                  placeholder="Ahmad Dahlan"
-                  class="w-full pl-8 pr-3 py-1.5 bg-[#170f07] border border-[#5a3a18] focus:border-[#f0d060] rounded-lg text-xs text-white font-sans outline-none"
-                />
-              </div>
+            <!-- Nama Lengkap -->
+            <div class="p-2 rounded-lg bg-[#170f07] border border-[#4a2e14]">
+              <span class="block font-pixel text-[7.5px] text-[#c4956a] uppercase">Nama Lengkap</span>
+              <span class="font-bold text-xs text-[#86efac] block mt-0.5">
+                {{ gameStore.participant.name || '-' }}
+              </span>
             </div>
 
-            <!-- NIM -->
-            <div>
-              <label class="block font-pixel text-[8px] text-[#c4956a] mb-1 uppercase">
-                NIM (Nomor Induk Mahasiswa):
-              </label>
-              <div class="relative">
-                <PhIdentificationCard :size="15" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#f0d060]" />
-                <input
-                  type="text"
-                  v-model="profileNim"
-                  required
-                  placeholder="2611101"
-                  class="w-full pl-8 pr-3 py-1.5 bg-[#170f07] border border-[#5a3a18] focus:border-[#f0d060] rounded-lg text-xs text-white font-mono outline-none"
-                />
+            <!-- NIM & Regu -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div class="p-2 rounded-lg bg-[#170f07] border border-[#4a2e14]">
+                <span class="block font-pixel text-[7.5px] text-[#c4956a] uppercase">NIM</span>
+                <span class="font-mono text-xs text-[#fde047] font-bold block mt-0.5">
+                  {{ gameStore.participant.nim || '-' }}
+                </span>
+              </div>
+
+              <div class="p-2 rounded-lg bg-[#170f07] border border-[#4a2e14]">
+                <span class="block font-pixel text-[7.5px] text-[#c4956a] uppercase">Regu Pendamping</span>
+                <span class="font-pixel text-[9.5px] text-[#86efac] font-bold block mt-0.5 truncate">
+                  {{ gameStore.participant.groupName || 'Regu Maba' }}
+                </span>
               </div>
             </div>
 
             <!-- Fakultas & Prodi -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label class="block font-pixel text-[8px] text-[#c4956a] mb-1 uppercase">
-                  Fakultas:
-                </label>
-                <select
-                  :value="profileFaculty"
-                  @change="handleFacultyChange"
-                  class="w-full bg-[#170f07] border border-[#5a3a18] focus:border-[#f0d060] rounded-lg px-2.5 py-1.5 text-[11px] text-white outline-none cursor-pointer"
-                >
-                  <option v-for="fac in UNU_FACULTIES" :key="fac.name" :value="fac.name">
-                    {{ fac.name }}
-                  </option>
-                </select>
+              <div class="p-2 rounded-lg bg-[#170f07] border border-[#4a2e14]">
+                <span class="block font-pixel text-[7.5px] text-[#c4956a] uppercase">Fakultas</span>
+                <span class="text-[11px] text-[#fbf6e9] font-medium block mt-0.5 truncate">
+                  {{ gameStore.participant.faculty || '-' }}
+                </span>
               </div>
 
-              <div>
-                <label class="block font-pixel text-[8px] text-[#c4956a] mb-1 uppercase">
-                  Program Studi:
-                </label>
-                <select
-                  v-model="profileProdi"
-                  class="w-full bg-[#170f07] border border-[#5a3a18] focus:border-[#f0d060] rounded-lg px-2.5 py-1.5 text-[11px] text-white outline-none cursor-pointer"
-                >
-                  <option
-                    v-for="p in (UNU_FACULTIES.find((f) => f.name === profileFaculty)?.prodi || [])"
-                    :key="p"
-                    :value="p"
-                  >
-                    {{ p }}
-                  </option>
-                </select>
+              <div class="p-2 rounded-lg bg-[#170f07] border border-[#4a2e14]">
+                <span class="block font-pixel text-[7.5px] text-[#c4956a] uppercase">Program Studi</span>
+                <span class="text-[11px] text-[#86efac] font-semibold block mt-0.5 truncate">
+                  {{ gameStore.participant.prodi || '-' }}
+                </span>
               </div>
             </div>
           </div>
 
-          <!-- Buttons -->
+          <!-- Action Buttons -->
           <div class="flex items-center gap-2 pt-1 font-pixel">
             <button
               v-if="gameStore.isLoggedIn"
@@ -433,24 +346,16 @@ const selectAvatar = (avId: string) => {
               <PhSignOut :size="12" weight="bold" />
               <span>KELUAR</span>
             </button>
-            <button
-              v-else
-              type="button"
-              @click="currentStep = 'login'"
-              class="py-2.5 px-3 rounded-lg border-2 border-[#5a3a18] bg-[#1e130a] hover:bg-[#2d1b0e] text-[#c4956a] hover:text-[#f0d060] text-[10px] uppercase flex items-center gap-1 cursor-pointer transition-all active:scale-95"
-            >
-              <PhArrowLeft :size="12" weight="bold" />
-              <span>LOGIN</span>
-            </button>
 
             <button
-              type="submit"
-              class="rpg-btn-primary flex-1 py-3 px-3 text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-lg"
+              type="button"
+              @click="emit('close')"
+              class="rpg-btn-primary flex-1 py-3 px-3 text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-lg cursor-pointer"
             >
-              <span>SIMPAN</span>
+              <span>LANJUTKAN PENJELAJAHAN ▶</span>
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   </div>

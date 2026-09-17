@@ -35,9 +35,12 @@ const currentXp = computed(() => gameStore.participant.totalXp || 0);
 const playerName = computed(() => gameStore.participant.name || 'Mahasiswa Baru');
 
 const playerAvatar = computed(() => {
+  const g = (gameStore.participant.gender || '').toUpperCase();
   const isFemale =
-    gameStore.participant.avatar === 'character_cewek' ||
-    gameStore.participant.gender === 'perempuan';
+    g === 'FEMALE' ||
+    g === 'P' ||
+    g === 'PEREMPUAN' ||
+    gameStore.participant.avatar === 'character_cewek';
   return isFemale
     ? '/character-cewek-avatar.png'
     : '/character-cowok-avatar.png';

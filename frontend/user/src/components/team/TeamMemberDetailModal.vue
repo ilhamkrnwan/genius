@@ -77,8 +77,8 @@ onUnmounted(() => {
 
 const displayAvatar = computed(() => {
   if (!props.member) return '/character-cowok-avatar.png';
-  if (props.member.avatarUrl) return props.member.avatarUrl;
-  return props.member.gender === 'FEMALE' || props.member.gender === 'perempuan'
+  const g = (props.member.gender || '').toUpperCase();
+  return g === 'FEMALE' || g === 'P' || g === 'PEREMPUAN'
     ? '/character-cewek-avatar.png'
     : '/character-cowok-avatar.png';
 });

@@ -3,7 +3,7 @@ import { db } from "../db";
 import { attendances, attendanceSessions, users, teams, teamMembers, scoreTransactions } from "../db/schema";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { authMiddleware } from "../middleware/auth";
-import { broadcastLeaderboardUpdate, broadcastAdminEvent } from "../realtime";
+import { broadcastLeaderboardUpdate, broadcastAdminEvent, broadcastAttendanceEvent } from "../realtime";
 
 function generateSecureSessionToken(type: string = "CHECK_IN"): string {
   const randomSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
@@ -821,6 +821,15 @@ export const attendanceRoutes = new Elysia({
       const currentTotalXp = Number(totalRow?.total || 0);
 
       // 9. Broadcast pembaruan live skor ke WebSocket
+      broadcastAttendanceEvent("ATTENDANCE_CHECK_IN", {
+        participantId,
+        teamId: targetTeamId,
+        day,
+        status: checkInStatus,
+        xpAwarded,
+        totalXp: currentTotalXp,
+      });
+
       broadcastLeaderboardUpdate({
         type: "ATTENDANCE_CHECK_IN",
         participantId,
@@ -835,6 +844,8 @@ export const attendanceRoutes = new Elysia({
         participantName: participant.fullName,
         day,
         checkInStatus,
+        xpAwarded,
+        totalXp: currentTotalXp,
         time: now.toISOString(),
       });
 
@@ -915,51 +926,13 @@ export const attendanceRoutes = new Elysia({
       const now = new Date();
       const dateStr = now.toISOString().split("T")[0];
 
-      // Jika panitia/buddy memverifikasi kepulangan maba yang belum presensi masuk, otomatis hadirkan sesi masuk dulu
-      if ((!existing || !existing.checkInAt) && isStaff) {
-        if (existing) {
-          [existing] = await db
-            .update(attendances)
-            .set({
-              checkInAt: now,
-              checkInStatus: "ON_TIME",
-              checkInQrToken: `AUTO-CHECKIN-H${day}`,
-              xpAwarded: (existing.xpAwarded || 0) + 100,
-            })
-            .where(eq(attendances.id, existing.id))
-            .returning();
-        } else {
-          [existing] = await db
-            .insert(attendances)
-            .values({
-              participantId,
-              day,
-              date: dateStr,
-              checkInAt: now,
-              checkInStatus: "ON_TIME",
-              checkInQrToken: `AUTO-CHECKIN-H${day}`,
-              xpAwarded: 100,
-            })
-            .returning();
-        }
-
-        if (targetTeamId) {
-          await db.insert(scoreTransactions).values({
-            participantId,
-            teamId: targetTeamId,
-            amount: 100,
-            sourceType: "BONUS",
-            reason: `Presensi Masuk Hari ${day} (Tepat Waktu)`,
-            createdBy: user?.userId || participantId,
-          });
-        }
-      } else if (!existing || !existing.checkInAt) {
+      if (!existing || !existing.checkInAt) {
         set.status = 400;
         return {
           success: false,
           error: {
             code: "NOT_CHECKED_IN",
-            message: `Mahasiswa belum melakukan presensi masuk pada Hari ke-${day}. Silakan lakukan presensi masuk terlebih dahulu.`,
+            message: `Mahasiswa belum melakukan presensi masuk pada Hari ke-${day}. Silakan lakukan presensi masuk (Hadir atau Telat) terlebih dahulu.`,
           },
         };
       }
@@ -1032,6 +1005,14 @@ export const attendanceRoutes = new Elysia({
       const currentTotalXp = Number(totalRow?.total || 0);
 
       // 8. Broadcast live update
+      broadcastAttendanceEvent("ATTENDANCE_CHECK_OUT", {
+        participantId,
+        teamId: targetTeamId,
+        day,
+        xpAwarded,
+        totalXp: currentTotalXp,
+      });
+
       broadcastLeaderboardUpdate({
         type: "ATTENDANCE_CHECK_OUT",
         participantId,
@@ -1044,6 +1025,8 @@ export const attendanceRoutes = new Elysia({
         participantId,
         participantName: participant.fullName,
         day,
+        xpAwarded,
+        totalXp: currentTotalXp,
         time: now.toISOString(),
       });
 

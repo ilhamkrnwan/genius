@@ -16,7 +16,6 @@ import PixelBadge from '@/components/ui/PixelBadge.vue';
 import StampIcon from '@/components/ui/StampIcon.vue';
 import CrtScanlines from '@/components/layout/CrtScanlines.vue';
 import QrScannerModal from '@/components/common/QrScannerModal.vue';
-import MabaAuthModal from '@/components/auth/MabaAuthModal.vue';
 import LogoutConfirmModal from '@/components/auth/LogoutConfirmModal.vue';
 import {
   PhArrowLeft,
@@ -53,7 +52,6 @@ const activeTab = ref<ProfileTab>('stamps');
 
 // Audio & Modals
 const isMuted = ref(gameStore.soundEnabled === false);
-const isEditModalOpen = ref(false);
 const isLogoutModalOpen = ref(false);
 const showCertificate = ref(false);
 const selectedStampPreview = ref<string | null>(null);
@@ -95,15 +93,6 @@ function handlePrint() {
   }
 }
 
-function openEdit() {
-  if (gameStore.soundEnabled) soundEngine.playClick();
-  isEditModalOpen.value = true;
-}
-
-function selectAvatar(avatarId: string) {
-  gameStore.setParticipantInfo({ avatar: avatarId });
-  if (gameStore.soundEnabled) soundEngine.playSelect();
-}
 
 function handleLogout() {
   if (gameStore.soundEnabled) soundEngine.playClick();
@@ -111,11 +100,18 @@ function handleLogout() {
 }
 
 // Character & Level Stats
+const isFemale = computed(() => {
+  const g = (gameStore.participant.gender || '').toUpperCase();
+  return (
+    g === 'FEMALE' ||
+    g === 'P' ||
+    g === 'PEREMPUAN' ||
+    gameStore.participant.avatar === 'character_cewek'
+  );
+});
+
 const characterFullImage = computed(() => {
-  const isFemale =
-    gameStore.participant.avatar === 'character_cewek' ||
-    gameStore.participant.gender === 'perempuan';
-  return isFemale
+  return isFemale.value
     ? '/mascots/character-cewek.avif'
     : '/mascots/character-cowok.avif';
 });
@@ -351,37 +347,14 @@ watch(showCertificate, (val) => {
               <div class="absolute bottom-0 w-24 h-4 bg-black/60 rounded-[100%] blur-[2px] pointer-events-none" />
             </div>
 
-            <!-- Quick Avatar Switcher -->
-            <div class="w-full mt-2 pt-2 border-t border-[#3a2210] flex items-center justify-center gap-2">
-              <span class="text-[7.5px] text-[#a89279] uppercase">Ganti Karakter:</span>
-              <div class="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  @click="selectAvatar('character_cowok')"
-                  :class="[
-                    'px-2 py-0.5 rounded text-[8px] font-pixel transition-all cursor-pointer flex items-center gap-1 border',
-                    gameStore.participant.avatar === 'character_cowok'
-                      ? 'bg-[#3b7829] text-white border-[#f0d060]'
-                      : 'bg-[#23150b] text-[#94a3b8] border-[#4a2e14] hover:border-[#8b6f4e]'
-                  ]"
-                >
-                  <PhGenderMale :size="10" weight="bold" />
-                  <span>Cowok</span>
-                </button>
-
-                <button
-                  type="button"
-                  @click="selectAvatar('character_cewek')"
-                  :class="[
-                    'px-2 py-0.5 rounded text-[8px] font-pixel transition-all cursor-pointer flex items-center gap-1 border',
-                    gameStore.participant.avatar === 'character_cewek'
-                      ? 'bg-[#3b7829] text-white border-[#f0d060]'
-                      : 'bg-[#23150b] text-[#94a3b8] border-[#4a2e14] hover:border-[#8b6f4e]'
-                  ]"
-                >
-                  <PhGenderFemale :size="10" weight="bold" />
-                  <span>Cewek</span>
-                </button>
+            <!-- Locked Character Badge (Based on Registered Gender) -->
+            <div class="w-full mt-2 pt-2 border-t border-[#3a2210] flex items-center justify-center gap-1.5">
+              <span class="text-[7.5px] text-[#a89279] uppercase">Karakter:</span>
+              <div class="px-2.5 py-0.5 rounded-full text-[8px] font-pixel flex items-center gap-1.5 border bg-[#1e130a] border-[#5a3a18] text-[#fef08a] shadow-inner">
+                <PhGenderFemale v-if="isFemale" :size="11" weight="bold" class="text-[#f472b6]" />
+                <PhGenderMale v-else :size="11" weight="bold" class="text-[#38bdf8]" />
+                <span class="font-bold">{{ isFemale ? 'Mahasiswi (Cewek)' : 'Mahasiswa (Cowok)' }}</span>
+                <span class="text-[7px] text-[#86efac] font-sans border-l border-[#5a3a18] pl-1.5 uppercase font-medium">Terkunci Sesuai CSV</span>
               </div>
             </div>
           </div>
@@ -406,7 +379,7 @@ watch(showCertificate, (val) => {
               <div class="p-2 rounded-lg bg-[#191009] border border-[#4a2e14]">
                 <div class="text-[7.5px] text-[#a89279]">Nomor Induk Mahasiswa:</div>
                 <div class="font-mono text-[#fde047] font-bold text-xs sm:text-sm mt-0.5">
-                  {{ gameStore.participant.nim || '2611100' }}
+                  {{ gameStore.participant.nim || '-' }}
                 </div>
               </div>
 
@@ -423,7 +396,7 @@ watch(showCertificate, (val) => {
                 </div>
                 <div class="text-[#fbf6e9] group-hover/team:text-[#f0d060] font-bold mt-0.5 truncate flex items-center gap-1.5">
                   <PhUsersThree :size="13" weight="fill" class="text-[#f0d060] shrink-0" />
-                  <span>{{ gameStore.participant.groupName || 'Genius 01' }}</span>
+                  <span>{{ gameStore.participant.groupName || 'Regu Maba' }}</span>
                 </div>
               </RouterLink>
 
@@ -431,7 +404,7 @@ watch(showCertificate, (val) => {
               <div class="p-2 rounded-lg bg-[#191009] border border-[#4a2e14]">
                 <div class="text-[7.5px] text-[#a89279]">Fakultas:</div>
                 <div class="text-[#fbf6e9] font-sans font-medium mt-0.5 truncate">
-                  {{ gameStore.participant.faculty || 'Fakultas Teknologi Informasi' }}
+                  {{ gameStore.participant.faculty || '-' }}
                 </div>
               </div>
 
@@ -439,7 +412,7 @@ watch(showCertificate, (val) => {
               <div class="p-2 rounded-lg bg-[#191009] border border-[#4a2e14]">
                 <div class="text-[7.5px] text-[#a89279]">Program Studi:</div>
                 <div class="text-[#86efac] font-sans font-semibold mt-0.5 truncate">
-                  {{ gameStore.participant.prodi || 'Informatika' }}
+                  {{ gameStore.participant.prodi || '-' }}
                 </div>
               </div>
             </div>
@@ -465,14 +438,12 @@ watch(showCertificate, (val) => {
 
             <!-- Action Buttons Row -->
             <div class="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                @click="openEdit"
-                class="flex-1 py-2 px-3 rounded-xl bg-[#2e1d11] hover:bg-[#3d2616] border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] text-[8.5px] sm:text-[9.5px] font-bold flex items-center justify-center gap-1.5 transition-all shadow cursor-pointer active:scale-95"
+              <div
+                class="flex-1 py-2 px-3 rounded-xl bg-[#162713]/80 border border-[#22c55e]/60 text-[#86efac] text-[8.5px] sm:text-[9.5px] font-pixel flex items-center justify-center gap-1.5 shadow"
               >
-                <PhPencilSimple :size="13" weight="bold" />
-                <span>UBAH BIODATA PROFIL</span>
-              </button>
+                <PhCheckCircle :size="13" weight="fill" class="text-[#22c55e]" />
+                <span>BIODATA RESMI TERVERIFIKASI</span>
+              </div>
 
               <button
                 type="button"
@@ -1070,15 +1041,7 @@ watch(showCertificate, (val) => {
       @scan-success="handleOrmawaScanSuccess"
     />
 
-    <!-- Modal 4: Edit Biodata Maba -->
-    <MabaAuthModal
-      :isOpen="isEditModalOpen"
-      initialStep="profile"
-      @close="isEditModalOpen = false"
-      @complete="isEditModalOpen = false"
-    />
-
-    <!-- Modal 5: Logout / Ganti Akun -->
+    <!-- Modal 4: Logout / Ganti Akun -->
     <LogoutConfirmModal
       :isOpen="isLogoutModalOpen"
       @close="isLogoutModalOpen = false"

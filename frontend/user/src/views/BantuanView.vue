@@ -120,7 +120,7 @@ const GUIDE_ITEMS: GuideItem[] = [
     points: [
       'Presensi kehadiran wajib dilakukan 2 kali sehari: Sesi Datang (pagi) dan Sesi Pulang (sore) selama 3 hari rangkaian acara.',
       'Verifikasi kehadiran dilakukan langsung oleh Kakak Pendamping (Buddy) resmi kelompok masing-masing.',
-      'Setelah presensi terverifikasi, isikan refleksi harian singkat pada formulir di halaman Presensi.',
+      'Perolehan XP kehadiran (Hadir +100 XP / Telat +50 XP, dan Pulang +50 XP) tersinkronisasi otomatis dari akun Buddy.',
     ],
     tip: 'Selalu berkumpul bersama kelompok Genius-mu tepat waktu sebelum batas sesi presensi berakhir.',
   },

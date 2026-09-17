@@ -107,37 +107,22 @@
       </button>
     </div>
 
-    <!-- Quick Batch Actions (Presensi Cepat Seluruh Regu) -->
-    <div class="sdv-card p-2 sm:p-2.5 flex items-center justify-between gap-2">
+    <!-- Status Presensi Regu Hari Berjalan -->
+    <div class="sdv-card p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
       <div class="text-[10px] text-[#c4956a] font-mono leading-tight">
-        <span class="text-white font-bold block">Aksi Presensi Regu (Hari {{ activeDayTab }})</span>
-        <span>Kelola kehadiran jam pertama dan kepulangan maba</span>
+        <span class="text-white font-bold block">Status Presensi Regu (Hari {{ activeDayTab }})</span>
+        <span>Verifikasi kehadiran maba per individu (Hadir +100 XP / Telat +50 XP / Pulang +50 XP)</span>
       </div>
 
-      <div class="flex items-center gap-1.5 shrink-0">
-        <button
-          type="button"
-          :disabled="isLocked || isBatchProcessing || attendedInCount >= activeMembers.length"
-          @click="handleBatchCheckIn"
-          class="rpg-btn-wood h-7 px-2.5 font-pixel text-[8px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          :title="isLocked ? 'Presensi dikunci admin' : 'Presensi masuk seluruh anggota regu yang belum hadir (+100 XP)'"
-        >
-          <Lock v-if="isLocked" class="w-2.5 h-2.5 text-red-400" />
-          <Sun v-else class="h-3 w-3 text-[#facc15]" />
-          <span>+ MASUK SEMUA</span>
-        </button>
-
-        <button
-          type="button"
-          :disabled="isLocked || isBatchProcessing || attendedOutCount >= attendedInCount || attendedInCount === 0"
-          @click="handleBatchCheckOut"
-          class="rpg-btn-primary h-7 px-2.5 font-pixel text-[8px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          :title="isLocked ? 'Presensi dikunci admin' : 'Presensi pulang seluruh anggota regu yang sudah masuk (+50 XP)'"
-        >
-          <Lock v-if="isLocked" class="w-2.5 h-2.5 text-red-400" />
-          <Moon v-else class="h-3 w-3 text-[#38bdf8]" />
-          <span>+ PULANG SEMUA</span>
-        </button>
+      <div class="flex items-center gap-2 font-pixel text-[8px] sm:text-[9px] shrink-0">
+        <div class="bg-[#172513] border border-[#22c55e]/50 px-2 py-1 rounded text-[#86efac] flex items-center gap-1">
+          <Sun class="w-3 h-3 text-[#facc15]" />
+          <span>Masuk: {{ attendedInCount }}/{{ activeMembers.length }}</span>
+        </div>
+        <div class="bg-[#13232c] border border-[#38bdf8]/50 px-2 py-1 rounded text-[#38bdf8] flex items-center gap-1">
+          <Moon class="w-3 h-3 text-[#38bdf8]" />
+          <span>Pulang: {{ attendedOutCount }}/{{ activeMembers.length }}</span>
+        </div>
       </div>
     </div>
 
@@ -262,7 +247,7 @@
               <div class="flex items-center gap-1 sm:mt-0.5">
                 <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-sm bg-[#38bdf8] inline-block opacity-80"></span>
                 <span class="text-[8px] sm:text-[8.5px] text-[#38bdf8] font-mono leading-none">
-                  {{ m.stampsCount }}/18 Pos
+                  {{ m.stampsCount }}/9 Pos
                 </span>
               </div>
             </div>
@@ -270,14 +255,14 @@
 
           <!-- Middle: 2 Sesi Presensi Matching User Interface -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-[#4a3624]/60">
-            <!-- Sesi 1: Jam Pertama / Masuk Pagi (+100 XP) -->
+            <!-- Sesi 1: Jam Pertama / Masuk Pagi (+100 / 50 XP) -->
             <div class="bg-[#170f07] p-2 rounded-lg border border-[#4a2e14] flex flex-col justify-between gap-1.5">
               <div class="flex items-center justify-between gap-1">
                 <span class="text-[9px] sm:text-[9.5px] font-bold text-white flex items-center gap-1 font-mono">
                   <Sun class="h-3 w-3 text-[#facc15]" />
                   <span>Sesi 1: Masuk Pagi</span>
                 </span>
-                <span class="font-pixel text-[8px] sm:text-[8.5px] text-[#facc15] font-bold">+100 XP</span>
+                <span class="font-pixel text-[8px] sm:text-[8.5px] text-[#facc15] font-bold">+100 / 50 XP</span>
               </div>
 
               <div class="flex items-center justify-between gap-1.5 pt-1 border-t border-[#3a200f]">
@@ -292,7 +277,7 @@
                         : 'bg-[#172513] border-[#22c55e]/50 text-[#86efac]'
                     ]"
                   >
-                    {{ m.attendanceStatus === 'LATE' ? 'Telat' : 'Hadir' }} ({{ m.checkInTime }})
+                    {{ m.attendanceStatus === 'LATE' ? 'Telat (+50 XP)' : 'Hadir (+100 XP)' }} ({{ m.checkInTime }})
                   </span>
                   <span
                     v-else
@@ -308,7 +293,7 @@
                     type="button"
                     :disabled="isLocked || m.processingIn"
                     @click="markCheckIn(m, 'ON_TIME')"
-                    class="pixel-btn h-6 px-2 font-pixel text-[7.5px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40"
+                    class="pixel-btn h-6 px-2 font-pixel text-[7.5px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     :title="isLocked ? 'Sistem dikunci admin' : 'Tandai Hadir Tepat Waktu (+100 XP)'"
                   >
                     <Lock v-if="isLocked" class="w-2.5 h-2.5 text-red-400" />
@@ -318,7 +303,7 @@
                     type="button"
                     :disabled="isLocked || m.processingIn"
                     @click="markCheckIn(m, 'LATE')"
-                    class="h-6 px-1.5 rounded bg-[#2a1d08] border border-[#f59e0b]/60 hover:border-[#f59e0b] text-[#facc15] font-pixel text-[7px] font-bold shadow cursor-pointer active:scale-95 disabled:opacity-40"
+                    class="h-6 px-1.5 rounded bg-[#2a1d08] border border-[#f59e0b]/60 hover:border-[#f59e0b] text-[#facc15] font-pixel text-[7px] font-bold shadow cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                     :title="isLocked ? 'Sistem dikunci admin' : 'Tandai Terlambat (+50 XP)'"
                   >
                     <span>TELAT</span>
@@ -368,10 +353,10 @@
                 <div v-if="!m.hasCheckedOut" class="shrink-0">
                   <button
                     type="button"
-                    :disabled="isLocked || m.processingOut"
+                    :disabled="isLocked || m.processingOut || !m.checkInTime"
                     @click="markCheckOut(m)"
-                    class="pixel-btn h-6 px-2.5 font-pixel text-[7.5px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40"
-                    :title="isLocked ? 'Sistem dikunci admin' : (m.checkInTime ? 'Tandai Selesai & Pulang (+50 XP)' : 'Presensi Masuk & Pulang Otomatis (+150 XP)')"
+                    class="pixel-btn h-6 px-2.5 font-pixel text-[7.5px] font-bold flex items-center gap-1 shadow cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    :title="!m.checkInTime ? 'Mahasiswa wajib presensi masuk terlebih dahulu' : (isLocked ? 'Sistem dikunci admin' : 'Tandai Selesai & Pulang (+50 XP)')"
                   >
                     <Lock v-if="isLocked" class="w-2.5 h-2.5 text-red-400" />
                     <span>+ PULANG</span>
@@ -450,7 +435,6 @@ const DAYS = [
 
 const activeDayTab = ref<number>(1);
 const loading = ref(true);
-const isBatchProcessing = ref(false);
 const isLocked = ref(false);
 const teamData = ref<any>(null);
 const activeMembers = ref<BuddyMember[]>([]);
@@ -548,6 +532,7 @@ async function markCheckIn(member: BuddyMember, status: "ON_TIME" | "LATE" = "ON
         "success",
         `Presensi Masuk ${member.fullName} berhasil (+${status === "LATE" ? 50 : 100} XP)`
       );
+      await loadData();
     }
   } catch (err: any) {
     showToast(
@@ -562,6 +547,10 @@ async function markCheckIn(member: BuddyMember, status: "ON_TIME" | "LATE" = "ON
 async function markCheckOut(member: BuddyMember) {
   if (isLocked.value) {
     showToast("error", "Sistem absensi telah dikunci admin.");
+    return;
+  }
+  if (!member.checkInTime) {
+    showToast("error", "Mahasiswa wajib presensi masuk (Hadir / Telat) terlebih dahulu.");
     return;
   }
   member.processingOut = true;
@@ -581,10 +570,6 @@ async function markCheckOut(member: BuddyMember) {
         now.getMinutes()
       ).padStart(2, "0")}`;
       member.hasCheckedOut = true;
-      if (!member.checkInTime) {
-        member.checkInTime = member.checkOutTime;
-        member.attendanceStatus = "ON_TIME";
-      }
       if (res.data?.totalXp != null) {
         member.totalXp = Number(res.data.totalXp);
       } else {
@@ -594,6 +579,7 @@ async function markCheckOut(member: BuddyMember) {
         "success",
         `Presensi Pulang ${member.fullName} berhasil (+50 XP)`
       );
+      await loadData();
     }
   } catch (err: any) {
     showToast(
@@ -602,75 +588,6 @@ async function markCheckOut(member: BuddyMember) {
     );
   } finally {
     member.processingOut = false;
-  }
-}
-
-async function handleBatchCheckIn() {
-  if (isLocked.value) {
-    showToast("error", "Sistem absensi telah dikunci admin.");
-    return;
-  }
-  const targets = activeMembers.value.filter((m) => !m.checkInTime).map((m) => m.id);
-  if (targets.length === 0) {
-    showToast("info", "Seluruh mahasiswa sudah presensi masuk.");
-    return;
-  }
-  isBatchProcessing.value = true;
-  try {
-    const res = await api.post<{ success: boolean; count: number }>(
-      "/api/attendance/batch-check-in",
-      {
-        participantIds: targets,
-        day: activeDayTab.value,
-        status: "ON_TIME",
-      }
-    );
-    if (res.success) {
-      showToast(
-        "success",
-        `Berhasil presensi masuk untuk ${res.count || targets.length} mahasiswa (+100 XP)`
-      );
-      await loadData();
-    }
-  } catch (err: any) {
-    showToast("error", "Gagal memproses presensi masuk massal");
-  } finally {
-    isBatchProcessing.value = false;
-  }
-}
-
-async function handleBatchCheckOut() {
-  if (isLocked.value) {
-    showToast("error", "Sistem absensi telah dikunci admin.");
-    return;
-  }
-  const targets = activeMembers.value
-    .filter((m) => m.checkInTime && !m.hasCheckedOut)
-    .map((m) => m.id);
-  if (targets.length === 0) {
-    showToast("info", "Tidak ada mahasiswa yang menunggu presensi pulang.");
-    return;
-  }
-  isBatchProcessing.value = true;
-  try {
-    const res = await api.post<{ success: boolean; count: number }>(
-      "/api/attendance/batch-check-out",
-      {
-        participantIds: targets,
-        day: activeDayTab.value,
-      }
-    );
-    if (res.success) {
-      showToast(
-        "success",
-        `Berhasil presensi pulang untuk ${res.count || targets.length} mahasiswa (+50 XP)`
-      );
-      await loadData();
-    }
-  } catch (err: any) {
-    showToast("error", "Gagal memproses presensi pulang massal");
-  } finally {
-    isBatchProcessing.value = false;
   }
 }
 
@@ -734,7 +651,9 @@ async function loadData() {
       >();
 
       if (attRes.status === "fulfilled" && attRes.value.success) {
-        const rawRecap = attRes.value.data || [];
+        const rawRecap = Array.isArray(attRes.value.data)
+          ? attRes.value.data
+          : attRes.value.data?.attendees || [];
         rawRecap.forEach((a: any) => {
           if (a.participantId) {
             const inTimeStr = a.checkInAt
@@ -770,14 +689,14 @@ async function loadData() {
           id: m.userId || m.id,
           fullName: m.fullName || "Mahasiswa",
           username: m.username || "-",
-          prodi: m.characterClass || m.characterTitle || "Informatika",
-          avatarUrl: m.avatarUrl || "/character-cowok-avatar.png",
+          prodi: m.prodi || m.characterClass || m.characterTitle || "Mahasiswa Baru",
+          avatarUrl: m.avatarUrl || (m.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png"),
           totalXp: Number(m.totalScore || 0),
           attendanceStatus: att?.checkInTime ? att.status : "ABSENT",
           checkInTime: att?.checkInTime,
           checkOutTime: att?.checkOutTime,
           hasCheckedOut: Boolean(att?.hasCheckedOut),
-          stampsCount: Math.min(18, Math.floor(Number(m.totalScore || 0) / 100)),
+          stampsCount: Math.min(9, m.stampsCount != null ? Number(m.stampsCount) : Math.floor(Number(m.totalScore || 0) / 100)),
           fgdScore: fgdScore && fgdScore > 0 ? fgdScore : undefined,
         };
       });

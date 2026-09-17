@@ -57,18 +57,18 @@ export const GENIUS_GROUPS = [
 ];
 
 export const INITIAL_PARTICIPANT: Participant = {
-  name: 'Mahasiswa Baru',
-  nim: '2611100',
-  prodi: 'Informatika',
-  faculty: 'Fakultas Teknologi Informasi',
+  name: '',
+  nim: '',
+  prodi: '',
+  faculty: '',
   avatar: 'character_cowok',
-  gender: 'L',
+  gender: 'MALE',
   totalXp: 0,
   completedBooths: [],
   stamps: {},
-  unlockedFloors: [],
-  groupId: 'group-03',
-  groupName: 'Genius 03',
+  unlockedFloors: [1],
+  groupId: '',
+  groupName: '',
   isRegistered: false,
 };
 

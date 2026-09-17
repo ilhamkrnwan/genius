@@ -51,8 +51,18 @@ const isUserRegistered = computed(() => {
   );
 });
 
+const isFemaleUser = computed(() => {
+  const g = (gameStore.participant.gender || '').toUpperCase();
+  return (
+    g === 'FEMALE' ||
+    g === 'P' ||
+    g === 'PEREMPUAN' ||
+    gameStore.participant.avatar === 'character_cewek'
+  );
+});
+
 const currentAvatarImg = computed(() => {
-  return gameStore.participant.avatar === 'character_cewek'
+  return isFemaleUser.value
     ? '/character-cewek-avatar.png'
     : '/character-cowok-avatar.png';
 });
@@ -126,10 +136,6 @@ const handleAuthComplete = () => {
   router.push(redirectTarget);
 };
 
-const handleSelectQuickAvatar = (avatarId: string) => {
-  gameStore.setParticipantInfo({ avatar: avatarId });
-  if (gameStore.soundEnabled) soundEngine.playSelect();
-};
 
 const scrollToStory = () => {
   if (gameStore.soundEnabled) soundEngine.playClick();
@@ -397,40 +403,33 @@ onUnmounted(() => {
               PROFIL PETUALANG TERDAFTAR
             </span>
           </div>
-          <button
-            type="button"
-            @click="openProfileModal"
-            class="text-[8px] sm:text-[8.5px] font-pixel text-[#86efac] hover:text-white flex items-center gap-1 bg-[#22160d] hover:bg-[#382313] border border-[#5c3e23] hover:border-[#86efac] px-2 py-0.5 rounded transition-all cursor-pointer active:scale-95"
-            title="Klik untuk ubah profil mahasiswa"
+          <div
+            class="text-[8px] sm:text-[8.5px] font-pixel text-[#86efac] flex items-center gap-1 bg-[#162713]/80 border border-[#22c55e]/50 px-2 py-0.5 rounded shadow-xs"
           >
-            <PhPencilSimple :size="10" weight="bold" />
-            <span>Ubah</span>
-          </button>
+            <PhCheckCircle :size="10" weight="fill" class="text-[#22c55e]" />
+            <span>Terverifikasi</span>
+          </div>
         </div>
 
         <!-- Profile Body -->
         <div class="flex items-center gap-3 text-left">
-          <!-- Avatar Frame -->
+          <!-- Avatar Frame (Gender Locked) -->
           <div
-            @click="openProfileModal"
-            class="w-13 h-13 sm:w-14 sm:h-14 rounded-xl bg-[#120a05] border-2 border-[#f0d060] overflow-hidden shrink-0 relative cursor-pointer hover:border-white transition-all shadow-md group"
-            title="Klik untuk ubah profil / ganti avatar"
+            class="w-13 h-13 sm:w-14 sm:h-14 rounded-xl bg-[#120a05] border-2 border-[#f0d060] overflow-hidden shrink-0 relative shadow-md"
+            :title="`Karakter Avatar: ${isFemaleUser ? 'Mahasiswi (Cewek)' : 'Mahasiswa (Cowok)'}`"
           >
             <img
               :src="currentAvatarImg"
               :alt="gameStore.participant.name || 'Petualang'"
               class="w-full h-full object-cover object-top"
             />
-            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[#f0d060]">
-              <PhPencilSimple :size="16" weight="bold" />
-            </div>
             <!-- Gender Badge Pill on Avatar -->
             <span
               class="absolute bottom-0 inset-x-0 bg-black/80 text-[7px] font-pixel text-center py-0.5 text-white flex items-center justify-center gap-0.5"
             >
-              <PhGenderMale v-if="gameStore.participant.avatar !== 'character_cewek'" :size="8" weight="bold" class="text-[#60a8d8]" />
-              <PhGenderFemale v-else :size="8" weight="bold" class="text-[#ff8080]" />
-              <span>{{ gameStore.participant.avatar === 'character_cewek' ? 'Cewek' : 'Cowok' }}</span>
+              <PhGenderFemale v-if="isFemaleUser" :size="8" weight="bold" class="text-[#ff8080]" />
+              <PhGenderMale v-else :size="8" weight="bold" class="text-[#60a8d8]" />
+              <span>{{ isFemaleUser ? 'Cewek' : 'Cowok' }}</span>
             </span>
           </div>
 
@@ -451,12 +450,12 @@ onUnmounted(() => {
 
             <!-- NIM & Prodi -->
             <div class="text-[9.5px] text-[#e2d5c3] font-sans truncate mt-0.5">
-              NIM: <span class="font-mono text-[#fde047] font-semibold">{{ gameStore.participant.nim || '-' }}</span> • {{ gameStore.participant.prodi || 'UNU Yogyakarta' }}
+              NIM: <span class="font-mono text-[#fde047] font-semibold">{{ gameStore.participant.nim || '-' }}</span> • {{ gameStore.participant.prodi || '-' }}
             </div>
 
             <!-- Faculty -->
             <div class="text-[8.5px] text-[#a89279] font-sans truncate">
-              {{ gameStore.participant.faculty || 'Fakultas Teknologi Informasi' }}
+              {{ gameStore.participant.faculty || '-' }}
             </div>
 
             <!-- XP & Stamps Count -->
@@ -478,55 +477,6 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- B. Character Quick-Select Bar (When Guest / Not Registered) -->
-      <div
-        v-else
-        class="hero-char-box backdrop-blur-md bg-[#19120c]/90 border border-[#8b6f4e] rounded-xl p-2 mb-2.5 sm:mb-3 max-w-sm w-full shadow-md"
-      >
-        <div class="flex items-center justify-between gap-2 px-1 mb-1.5">
-          <div class="min-w-0 text-left">
-            <span class="font-pixel text-[8px] text-[#f0d060] uppercase block">
-              PILIH KARAKTER PETUALANG:
-            </span>
-            <span class="text-[9px] text-[#86efac] font-bold truncate block">
-              Pilih karakter awal untuk orientasi
-            </span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-1.5">
-          <button
-            v-for="av in AVATAR_OPTIONS"
-            :key="av.id"
-            type="button"
-            @click="handleSelectQuickAvatar(av.id)"
-            :class="[
-              'p-1.5 rounded-lg border text-left transition-all flex items-center gap-2 cursor-pointer',
-              gameStore.participant.avatar === av.id
-                ? 'bg-gradient-to-r from-[#3d7828] to-[#255018] border-[#f0d060] shadow-[0_0_10px_rgba(126,200,80,0.4)]'
-                : 'bg-[#170f07]/80 border-[#5a3a18] hover:border-[#8b6f4e]'
-            ]"
-          >
-            <div class="w-8 h-8 rounded-md overflow-hidden bg-[#170f07] border border-[#f0d060] shrink-0 relative">
-              <img
-                :src="av.avatarImage"
-                :alt="av.name"
-                class="w-full h-full object-cover"
-              />
-            </div>
-            <div class="min-w-0">
-              <div class="font-pixel text-[8px] text-white font-bold flex items-center gap-1">
-                <span>{{ av.gender === 'pria' ? 'Cowok' : 'Cewek' }}</span>
-                <PhGenderMale v-if="av.gender === 'pria'" :size="10" weight="bold" class="text-[#60a8d8]" />
-                <PhGenderFemale v-else :size="10" weight="bold" class="text-[#ff8080]" />
-              </div>
-              <div class="font-sans text-[9px] text-[#c4956a]">
-                {{ av.gender === 'pria' ? 'Peci & Jas' : 'Hijab & Jas' }}
-              </div>
-            </div>
-          </button>
-        </div>
-      </div>
 
       <!-- Main Action Button -->
       <div class="w-full max-w-sm flex flex-col items-center">

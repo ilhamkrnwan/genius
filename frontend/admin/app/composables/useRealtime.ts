@@ -32,8 +32,23 @@ export function useRealtime() {
   const auth = useAuth();
 
   const getWsUrl = () => {
-    const apiBase = resolveApiBase(config.public?.apiBase as string | undefined);
-    const wsBase = apiBase.replace(/^http/, "ws").replace(/\/api$/, "/ws");
+    const rawApiBase = config.public?.apiBase as string | undefined;
+    const resolvedApi = resolveApiBase(rawApiBase);
+
+    let wsBase: string;
+    if (resolvedApi.startsWith("http://") || resolvedApi.startsWith("https://")) {
+      wsBase = resolvedApi.replace(/^http/, "ws").replace(/\/api\/?$/, "/ws");
+    } else if (typeof window !== "undefined") {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const host = window.location.hostname;
+      // In dev environment, Nuxt admin is at 3002 while backend Elysia WS is at 3001
+      const targetPort = window.location.port === "3002" ? "3001" : window.location.port;
+      const portPart = targetPort ? `:${targetPort}` : "";
+      wsBase = `${protocol}//${host}${portPart}/ws`;
+    } else {
+      wsBase = "ws://localhost:3001/ws";
+    }
+
     const token = auth.token?.value;
     return token ? `${wsBase}?token=${encodeURIComponent(token)}` : wsBase;
   };

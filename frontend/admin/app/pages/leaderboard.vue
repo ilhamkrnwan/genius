@@ -209,7 +209,7 @@ function switchTab(tab: "team" | "participant" | "ledger") {
 async function fetchData() {
   loading.value = true;
   try {
-    const res = await api.get<{ success: boolean; data: any }>("/api/leaderboard");
+    const res = await api.get<{ success: boolean; data: any }>("/api/leaderboard?limit=500");
     if (res.success && res.data) {
       teams.value = (res.data.teamLeaderboard || []).map((t: any, idx: number) => ({
         ...t,
@@ -228,6 +228,9 @@ async function fetchData() {
         rank: p.rank || idx + 1,
         fullName: p.participantName || p.fullName || p.name || `Peserta ${idx + 1}`,
         username: p.username || "-",
+        prodi: p.prodi || p.characterClass || "-",
+        faculty: p.faculty || "-",
+        avatarUrl: p.avatarUrl || (p.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png"),
         teamName: p.teamName || "",
         teamCode: p.teamCode || "",
         gender: p.gender || "MALE",

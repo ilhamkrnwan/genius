@@ -108,39 +108,72 @@ function loadInitialState() {
       participant: { ...INITIAL_PARTICIPANT } as Participant,
       attendance: { ...DEFAULT_ATTENDANCE },
       visitedOrmawa: [] as string[],
+      ormawaInterests: [] as string[],
       isLoggedIn: false,
     };
   }
+
+  let loadedParticipant = { ...INITIAL_PARTICIPANT } as Participant;
+  let loadedAttendance = { ...DEFAULT_ATTENDANCE } as AttendanceStoreMap;
+  let loadedVisitedOrmawa: string[] = [];
+  let loadedOrmawaInterests: string[] = [];
+  let isLoggedIn = false;
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      const loadedParticipant = { ...INITIAL_PARTICIPANT, ...(parsed.participant || {}) } as Participant;
-      if (!loadedParticipant.unlockedFloors) loadedParticipant.unlockedFloors = [];
-      if (!loadedParticipant.unlockedFloors.includes(1)) loadedParticipant.unlockedFloors.push(1);
-      if (!Array.isArray(loadedParticipant.completedBooths)) loadedParticipant.completedBooths = [];
-      if (!loadedParticipant.stamps || typeof loadedParticipant.stamps !== 'object') loadedParticipant.stamps = {};
-      
-      const isLoggedIn = Boolean(parsed.isLoggedIn ?? (loadedParticipant.isRegistered && loadedParticipant.name));
-      return {
-        participant: loadedParticipant,
-        attendance: { ...DEFAULT_ATTENDANCE, ...(parsed.attendance || {}) } as AttendanceStoreMap,
-        visitedOrmawa: (parsed.visitedOrmawa || []) as string[],
-        ormawaInterests: (parsed.ormawaInterests || []) as string[],
-        isLoggedIn,
-      };
+      loadedParticipant = { ...loadedParticipant, ...(parsed.participant || {}) };
+      loadedAttendance = { ...loadedAttendance, ...(parsed.attendance || {}) };
+      loadedVisitedOrmawa = parsed.visitedOrmawa || [];
+      loadedOrmawaInterests = parsed.ormawaInterests || [];
+      isLoggedIn = Boolean(parsed.isLoggedIn);
     }
   } catch (err) {
     console.warn('[Store] Failed to load local storage state:', err);
   }
 
+  // Always overlay with verified genius_user_profile from login if present
+  try {
+    const rawProfile = localStorage.getItem('genius_user_profile');
+    if (rawProfile) {
+      const u = JSON.parse(rawProfile);
+      if (u && (u.username || u.id)) {
+        if (u.id) loadedParticipant.id = u.id;
+        if (u.fullName) loadedParticipant.name = u.fullName;
+        if (u.username) loadedParticipant.nim = u.username;
+        if (u.gender) loadedParticipant.gender = u.gender;
+        if (u.faculty) loadedParticipant.faculty = u.faculty;
+        if (u.prodi) loadedParticipant.prodi = u.prodi;
+        if (u.teamId) {
+          loadedParticipant.teamId = u.teamId;
+          loadedParticipant.groupId = u.teamId;
+        }
+        if (u.teamName) {
+          loadedParticipant.groupName = u.teamCode ? `${u.teamName} (${u.teamCode})` : u.teamName;
+        }
+        const g = (loadedParticipant.gender || '').toUpperCase();
+        const isFem = g === 'FEMALE' || g === 'P' || g === 'PEREMPUAN';
+        loadedParticipant.avatar = isFem ? 'character_cewek' : 'character_cowok';
+        loadedParticipant.isRegistered = true;
+        isLoggedIn = true;
+      }
+    }
+  } catch (err) {
+    console.warn('[Store] Failed to overlay genius_user_profile:', err);
+  }
+
+  if (!loadedParticipant.unlockedFloors) loadedParticipant.unlockedFloors = [];
+  if (!loadedParticipant.unlockedFloors.includes(1)) loadedParticipant.unlockedFloors.push(1);
+  if (!Array.isArray(loadedParticipant.completedBooths)) loadedParticipant.completedBooths = [];
+  if (!loadedParticipant.stamps || typeof loadedParticipant.stamps !== 'object') loadedParticipant.stamps = {};
+
   return {
-    participant: { ...INITIAL_PARTICIPANT } as Participant,
-    attendance: { ...DEFAULT_ATTENDANCE },
-    visitedOrmawa: [] as string[],
-    ormawaInterests: [] as string[],
-    isLoggedIn: false,
+    participant: loadedParticipant,
+    attendance: loadedAttendance,
+    visitedOrmawa: loadedVisitedOrmawa,
+    ormawaInterests: loadedOrmawaInterests,
+    isLoggedIn,
   };
 }
 
@@ -282,27 +315,72 @@ export const useGameStore = defineStore('game', {
         const res = await api.getUserProfile(target);
         if (res.success && res.data) {
           const serverScore = Number(res.data.totalScore || 0);
-          if (serverScore > this.participant.totalXp) {
-            this.participant.totalXp = serverScore;
-          }
-          if (res.data.id && !this.participant.id) {
+          this.participant.totalXp = serverScore;
+
+          if (res.data.id) {
             this.participant.id = res.data.id;
+          }
+          if (res.data.fullName) {
+            this.participant.name = res.data.fullName;
+          }
+          if (res.data.username) {
+            this.participant.nim = res.data.username;
+          }
+          if ((res.data as any).faculty) {
+            this.participant.faculty = (res.data as any).faculty;
+          }
+          if ((res.data as any).prodi) {
+            this.participant.prodi = (res.data as any).prodi;
+          }
+          if ((res.data as any).gender) {
+            this.participant.gender = (res.data as any).gender;
           }
           if (res.data.teamId) {
             this.participant.teamId = res.data.teamId;
+            this.participant.groupId = res.data.teamId;
           }
           if (res.data.teamName) {
-            this.participant.groupName = res.data.teamName;
+            this.participant.groupName = (res.data as any).teamCode
+              ? `${res.data.teamName} (${(res.data as any).teamCode})`
+              : res.data.teamName;
           }
           if (res.data.buddyName) {
             this.participant.buddyName = res.data.buddyName;
           }
+          const serverGender = (this.participant.gender || (res.data as any).gender || '').toUpperCase();
+          if (serverGender) {
+            const isFem = serverGender === 'FEMALE' || serverGender === 'P' || serverGender === 'PEREMPUAN';
+            this.participant.avatar = isFem ? 'character_cewek' : 'character_cowok';
+          }
+          this.participant.isRegistered = true;
+          this.isLoggedIn = true;
+
+          // Cache verified profile to localStorage for instant startup hydration
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem(
+                'genius_user_profile',
+                JSON.stringify({
+                  id: this.participant.id,
+                  username: this.participant.nim,
+                  fullName: this.participant.name,
+                  gender: this.participant.gender,
+                  faculty: this.participant.faculty,
+                  prodi: this.participant.prodi,
+                  teamId: this.participant.teamId,
+                  teamName: res.data.teamName || this.participant.groupName,
+                  teamCode: (res.data as any).teamCode,
+                  totalScore: this.participant.totalXp,
+                })
+              );
+            } catch {}
+          }
 
           // Sync completed game missions to local stamps & completedBooths
           const completedSessions = (res.data as any).completedSessions;
-          if (Array.isArray(completedSessions) && completedSessions.length > 0) {
-            const completedSet = new Set(this.participant.completedBooths);
-            const stamps = { ...this.participant.stamps };
+          if (Array.isArray(completedSessions)) {
+            const completedSet = new Set<string>();
+            const stamps: Record<string, any> = {};
 
             for (const session of completedSessions) {
               const canonicalId = resolveCanonicalBoothId(session.locationCode || session.missionId);
@@ -336,9 +414,17 @@ export const useGameStore = defineStore('game', {
             this.participant.stamps = stamps;
           }
 
-          // Sync attendances from server
+          // Sync attendances strictly from server
           const serverAttendances = (res.data as any).attendances;
           if (Array.isArray(serverAttendances)) {
+            for (const d of [1, 2, 3]) {
+              if (this.attendance[d]) {
+                this.attendance[d].checkInAt = null;
+                this.attendance[d].checkInStatus = null;
+                this.attendance[d].checkOutAt = null;
+                this.attendance[d].xpAwarded = 0;
+              }
+            }
             for (const att of serverAttendances) {
               const d = Number(att.day);
               if (d && this.attendance[d]) {
@@ -384,23 +470,51 @@ export const useGameStore = defineStore('game', {
     loginMaba(data?: Partial<Participant>) {
       this.isLoggedIn = true;
       if (data) {
+        const gender = data.gender || this.participant.gender;
+        const g = (gender || '').toUpperCase();
+        const isFem = g === 'FEMALE' || g === 'P' || g === 'PEREMPUAN';
+        const avatar = gender ? (isFem ? 'character_cewek' : 'character_cowok') : (data.avatar || this.participant.avatar);
         this.participant = {
           ...this.participant,
           ...data,
+          gender,
+          avatar,
+          isRegistered: true,
         };
+      }
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(
+            'genius_user_profile',
+            JSON.stringify({
+              id: this.participant.id,
+              username: this.participant.nim,
+              fullName: this.participant.name,
+              gender: this.participant.gender,
+              faculty: this.participant.faculty,
+              prodi: this.participant.prodi,
+              teamId: this.participant.teamId,
+              teamName: this.participant.groupName,
+              totalScore: this.participant.totalXp,
+            })
+          );
+        } catch {}
       }
       this.saveToStorage();
       this.syncWithServer();
     },
 
-    completeProfile(data: { name: string; nim: string; faculty: string; prodi: string; avatar: string }) {
+    completeProfile(data: { name: string; nim: string; faculty: string; prodi: string; avatar?: string }) {
+      const g = (this.participant.gender || '').toUpperCase();
+      const isFem = g === 'FEMALE' || g === 'P' || g === 'PEREMPUAN';
+      const lockedAvatar = this.participant.gender ? (isFem ? 'character_cewek' : 'character_cowok') : (data.avatar || this.participant.avatar);
       this.participant = {
         ...this.participant,
         name: data.name.trim(),
         nim: data.nim.trim(),
         faculty: data.faculty,
         prodi: data.prodi,
-        avatar: data.avatar,
+        avatar: lockedAvatar,
         isRegistered: true,
       };
       this.isLoggedIn = true;
@@ -412,7 +526,7 @@ export const useGameStore = defineStore('game', {
         name: data.name.trim(),
         faculty: data.faculty,
         prodi: data.prodi,
-        avatar: data.avatar,
+        avatar: lockedAvatar,
       }).then((res) => {
         if (res.success && res.data?.user) {
           this.participant.id = res.data.user.id;
@@ -428,17 +542,27 @@ export const useGameStore = defineStore('game', {
 
     logoutMaba() {
       this.isLoggedIn = false;
-      this.participant.isRegistered = false;
-      this.participant.name = '';
-      this.participant.nim = '';
+      this.participant = { ...INITIAL_PARTICIPANT };
       api.logout();
-      this.saveToStorage();
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem('genius_user_profile');
+          localStorage.removeItem('genius_user_token');
+        } catch {}
+      }
     },
 
     setParticipantInfo(info: Partial<Participant>) {
+      const gender = info.gender || this.participant.gender;
+      const g = (gender || '').toUpperCase();
+      const isFem = g === 'FEMALE' || g === 'P' || g === 'PEREMPUAN';
+      const avatar = gender ? (isFem ? 'character_cewek' : 'character_cowok') : (info.avatar || this.participant.avatar);
       this.participant = {
         ...this.participant,
         ...info,
+        gender,
+        avatar,
       };
       this.saveToStorage();
     },
@@ -589,14 +713,6 @@ export const useGameStore = defineStore('game', {
         return {
           success: false,
           message: `Anda belum melakukan presensi masuk Hari ${day}.`,
-          xpEarned: 0,
-        };
-      }
-
-      if (!this.attendance[day].reflection) {
-        return {
-          success: false,
-          message: 'Silakan isi Kuesioner Refleksi Harian terlebih dahulu sebelum check-out pulang.',
           xpEarned: 0,
         };
       }

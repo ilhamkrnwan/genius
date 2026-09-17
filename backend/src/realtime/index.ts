@@ -72,6 +72,18 @@ export const broadcastLeaderboardUpdate = (leaderboardData: any) => {
   broadcastToTopic("leaderboard:global", "LEADERBOARD_UPDATED", leaderboardData);
 };
 
+export const broadcastAttendanceEvent = (event: "ATTENDANCE_CHECK_IN" | "ATTENDANCE_CHECK_OUT", payload: any) => {
+  broadcastToTopic("leaderboard:global", "LEADERBOARD_UPDATED", payload);
+  broadcastToTopic("leaderboard:global", event, payload);
+  broadcastToTopic("admin:feed", event, payload);
+  if (payload.teamId) {
+    broadcastToTopic(`team:${payload.teamId}`, event, payload);
+  }
+  if (payload.participantId) {
+    broadcastToTopic(`user:${payload.participantId}`, event, payload);
+  }
+};
+
 export const broadcastLocationOccupancy = (locationId: string, status: string, locationData?: any) => {
   broadcastToTopic(`location:${locationId}`, "LOCATION_OCCUPANCY_CHANGED", { locationId, status, ...locationData });
   broadcastToTopic("admin:feed", "LOCATION_STATUS_UPDATE", { locationId, status, ...locationData });
@@ -111,6 +123,12 @@ export const realtimeRoutes = new Elysia({ prefix: "/ws" })
       if (user?.teamId) {
         defaultTopics.add(`team:${user.teamId}`);
       }
+      if (user?.userId) {
+        defaultTopics.add(`user:${user.userId}`);
+      }
+      if (user?.role === "ADMIN" || user?.role === "BUDDY") {
+        defaultTopics.add("admin:feed");
+      }
 
       activeSockets.set(ws, {
         user,
@@ -122,6 +140,12 @@ export const realtimeRoutes = new Elysia({ prefix: "/ws" })
         ws.subscribe("announcements:global");
         if (user?.teamId) {
           ws.subscribe(`team:${user.teamId}`);
+        }
+        if (user?.userId) {
+          ws.subscribe(`user:${user.userId}`);
+        }
+        if (user?.role === "ADMIN" || user?.role === "BUDDY") {
+          ws.subscribe("admin:feed");
         }
       }
 
@@ -189,8 +213,14 @@ export const realtimeRoutes = new Elysia({ prefix: "/ws" })
         let isAuthorized = true;
 
         if (topic === "admin:feed") {
-          // Admin-only topic
-          if (!user || user.role !== "ADMIN") {
+          // Admin & Buddy topic
+          if (!user || (user.role !== "ADMIN" && user.role !== "BUDDY")) {
+            isAuthorized = false;
+          }
+        } else if (topic.startsWith("user:")) {
+          // Scoped user topic: only the user themselves, their Buddy, or Admin
+          const targetUserId = topic.split(":")[1];
+          if (!user || (user.role === "PARTICIPANT" && user.userId !== targetUserId)) {
             isAuthorized = false;
           }
         } else if (topic.startsWith("team:")) {

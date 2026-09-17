@@ -186,7 +186,8 @@ function isCurrentUser(member: TeamMemberData): boolean {
 
 function getAvatarImage(member: TeamMemberData) {
   if (member.avatarUrl) return member.avatarUrl;
-  return member.gender === 'FEMALE' || member.gender === 'perempuan'
+  const g = (member.gender || '').toUpperCase();
+  return g === 'FEMALE' || g === 'P' || g === 'PEREMPUAN'
     ? '/character-cewek-avatar.png'
     : '/character-cowok-avatar.png';
 }

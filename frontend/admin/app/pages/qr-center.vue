@@ -275,7 +275,7 @@
       </div>
     </div>
 
-    <!-- ================= 2. 18 POS MINI-GAME CARDS GRID ================= -->
+    <!-- ================= 2. 9 POS RESMI MINI-GAME CARDS GRID ================= -->
     <div
       v-else-if="activeCategory === 'pos'"
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:grid-cols-2 print:gap-4 print:m-0"

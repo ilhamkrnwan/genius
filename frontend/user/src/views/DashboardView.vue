@@ -4,7 +4,18 @@ import { useRouter } from 'vue-router';
 import Navbar from '@/components/layout/Navbar.vue';
 import CrtScanlines from '@/components/layout/CrtScanlines.vue';
 import { useGameStore } from '@/store/gameStore';
-import { PhLockKey, PhCheckCircle, PhUser, PhArrowRight, PhStar, PhTrophy, PhHourglass } from '@phosphor-icons/vue';
+import {
+  PhLockKey,
+  PhCheckCircle,
+  PhUser,
+  PhArrowRight,
+  PhStar,
+  PhTrophy,
+  PhHourglass,
+  PhGenderFemale,
+  PhGenderMale,
+  PhUsersThree,
+} from '@phosphor-icons/vue';
 import { LEVEL_CONFIG } from '@/data/mockData';
 import BuildingMap from '@/components/map/BuildingMap.vue';
 
@@ -18,7 +29,7 @@ const completedFloorsCount = computed(() => gameStore.getCompletedFloorsCount())
 const totalXp = computed(() => participant.value.totalXp);
 
 const levelInfo = computed(() => {
-  return LEVEL_CONFIG.find(l => l.level === currentLevelStr.value) || LEVEL_CONFIG[0];
+  return LEVEL_CONFIG.find((l) => l.level === currentLevelStr.value) || LEVEL_CONFIG[0];
 });
 
 const progressPercent = computed(() => {
@@ -26,18 +37,25 @@ const progressPercent = computed(() => {
   return Math.min((completedFloorsCount.value / 6) * 100, 100);
 });
 
+const isFemale = computed(() => {
+  const g = (participant.value.gender || '').toUpperCase();
+  return (
+    g === 'FEMALE' ||
+    g === 'P' ||
+    g === 'PEREMPUAN' ||
+    participant.value.avatar === 'character_cewek'
+  );
+});
+
 const avatarImage = computed(() => {
-  if (participant.value.gender === 'P') {
-    return '/character-cewek-avatar.png';
-  }
-  return '/character-cowok-avatar.png';
+  return isFemale.value
+    ? '/character-cewek-avatar.png'
+    : '/character-cowok-avatar.png';
 });
 
 onMounted(() => {
-  gameStore.syncWithServer();
+  void gameStore.syncWithServer();
 });
-
-
 </script>
 
 <template>
@@ -66,25 +84,42 @@ onMounted(() => {
         </div>
         
         <div class="flex-1 text-center sm:text-left w-full flex flex-col justify-center min-h-[6rem] sm:min-h-[8rem]">
-          <h1 class="text-xl sm:text-3xl lg:text-4xl font-bold text-[#fbf6e9] tracking-wider mb-1.5 font-pixel text-shadow leading-tight">{{ participant.name || 'Mahasiswa Baru' }}</h1>
-          <p class="text-[#7ec850] font-bold text-[10px] sm:text-xs uppercase font-pixel tracking-wide mb-4">{{ participant.nim }} • {{ participant.prodi }}</p>
+          <h1 class="text-xl sm:text-3xl lg:text-4xl font-bold text-[#fbf6e9] tracking-wider mb-1.5 font-pixel text-shadow leading-tight">
+            {{ participant.name || 'Mahasiswa Baru' }}
+          </h1>
+          <p class="text-[#7ec850] font-bold text-[10px] sm:text-xs uppercase font-pixel tracking-wide mb-3">
+            {{ participant.nim || '-' }} • {{ participant.prodi || '-' }} • {{ participant.faculty || '-' }}
+          </p>
           
           <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3">
-            <div class="inline-flex items-center gap-1.5 bg-[#1b120a] px-3 py-2 rounded-lg border-2 border-[#5c4033] shadow-[0_4px_0_#0a0704]">
-              <PhUser :size="16" class="text-[#f59e0b]" weight="bold" />
-              <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#f59e0b] font-pixel">
-                {{ participant.gender === 'P' ? 'Perempuan' : 'Laki-Laki' }}
+            <!-- Gender Badge -->
+            <div class="inline-flex items-center gap-1.5 bg-[#1b120a] px-3 py-1.5 rounded-lg border-2 border-[#5c4033] shadow-[0_4px_0_#0a0704]">
+              <PhGenderFemale v-if="isFemale" :size="16" class="text-[#f472b6]" weight="bold" />
+              <PhGenderMale v-else :size="16" class="text-[#38bdf8]" weight="bold" />
+              <span
+                class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest font-pixel"
+                :class="isFemale ? 'text-[#f472b6]' : 'text-[#38bdf8]'"
+              >
+                {{ isFemale ? 'Perempuan' : 'Laki-Laki' }}
+              </span>
+            </div>
+
+            <!-- Regu / Kelompok Badge -->
+            <div class="inline-flex items-center gap-1.5 bg-[#1b120a] px-3 py-1.5 rounded-lg border-2 border-[#5c4033] shadow-[0_4px_0_#0a0704]">
+              <PhUsersThree :size="16" class="text-[#86efac]" weight="fill" />
+              <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#86efac] font-pixel">
+                {{ participant.groupName || 'Regu Maba' }}
               </span>
             </div>
             
-            <div class="inline-flex items-center gap-1.5 bg-[#1b120a] px-3 py-2 rounded-lg border-2 border-[#5c4033] shadow-[0_4px_0_#0a0704]">
+            <div class="inline-flex items-center gap-1.5 bg-[#1b120a] px-3 py-1.5 rounded-lg border-2 border-[#5c4033] shadow-[0_4px_0_#0a0704]">
               <PhStar :size="16" class="text-[#facc15]" weight="fill" />
               <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#facc15] font-pixel">
                 {{ totalXp }} XP
               </span>
             </div>
 
-            <div class="inline-flex items-center gap-1.5 bg-[#1b120a] px-3 py-2 rounded-lg border-2 shadow-[0_4px_0_#0a0704]" :style="{ borderColor: levelInfo.color }">
+            <div class="inline-flex items-center gap-1.5 bg-[#1b120a] px-3 py-1.5 rounded-lg border-2 shadow-[0_4px_0_#0a0704]" :style="{ borderColor: levelInfo.color }">
               <PhTrophy :size="16" :style="{ color: levelInfo.color }" weight="fill" />
               <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest font-pixel" :style="{ color: levelInfo.color }">
                 {{ levelInfo.title }}
@@ -111,8 +146,10 @@ onMounted(() => {
           </div>
           <div class="w-full h-4 sm:h-5 bg-[#2d1b0e] rounded-full overflow-hidden border-2 border-[#0a0704] relative shadow-[0_2px_0_rgba(255,255,255,0.1)]">
             <div class="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,rgba(0,0,0,0.2)_6px,rgba(0,0,0,0.2)_12px)] z-10 pointer-events-none"></div>
-            <div class="h-full transition-all duration-1000 ease-out shadow-[inset_0_0_8px_rgba(255,255,255,0.3)] relative"
-                 :style="{ width: `${progressPercent}%`, backgroundColor: levelInfo.color }">
+            <div
+              class="h-full transition-all duration-1000 ease-out shadow-[inset_0_0_8px_rgba(255,255,255,0.3)] relative"
+              :style="{ width: `${progressPercent}%`, backgroundColor: levelInfo.color }"
+            >
               <div class="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent"></div>
             </div>
           </div>
@@ -127,6 +164,7 @@ onMounted(() => {
     </main>
   </div>
 </template>
+
 <style scoped>
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }

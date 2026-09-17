@@ -30,11 +30,6 @@ const isRefreshing = ref(false);
 const isMuted = ref(gameStore.soundEnabled === false);
 const notification = ref<{ type: 'success' | 'info'; message: string } | null>(null);
 
-// Form Refleksi Singkat
-const rating = ref(5);
-const essayInsight = ref('');
-const isSubmitting = ref(false);
-
 // Roster Buddy Resmi per Regu (Fallback jika offline)
 const OFFICIAL_BUDDIES_MAP: Record<string, string> = {
   'Genius 01': 'Agnes Anggraini',
@@ -145,10 +140,6 @@ const currentDayRecord = computed(() => {
   return gameStore.getAttendanceForDay(activeDayTab.value);
 });
 
-const isReflectionDone = computed(() => {
-  return Boolean(currentDayRecord.value?.reflection);
-});
-
 function safeSound(fn: () => void) {
   try {
     if (gameStore.soundEnabled) fn();
@@ -227,36 +218,10 @@ async function refreshAttendance() {
   }
 }
 
-function submitReflection() {
-  if (!essayInsight.value.trim()) {
-    showNotification('info', 'Tuliskan sedikit pesan atau kesan Anda.');
-    return;
-  }
-
-  isSubmitting.value = true;
-  try {
-    const res = gameStore.submitReflection(activeDayTab.value, {
-      ratingFasilitas: rating.value,
-      ratingMateri: rating.value,
-      ratingBuddy: rating.value,
-      essayInsight: essayInsight.value.trim(),
-    });
-
-    if (res.success) {
-      safeSound(() => soundEngine.playCorrect?.());
-      try {
-        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-      } catch (_) {}
-      showNotification('success', res.message);
-    }
-  } finally {
-    isSubmitting.value = false;
-  }
-}
-
 onMounted(async () => {
   activeDayTab.value = (gameStore.activeDay as 1 | 2 | 3) || 1;
   await gameStore.syncAttendanceFromServer();
+  await gameStore.syncWithServer();
 });
 </script>
 
@@ -365,7 +330,7 @@ onMounted(async () => {
                 {{ gameStore.participant.name || 'Mahasiswa Baru' }}
               </div>
               <div class="text-[9px] sm:text-[10px] text-[#c4956a] font-sans truncate mt-0.5">
-                {{ gameStore.participant.prodi || 'Informatika' }} • Regu {{ gameStore.participant.groupName || 'Genius 03' }}
+                {{ gameStore.participant.prodi || '-' }} • Regu {{ gameStore.participant.groupName || 'Regu Maba' }}
               </div>
             </div>
           </div>
@@ -492,72 +457,7 @@ onMounted(async () => {
         </div>
       </section>
 
-      <!-- 4. REFLEKSI HARIAN (Simple & Minimalis) -->
-      <section class="border border-[#8b6f4e] bg-[#19110a]/95 backdrop-blur-md rounded-xl p-3 shadow-lg space-y-2 text-left">
-        <div class="flex items-center justify-between border-b border-[#4d3319] pb-1.5">
-          <span class="text-[11px] sm:text-xs text-[#facc15] font-bold flex items-center gap-1.5">
-            <PhStar :size="13" weight="fill" />
-            <span>Refleksi Hari ke-{{ activeDayTab }}</span>
-          </span>
-          <span class="text-[8px] text-[#a08060] font-sans">Klaim bonus +25 XP</span>
-        </div>
-
-        <!-- Jika Refleksi Sudah Dikirim -->
-        <div v-if="isReflectionDone" class="bg-[#142312] border border-[#22c55e]/50 rounded-lg p-2 font-mono text-[10px] text-[#86efac]">
-          <div class="flex items-center justify-between font-bold">
-            <span class="flex items-center gap-1">
-              <PhCheckCircle :size="13" weight="fill" />
-              <span>Tersimpan (+25 XP)</span>
-            </span>
-            <span class="text-[8px] text-[#a0d870] font-sans">Terima kasih!</span>
-          </div>
-          <p class="text-[9.5px] text-[#d4b08c] italic font-sans mt-1">
-            "{{ currentDayRecord?.reflection?.essayInsight || 'Refleksi telah tersimpan.' }}"
-          </p>
-        </div>
-
-        <!-- Form Refleksi Ringkas -->
-        <form v-else @submit.prevent="submitReflection" class="space-y-2 text-xs">
-          <div class="flex items-center justify-between gap-2 flex-wrap">
-            <span class="text-[9.5px] text-[#c4956a] font-sans">Rating bimbingan &amp; kegiatan:</span>
-            <div class="flex items-center gap-1">
-              <button
-                v-for="star in 5"
-                :key="star"
-                type="button"
-                @click="rating = star"
-                class="cursor-pointer hover:scale-110 transition-transform"
-                :title="`${star} Bintang`"
-              >
-                <PhStar
-                  :size="15"
-                  :weight="star <= rating ? 'fill' : 'regular'"
-                  :class="star <= rating ? 'text-[#facc15]' : 'text-gray-600'"
-                />
-              </button>
-            </div>
-          </div>
-
-          <textarea
-            v-model="essayInsight"
-            rows="2"
-            required
-            placeholder="Tuliskan kesan atau pesan singkat Anda hari ini..."
-            class="w-full p-2 bg-[#120a05] border border-[#523e2b] focus:border-[#facc15] rounded-lg text-xs text-[#f0e0c0] placeholder-[#785435] focus:outline-none font-sans"
-          />
-
-          <button
-            type="submit"
-            :disabled="isSubmitting"
-            class="w-full py-1.5 px-3 bg-[#b45309] hover:bg-[#d97706] border border-[#fef08a] rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98 shadow"
-          >
-            <PhSparkle :size="13" weight="fill" class="text-[#facc15]" />
-            <span>Kirim Refleksi (+25 XP)</span>
-          </button>
-        </form>
-      </section>
-
-      <!-- 5. FOOTER NAVIGASI SEDERHANA (With Pill Backdrop to prevent signpost overlap) -->
+      <!-- 4. FOOTER NAVIGASI SEDERHANA (With Pill Backdrop to prevent signpost overlap) -->
       <footer class="flex items-center justify-center pt-1 pb-2">
         <div class="inline-flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-[#120a05]/90 backdrop-blur-md border border-[#5a3a18] text-[8.5px] text-[#a08060] font-pixel shadow">
           <RouterLink

@@ -157,7 +157,7 @@
                   </span>
                 </div>
                 <div class="text-[9.5px] sm:text-[10px] text-[#c4956a] font-mono mt-0.5 truncate">
-                  Kode: <strong class="text-[#e5b383]">{{ team.code }}</strong> <span class="mx-1 sm:mx-1.5 text-[#5a3a18]">|</span> {{ team.completedStamps }}/18 Pos
+                  Kode: <strong class="text-[#e5b383]">{{ team.code }}</strong> <span class="mx-1 sm:mx-1.5 text-[#5a3a18]">|</span> {{ team.completedStamps }}/9 Pos
                 </div>
               </div>
             </div>
@@ -179,62 +179,99 @@
         <Search class="h-8 w-8 text-[#e5b383]/50 mb-2 mx-auto" />
         <p>Tidak ada mahasiswa yang cocok dengan pencarian.</p>
       </div>
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <div
-          v-for="student in filteredStudents"
-          :key="student.id"
-          :class="[
-            'p-3 sm:p-4 rounded-xl border-2 flex items-center justify-between transition-all hover:-translate-y-1 hover:shadow-lg',
-            isMyMember(student.id)
-              ? 'pixel-card-gold border-[#f0d060] shadow-[0_0_15px_rgba(240,208,96,0.15)] z-10'
-              : 'pixel-card'
-          ]"
-        >
-          <div class="flex items-center gap-3 min-w-0">
-            <!-- Rank Badge -->
-            <div
-              :class="[
-                'w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-pixel text-sm sm:text-base shrink-0 shadow-inner',
-                student.rank === 1 ? 'bg-[#ca8a04] text-[#140e08] border-2 border-[#fef08a]' :
-                student.rank === 2 ? 'bg-gray-400 text-black border-2 border-gray-200' :
-                student.rank === 3 ? 'bg-amber-800 text-white border-2 border-amber-500' :
-                'bg-[#120a05] border-2 border-[#5a3a18] text-[#c4956a]'
-              ]"
-            >
-              #{{ student.rank }}
-            </div>
+      <div v-else class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div
+            v-for="student in paginatedStudents"
+            :key="student.id"
+            :class="[
+              'p-3 sm:p-4 rounded-xl border-2 flex items-center justify-between transition-all hover:-translate-y-1 hover:shadow-lg',
+              isMyMember(student.id)
+                ? 'pixel-card-gold border-[#f0d060] shadow-[0_0_15px_rgba(240,208,96,0.15)] z-10'
+                : 'pixel-card'
+            ]"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <!-- Rank Badge -->
+              <div
+                :class="[
+                  'w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-pixel text-sm sm:text-base shrink-0 shadow-inner',
+                  student.rank === 1 ? 'bg-[#ca8a04] text-[#140e08] border-2 border-[#fef08a]' :
+                  student.rank === 2 ? 'bg-gray-400 text-black border-2 border-gray-200' :
+                  student.rank === 3 ? 'bg-amber-800 text-white border-2 border-amber-500' :
+                  'bg-[#120a05] border-2 border-[#5a3a18] text-[#c4956a]'
+                ]"
+              >
+                #{{ student.rank }}
+              </div>
 
-            <img
-              :src="student.avatarUrl"
-              :alt="student.fullName"
-              class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg border-2 border-[#f0d060] bg-[#120a05] shrink-0 object-cover shadow"
-            />
+              <img
+                :src="student.avatarUrl"
+                :alt="student.fullName"
+                class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg border-2 border-[#f0d060] bg-[#120a05] shrink-0 object-cover shadow"
+              />
 
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-sans text-xs sm:text-sm text-white font-bold truncate drop-shadow-md">
-                  {{ student.fullName }}
-                </span>
-                <span
-                  v-if="isMyMember(student.id)"
-                  class="font-pixel text-[7px] sm:text-[8px] text-[#120a05] bg-[#f0d060] px-1.5 sm:px-2 py-0.5 rounded shrink-0 shadow font-bold"
-                >
-                  BINAAN
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-sans text-xs sm:text-sm text-white font-bold truncate drop-shadow-md">
+                    {{ student.fullName }}
+                  </span>
+                  <span
+                    v-if="isMyMember(student.id)"
+                    class="font-pixel text-[7px] sm:text-[8px] text-[#120a05] bg-[#f0d060] px-1.5 sm:px-2 py-0.5 rounded shrink-0 shadow font-bold"
+                  >
+                    BINAAN
+                  </span>
+                </div>
+                <span class="text-[9px] sm:text-[10px] text-[#c4956a] font-mono truncate mt-0.5 block">
+                  NIM {{ student.username }} <span class="mx-1 text-[#5a3a18]">|</span> <strong class="text-[#f0d060]">{{ student.prodi }}</strong> <span class="mx-1 text-[#5a3a18]">|</span> {{ student.teamName }}
                 </span>
               </div>
-              <span class="text-[9px] sm:text-[10px] text-[#c4956a] font-mono truncate mt-0.5 block">
-                NIM {{ student.username }} <span class="mx-1 text-[#5a3a18]">|</span> <strong class="text-[#f0d060]">{{ student.prodi }}</strong> <span class="mx-1 text-[#5a3a18]">|</span> {{ student.teamName }}
+            </div>
+
+            <div class="text-right shrink-0 bg-[#120a05] py-1 px-2 sm:px-3 rounded-lg border border-[#4a3624] shadow-inner ml-2">
+              <span class="font-pixel text-[11px] sm:text-xs text-[#86efac] font-bold block drop-shadow-[0_0_3px_rgba(134,239,172,0.4)]">
+                {{ student.totalXp.toLocaleString() }} XP
+              </span>
+              <span class="text-[7.5px] sm:text-[8px] text-[#f0d060] font-mono mt-0.5 block border-t border-[#4a3624] pt-0.5">
+                {{ student.stamps }}/9 POS
               </span>
             </div>
           </div>
+        </div>
 
-          <div class="text-right shrink-0 bg-[#120a05] py-1 px-2 sm:px-3 rounded-lg border border-[#4a3624] shadow-inner ml-2">
-            <span class="font-pixel text-[11px] sm:text-xs text-[#86efac] font-bold block drop-shadow-[0_0_3px_rgba(134,239,172,0.4)]">
-              {{ student.totalXp.toLocaleString() }} XP
+        <!-- Pagination Controls -->
+        <div
+          v-if="filteredStudents.length > pageSize"
+          class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t-2 border-[#5a3a18] font-mono text-xs text-[#c4956a]"
+        >
+          <div class="text-[11px] sm:text-xs">
+            Menampilkan <strong class="text-[#f0d060]">{{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, filteredStudents.length) }}</strong> dari <strong class="text-[#f0d060]">{{ filteredStudents.length }}</strong> Mahasiswa
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              :disabled="currentPage <= 1"
+              @click="currentPage--"
+              class="px-2.5 py-1 rounded-lg bg-[#120a05] border-2 border-[#5a3a18] text-[#f0d060] hover:bg-[#2a1d13] hover:border-[#f0d060] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer font-pixel text-[9px]"
+              title="Halaman Sebelumnya"
+            >
+              <ChevronLeft class="h-3.5 w-3.5" />
+              <span>PREV</span>
+            </button>
+            <span class="px-3 py-1 bg-[#120a05] border-2 border-[#f0d060] rounded-lg font-pixel text-[10px] text-[#fef08a] shadow-inner">
+              {{ currentPage }} / {{ totalPages }}
             </span>
-            <span class="text-[7.5px] sm:text-[8px] text-[#f0d060] font-mono mt-0.5 block border-t border-[#4a3624] pt-0.5">
-              {{ student.stamps }}/18 POS
-            </span>
+            <button
+              type="button"
+              :disabled="currentPage >= totalPages"
+              @click="currentPage++"
+              class="px-2.5 py-1 rounded-lg bg-[#120a05] border-2 border-[#5a3a18] text-[#f0d060] hover:bg-[#2a1d13] hover:border-[#f0d060] disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer font-pixel text-[9px]"
+              title="Halaman Berikutnya"
+            >
+              <span>NEXT</span>
+              <ChevronRight class="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       </div>
@@ -243,7 +280,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import {
   Trophy,
   Users,
@@ -251,6 +288,8 @@ import {
   Search,
   Crown,
   Medal,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-vue-next";
 import { useAuth } from "~/composables/useAuth";
 import { useApi } from "~/composables/useApi";
@@ -341,10 +380,22 @@ const filteredStudents = computed(() => {
   );
 });
 
+const currentPage = ref(1);
+const pageSize = ref(21);
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredStudents.value.length / pageSize.value)));
+const paginatedStudents = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  return filteredStudents.value.slice(start, start + pageSize.value);
+});
+
+watch([searchQuery, activeTab], () => {
+  currentPage.value = 1;
+});
+
 async function fetchLeaderboard() {
   loading.value = true;
   try {
-    const res = await api.get<{ success: boolean; data: any }>("/api/leaderboard");
+    const res = await api.get<{ success: boolean; data: any }>("/api/leaderboard?limit=500");
     if (res.success && res.data) {
       const rawTeams = res.data.teamLeaderboard || [];
       allTeams.value = rawTeams.map((t: any, idx: number) => ({
@@ -353,7 +404,7 @@ async function fetchLeaderboard() {
         name: t.teamName || "Genius Tim",
         code: t.teamCode || "-",
         score: Number(t.totalScore || 0),
-        completedStamps: Math.min(9, Math.floor(Number(t.totalScore || 0) / 100)),
+        completedStamps: Math.min(9, t.stampsCollected != null ? Number(t.stampsCollected) : Math.floor(Number(t.totalScore || 0) / 100)),
         buddyName: t.buddyName || "Buddy",
       }));
 
@@ -363,12 +414,12 @@ async function fetchLeaderboard() {
         rank: p.rank || idx + 1,
         fullName: p.participantName || "Mahasiswa",
         username: p.username || "-",
-        prodi: p.characterClass || p.characterTitle || "Informatika",
+        prodi: p.prodi || p.characterClass || p.characterTitle || "Mahasiswa Baru",
         teamName: p.teamName || "Genius",
         teamId: p.teamId,
         totalXp: Number(p.totalScore || 0),
-        stamps: Math.min(9, Math.floor(Number(p.totalScore || 0) / 100)),
-        avatarUrl: p.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png",
+        stamps: Math.min(9, p.stampsCount != null ? Number(p.stampsCount) : Math.floor(Number(p.totalScore || 0) / 100)),
+        avatarUrl: p.avatarUrl || (p.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png"),
       }));
     }
   } catch (err: any) {

@@ -244,7 +244,7 @@ export interface Participant {
   prodi: string;
   faculty: string;
   avatar: string;
-  gender?: 'L' | 'P';
+  gender?: 'L' | 'P' | 'MALE' | 'FEMALE' | string;
   totalXp: number;
   completedBooths: string[];
   stamps: Record<string, StampRecord>;

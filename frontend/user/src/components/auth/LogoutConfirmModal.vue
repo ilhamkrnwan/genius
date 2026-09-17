@@ -72,7 +72,13 @@ const handleConfirmLogout = () => {
       <div class="bg-[#1c120a]/90 border border-[#5c3e23] rounded-xl p-3 mb-5 flex items-center gap-3">
         <div class="w-11 h-11 rounded-lg border-2 border-[#f0d060]/70 overflow-hidden bg-black/40 shrink-0">
           <img
-            :src="gameStore.participant.avatar === 'character_cewek' ? '/character-cewek-avatar.png' : '/character-cowok-avatar.png'"
+            :src="
+              (gameStore.participant.gender || '').toUpperCase() === 'FEMALE' ||
+              (gameStore.participant.gender || '').toUpperCase() === 'P' ||
+              gameStore.participant.avatar === 'character_cewek'
+                ? '/character-cewek-avatar.png'
+                : '/character-cowok-avatar.png'
+            "
             alt="Avatar"
             class="w-full h-full object-cover"
           />

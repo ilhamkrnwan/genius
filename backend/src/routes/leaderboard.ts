@@ -18,7 +18,8 @@ export const leaderboardRoutes = new Elysia({
   // GET /api/leaderboard — Combined team & participant leaderboard + recent ledger
   .get("/", async ({ query, user }) => {
     const stageId = query.stageId || "";
-    const limit = Number(query.limit) || 50;
+    const teamLimit = Number(query.teamLimit) || Number(query.limit) || 50;
+    const participantLimit = Number(query.participantLimit) || (query.limit && Number(query.limit) > 50 ? Number(query.limit) : 500);
 
     const settings = getSystemSettings();
     const isFrozenForUser = settings.isLeaderboardFrozen && settings.frozenAt && user?.role !== "ADMIN";
@@ -37,12 +38,17 @@ export const leaderboardRoutes = new Elysia({
         teamCode: teams.code,
         totalScore: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)`.as("total_score"),
         transactionCount: sql<number>`COUNT(${scoreTransactions.id})`.as("transaction_count"),
+        stampsCollected: sql<number>`LEAST(9, COALESCE((
+          SELECT COUNT(DISTINCT COALESCE(gs.mission_id, gs.location_id))
+          FROM game_sessions gs
+          WHERE gs.team_id = ${teams.id} AND gs.status = 'COMPLETED'
+        ), 0))`.as("stamps_collected"),
       })
       .from(teams)
       .leftJoin(scoreTransactions, teamJoinCondition)
       .groupBy(teams.id, teams.name, teams.code)
       .orderBy(desc(sql`total_score`))
-      .limit(limit);
+      .limit(teamLimit);
 
     // 2. Participant Leaderboard (Real database participants)
     const scoreConditions = [eq(users.id, scoreTransactions.participantId)];
@@ -56,6 +62,9 @@ export const leaderboardRoutes = new Elysia({
         participantName: users.fullName,
         username: users.username,
         gender: users.gender,
+        faculty: users.faculty,
+        prodi: users.prodi,
+        avatarUrl: users.avatarUrl,
         characterClass: users.characterClass,
         characterTitle: users.characterTitle,
         characterTier: users.characterTier,
@@ -63,6 +72,11 @@ export const leaderboardRoutes = new Elysia({
         teamName: teams.name,
         totalScore: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)`.as("total_score"),
         transactionCount: sql<number>`COUNT(${scoreTransactions.id})`.as("transaction_count"),
+        stampsCount: sql<number>`LEAST(9, COALESCE((
+          SELECT COUNT(DISTINCT COALESCE(gs.mission_id, gs.location_id))
+          FROM game_sessions gs
+          WHERE gs.team_id = ${teams.id} AND gs.status = 'COMPLETED'
+        ), 0))`.as("stamps_count"),
       })
       .from(users)
       .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
@@ -77,6 +91,9 @@ export const leaderboardRoutes = new Elysia({
         users.fullName,
         users.username,
         users.gender,
+        users.faculty,
+        users.prodi,
+        users.avatarUrl,
         users.characterClass,
         users.characterTitle,
         users.characterTier,
@@ -84,7 +101,7 @@ export const leaderboardRoutes = new Elysia({
         teams.name
       )
       .orderBy(desc(sql`total_score`), users.username)
-      .limit(limit);
+      .limit(participantLimit);
 
     // 3. Recent Transactions
     let recentTxQuery = db
@@ -122,6 +139,7 @@ export const leaderboardRoutes = new Elysia({
           teamCode: t.teamCode,
           totalScore: Number(t.totalScore),
           transactionCount: Number(t.transactionCount),
+          stampsCollected: Math.min(Number((t as any).stampsCollected || 0), 9),
         })),
         participantLeaderboard: topParticipants.map((p, index) => ({
           rank: index + 1,
@@ -129,6 +147,9 @@ export const leaderboardRoutes = new Elysia({
           participantName: p.participantName,
           username: p.username,
           gender: p.gender,
+          faculty: p.faculty || "UNU Yogyakarta",
+          prodi: p.prodi || p.characterClass || "Mahasiswa Baru",
+          avatarUrl: p.avatarUrl || (p.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png"),
           characterClass: p.characterClass,
           characterTitle: p.characterTitle,
           characterTier: p.characterTier,
@@ -136,6 +157,7 @@ export const leaderboardRoutes = new Elysia({
           teamName: p.teamName,
           totalScore: Number(p.totalScore),
           transactionCount: Number(p.transactionCount),
+          stampsCount: Math.min(Number((p as any).stampsCount || 0), 9),
         })),
         recentTransactions: recentTransactions.map((tx) => ({
           ...tx,
@@ -153,7 +175,7 @@ export const leaderboardRoutes = new Elysia({
   // GET /api/leaderboard/individual — Top participants ranking
   .get("/individual", async ({ query, user }) => {
     const stageId = query.stageId || "";
-    const limit = Number(query.limit) || 10;
+    const limit = Number(query.limit) || 500;
 
     const settings = getSystemSettings();
     const isFrozenForUser = settings.isLeaderboardFrozen && settings.frozenAt && user?.role !== "ADMIN";
@@ -170,6 +192,9 @@ export const leaderboardRoutes = new Elysia({
         participantName: users.fullName,
         username: users.username,
         gender: users.gender,
+        faculty: users.faculty,
+        prodi: users.prodi,
+        avatarUrl: users.avatarUrl,
         characterClass: users.characterClass,
         characterTitle: users.characterTitle,
         characterTier: users.characterTier,
@@ -177,6 +202,11 @@ export const leaderboardRoutes = new Elysia({
         teamName: teams.name,
         totalScore: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)`.as("total_score"),
         transactionCount: sql<number>`COUNT(${scoreTransactions.id})`.as("transaction_count"),
+        stampsCount: sql<number>`LEAST(9, COALESCE((
+          SELECT COUNT(DISTINCT COALESCE(gs.mission_id, gs.location_id))
+          FROM game_sessions gs
+          WHERE gs.team_id = ${teams.id} AND gs.status = 'COMPLETED'
+        ), 0))`.as("stamps_count"),
       })
       .from(users)
       .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
@@ -191,6 +221,9 @@ export const leaderboardRoutes = new Elysia({
         users.fullName,
         users.username,
         users.gender,
+        users.faculty,
+        users.prodi,
+        users.avatarUrl,
         users.characterClass,
         users.characterTitle,
         users.characterTier,
@@ -240,6 +273,9 @@ export const leaderboardRoutes = new Elysia({
           participantName: p.participantName,
           username: p.username,
           gender: p.gender,
+          faculty: p.faculty || "UNU Yogyakarta",
+          prodi: p.prodi || p.characterClass || "Mahasiswa Baru",
+          avatarUrl: p.avatarUrl || (p.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png"),
           characterClass: p.characterClass,
           characterTitle: p.characterTitle,
           characterTier: p.characterTier,
@@ -247,6 +283,7 @@ export const leaderboardRoutes = new Elysia({
           teamName: p.teamName,
           totalScore: Number(p.totalScore),
           transactionCount: Number(p.transactionCount),
+          stampsCount: Math.min(Number((p as any).stampsCount || 0), 9),
         })),
         myPosition,
       },
@@ -280,6 +317,11 @@ export const leaderboardRoutes = new Elysia({
         teamCode: teams.code,
         totalScore: sql<number>`COALESCE(SUM(${scoreTransactions.amount}), 0)`.as("total_score"),
         transactionCount: sql<number>`COUNT(${scoreTransactions.id})`.as("transaction_count"),
+        stampsCollected: sql<number>`LEAST(9, COALESCE((
+          SELECT COUNT(DISTINCT COALESCE(gs.mission_id, gs.location_id))
+          FROM game_sessions gs
+          WHERE gs.team_id = ${teams.id} AND gs.status = 'COMPLETED'
+        ), 0))`.as("stamps_collected"),
       })
       .from(teams)
       .leftJoin(scoreTransactions, teamJoinCondition)
@@ -328,6 +370,7 @@ export const leaderboardRoutes = new Elysia({
           teamCode: t.teamCode,
           totalScore: Number(t.totalScore),
           transactionCount: Number(t.transactionCount),
+          stampsCollected: Math.min(Number((t as any).stampsCollected || 0), 9),
         })),
         myTeamPosition,
       },
