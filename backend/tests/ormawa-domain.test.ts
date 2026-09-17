@@ -10,7 +10,7 @@ import {
 describe("aturan domain Ormawa", () => {
   it("menggunakan ekonomi XP tanpa batas stan global", () => {
     expect(ORMAWA_STAMP_XP).toBe(2);
-    expect(ORMAWA_INTEREST_XP).toBe(3);
+    expect(ORMAWA_INTEREST_XP).toBe(0);
   });
 
   it("menormalisasi handle Instagram dari handle maupun URL", () => {

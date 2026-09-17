@@ -3,28 +3,29 @@ import { hashPassword } from "../lib/password";
 import { db } from "./index";
 import { ormawaBooths, users } from "./schema";
 
-export const DEFAULT_ORMAWA_PIC_PASSWORD = "genius2026";
+export const DEFAULT_ORMAWA_PIC_PASSWORD = "ormawa2026";
 
 export const OFFICIAL_ORMAWA_PIC_ACCOUNTS = [
-  { boothCode: "ORMAWA-HMTE", username: "pic-hmte" },
-  { boothCode: "ORMAWA-HIMAFAR", username: "pic-himafar" },
-  { boothCode: "ORMAWA-MUSIK", username: "pic-musik" },
-  { boothCode: "ORMAWA-HIMASII", username: "pic-himasii" },
-  { boothCode: "ORMAWA-PADUS", username: "pic-padus" },
-  { boothCode: "ORMAWA-HIMATIKA", username: "pic-himatika" },
-  { boothCode: "ORMAWA-HIMAGRI", username: "pic-himagri" },
-  { boothCode: "ORMAWA-HMP-THP", username: "pic-hmp-thp" },
-  { boothCode: "ORMAWA-HIMATANSI", username: "pic-himatansi" },
-  { boothCode: "ORMAWA-JQH-IAC", username: "pic-jqh-iac" },
-  { boothCode: "ORMAWA-BADMINTON", username: "pic-badminton" },
-  { boothCode: "ORMAWA-MAPALA", username: "pic-mapala" },
-  { boothCode: "ORMAWA-SILAT", username: "pic-pagar-nusa" },
-  { boothCode: "ORMAWA-TARI", username: "pic-tari" },
-  { boothCode: "ORMAWA-HIMA-PGSD", username: "pic-hima-pgsd" },
-  { boothCode: "ORMAWA-HMP-PBI", username: "pic-hmp-pbi" },
-  { boothCode: "ORMAWA-KSR", username: "pic-ksr" },
-  { boothCode: "ORMAWA-PERMASUM", username: "pic-permasum" },
-  { boothCode: "ORMAWA-HMPM", username: "pic-hmpm" },
+  { boothCode: "ORMAWA-INFORMATIKA", username: "informatikaunu" },
+  { boothCode: "ORMAWA-HMTE", username: "hmteunu" },
+  { boothCode: "ORMAWA-MANAJEMEN", username: "manajemenunu" },
+  { boothCode: "ORMAWA-HIMATANSI", username: "himatansiunu" },
+  { boothCode: "ORMAWA-HIMAFAR", username: "himafarunu" },
+  { boothCode: "ORMAWA-THP", username: "thpunu" },
+  { boothCode: "ORMAWA-AGRIBISNIS", username: "agribisnisunu" },
+  { boothCode: "ORMAWA-PGSD", username: "pgsdunu" },
+  { boothCode: "ORMAWA-PBI", username: "pbiunu" },
+  { boothCode: "ORMAWA-SII", username: "siiunu" },
+  { boothCode: "ORMAWA-JQH", username: "jqhunu" },
+  { boothCode: "ORMAWA-MUSIK", username: "musikunu" },
+  { boothCode: "ORMAWA-KSR", username: "ksrunu" },
+  { boothCode: "ORMAWA-BADMINTON", username: "badmintonunu" },
+  { boothCode: "ORMAWA-SILAT", username: "silatunu" },
+  { boothCode: "ORMAWA-PADUS", username: "padusunu" },
+  { boothCode: "ORMAWA-FASHION", username: "fashionunu" },
+  { boothCode: "ORMAWA-MAPALA", username: "mapalaunu" },
+  { boothCode: "ORMAWA-TARI", username: "tariunu" },
+  { boothCode: "ORMAWA-VOLLY", username: "vollyunu" },
 ] as const;
 
 type EnsureOrmawaPicOptions = {
@@ -39,13 +40,15 @@ type EnsureOrmawaPicOptions = {
 export async function ensureOfficialOrmawaPics(
   options: EnsureOrmawaPicOptions = {},
 ) {
-  const passwordHash = await hashPassword(DEFAULT_ORMAWA_PIC_PASSWORD);
   let created = 0;
   let updated = 0;
   let linked = 0;
   const missingBooths: string[] = [];
 
   for (const account of OFFICIAL_ORMAWA_PIC_ACCOUNTS) {
+    const password = `${account.username}2026`;
+    const passwordHash = await hashPassword(password);
+
     const [booth] = await db
       .select()
       .from(ormawaBooths)
@@ -87,9 +90,9 @@ export async function ensureOfficialOrmawaPics(
         fullName,
         role: "ORMAWA_PIC",
         status: "ACTIVE",
+        passwordHash, // Selalu perbarui agar match dengan password simple username2026
         updatedAt: new Date(),
       };
-      if (options.resetPasswords) changes.passwordHash = passwordHash;
 
       [pic] = await db
         .update(users)

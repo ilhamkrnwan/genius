@@ -971,14 +971,11 @@ export const useGameStore = defineStore('game', {
         return { success: false, message: 'Anda sudah mendaftar minat pada ormawa ini.' };
       }
 
-      const xpBonusEarned = 3;
+      const xpBonusEarned = 0;
 
       try {
         // Optimistic update
         this.ormawaInterests.push(boothId);
-        if (xpBonusEarned > 0) {
-          this.participant.totalXp += xpBonusEarned;
-        }
         this.saveToStorage();
 
         // Sync with API
@@ -994,8 +991,8 @@ export const useGameStore = defineStore('game', {
 
         return {
           success: true,
-          message: `Minat bergabung berhasil dicatat! (+${xpBonusEarned} XP Ormawa)`,
-          xpBonusEarned
+          message: 'Minat bergabung berhasil dicatat!',
+          xpBonusEarned: 0
         };
       } catch (err: any) {
         // Rollback on failure

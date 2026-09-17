@@ -230,106 +230,113 @@ Keterangan : Username menggunakan NIM, Password menggunakan nama kelompok (e.g. 
     Penugasan    : Sasadu (GENIUS-50)
 
 ================================================================================
-3. AKUN PIC STAN ORMAWA / UKM EXPO (19 STAN RESMI LANTAI 3, 4, 5)
+3. AKUN PIC STAN ORMAWA / UKM EXPO (20 STAN RESMI LANTAI 3, 4, 5)
 ================================================================================
 Role       : ORMAWA_PIC
 Portal URL : http://localhost:3002/login ➔ /ormawa/portal
-Password   : ormawa2026
+Format     : Username: [nama]unu | Password: [username]2026 (contoh: hmteunu / hmteunu2026)
+Catatan    : Password alternatif 'ormawa2026' juga tetap didukung oleh sistem autentikasi.
 
-[1] Username     : pic-badminton | Password: ormawa2026
-    Nama Stan    : UKM Badminton UNU Yogyakarta
-    Lokasi Stan  : Lantai 4 (Booth E-11)
-    Token QR     : UNU-ORMAWA-BADMINTON-2026
-
-[2] Username     : pic-hima-pgsd | Password: ormawa2026
-    Nama Stan    : Himpunan Mahasiswa Pendidikan Guru Sekolah Dasar (HIMA PGSD)
-    Lokasi Stan  : Lantai 5 (Booth E-15)
-    Token QR     : UNU-ORMAWA-HIMA-PGSD-2026
-
-[3] Username     : pic-himafar | Password: ormawa2026
-    Nama Stan    : Himpunan Mahasiswa Farmasi (HIMAFAR)
-    Lokasi Stan  : Lantai 4 (Booth E-02)
-    Token QR     : UNU-ORMAWA-HIMAFAR-2026
-
-[4] Username     : pic-himagri | Password: ormawa2026
-    Nama Stan    : Himpunan Mahasiswa Agribisnis (HIMAGRI)
-    Lokasi Stan  : Lantai 4 (Booth E-07)
-    Token QR     : UNU-ORMAWA-HIMAGRI-2026
-
-[5] Username     : pic-himasii | Password: ormawa2026
-    Nama Stan    : Himpunan Mahasiswa Studi Islam Interdisipliner (HIMASII)
-    Lokasi Stan  : Lantai 5 (Booth E-04)
-    Token QR     : UNU-ORMAWA-HIMASII-2026
-
-[6] Username     : pic-himatansi | Password: ormawa2026
-    Nama Stan    : Himpunan Mahasiswa Akuntansi (HIMATANSI)
-    Lokasi Stan  : Lantai 5 (Booth E-09)
-    Token QR     : UNU-ORMAWA-HIMATANSI-2026
-
-[7] Username     : pic-himatika | Password: ormawa2026
-    Nama Stan    : Himpunan Mahasiswa Informatika (HIMATIKA)
-    Lokasi Stan  : Lantai 3 (Booth E-06)
-    Token QR     : UNU-ORMAWA-HIMATIKA-2026
-
-[8] Username     : pic-hmp-pbi | Password: ormawa2026
-    Nama Stan    : Himpunan Mahasiswa Program Studi Pendidikan Bahasa Inggris (HMP PBI)
-    Lokasi Stan  : Lantai 5 (Booth E-16)
-    Token QR     : UNU-ORMAWA-HMP-PBI-2026
-
-[9] Username     : pic-hmp-thp | Password: ormawa2026
-    Nama Stan    : Himpunan Mahasiswa Teknologi Hasil Pertanian (HMP THP)
-    Lokasi Stan  : Lantai 4 (Booth E-08)
-    Token QR     : UNU-ORMAWA-HMP-THP-2026
-
-[10] Username     : pic-hmpm | Password: ormawa2026
-    Nama Stan    : Himpunan Mahasiswa Program Studi Manajemen UNU Yogyakarta (HMPM)
-    Lokasi Stan  : Lantai 5 (Booth E-19)
-    Token QR     : UNU-ORMAWA-HMPM-2026
-
-[11] Username     : pic-hmte | Password: ormawa2026
-    Nama Stan    : Himpunan Mahasiswa Teknik Elektro (HMTE)
+[1] Username     : informatikaunu | Password: informatikaunu2026
+    Nama Stan    : HMP INFORMATIKA
     Lokasi Stan  : Lantai 3 (Booth E-01)
+    Token QR     : UNU-ORMAWA-INFORMATIKA-2026
+
+[2] Username     : hmteunu | Password: hmteunu2026
+    Nama Stan    : HMTE (HMP TEKNIK ELEKTRO)
+    Lokasi Stan  : Lantai 3 (Booth E-02)
     Token QR     : UNU-ORMAWA-HMTE-2026
 
-[12] Username     : pic-jqh-iac | Password: ormawa2026
-    Nama Stan    : UKM Jam'iyyatul Qurro' wal Huffazh & Intercollegiate Arabic Club (JQH IAC)
+[3] Username     : manajemenunu | Password: manajemenunu2026
+    Nama Stan    : HMP MANAJEMEN
+    Lokasi Stan  : Lantai 5 (Booth E-03)
+    Token QR     : UNU-ORMAWA-MANAJEMEN-2026
+
+[4] Username     : himatansiunu | Password: himatansiunu2026
+    Nama Stan    : HIMATANSI (HMP AKUNTANSI)
+    Lokasi Stan  : Lantai 4 (Booth E-04)
+    Token QR     : UNU-ORMAWA-HIMATANSI-2026
+
+[5] Username     : himafarunu | Password: himafarunu2026
+    Nama Stan    : HIMAFAR (HMP FARMASI)
+    Lokasi Stan  : Lantai 4 (Booth E-05)
+    Token QR     : UNU-ORMAWA-HIMAFAR-2026
+
+[6] Username     : thpunu | Password: thpunu2026
+    Nama Stan    : HMP THP
+    Lokasi Stan  : Lantai 4 (Booth E-06)
+    Token QR     : UNU-ORMAWA-THP-2026
+
+[7] Username     : agribisnisunu | Password: agribisnisunu2026
+    Nama Stan    : HMP AGRIBISNIS
+    Lokasi Stan  : Lantai 4 (Booth E-07)
+    Token QR     : UNU-ORMAWA-AGRIBISNIS-2026
+
+[8] Username     : pgsdunu | Password: pgsdunu2026
+    Nama Stan    : HIMA PGSD (HMP PENDIDIKAN GURU SEKOLAH DASAR)
+    Lokasi Stan  : Lantai 5 (Booth E-08)
+    Token QR     : UNU-ORMAWA-PGSD-2026
+
+[9] Username     : pbiunu | Password: pbiunu2026
+    Nama Stan    : HMP PBI
+    Lokasi Stan  : Lantai 5 (Booth E-09)
+    Token QR     : UNU-ORMAWA-PBI-2026
+
+[10] Username     : siiunu | Password: siiunu2026
+    Nama Stan    : HMP SII
     Lokasi Stan  : Lantai 5 (Booth E-10)
-    Token QR     : UNU-ORMAWA-JQH-IAC-2026
+    Token QR     : UNU-ORMAWA-SII-2026
 
-[13] Username     : pic-ksr | Password: ormawa2026
-    Nama Stan    : UKM Korps Sukarela PMI Unit UNU Yogyakarta (KSR PMI)
-    Lokasi Stan  : Lantai 4 (Booth E-17)
-    Token QR     : UNU-ORMAWA-KSR-2026
+[11] Username     : jqhunu | Password: jqhunu2026
+    Nama Stan    : UKM JQH ISLAMIC ART COLABORATION UNU YOGYAKARTA
+    Lokasi Stan  : Lantai 5 (Booth E-11)
+    Token QR     : UNU-ORMAWA-JQH-2026
 
-[14] Username     : pic-mapala | Password: ormawa2026
-    Nama Stan    : UKM Mahasiswa Pecinta Alam UNUYO (MAPALA)
-    Lokasi Stan  : Lantai 4 (Booth E-12)
-    Token QR     : UNU-ORMAWA-MAPALA-2026
-
-[15] Username     : pic-musik | Password: ormawa2026
-    Nama Stan    : UKM Musik Florence UNU Yogyakarta
-    Lokasi Stan  : Lantai 3 (Booth E-03)
+[12] Username     : musikunu | Password: musikunu2026
+    Nama Stan    : UKM MUSIK FLORENCE UNU YOGYAKARTA
+    Lokasi Stan  : Lantai 3 (Booth E-12)
     Token QR     : UNU-ORMAWA-MUSIK-2026
 
-[16] Username     : pic-padus | Password: ormawa2026
-    Nama Stan    : UKM Paduan Suara Mahasiswa (PSM) Gita Nusantara
-    Lokasi Stan  : Lantai 3 (Booth E-05)
-    Token QR     : UNU-ORMAWA-PADUS-2026
+[13] Username     : ksrunu | Password: ksrunu2026
+    Nama Stan    : UKM KORP SUKARELA PALANG MERAH INDONESIA UNU YOGYAKARTA
+    Lokasi Stan  : Lantai 5 (Booth E-13)
+    Token QR     : UNU-ORMAWA-KSR-2026
 
-[17] Username     : pic-pagar-nusa | Password: ormawa2026
-    Nama Stan    : UKM Pencak Silat Pagar Nusa UNU Yogyakarta
-    Lokasi Stan  : Lantai 3 (Booth E-13)
+[14] Username     : badmintonunu | Password: badmintonunu2026
+    Nama Stan    : UKM BADMINTON UNU YOGYAKARTA
+    Lokasi Stan  : Lantai 4 (Booth E-14)
+    Token QR     : UNU-ORMAWA-BADMINTON-2026
+
+[15] Username     : silatunu | Password: silatunu2026
+    Nama Stan    : UKM PENCAK SILAT UNU YOGYAKARTA
+    Lokasi Stan  : Lantai 3 (Booth E-15)
     Token QR     : UNU-ORMAWA-SILAT-2026
 
-[18] Username     : pic-permasum | Password: ormawa2026
-    Nama Stan    : PERMASUM UNUYO (Persatuan Mahasiswa Sumatera UNU Yogyakarta)
-    Lokasi Stan  : Lantai 4 (Booth E-18)
-    Token QR     : UNU-ORMAWA-PERMASUM-2026
+[16] Username     : padusunu | Password: padusunu2026
+    Nama Stan    : UKM PADUAN SUARA MAHASISWA UNU YOGYAKARTA
+    Lokasi Stan  : Lantai 3 (Booth E-16)
+    Token QR     : UNU-ORMAWA-PADUS-2026
 
-[19] Username     : pic-tari | Password: ormawa2026
-    Nama Stan    : UKM Seni Tari Tradisional & Modern UNU Yogyakarta
-    Lokasi Stan  : Lantai 3 (Booth E-14)
+[17] Username     : fashionunu | Password: fashionunu2026
+    Nama Stan    : UKM FASHION
+    Lokasi Stan  : Lantai 4 (Booth E-17)
+    Token QR     : UNU-ORMAWA-FASHION-2026
+
+[18] Username     : mapalaunu | Password: mapalaunu2026
+    Nama Stan    : MAPALA UNUYO
+    Lokasi Stan  : Lantai 3 (Booth E-18)
+    Token QR     : UNU-ORMAWA-MAPALA-2026
+
+[19] Username     : tariunu | Password: tariunu2026
+    Nama Stan    : UKM TARI (Arunika Dance Club)
+    Lokasi Stan  : Lantai 3 (Booth E-19)
     Token QR     : UNU-ORMAWA-TARI-2026
+
+[20] Username     : vollyunu | Password: vollyunu2026
+    Nama Stan    : UKM Volly
+    Lokasi Stan  : Lantai 4 (Booth E-20)
+    Token QR     : UNU-ORMAWA-VOLLY-2026
+
 
 ================================================================================
 4. AKUN MAHASISWA BARU / PESERTA (403 MABA RESMI)

@@ -27,7 +27,6 @@ import { ORMAWA_STANDS } from '@/data/ormawaData';
 import { OrmawaStand } from '@/types/ormawa';
 import OrmawaInterestModal from '@/components/ormawa/OrmawaInterestModal.vue';
 import OrmawaStampGrid from '@/components/ormawa/OrmawaStampGrid.vue';
-import QrScannerModal from '@/components/common/QrScannerModal.vue';
 import { soundEngine } from '@/lib/sound';
 import { api } from '@/lib/api';
 import { AVATAR_OPTIONS } from '@/data/mockData';
@@ -263,29 +262,7 @@ const openStandDetail = (stand: OrmawaStand) => {
   activeStandDetail.value = stand;
 };
 
-const showBoothScanner = ref(false);
 const ormawaScanToast = ref<{ message: string; success: boolean } | null>(null);
-
-const ormawaPresetTokens = computed(() => {
-  return stands.value.map((s) => s.qrToken).filter(Boolean);
-});
-
-const openBoothScanner = () => {
-  safeSound(() => soundEngine.playClick?.());
-  showBoothScanner.value = true;
-};
-
-const handleBoothScanSuccess = (token: string) => {
-  showBoothScanner.value = false;
-  const res = gameStore.scanOrmawa(token);
-  ormawaScanToast.value = {
-    message: res.message,
-    success: res.success,
-  };
-  setTimeout(() => {
-    ormawaScanToast.value = null;
-  }, 4500);
-};
 
 const openQrModal = () => {
   if (gameStore.soundEnabled) soundEngine.playSelect();
@@ -510,24 +487,23 @@ const getCategoryLabel = (category: string) => {
           </div>
         </div>
 
-        <!-- Action Strip: Pindai QR Meja & Buka QR Profil -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-[#120a05]/90 border-t border-[#5a3a18]/70">
-          <button
-            type="button"
-            @click="openBoothScanner"
-            class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#166534] via-[#15803d] to-[#16a34a] hover:brightness-110 border border-[#22c55e] text-white font-pixel text-[10px] font-bold flex items-center justify-center gap-2 shadow active:scale-[0.98] cursor-pointer transition-all"
-          >
-            <PhCamera :size="16" weight="bold" class="text-[#86efac]" />
-            <span>PINDAI QR MEJA STAN</span>
-          </button>
-
+        <!-- Action Strip: Tunjukkan QR / Barcode Peserta -->
+        <div class="p-3 bg-[#120a05]/90 border-t border-[#5a3a18]/70">
           <button
             type="button"
             @click="showQrModal = true; safeSound(() => soundEngine.playSelect?.())"
-            class="py-2.5 px-3 rounded-xl bg-[#2a1a0e] hover:bg-[#3d2714] border border-[#facc15] text-[#facc15] hover:text-white font-pixel text-[10px] font-bold flex items-center justify-center gap-2 shadow active:scale-[0.98] cursor-pointer transition-all"
+            class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#2a1a0e] via-[#3d2714] to-[#2a1a0e] hover:brightness-110 border-2 border-[#facc15] text-[#facc15] hover:text-white font-pixel text-xs font-bold flex items-center justify-between gap-3 shadow-lg active:scale-[0.98] cursor-pointer transition-all"
           >
-            <PhQrCode :size="16" weight="bold" />
-            <span>BUKA QR PROFIL SAYA</span>
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-black/40 border border-[#facc15]/50 flex items-center justify-center shrink-0">
+                <PhQrCode :size="18" weight="bold" class="text-[#facc15]" />
+              </div>
+              <div class="text-left">
+                <span class="block font-pixel text-xs text-white">TUNJUKKAN QR / BARCODE PESERTA</span>
+                <span class="block font-sans text-[10px] text-[#c4956a] font-normal">Pindai oleh PIC Ormawa atau sebutkan NIM Anda</span>
+              </div>
+            </div>
+            <PhCaretRight :size="16" weight="bold" class="text-[#facc15] shrink-0" />
           </button>
         </div>
       </section>
@@ -883,7 +859,7 @@ const getCategoryLabel = (category: string) => {
               class="w-full py-2.5 bg-gradient-to-r from-[#166534] to-[#14532d] hover:from-[#14532d] hover:to-[#064e3b] text-[#86efac] font-pixel text-[10px] rounded-xl border border-[#166534] shadow active:scale-98 cursor-pointer transition-all flex items-center justify-center gap-1.5"
             >
               <PhHeart weight="fill" :size="14" />
-              <span>BERMINAT GABUNG (+3 XP)</span>
+              <span>BERMINAT GABUNG</span>
             </button>
             <div 
               v-else 
@@ -898,7 +874,7 @@ const getCategoryLabel = (category: string) => {
               @click="openStampQr"
               class="w-full py-2.5 bg-[#713f12] hover:bg-[#854d0e] text-[#fef08a] font-pixel text-xs rounded-xl border border-[#facc15] cursor-pointer transition-all active:scale-98 shadow flex items-center justify-center gap-1.5"
             >
-              <PhQrCode :size="15" weight="bold" /> STAMP
+              <PhQrCode :size="15" weight="bold" /> TUNJUKKAN QR PESERTA
             </button>
           </div>
         </div>
@@ -912,15 +888,6 @@ const getCategoryLabel = (category: string) => {
       :standId="activeStandDetail.id"
       :standName="activeStandDetail.name"
       @submit="submitInterestHandler"
-    />
-
-    <!-- Booth QR Scanner Modal (Maba Scan Meja Stan) -->
-    <QrScannerModal
-      v-model="showBoothScanner"
-      title="SCAN QR MEJA STAN ORMAWA"
-      subtitle="Arahkan kamera ke QR Code resmi yang dipajang di meja stan Ormawa Expo (Lantai 6)"
-      :presetTokens="ormawaPresetTokens"
-      @scan="handleBoothScanSuccess"
     />
   </div>
 </template>

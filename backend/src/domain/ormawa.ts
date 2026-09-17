@@ -1,5 +1,5 @@
 export const ORMAWA_STAMP_XP = 2;
-export const ORMAWA_INTEREST_XP = 3;
+export const ORMAWA_INTEREST_XP = 0;
 export const ORMAWA_LOGO_MAX_BYTES = 2 * 1024 * 1024;
 
 export function normalizeInstagramUsername(raw: string | null | undefined): string | null {
