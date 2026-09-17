@@ -669,7 +669,7 @@ export const OFFICIAL_BOOTHS_DATA: Record<string, Booth> = {
           number: 5,
           direction: 'down',
           clue: 'Sikap menolak dengan tegas terhadap penyalahgunaan narkoba?',
-          answer: 'TEGAS',
+          answer: 'TOLAK',
           row: 0,
           col: 2,
           score: 20,

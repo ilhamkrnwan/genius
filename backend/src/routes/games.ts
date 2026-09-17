@@ -273,7 +273,7 @@ export const gameRoutes = new Elysia({
           gridCols: 10,
           timeLimitSeconds: 120,
           maxScore: 100,
-          words: ["NARKOBA", "KETAGIHAN", "BEBAS", "REHAB", "TEGAS"],
+          words: ["NARKOBA", "KETAGIHAN", "BEBAS", "REHAB", "TOLAK"],
         },
         questionBankCategory: "Anti Narkoba",
         minPlayers: 1,
