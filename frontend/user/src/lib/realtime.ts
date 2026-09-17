@@ -1,4 +1,5 @@
 import { useGameStore } from '@/store/gameStore';
+import { useGameSessionStore } from '@/store/gameSessionStore';
 
 let socket: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -38,6 +39,16 @@ function connect() {
       try {
         socket?.send(JSON.stringify({ action: 'SUBSCRIBE', topic: 'leaderboard:global' }));
         socket?.send(JSON.stringify({ action: 'SUBSCRIBE', topic: 'announcements:global' }));
+        
+        const rawUser = localStorage.getItem('genius_user');
+        if (rawUser) {
+          try {
+            const parsed = JSON.parse(rawUser);
+            if (parsed?.teamId) {
+              socket?.send(JSON.stringify({ action: 'SUBSCRIBE', topic: `team:${parsed.teamId}` }));
+            }
+          } catch (_) {}
+        }
       } catch (_) {}
 
       // Keepalive ping every 25 seconds
@@ -55,13 +66,53 @@ function connect() {
         if (msg.event === 'PONG') return;
 
         const eventType = msg.event || msg.data?.type;
+
+        // 1. Session-specific real-time events (Pause, Start/Resume, Expire/Stop)
+        if (
+          eventType === 'SESSION_PAUSED' ||
+          eventType === 'GAME_SESSION_PAUSED'
+        ) {
+          const sessionStore = useGameSessionStore();
+          sessionStore.handleSessionPaused(msg.data);
+          return;
+        }
+
+        if (
+          eventType === 'SESSION_STARTED' ||
+          eventType === 'GAME_SESSION_STARTED'
+        ) {
+          const sessionStore = useGameSessionStore();
+          sessionStore.handleSessionStarted(msg.data);
+          return;
+        }
+
+        if (
+          eventType === 'SESSION_EXPIRED' ||
+          eventType === 'GAME_SESSION_EXPIRED'
+        ) {
+          const sessionStore = useGameSessionStore();
+          sessionStore.handleSessionExpired(msg.data);
+          return;
+        }
+
+        if (
+          eventType === 'SESSION_COMPLETED' ||
+          eventType === 'GAME_SESSION_COMPLETED'
+        ) {
+          const sessionStore = useGameSessionStore();
+          sessionStore.handleSessionCompleted(msg.data);
+          const gameStore = useGameStore();
+          void gameStore.syncWithServer();
+          return;
+        }
+
+        // 2. Global state and attendance sync events
         const relevantEvents = [
           'ATTENDANCE_CHECK_IN',
           'ATTENDANCE_CHECK_OUT',
           'XP_AWARDED',
           'SCORE_SUBMITTED',
           'LEADERBOARD_UPDATED',
-          'GAME_SESSION_COMPLETED',
           'SYSTEM_SETTINGS_UPDATED',
           'XP_RESET',
         ];

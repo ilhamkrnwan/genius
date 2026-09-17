@@ -155,7 +155,7 @@ const startPollingForGameMaster = () => {
       clearInterval(pollInterval);
       pollInterval = null;
       const evaluation = (updatedSession.result || {}) as any;
-      const finalScore = evaluation.totalTeamScore ?? evaluation.totalScore ?? evaluation.score ?? totalScore.value;
+      const finalScore = evaluation.participantScore ?? evaluation.totalScore ?? totalScore.value;
       emit('complete', Math.min(100, Math.max(0, Number(finalScore))), questions.value.length);
     } else if (
       updatedSession.metadata &&
@@ -190,10 +190,16 @@ const handleNextQuestion = async () => {
     if (gameStore.soundEnabled) soundEngine.playClick();
   } else {
     if (props.serverSessionId) {
-      const result = await gameSessionStore.completeSession();
+      const result = await gameSessionStore.completeSession([
+        {
+          action: 'QUIZ_ANSWERS',
+          score: totalScore.value,
+          totalQuestions: questions.value.length,
+        },
+      ]);
       if (!result) return;
       const evaluation = (result.evaluation || {}) as Record<string, any>;
-      const finalScore = evaluation.totalTeamScore ?? evaluation.totalScore ?? evaluation.score ?? totalScore.value;
+      const finalScore = evaluation.participantScore ?? evaluation.totalScore ?? totalScore.value;
       emit('complete', Math.min(100, Math.max(0, Number(finalScore))), questions.value.length);
       return;
     }

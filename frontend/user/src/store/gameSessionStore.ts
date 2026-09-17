@@ -209,6 +209,36 @@ export const useGameSessionStore = defineStore('gameSession', () => {
     return response.data;
   }
 
+  function handleSessionPaused(data?: any) {
+    if (session.value) {
+      session.value = { ...session.value, ...(data?.session || data), status: 'PAUSED' };
+    }
+    status.value = 'paused';
+  }
+
+  function handleSessionStarted(data?: any) {
+    if (session.value) {
+      session.value = { ...session.value, ...(data?.session || data), status: 'ACTIVE' };
+    }
+    status.value = 'active';
+  }
+
+  function handleSessionExpired(data?: any) {
+    if (session.value) {
+      session.value = { ...session.value, ...(data?.session || data), status: 'EXPIRED' };
+    }
+    status.value = 'expired';
+    persistSession(null);
+  }
+
+  function handleSessionCompleted(data?: any) {
+    if (session.value) {
+      session.value = { ...session.value, ...(data?.session || data), status: 'COMPLETED' };
+    }
+    status.value = 'completed';
+    persistSession(null);
+  }
+
   function clearSession() {
     selectedMission.value = null;
     session.value = null;
@@ -242,5 +272,9 @@ export const useGameSessionStore = defineStore('gameSession', () => {
     restoreSession,
     restoreActiveSessionForMission,
     clearSession,
+    handleSessionPaused,
+    handleSessionStarted,
+    handleSessionExpired,
+    handleSessionCompleted,
   };
 });

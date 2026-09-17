@@ -5,6 +5,7 @@ import {
   PhArrowLeft,
   PhCheckCircle,
   PhBookOpen,
+  PhPause,
 } from '@phosphor-icons/vue';
 import { BOOTHS_DATA, FLOORS_DATA, AVATAR_OPTIONS } from '@/data/mockData';
 import { useGameStore } from '@/store/gameStore';
@@ -141,6 +142,11 @@ onMounted(() => {
       }
     }
   }, 2500);
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  }
+  requestUserWakeLock();
 });
 
 const missionResponseRef = ref<any>(null);
@@ -148,12 +154,45 @@ watch(boothId, () => { void initializeBackendMission(); });
 watch(() => gameSessionStore.session, (session) => {
   if (session?.status === 'ACTIVE' && missionResponseRef.value?.id === session.missionId) {
     backendBooth.value = normalizePlayableSessionMission(missionResponseRef.value, session);
+    requestUserWakeLock();
+  } else if (session?.status === 'PAUSED' || session?.status === 'EXPIRED') {
+    releaseUserWakeLock();
   }
 });
+
+// Screen Wake Lock API & Anti-Refresh
+let userWakeLock: any = null;
+
+async function requestUserWakeLock() {
+  if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
+  try {
+    userWakeLock = await (navigator as any).wakeLock.request('screen');
+  } catch (_) {}
+}
+
+function releaseUserWakeLock() {
+  if (userWakeLock) {
+    try {
+      userWakeLock.release();
+    } catch (_) {}
+    userWakeLock = null;
+  }
+}
+
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (isSessionActive.value) {
+    e.preventDefault();
+    e.returnValue = 'Kuis pos sedang berlangsung. Meninggalkan halaman dapat membatalkan progres Anda.';
+  }
+};
 
 onUnmounted(() => {
   if (tickTimer) clearInterval(tickTimer);
   if (sessionPollingTimer) clearInterval(sessionPollingTimer);
+  releaseUserWakeLock();
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+  }
 });
 
 const showStoryModal = ref(!isAlreadyCompleted.value);
@@ -374,12 +413,9 @@ const handleNextStep = () => {
           <button class="rpg-btn-primary py-2 px-4 text-[10px] font-pixel" @click="initializeBackendMission">ULANG LATIHAN</button>
           <RouterLink to="/peta" class="text-xs underline">Kembali ke Peta</RouterLink>
         </div>
-        <div v-else-if="hasBackendAuth && gameSessionStore.session?.status === 'PAUSED'" class="flex-1 flex items-center justify-center text-center p-6">
-          <p class="font-pixel text-xs">SESI DIJEDA OLEH KAKAK BUDDY</p>
-        </div>
         <!-- ACTIVE MINI GAME CONTAINER -->
         <MiniGameContainer
-          v-else-if="!isBackendLoading && !backendError && (isSessionActive || !hasBackendAuth)"
+          v-else-if="!isBackendLoading && !backendError && (isSessionActive || !hasBackendAuth || gameSessionStore.status === 'paused') && gameSessionStore.status !== 'expired' && gameSessionStore.session?.status !== 'EXPIRED'"
           :key="serverSessionId || boothId"
           :booth="booth"
           :isCompleted="isAlreadyCompleted && !isPractice"
@@ -387,10 +423,37 @@ const handleNextStep = () => {
           @complete="handleMiniGameComplete"
         />
 
-        <div v-if="gameSessionStore.status === 'expired'" class="flex-1 flex items-center justify-center text-center p-6">
+        <!-- PAUSE MODAL OVERLAY -->
+        <div
+          v-if="gameSessionStore.status === 'paused' || gameSessionStore.session?.status === 'PAUSED'"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 select-none animate-in fade-in duration-300"
+        >
+          <div class="sdv-card max-w-sm w-full p-6 text-center space-y-4 border-2 border-amber-400 bg-[#1f140a] shadow-[0_0_40px_rgba(245,158,11,0.35)] animate-in zoom-in-95">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-[#120a05] border-2 border-amber-400 flex items-center justify-center shadow-lg">
+              <PhPause :size="32" class="text-amber-400 animate-pulse" weight="fill" />
+            </div>
+            <div class="space-y-1.5">
+              <span class="px-2 py-0.5 rounded bg-amber-950 text-amber-300 font-pixel text-[9px] border border-amber-600 uppercase">
+                INSTRUKSI GAME MASTER
+              </span>
+              <h2 class="font-pixel text-base text-[#fef08a] font-bold drop-shadow">
+                SESI PERMAINAN DIJEDA
+              </h2>
+              <p class="font-sans text-xs text-[#f0e0c0] leading-relaxed">
+                Kakak Buddy sedang menjeda waktu pos ini. Permainan dihentikan sementara. Harap dengarkan instruksi langsung dari Kakak Buddy.
+              </p>
+            </div>
+            <div class="p-2.5 rounded-lg bg-[#120a05] border border-[#5a3a18] text-[10px] font-mono text-[#86efac] flex items-center justify-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-[#22c55e] animate-ping"></span>
+              <span>Menunggu Game Master melanjutkan sesi...</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="gameSessionStore.status === 'expired' || gameSessionStore.session?.status === 'EXPIRED'" class="flex-1 flex items-center justify-center text-center p-6">
           <div class="max-w-sm space-y-3">
             <h2 class="font-pixel text-sm text-[#ff8080]">WAKTU GAME HABIS</h2>
-            <p class="font-sans text-xs text-[#f0e0c0]">Sesi ini sudah kedaluwarsa dan tidak menerima jawaban lagi.</p>
+            <p class="font-sans text-xs text-[#f0e0c0]">Sesi pos ini telah selesai / dihentikan oleh Game Master.</p>
             <RouterLink to="/peta" class="inline-block rpg-btn-primary py-2 px-4 text-[10px] font-pixel">KEMBALI KE PETA</RouterLink>
           </div>
         </div>

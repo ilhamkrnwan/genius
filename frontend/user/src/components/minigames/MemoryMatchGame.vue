@@ -155,9 +155,9 @@ const finishGame = async () => {
       isSubmitting.value = false;
       return;
     }
-    const evaluation = result.evaluation as { totalTeamScore?: number; totalScore?: number };
+    const evaluation = result.evaluation as { totalTeamScore?: number; totalScore?: number; participantScore?: number };
     isFinished.value = true;
-    const finalScore = evaluation.totalTeamScore ?? evaluation.totalScore ?? totalMemoryScore;
+    const finalScore = evaluation.participantScore ?? evaluation.totalScore ?? totalMemoryScore;
     emit('complete', Math.min(100, Math.max(0, Number(finalScore))), pairs.value.length);
     return;
   }

@@ -20,9 +20,9 @@
       <div>
         <span
           v-if="currentSession?.status === 'ACTIVE'"
-          class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-pixel text-[#86efac] bg-[#172513] border border-[#22c55e]/60"
+          class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-pixel text-[#86efac] bg-[#172513] border border-[#22c55e]/60 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
         >
-          <span class="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse"></span>
           SESI AKTIF
         </span>
         <span
@@ -78,6 +78,18 @@
             :style="{ width: `${remainingPercent}%` }"
           ></div>
         </div>
+
+        <!-- Anti-Lockscreen & Anti-Refresh Status Indicator -->
+        <div class="flex items-center justify-between text-[8px] sm:text-[9px] font-mono text-[#c4956a] pt-1 border-t border-[#5a3a18]/40">
+          <span class="flex items-center gap-1" :class="isWakeLockActive ? 'text-[#86efac]' : 'text-[#c4956a]'">
+            <Sun class="w-3 h-3 text-amber-400" :class="isWakeLockActive ? 'animate-pulse' : ''" />
+            <span>{{ isWakeLockActive ? 'Anti-Lockscreen Aktif' : 'WakeLock Siaga' }}</span>
+          </span>
+          <span class="flex items-center gap-1 text-[#38bdf8]">
+            <ShieldCheck class="w-3 h-3 text-[#38bdf8]" />
+            <span>Anti-Refresh &amp; Waktu Ter-Sync</span>
+          </span>
+        </div>
       </div>
 
       <!-- Action Controls for Active Session -->
@@ -87,9 +99,9 @@
           type="button"
           @click="togglePauseSession"
           :disabled="actionLoading"
-          class="rpg-btn-wood h-8 text-[9px] font-pixel flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+          class="rpg-btn-wood h-9 text-[9.5px] font-pixel flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 shadow-md"
         >
-          <Pause class="h-3 w-3 text-[#facc15]" />
+          <Pause class="h-3.5 w-3.5 text-[#facc15]" />
           <span>JEDA SESI</span>
         </button>
 
@@ -98,9 +110,9 @@
           type="button"
           @click="resumeSession"
           :disabled="actionLoading"
-          class="rpg-btn-primary h-8 text-[9px] font-pixel flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+          class="rpg-btn-primary h-9 text-[9.5px] font-pixel flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 shadow-md"
         >
-          <Play class="h-3 w-3 text-white" />
+          <Play class="h-3.5 w-3.5 text-white" />
           <span>LANJUTKAN</span>
         </button>
 
@@ -108,9 +120,9 @@
           type="button"
           @click="endSessionManual"
           :disabled="actionLoading"
-          class="bg-[#2a1210] hover:bg-red-900 border-2 border-red-700/80 text-red-200 h-8 rounded-lg text-[9px] font-pixel flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+          class="bg-[#2a1210] hover:bg-red-900 border-2 border-red-700/80 text-red-200 h-9 rounded-lg text-[9.5px] font-pixel flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 shadow-md"
         >
-          <Square class="h-3 w-3 text-red-400" />
+          <Square class="h-3.5 w-3.5 text-red-400" />
           <span>SELESAIKAN POS</span>
         </button>
       </div>
@@ -119,7 +131,7 @@
     <!-- STATE 2: Belum Ada Sesi (IDLE / READY untuk diaktifkan) -->
     <div v-else class="space-y-2.5">
       <div class="p-2 bg-[#170f07] border border-[#5a3a18] rounded-lg text-[10px] text-[#c4956a] leading-relaxed">
-        🛡️ <strong class="text-[#f0d060]">Aturan Gatekeeper:</strong> Mahasiswa Baru regu Anda tidak dapat memulai game pos sebelum Anda mengaktifkannya di sini.
+        🛡️ <strong class="text-[#f0d060]">Aturan Gatekeeper:</strong> Mahasiswa Baru regu Anda tidak dapat memulai kuis pos sebelum Anda mengaktifkannya di sini.
       </div>
 
       <!-- Pilih Pos Game -->
@@ -137,33 +149,15 @@
         </select>
       </div>
 
-      <!-- Pilih Durasi Preset (10m, 12m, 15m) -->
-      <div class="space-y-1">
-        <div class="flex items-center justify-between">
-          <label class="text-[9px] font-pixel text-[#f0d060] uppercase">
-            2. DURASI AKTIF SERVER:
-          </label>
-          <span class="text-[8.5px] text-[#86efac] font-mono font-bold">
-            {{ selectedDuration / 60 }} Menit ({{ selectedDuration }} Detik)
-          </span>
+      <!-- Durasi Baku Pos: 12 Menit (Fixed Default) -->
+      <div class="p-2.5 bg-[#170f07] border-2 border-[#5a3a18] rounded-xl flex items-center justify-between font-mono">
+        <div>
+          <span class="text-[8px] font-pixel text-[#c4956a] uppercase block">DURASI RESMI POS:</span>
+          <span class="text-xs font-pixel text-[#fef08a] font-bold">12 MENIT (720 DETIK)</span>
         </div>
-
-        <div class="grid grid-cols-3 gap-1.5 font-mono">
-          <button
-            v-for="preset in durationPresets"
-            :key="preset.seconds"
-            type="button"
-            @click="selectedDuration = preset.seconds"
-            :class="[
-              'p-1.5 rounded-lg border-2 text-center transition-all cursor-pointer active:scale-95',
-              selectedDuration === preset.seconds
-                ? 'bg-[#1a1008] border-[#f0d060] shadow-[0_0_10px_rgba(240,208,96,0.25)]'
-                : 'bg-[#170f07] border-[#5a3a18] text-[#a08060] hover:border-[#8b6f4e]'
-            ]"
-          >
-            <span class="font-pixel text-[9px] text-[#fef08a] block">{{ preset.label }}</span>
-            <span class="text-[7.5px] text-[#c4956a] mt-0.5 block">{{ preset.desc }}</span>
-          </button>
+        <div class="flex items-center gap-1.5 bg-[#120a05] border border-[#f0d060]/40 px-2 py-1 rounded text-[9px] text-[#86efac]">
+          <Clock class="w-3 h-3 text-[#f0d060]" />
+          <span>Baku 12 Menit</span>
         </div>
       </div>
 
@@ -176,7 +170,7 @@
       >
         <span v-if="actionLoading" class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
         <Unlock v-else class="h-4 w-4 text-[#facc15]" />
-        <span>{{ actionLoading ? 'MENGHUBUNGI SERVER...' : '🔓 AKTIFKAN SESI POS REGUSAYA' }}</span>
+        <span>{{ actionLoading ? 'MENGHUBUNGI SERVER...' : '🔓 AKTIFKAN SESI POS REGUSAYA (12 MENIT)' }}</span>
       </button>
     </div>
 
@@ -192,8 +186,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { Gamepad2, Unlock, Pause, Play, Square } from "lucide-vue-next";
+import { Gamepad2, Unlock, Pause, Play, Square, Clock, Sun, ShieldCheck } from "lucide-vue-next";
 import { useApi } from "~/composables/useApi";
+import { useRealtime } from "~/composables/useRealtime";
 
 interface Props {
   teamId: string;
@@ -206,19 +201,55 @@ const emit = defineEmits<{
 }>();
 
 const api = useApi();
+const { onEvent } = useRealtime();
 
-// Presets waktu resmi: 10 menit (600s), 12 menit (720s), 15 menit (900s)
-const durationPresets = [
-  { seconds: 600, label: "10 MENIT", desc: "Kuis / Cepat" },
-  { seconds: 720, label: "12 MENIT", desc: "Standar Pos" },
-  { seconds: 900, label: "15 MENIT", desc: "Maksimal" },
-];
-
-const selectedDuration = ref(720); // default 12 menit
+// Durasi tetap resmi PKKMB: 12 menit (720 detik)
+const DEFAULT_POS_DURATION_SECONDS = 720;
 const selectedMissionId = ref("");
 const currentSession = ref<any>(null);
 const actionLoading = ref(false);
 const statusFeedback = ref<string | null>(null);
+
+// Anti-Lockscreen (Screen Wake Lock API)
+const isWakeLockActive = ref(false);
+let wakeLockSentinel: any = null;
+
+async function requestWakeLock() {
+  if (typeof navigator === "undefined" || !("wakeLock" in navigator)) return;
+  try {
+    wakeLockSentinel = await (navigator as any).wakeLock.request("screen");
+    isWakeLockActive.value = true;
+    wakeLockSentinel.addEventListener?.("release", () => {
+      isWakeLockActive.value = false;
+    });
+  } catch (err) {
+    // Graceful fallback on low battery or non-secure context
+    isWakeLockActive.value = false;
+  }
+}
+
+function releaseWakeLock() {
+  if (wakeLockSentinel) {
+    try {
+      wakeLockSentinel.release();
+    } catch (_) {}
+    wakeLockSentinel = null;
+  }
+  isWakeLockActive.value = false;
+}
+
+const handleVisibilityChange = () => {
+  if (document.visibilityState === "visible" && currentSession.value?.status === "ACTIVE") {
+    requestWakeLock();
+  }
+};
+
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (currentSession.value?.status === "ACTIVE") {
+    e.preventDefault();
+    e.returnValue = "Sesi game pos sedang berjalan. Meninggalkan halaman dapat mengganggu panduan regu.";
+  }
+};
 
 // Standard 9 Official Campus Quest Pos Fallback
 const defaultBooths = [
@@ -244,14 +275,14 @@ const remainingSeconds = computed(() => {
     return 0;
   }
   const startMs = new Date(currentSession.value.serverStartAt).getTime();
-  const limitMs = Number(currentSession.value.timeLimit || 900) * 1000;
+  const limitMs = Number(currentSession.value.timeLimit || DEFAULT_POS_DURATION_SECONDS) * 1000;
   const elapsedMs = nowTick.value - startMs;
   const rem = Math.max(0, Math.floor((limitMs - elapsedMs) / 1000));
   return rem;
 });
 
 const remainingPercent = computed(() => {
-  const total = Number(currentSession.value?.timeLimit || 900);
+  const total = Number(currentSession.value?.timeLimit || DEFAULT_POS_DURATION_SECONDS);
   if (total <= 0) return 0;
   return Math.min(100, Math.max(0, Math.round((remainingSeconds.value / total) * 100)));
 });
@@ -288,11 +319,17 @@ async function fetchActiveSession() {
     const res = await api.get<{ success: boolean; data: any }>(`/api/game-sessions/team/${props.teamId}/active`);
     if (res.success && res.data) {
       currentSession.value = res.data;
+      if (res.data.status === "ACTIVE") {
+        requestWakeLock();
+      } else {
+        releaseWakeLock();
+      }
       emit("session-changed", res.data);
     } else {
       currentSession.value = null;
+      releaseWakeLock();
     }
-  } catch (err) {
+  } catch {
     // ignore
   }
 }
@@ -324,14 +361,15 @@ async function activatePosSession() {
       return;
     }
 
-    // 2. Start session with chosen duration (10-15 mins)
+    // 2. Start session with fixed 12 minutes (720 seconds)
     const startRes = await api.post<{ success: boolean; data: any }>(`/api/game-sessions/${sessionId}/start`, {
-      timeLimitSeconds: selectedDuration.value,
+      timeLimitSeconds: DEFAULT_POS_DURATION_SECONDS,
     });
 
     if (startRes.success && startRes.data) {
       currentSession.value = startRes.data;
-      statusFeedback.value = `Sesi Pos berhasil diaktifkan selama ${selectedDuration.value / 60} menit!`;
+      requestWakeLock();
+      statusFeedback.value = "Sesi Pos berhasil diaktifkan selama 12 menit!";
       emit("session-changed", startRes.data);
     }
   } catch (err: any) {
@@ -352,6 +390,7 @@ async function togglePauseSession() {
     const res = await api.post<{ success: boolean; data: any }>(`/api/game-sessions/${currentSession.value.id}/pause`);
     if (res.success && res.data) {
       currentSession.value = res.data;
+      releaseWakeLock();
       statusFeedback.value = "Sesi permainan dijeda sementara.";
     }
   } catch (err: any) {
@@ -369,10 +408,11 @@ async function resumeSession() {
   actionLoading.value = true;
   try {
     const res = await api.post<{ success: boolean; data: any }>(`/api/game-sessions/${currentSession.value.id}/start`, {
-      timeLimitSeconds: currentSession.value.timeLimit,
+      timeLimitSeconds: currentSession.value.timeLimit || DEFAULT_POS_DURATION_SECONDS,
     });
     if (res.success && res.data) {
       currentSession.value = res.data;
+      requestWakeLock();
       statusFeedback.value = "Sesi permainan dilanjutkan!";
     }
   } catch (err: any) {
@@ -392,6 +432,7 @@ async function endSessionManual() {
     const res = await api.post<{ success: boolean; data: any }>(`/api/game-sessions/${currentSession.value.id}/expire`);
     if (res.success) {
       currentSession.value = null;
+      releaseWakeLock();
       statusFeedback.value = "Sesi pos telah diselesaikan.";
     }
   } catch (err: any) {
@@ -404,21 +445,78 @@ async function endSessionManual() {
   }
 }
 
+let unsubscribeRealtime: (() => void) | null = null;
+
 onMounted(() => {
   fetchMissions();
   fetchActiveSession();
 
+  if (typeof window !== "undefined") {
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+  }
+
   // Tick local timer every 1000ms
   timerInterval = setInterval(() => {
     nowTick.value = Date.now();
-    // Auto refresh active session periodically
     if (currentSession.value?.status === "ACTIVE" && remainingSeconds.value === 0) {
       fetchActiveSession();
     }
   }, 1000);
+
+  // Realtime WebSocket synchronization
+  unsubscribeRealtime = onEvent((event, data) => {
+    if (event === "PARTICIPANT_COMPLETED") {
+      if (data && (!props.teamId || data.teamId === props.teamId)) {
+        const cCount = data.completedCount ?? 1;
+        const total = data.totalMembers ?? "?";
+        statusFeedback.value = `Progres: ${cCount}/${total} peserta selesai (+${data.score ?? 0} Pts). Sesi tetap berjalan.`;
+        setTimeout(() => {
+          if (statusFeedback.value?.includes("peserta selesai")) {
+            statusFeedback.value = null;
+          }
+        }, 5000);
+      }
+      return;
+    }
+
+    if (
+      event === "SESSION_STARTED" ||
+      event === "SESSION_PAUSED" ||
+      event === "SESSION_EXPIRED" ||
+      event === "SESSION_COMPLETED" ||
+      event === "GAME_SESSION_STARTED" ||
+      event === "GAME_SESSION_PAUSED" ||
+      event === "GAME_SESSION_EXPIRED"
+    ) {
+      const sess = data?.session || data?.details || data;
+      if (sess && (!props.teamId || sess.teamId === props.teamId)) {
+        if (event.includes("EXPIRED") || event.includes("COMPLETED")) {
+          currentSession.value = null;
+          releaseWakeLock();
+        } else {
+          currentSession.value = sess;
+          if (sess.status === "ACTIVE") {
+            requestWakeLock();
+          } else {
+            releaseWakeLock();
+          }
+        }
+      }
+    }
+  });
 });
 
 onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval);
+  releaseWakeLock();
+  if (typeof window !== "undefined") {
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+  }
+  if (unsubscribeRealtime) {
+    unsubscribeRealtime();
+    unsubscribeRealtime = null;
+  }
 });
 </script>

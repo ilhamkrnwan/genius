@@ -133,7 +133,8 @@ export function normalizePlayableMission(mission: ApiPlayableMission): Booth {
 
   return {
     ...(localTemplate || {}),
-    id: mission.id,
+    id: localTemplate?.id || mappedId || mission.id,
+    missionId: mission.id,
     floorNumber: mission.floorNumber || localTemplate?.floorNumber || 0,
     code: mission.locationCode || localTemplate?.code || mission.locationId,
     name: game.name || localTemplate?.name || '',

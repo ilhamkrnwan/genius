@@ -226,14 +226,14 @@ export class GameEngine {
 
       case "MEMORY_MATCH": {
         participantScores = rawSubmissions.map((sub: any) => {
-          let base = 100;
+          let base = 0;
           if (typeof sub.score === "number") {
             base = Math.min(100, Math.max(0, sub.score));
           } else if (sub.answer?.matchedPairs !== undefined) {
             const pairScores = [15, 20, 25, 15, 25];
             const matched = Math.min(5, Math.max(0, Number(sub.answer.matchedPairs)));
             base = pairScores.slice(0, matched).reduce((a, b) => a + b, 0);
-          } else if (sub.answer?.moves !== undefined) {
+          } else if (sub.answer?.moves !== undefined || sub.action === "MATCH" || sub.action === "COMPLETE" || sub.action === "FINISH") {
             base = 100;
           }
           const finalScore = Math.min(100, Math.max(0, base));
@@ -251,15 +251,59 @@ export class GameEngine {
         break;
       }
 
-      default: {
-        // PUZZLE (TTS), WORD_GAME (Tebak Kata), LOGIC (Benar/Salah & Tebak Posisi), IMAGE_GUESS (Tebak Gambar & Teks Blur)
+      case "RAPID_ANSWER": {
         participantScores = rawSubmissions.map((sub: any) => {
-          let base = 100;
+          let base = 0;
+          let correctCount = 0;
+          const scoringMap = Array.isArray(input.gameConfig.scoringMap)
+            ? input.gameConfig.scoringMap
+            : [15, 20, 20, 20, 25];
+
+          if (typeof sub.score === "number") {
+            base = Math.min(100, Math.max(0, sub.score));
+            correctCount = sub.totalQuestions ? Math.round((base / 100) * sub.totalQuestions) : 5;
+          } else if (typeof sub.answer?.score === "number") {
+            base = Math.min(100, Math.max(0, sub.answer.score));
+          } else if (Array.isArray(sub.answer)) {
+            sub.answer.forEach((ans: any, idx: number) => {
+              const weight = scoringMap[idx] || 20;
+              if (ans.isCorrect === true || ans.correct === true) {
+                base += weight;
+                correctCount++;
+              }
+            });
+          }
+
+          const finalScore = Math.min(100, Math.max(0, base));
+          if (finalScore < 100) isPerfect = false;
+
+          return {
+            participantId: sub.participantId,
+            baseScore: finalScore,
+            speedBonus: 0,
+            statBoostBonus: 0,
+            penalty: 0,
+            finalScore,
+            details: { correctCount, totalCount: scoringMap.length, ...sub.answer },
+          };
+        });
+        break;
+      }
+
+      default: {
+        // PUZZLE (TTS), WORD_GAME (Tebak Kata), LOGIC (Benar/Salah & Tebak Posisi), IMAGE_GUESS (Tebak Gambar & Teks Blur), SPEED_REACTION
+        participantScores = rawSubmissions.map((sub: any) => {
+          let base = 0;
           if (typeof sub.score === "number") {
             base = Math.min(100, Math.max(0, sub.score));
           } else if (typeof sub.answer?.score === "number") {
             base = Math.min(100, Math.max(0, sub.answer.score));
-          } else {
+          } else if (Array.isArray(sub.answer)) {
+            base = sub.answer.reduce((sum: number, ans: any) => {
+              const pts = typeof ans.scoreEarned === "number" ? ans.scoreEarned : (ans.isCorrect ? 20 : 0);
+              return sum + pts;
+            }, 0);
+          } else if (sub.action === "TAP" || sub.action === "COMPLETE" || sub.action === "FINISH" || input.gameType === "SPEED_REACTION") {
             base = Math.min(100, Math.max(0, Number(input.gameConfig.maxScore || input.gameConfig.baseScore || 100)));
           }
           const finalScore = Math.min(100, Math.max(0, base));

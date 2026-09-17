@@ -144,6 +144,29 @@ export const broadcastGameSessionEvent = (sessionId: string, event: string, payl
   if (payload?.teamId) {
     broadcastToTopic(`team:${payload.teamId}`, event, payload);
   }
+
+  // Push reliably to all active sockets belonging to this team or admins/buddies
+  const rawMsg = JSON.stringify({
+    event,
+    sessionId,
+    teamId: payload?.teamId,
+    data: payload,
+    timestamp: new Date().toISOString(),
+  });
+  for (const [ws, client] of activeSockets.entries()) {
+    if (
+      !payload?.teamId ||
+      client.user?.teamId === payload.teamId ||
+      client.user?.role === "ADMIN" ||
+      client.user?.role === "BUDDY"
+    ) {
+      try {
+        ws.send(rawMsg);
+      } catch {
+        // ignore
+      }
+    }
+  }
 };
 
 export const realtimeRoutes = new Elysia({ prefix: "/ws" })
@@ -227,10 +250,10 @@ export const realtimeRoutes = new Elysia({ prefix: "/ws" })
         return;
       }
 
-      const { type, topic, token, data } = parsed;
+      const actionType = (parsed.type || parsed.action || "").toUpperCase();
 
       // 1. WebSocket Authentication
-      if (type === "AUTH" && token) {
+      if (actionType === "AUTH" && token) {
         try {
           const verified = await verifyToken(token);
           client.user = verified;
@@ -252,7 +275,7 @@ export const realtimeRoutes = new Elysia({ prefix: "/ws" })
       }
 
       // 2. Room / Topic Subscription (with Scoped Authorization check)
-      if (type === "SUBSCRIBE" && topic) {
+      if (actionType === "SUBSCRIBE" && topic) {
         const user = client.user;
 
         // Verify topic scope authorization

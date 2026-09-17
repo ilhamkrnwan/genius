@@ -118,10 +118,10 @@ const handleNext = () => {
           <template #icon>
             <PhCheckCircle :size="14" weight="bold" />
           </template>
-          Skor: {{ props.stampRecord?.score ?? 2 }}/{{ props.stampRecord?.totalQuestions ?? 2 }}
+          Skor: {{ props.stampRecord?.score != null ? props.stampRecord.score : 0 }} / 100 Pts
         </PixelBadge>
         <PixelBadge variant="gold" size="sm">
-          +{{ props.stampRecord?.score ?? 100 }} XP
+          +{{ props.stampRecord?.score != null ? props.stampRecord.score : 0 }} XP
         </PixelBadge>
       </div>
 

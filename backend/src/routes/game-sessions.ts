@@ -863,19 +863,28 @@ export const gameSessionRoutes = new Elysia({
       const effectiveParticipantIds = participantIds.length > 0 ? participantIds : (user?.userId ? [user.userId] : ["team-player"]);
 
       const engineSubmissions = String(game.type) === "QUIZ" || String(game.type) === "TEAM_QUIZ"
-        ? effectiveParticipantIds.map((participantId) => ({
-            participantId,
-            action: "QUIZ_ANSWERS",
-            score: typeof bodySubmissions[0]?.score === "number" ? bodySubmissions[0].score : undefined,
-            answer: submittedAnswers
-              .filter((item: any) => (item.participantId || user?.userId) === participantId)
-              .map((item: any) => ({ questionId: item.questionId, selected: item.selected })),
-          }))
+        ? effectiveParticipantIds.map((participantId) => {
+            const matchingSub = bodySubmissions.find((s: any) => s.participantId === participantId || s.participantId === user?.userId);
+            const userAnswers = submittedAnswers.filter((item: any) => (item.participantId || user?.userId) === participantId);
+            const storedScoreSum = userAnswers.reduce((sum: number, ans: any) => sum + (typeof ans.scoreEarned === "number" ? ans.scoreEarned : 0), 0);
+            const directScore = typeof matchingSub?.score === "number" ? matchingSub.score : (storedScoreSum > 0 ? storedScoreSum : undefined);
+            return {
+              participantId,
+              action: "QUIZ_ANSWERS",
+              score: directScore,
+              totalQuestions: matchingSub?.totalQuestions,
+              answer: userAnswers.map((item: any) => ({ questionId: item.questionId, selected: item.selected, isCorrect: item.isCorrect })),
+            };
+          })
         : (submittedAnswers.length > 0
-            ? submittedAnswers.map((item: any) => ({
-                ...item,
-                participantId: item.participantId || (effectiveParticipantIds[0] || user?.userId || "team-player"),
-              }))
+            ? submittedAnswers.map((item: any) => {
+                const pId = item.participantId || (effectiveParticipantIds[0] || user?.userId || "team-player");
+                return {
+                  ...item,
+                  participantId: pId,
+                  score: typeof item.score === "number" ? item.score : (typeof item.scoreEarned === "number" ? item.scoreEarned : undefined),
+                };
+              })
             : effectiveParticipantIds.map((pid) => ({ participantId: pid, action: "COMPLETE", answer: b, score: b.score }))
           );
 
@@ -889,7 +898,119 @@ export const gameSessionRoutes = new Elysia({
         timeLimitSec: session.timeLimit || 300,
       });
 
-      // Update Game Session
+      // Check if caller is a single PARTICIPANT completing their turn
+      const isParticipantCaller = user?.role === "PARTICIPANT";
+
+      if (isParticipantCaller && user?.userId) {
+        const callerParticipantId = user.userId;
+        const matchingEval = evalResult.participantScores.find(
+          (ps) => ps.participantId === callerParticipantId || ps.participantId === user.username
+        ) || evalResult.participantScores[0];
+
+        const callerScore = matchingEval
+          ? matchingEval.finalScore
+          : (typeof bodySubmissions[0]?.score === "number" ? bodySubmissions[0].score : evalResult.totalTeamScore);
+
+        // Award score transaction to point ledger for this individual participant
+        if (metadata.isPractice !== true && callerScore > 0) {
+          const [existingTx] = await db
+            .select({ id: scoreTransactions.id })
+            .from(scoreTransactions)
+            .where(
+              and(
+                eq(scoreTransactions.gameSessionId, session.id),
+                eq(scoreTransactions.participantId, callerParticipantId)
+              )
+            )
+            .limit(1);
+
+          if (!existingTx) {
+            await db.insert(scoreTransactions).values({
+              participantId: callerParticipantId,
+              teamId: session.teamId,
+              amount: callerScore,
+              sourceType: "GAME" as any,
+              sourceId: session.id,
+              reason: `Penyelesaian Misi Game ${game.name}`,
+              stageId: session.stageId,
+              gameSessionId: session.id,
+              createdBy: user.userId,
+            });
+          }
+        }
+
+        // Record participant completion in metadata
+        const existingCompleted = Array.isArray(metadata.completedParticipants)
+          ? [...metadata.completedParticipants]
+          : [];
+
+        if (!existingCompleted.some((cp: any) => cp.participantId === callerParticipantId)) {
+          existingCompleted.push({
+            participantId: callerParticipantId,
+            username: user.username,
+            score: callerScore,
+            completedAt: endAt.toISOString(),
+          });
+        }
+
+        // Check if all team participants have completed
+        const teamMabas = session.teamId
+          ? await db
+              .select({ userId: teamMembers.userId })
+              .from(teamMembers)
+              .innerJoin(users, eq(teamMembers.userId, users.id))
+              .where(and(eq(teamMembers.teamId, session.teamId), eq(users.role, "PARTICIPANT")))
+          : [];
+
+        const totalTeamMembers = teamMabas.length;
+        const allTeamFinished = totalTeamMembers > 0 && existingCompleted.length >= totalTeamMembers;
+
+        if (!allTeamFinished) {
+          // Session remains ACTIVE for other team members!
+          const [activeUpdatedSession] = await db
+            .update(gameSessions)
+            .set({
+              metadata: {
+                ...metadata,
+                completedParticipants: existingCompleted,
+              },
+              updatedAt: endAt,
+            })
+            .where(eq(gameSessions.id, params.id))
+            .returning();
+
+          // Broadcast participant completion event to Buddy & Team without terminating the session
+          broadcastGameSessionEvent(session.id, "PARTICIPANT_COMPLETED", {
+            sessionId: session.id,
+            teamId: session.teamId,
+            participantId: callerParticipantId,
+            score: callerScore,
+            completedCount: existingCompleted.length,
+            totalMembers: totalTeamMembers,
+          });
+
+          if (metadata.isPractice !== true) {
+            broadcastLeaderboardUpdate({ type: "SCORE_CHANGE", stageId: session.stageId });
+          }
+
+          return {
+            success: true,
+            data: {
+              session: activeUpdatedSession,
+              evaluation: {
+                ...evalResult,
+                participantScore: callerScore,
+                isSessionComplete: false,
+                completedCount: existingCompleted.length,
+                totalMembers: totalTeamMembers,
+              },
+            },
+            message: "Progres kuis individu tersimpan. Sesi tim tetap berjalan.",
+          };
+        }
+      }
+
+      // All participants finished, or session completed by Buddy/Admin
       const [updatedSession] = await db
         .update(gameSessions)
         .set({
@@ -902,7 +1023,7 @@ export const gameSessionRoutes = new Elysia({
         .where(eq(gameSessions.id, params.id))
         .returning();
 
-      // Write Score Transactions to Point Ledger for each participant
+      // Write Score Transactions to Point Ledger for any remaining participants
       let scoresToAward = evalResult.participantScores || [];
       if (scoresToAward.length === 0 && evalResult.totalTeamScore > 0) {
         scoresToAward = effectiveParticipantIds.map((pid) => ({
@@ -924,7 +1045,6 @@ export const gameSessionRoutes = new Elysia({
             const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawPid);
             if (isUuid) return { ...ps, participantId: rawPid };
 
-            // Look up by username/NIM
             const [found] = await db
               .select({ id: users.id })
               .from(users)
@@ -932,10 +1052,8 @@ export const gameSessionRoutes = new Elysia({
               .limit(1);
             if (found) return { ...ps, participantId: found.id };
 
-            // Fall back to authenticated user ID
             if (user?.userId) return { ...ps, participantId: user.userId };
 
-            // Fall back to first member of session's team
             if (session.teamId) {
               const [member] = await db
                 .select({ userId: teamMembers.userId })
@@ -945,39 +1063,41 @@ export const gameSessionRoutes = new Elysia({
               if (member) return { ...ps, participantId: member.userId };
             }
 
-            // Fall back to any active participant
             const [firstUser] = await db.select({ id: users.id }).from(users).limit(1);
             return { ...ps, participantId: firstUser?.id || rawPid };
           })
         );
 
-        const txInserts = resolvedParticipantScores.map((ps) => ({
-          participantId: ps.participantId,
-          teamId: session.teamId,
-          amount: ps.finalScore,
-          sourceType: "GAME" as any,
-          sourceId: session.id,
-          reason: `Penyelesaian Misi Game ${game.name}`,
-          stageId: session.stageId,
-          gameSessionId: session.id,
-          createdBy: user?.userId || ps.participantId,
-        }));
-        try {
-          await db.insert(scoreTransactions).values(txInserts);
-        } catch (error: any) {
-          if (error?.code === "23505" && (error?.constraint_name === "score_tx_game_session_participant_unique" || error?.constraint === "score_tx_game_session_participant_unique")) {
-            const [completedSession] = await db
-              .select()
-              .from(gameSessions)
-              .where(eq(gameSessions.id, session.id))
-              .limit(1);
-            return {
-              success: true,
-              data: { session: completedSession, evaluation: completedSession?.result || evalResult },
-              message: "Session was already completed.",
-            };
+        for (const ps of resolvedParticipantScores) {
+          if (ps.finalScore <= 0) continue;
+          const [existingTx] = await db
+            .select({ id: scoreTransactions.id })
+            .from(scoreTransactions)
+            .where(
+              and(
+                eq(scoreTransactions.gameSessionId, session.id),
+                eq(scoreTransactions.participantId, ps.participantId)
+              )
+            )
+            .limit(1);
+
+          if (!existingTx) {
+            try {
+              await db.insert(scoreTransactions).values({
+                participantId: ps.participantId,
+                teamId: session.teamId,
+                amount: ps.finalScore,
+                sourceType: "GAME" as any,
+                sourceId: session.id,
+                reason: `Penyelesaian Misi Game ${game.name}`,
+                stageId: session.stageId,
+                gameSessionId: session.id,
+                createdBy: user?.userId || ps.participantId,
+              });
+            } catch (err: any) {
+              console.warn("[ScoreTx Error]:", err?.message);
+            }
           }
-          throw error;
         }
 
         // Trigger Achievement Engine for each participant
@@ -1035,6 +1155,8 @@ export const gameSessionRoutes = new Elysia({
             participantId: t.String(),
             action: t.String(),
             answer: t.Optional(t.Any()),
+            score: t.Optional(t.Number()),
+            totalQuestions: t.Optional(t.Number()),
             timestampMs: t.Optional(t.Number()),
             statMultiplier: t.Optional(t.Number()),
           })
