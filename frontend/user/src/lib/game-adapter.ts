@@ -141,7 +141,7 @@ export function normalizePlayableMission(mission: ApiPlayableMission): Booth {
     type: (localTemplate?.type || renderer) as Booth['type'],
     tipe_game: (localTemplate?.tipe_game || renderer) as Booth['tipe_game'],
     category: localTemplate?.category || 'umum',
-    story: game.instructions || localTemplate?.story || '',
+    story: localTemplate?.story || game.instructions || '',
     readingTime: mission.timeLimit ? String(mission.timeLimit) + ' detik' : (localTemplate?.readingTime || ''),
     iconName: localTemplate?.iconName || 'GameController',
     stampIcon: localTemplate?.stampIcon || 'star',
