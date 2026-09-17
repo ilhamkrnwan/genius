@@ -26,9 +26,30 @@ import {
 } from "./db/schema";
 import { hashPassword } from "./lib/password";
 import { ensureOfficialOrmawaPics } from "./db/ensure-ormawa-pics";
+import { resolve } from "path";
 import { eq, and } from "drizzle-orm";
 import { RAW_BUDDY_DATA } from "./data/officialBuddies";
-import { OFFICIAL_PARTICIPANTS } from "./data/participants";
+
+function getFacultyByProdi(prodi?: string): string {
+  if (!prodi) return "Universitas Nahdlatul Ulama Yogyakarta";
+  const p = prodi.toLowerCase();
+  if (p.includes("informatika") || p.includes("elektro") || p.includes("komputer")) {
+    return "Fakultas Teknologi Informasi";
+  }
+  if (p.includes("pendidikan") || p.includes("pgsd") || p.includes("inggris")) {
+    return "Fakultas Ilmu Pendidikan";
+  }
+  if (p.includes("agri") || p.includes("pertanian") || p.includes("farmasi") || p.includes("halal") || p.includes("pangan")) {
+    return "Fakultas Industri Halal";
+  }
+  if (p.includes("manajemen") || p.includes("akuntansi") || p.includes("bisnis") || p.includes("ekonomi")) {
+    return "Fakultas Ekonomi & Bisnis";
+  }
+  if (p.includes("islam") || p.includes("syariah") || p.includes("agama")) {
+    return "Fakultas Studi Islam";
+  }
+  return "Universitas Nahdlatul Ulama Yogyakarta";
+}
 
 async function seed() {
   console.log("🌱 Starting GENIUS 2026 Database Seeding (Clean Slate)...");
@@ -103,11 +124,39 @@ async function seed() {
   console.log(`  ✅ ${createdBuddies.length} Official Buddies registered with username buddy01 - buddy50 (Password: buddy2026)`);
 
   // ============================================================
-  // 4. SEED 100 PARTICIPANTS (NIM 26111101 - 26111200)
+  // 4. SEED 403 PARTICIPANTS DARI maba_2026.csv
   // ============================================================
-  console.log("🎓 [4/8] Creating 100 Official Participants (NIM 26111101 - 26111200)...");
-  const participantInserts = OFFICIAL_PARTICIPANTS.map((p) => ({
-    username: p.nim,
+  console.log("🎓 [4/8] Loading & Seeding 403 Official Participants from maba_2026.csv...");
+  const csvPath = resolve(import.meta.dir, "../../maba_2026.csv");
+  const mabaFile = Bun.file(csvPath);
+  if (!(await mabaFile.exists())) {
+    throw new Error(`File CSV tidak ditemukan di: ${csvPath}`);
+  }
+  const mabaCsvText = await mabaFile.text();
+  const mabaLines = mabaCsvText.trim().split(/\r?\n/).filter(Boolean);
+  const mabaHeaders = mabaLines[0].split(",").map((h) => h.replace(/["\r]/g, "").trim());
+  const uIdx = mabaHeaders.indexOf("username");
+  const fnIdx = mabaHeaders.indexOf("full_name");
+  const gIdx = mabaHeaders.indexOf("gender");
+  const pIdx = mabaHeaders.indexOf("prodi");
+
+  const parsedMaba = mabaLines.slice(1).map((line) => {
+    const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map((c) =>
+      c.replace(/^"|"$/g, "").trim()
+    );
+    const rawProdi = pIdx !== -1 ? cols[pIdx] : undefined;
+    const gender = (cols[gIdx]?.toUpperCase() === "FEMALE" ? "FEMALE" : "MALE") as "MALE" | "FEMALE";
+    return {
+      username: cols[uIdx],
+      fullName: cols[fnIdx],
+      gender,
+      prodi: rawProdi,
+      faculty: getFacultyByProdi(rawProdi),
+    };
+  });
+
+  const participantInserts = parsedMaba.map((p) => ({
+    username: p.username,
     passwordHash: defaultPassword,
     fullName: p.fullName,
     role: "PARTICIPANT" as const,
@@ -115,15 +164,21 @@ async function seed() {
     gender: p.gender,
     faculty: p.faculty,
     prodi: p.prodi,
-    characterClass: p.characterClass,
+    characterClass: "CYBER_KNIGHT",
     characterTitle: "Novice Adventurer",
     characterTier: 1,
     unlockedTitles: ["Novice Adventurer"],
-    avatarUrl: p.gender === "FEMALE" ? "/character-cewek-avatar.png" : "/character-cowok-avatar.png",
+    avatarUrl: p.gender === "FEMALE" ? "/character-cewek.avif" : "/character-cowok.avif",
   }));
 
-  const createdParticipants = await db.insert(users).values(participantInserts).returning();
-  console.log(`  ✅ ${createdParticipants.length} Participants registered with NIM 26111101 - 26111200 (Password: genius2026)`);
+  const createdParticipants = [];
+  const batchSize = 100;
+  for (let i = 0; i < participantInserts.length; i += batchSize) {
+    const batch = participantInserts.slice(i, i + batchSize);
+    const res = await db.insert(users).values(batch).returning();
+    createdParticipants.push(...res);
+  }
+  console.log(`  ✅ ${createdParticipants.length} Official Participants registered from CSV (Password: genius2026)`);
 
   // ============================================================
   // 5. SEED MASTER DATA: Floors & 18 Locations
@@ -394,132 +449,102 @@ async function seed() {
   }
 
   // ============================================================
-  // 7. SEED 5 TEAMS & ASSIGN 2 BUDDIES + 20 PARTICIPANTS EACH
+  // 7. SEED 50 TEAMS & ASSIGN 50 BUDDIES (PRIMARY) + 403 PARTICIPANTS
   // ============================================================
-  console.log("🛡️ [7/8] Creating 5 Official Genius Teams & Linking 2 Buddies + 20 MABA per Team...");
-
-  const teamDefinitions: Array<{
-    code: string;
-    name: string;
-    captainNim?: string;
-    primaryBuddyNim?: string;
-    assistantBuddyNim?: string;
-    participantNims: string[];
-  }> = [
-    {
-      code: "GENIUS-01",
-      name: "Jabu",
-      captainNim: "26111101",
-      primaryBuddyNim: "buddy01",
-      assistantBuddyNim: "buddy02",
-      participantNims: OFFICIAL_PARTICIPANTS.slice(0, 20).map((p) => p.nim),
-    },
-    {
-      code: "GENIUS-02",
-      name: "Bolon",
-      captainNim: "26111121",
-      primaryBuddyNim: "buddy03",
-      assistantBuddyNim: "buddy04",
-      participantNims: OFFICIAL_PARTICIPANTS.slice(20, 40).map((p) => p.nim),
-    },
-    {
-      code: "GENIUS-03",
-      name: "Gadang",
-      captainNim: "26111141",
-      primaryBuddyNim: "buddy05",
-      assistantBuddyNim: "buddy06",
-      participantNims: OFFICIAL_PARTICIPANTS.slice(40, 60).map((p) => p.nim),
-    },
-    {
-      code: "GENIUS-04",
-      name: "Limas",
-      captainNim: "26111161",
-      primaryBuddyNim: "buddy07",
-      assistantBuddyNim: "buddy08",
-      participantNims: OFFICIAL_PARTICIPANTS.slice(60, 80).map((p) => p.nim),
-    },
-    {
-      code: "GENIUS-05",
-      name: "Lontik",
-      captainNim: "26111181",
-      primaryBuddyNim: "buddy09",
-      assistantBuddyNim: "buddy10",
-      participantNims: OFFICIAL_PARTICIPANTS.slice(80, 100).map((p) => p.nim),
-    },
-  ];
+  console.log("🛡️ [7/8] Creating 50 Official Genius Teams (1 Primary Buddy, No Captains, 403 MABA)...");
 
   const houseNames = [
     "Jabu", "Bolon", "Gadang", "Limas", "Lontik", "Kajang", "Bubung", "Panggung", "Nuwo", "Baduy",
     "Gudang", "Bapang", "Joglo", "Kampung", "Panggang", "Jompongan", "Jolopong", "Julang", "Tagog", "Badak",
     "Capit", "Jubleg", "Tikel", "Baresan", "Crocogan", "Tengger", "Bale", "Lumbung", "Uma", "Omo",
     "Sebua", "Hada", "Betang", "Lamin", "Baloy", "Banjar", "Tambi", "Laika", "Boyang", "Buton",
-    "Lego", "Lopo", "Mbaru", "Sao", "Musalaki", "Uma", "Honai", "Lopo", "Baileo", "Sasadu",
+    "Lego", "Lopo", "Mbaru", "Sao", "Musalaki", "Uma - Sumba", "Honai", "Lopo - Timor", "Baileo", "Sasadu",
   ];
-  teamDefinitions.push(...houseNames.slice(5).map((name, index) => {
-    const buddyNum = index + 11;
-    return {
-      code: `GENIUS-${String(index + 6).padStart(2, "0")}`,
-      name,
-      primaryBuddyNim: buddyNum <= 50 ? `buddy${String(buddyNum).padStart(2, "0")}` : undefined,
-      assistantBuddyNim: undefined,
-      participantNims: [],
-    };
-  }));
 
-  for (const tDef of teamDefinitions) {
-    const captainUser = tDef.captainNim ? createdParticipants.find((p) => p.username === tDef.captainNim) : undefined;
-    const primaryBuddy = tDef.primaryBuddyNim ? createdBuddies.find((b) => b.username === tDef.primaryBuddyNim) : undefined;
-    const assistantBuddy = tDef.assistantBuddyNim ? createdBuddies.find((b) => b.username === tDef.assistantBuddyNim) : undefined;
+  // Identifikasi mahasiswa khusus
+  const tazkiyah = createdParticipants.find((p) => p.fullName.toUpperCase().includes("TAZKIYAH NUR ASHIFA"));
+  const vina = createdParticipants.find((p) => p.fullName.toUpperCase().includes("VINA SUGIARTI"));
+
+  // Sort buddies by username (buddy01 s/d buddy50)
+  createdBuddies.sort((a, b) => a.username.localeCompare(b.username));
+
+  const createdTeams = [];
+  for (let i = 0; i < 50; i++) {
+    const code = `GENIUS-${String(i + 1).padStart(2, "0")}`;
+    const name = houseNames[i] || `Regu ${i + 1}`;
 
     const [team] = await db
       .insert(teams)
       .values({
-        name: tDef.name,
-        code: tDef.code,
+        code,
+        name,
         routeId: mainRoute?.id || null,
-        captainId: captainUser?.id || null,
+        captainId: null, // Aturan: TIDAK ADA KETUA REGU
         status: "ACTIVE",
       })
       .returning();
-
-    // Link Primary Buddy
-    if (primaryBuddy) {
-      await db.insert(teamMembers).values({
-        teamId: team.id,
-        userId: primaryBuddy.id,
-        buddyRole: "PRIMARY",
-        isCaptain: false,
-      });
-    }
-
-    // Link Assistant Buddy
-    if (assistantBuddy) {
-      await db.insert(teamMembers).values({
-        teamId: team.id,
-        userId: assistantBuddy.id,
-        buddyRole: "ASSISTANT",
-        isCaptain: false,
-      });
-    }
-
-    // Link 20 Participants
-    const membersToInsert = [];
-    for (const pNim of tDef.participantNims) {
-      const partUser = createdParticipants.find((p) => p.username === pNim);
-      if (partUser) {
-        membersToInsert.push({
-          teamId: team.id,
-          userId: partUser.id,
-          isCaptain: pNim === tDef.captainNim,
-          buddyRole: null,
-        });
-      }
-    }
-    if (membersToInsert.length > 0) {
-      await db.insert(teamMembers).values(membersToInsert);
-    }
-    console.log(`  ✅ ${tDef.name} (${tDef.code}): Primary Buddy ${tDef.primaryBuddyNim}, Assistant ${tDef.assistantBuddyNim}, 20 MABA, Kapten ${tDef.captainNim}`);
+    createdTeams.push(team);
   }
+
+  // Link exactly 1 PRIMARY buddy per team (buddy01 -> GENIUS-01 ... buddy50 -> GENIUS-50)
+  const buddyMembersToInsert = [];
+  for (let i = 0; i < 50; i++) {
+    const team = createdTeams[i];
+    const buddy = createdBuddies[i];
+    buddyMembersToInsert.push({
+      teamId: team.id,
+      userId: buddy.id,
+      buddyRole: "PRIMARY" as const, // Aturan: SEMUA BUDDY PRIMARY
+      isCaptain: false,
+    });
+  }
+  await db.insert(teamMembers).values(buddyMembersToInsert);
+
+  // Group participants to teams
+  const teamParticipantMap: Map<string, typeof createdParticipants> = new Map();
+  for (const t of createdTeams) {
+    teamParticipantMap.set(t.id, []);
+  }
+
+  // Pasangan khusus:
+  // Khoirunnisa (buddy20) -> GENIUS-20 (createdTeams[19]) dengan Tazkiyah
+  // Mutiara (buddy27) -> GENIUS-27 (createdTeams[26]) dengan Vina
+  const team20 = createdTeams[19];
+  const team27 = createdTeams[26];
+  if (tazkiyah) teamParticipantMap.get(team20.id)!.push(tazkiyah);
+  if (vina) teamParticipantMap.get(team27.id)!.push(vina);
+
+  const otherParticipants = createdParticipants.filter(
+    (p) => p.username !== tazkiyah?.username && p.username !== vina?.username
+  );
+
+  const targetSizes = createdTeams.map((_, idx) => (idx < 3 ? 9 : 8));
+  let roundRobinIdx = 0;
+  for (const p of otherParticipants) {
+    while (teamParticipantMap.get(createdTeams[roundRobinIdx].id)!.length >= targetSizes[roundRobinIdx]) {
+      roundRobinIdx = (roundRobinIdx + 1) % 50;
+    }
+    teamParticipantMap.get(createdTeams[roundRobinIdx].id)!.push(p);
+    roundRobinIdx = (roundRobinIdx + 1) % 50;
+  }
+
+  const participantMembersToInsert = [];
+  for (const [teamId, pList] of teamParticipantMap.entries()) {
+    for (const p of pList) {
+      participantMembersToInsert.push({
+        teamId,
+        userId: p.id,
+        buddyRole: null,
+        isCaptain: false, // Aturan: TIDAK ADA KETUA REGU
+      });
+    }
+  }
+
+  for (let i = 0; i < participantMembersToInsert.length; i += batchSize) {
+    const batch = participantMembersToInsert.slice(i, i + batchSize);
+    await db.insert(teamMembers).values(batch);
+  }
+  console.log(`  ✅ 50 Teams created: 50 PRIMARY Buddies, 403 Participants, No Captains, Special Pairings Verified!`);
 
   // ============================================================
   // 8. SEED ATTENDANCE SESSION & OFFICIAL 19 ORMAWA BOOTHS
@@ -876,8 +901,8 @@ async function seed() {
   console.log("========================================================");
   console.log("👤 Admin       : admin (password: admin2026)");
   console.log("👥 Buddies (50): buddy01 s/d buddy50 (password: buddy2026 / genius2026)");
-  console.log("🎓 MABA (100)  : 26111101 s/d 26111200 (password: genius2026)");
-  console.log("🛡️ Kelompok (50): Genius 01 s/d Genius 50 (Jabu s/d Sasadu)");
+  console.log("🎓 MABA (403)  : Sesuai maba_2026.csv (password: genius2026)");
+  console.log("🛡️ Kelompok (50): Genius 01 s/d Genius 50 (Jabu s/d Sasadu, 1 Primary Buddy/kelompok, No Captain)");
   console.log("🎪 Ormawa (19) : 19 Official Booths (Lantai 3, 4, 5)");
   console.log("🧩 Kuis Resmi  : 9 Pos di 6 Lantai (51 Soal, 100 Poin/pos)");
   console.log("========================================================\n");
