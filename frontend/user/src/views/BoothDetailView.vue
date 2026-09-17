@@ -145,6 +145,7 @@ onMounted(() => {
 
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
   }
   requestUserWakeLock();
 });
@@ -179,6 +180,15 @@ function releaseUserWakeLock() {
   }
 }
 
+const handleVisibilityChange = async () => {
+  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+    if (isSessionActive.value) {
+      await requestUserWakeLock();
+      await gameSessionStore.refreshSession();
+    }
+  }
+};
+
 const handleBeforeUnload = (e: BeforeUnloadEvent) => {
   if (isSessionActive.value) {
     e.preventDefault();
@@ -192,6 +202,7 @@ onUnmounted(() => {
   releaseUserWakeLock();
   if (typeof window !== 'undefined') {
     window.removeEventListener('beforeunload', handleBeforeUnload);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
   }
 });
 

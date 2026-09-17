@@ -51,8 +51,44 @@ let pollInterval: any = null;
 const currentQuestion = computed(() => questions.value[currentIndex.value]);
 const activeQuestion = computed(() => shuffledQuestions.value[currentIndex.value]);
 
+const storageKey = computed(() => `genius_quiz_progress_${props.serverSessionId || 'local'}`);
+
+const saveLocalProgress = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(storageKey.value, JSON.stringify({
+      currentIndex: currentIndex.value,
+      totalScore: totalScore.value,
+    }));
+  } catch (_) {}
+};
+
+const restoreLocalProgress = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = sessionStorage.getItem(storageKey.value);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (typeof data.currentIndex === 'number' && data.currentIndex < questions.value.length) {
+        currentIndex.value = data.currentIndex;
+      }
+      if (typeof data.totalScore === 'number') {
+        totalScore.value = data.totalScore;
+      }
+    }
+  } catch (_) {}
+};
+
+const clearLocalProgress = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(storageKey.value);
+  } catch (_) {}
+};
+
 watch(questions, (value) => {
   shuffledQuestions.value = shuffleQuestions(value);
+  restoreLocalProgress();
 }, { immediate: true });
 
 const clearTimer = () => {
@@ -131,6 +167,7 @@ const handleCheckAnswer = async () => {
       } else if (gameStore.soundEnabled) {
         soundEngine.playWrong();
       }
+      saveLocalProgress();
     }
     return;
   }
@@ -143,6 +180,7 @@ const handleCheckAnswer = async () => {
   } else {
     if (gameStore.soundEnabled) soundEngine.playWrong();
   }
+  saveLocalProgress();
 };
 
 const startPollingForGameMaster = () => {
@@ -154,6 +192,7 @@ const startPollingForGameMaster = () => {
     if (updatedSession.status === 'COMPLETED') {
       clearInterval(pollInterval);
       pollInterval = null;
+      clearLocalProgress();
       const evaluation = (updatedSession.result || {}) as any;
       const finalScore = evaluation.participantScore ?? evaluation.totalScore ?? totalScore.value;
       emit('complete', Math.min(100, Math.max(0, Number(finalScore))), questions.value.length);
@@ -169,6 +208,7 @@ const startPollingForGameMaster = () => {
       isQuestionSubmitted.value = false;
       isTimeUp.value = false;
       waitingForGameMaster.value = false;
+      saveLocalProgress();
       if (gameStore.soundEnabled) soundEngine.playClick();
     }
   }, 3000);
@@ -186,9 +226,11 @@ const handleNextQuestion = async () => {
     serverAnswerResult.value = null;
     isQuestionSubmitted.value = false;
     isTimeUp.value = false;
+    saveLocalProgress();
     startTimer();
     if (gameStore.soundEnabled) soundEngine.playClick();
   } else {
+    clearLocalProgress();
     if (props.serverSessionId) {
       const result = await gameSessionStore.completeSession([
         {
