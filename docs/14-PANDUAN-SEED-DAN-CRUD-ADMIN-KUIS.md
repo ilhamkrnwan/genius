@@ -55,7 +55,7 @@ cd backend && bun run db:seed
 ```
 
 **Data yang Dihasilkan:**
-* 1 Akun Master Admin (`username: admin`, `password: admin2026`).
+* 1 Akun Master Admin (`username: admin`, `password: KopDesMBG!2026`).
 * 50 Akun Buddy Resmi (`username: buddy01` s/d `buddy50`, `password: buddy2026`).
 * 100 Akun Mahasiswa Baru (`NIM 26111101` s/d `26111200`, `password: genius2026`).
 * 50 Kelompok Resmi (`Genius 01` s/d `Genius 50`), masing-masing beranggotakan Maba + Buddy pendamping.

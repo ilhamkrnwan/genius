@@ -31,7 +31,7 @@ async function main() {
   out += "Role       : ADMIN\n";
   out += "Portal URL : http://localhost:3002/login ➔ /\n";
   out += "Username   : admin\n";
-  out += "Password   : admin2026\n";
+  out += "Password   : KopDesMBG!2026\n";
   out += "Nama       : Administrator GENIUS 2026\n\n";
 
   out += "================================================================================\n";

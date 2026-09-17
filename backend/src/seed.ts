@@ -85,7 +85,7 @@ async function seed() {
   console.log("  ✅ Clean slate complete: previous users, teams, and logs removed.");
 
   // Default Passwords
-  const adminPassword = await hashPassword("admin2026");
+  const adminPassword = await hashPassword("KopDesMBG!2026");
   const defaultPassword = await hashPassword("genius2026");
 
   // ============================================================
@@ -102,7 +102,7 @@ async function seed() {
       status: "ACTIVE",
     })
     .returning();
-  console.log("  ✅ Admin created: username 'admin', password 'admin2026'");
+  console.log("  ✅ Admin created: username 'admin', password 'KopDesMBG!2026'");
 
   // ============================================================
   // 3. SEED 50 OFFICIAL BUDDIES (NIM dari buddy.csv, Password: nama kelompok)
@@ -929,7 +929,7 @@ async function seed() {
   console.log("\n========================================================");
   console.log("🎉 GENIUS 2026 DATABASE SEEDING COMPLETED SUCCESSFULLY!");
   console.log("========================================================");
-  console.log("👤 Admin       : admin (password: admin2026)");
+  console.log("👤 Admin       : admin (password: KopDesMBG!2026)");
   console.log("👥 Buddies (50): Sesuai NIM buddy.csv (password: [kelompok][nomor], contoh: jabu01)");
   console.log("🎓 MABA (403)  : Sesuai maba_2026.csv (password: tanggal lahir lowercase tanpa spasi, contoh: 26mei2006)");
   console.log("🛡️ Kelompok (50): Genius 01 s/d Genius 50 (Jabu s/d Sasadu, 1 Primary Buddy/kelompok, No Captain)");

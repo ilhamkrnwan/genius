@@ -250,7 +250,7 @@ export async function seedDatabase() {
 
   // 8. Seed Core Users (Admin, Buddies, Teams, Participants)
   console.log("ðŸ‘¥ Seeding Core System Users & RPG Characters...");
-  const adminPasswordHash = await hashPassword("admin2026");
+  const adminPasswordHash = await hashPassword("KopDesMBG!2026");
   const buddyPasswordHash = await hashPassword("buddy2026");
   const userPasswordHash = await hashPassword("genius2026");
 
@@ -269,7 +269,7 @@ export async function seedDatabase() {
       unlockedTitles: ["Grand Archon UNU 2026", "Novice Adventurer"],
     });
   } else {
-    // Update admin password to admin2026 just in case
+    // Update admin password to KopDesMBG!2026
     await db.update(users).set({ passwordHash: adminPasswordHash }).where(eq(users.username, "admin"));
   }
 

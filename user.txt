@@ -19,7 +19,7 @@
 Role       : ADMIN
 Portal URL : http://localhost:3002/login ➔ /
 Username   : admin
-Password   : admin2026
+Password   : KopDesMBG!2026
 Nama       : Administrator GENIUS 2026
 
 ================================================================================
