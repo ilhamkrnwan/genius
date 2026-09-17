@@ -78,14 +78,14 @@ Setiap Pos bernilai akumulasi tepat **100 Poin**, dengan total nilai ekspedisi k
 | **Pos 4** | **Lantai 4** | `POS-L4-4` | Kampus Bersinar Bebas Narkoba | `tts` | `PUZZLE` | 5 Kata Silang | 5 kata x 20 = **100 Pts** |
 | **Pos 9** | **Lantai 4** | `POS-L4-9` | Ingat Aku (Teks Blur & Tokoh NU) | `tebak_gambar` | `IMAGE_GUESS` | 5 Soal | 5 soal x 20 = **100 Pts** *(Iframe GDrive)* |
 | **Pos 5** | **Lantai 5** | `POS-L5-5` | Anti Plagiarisme & Integritas | `tebak_kata` | `WORD_GAME` | 5 Riddle Kata | `[10, 20, 20, 25, 25]` = **100 Pts** |
-| **Pos 7** | **Lantai 6** | `POS-L6-7` | Fun Pos Tebak Gambar & Audio | `tebak_gambar` | `IMAGE_GUESS` | 5 Soal | 5 soal x 20 = **100 Pts** *(Iframe GDrive)* |
-| **Pos 8** | **Lantai 6** | `POS-L6-8` | Ingat Aku (Tebak Posisi Lantai) | `tebak_posisi` | `LOGIC` | 5 Soal | 5 soal x 20 = **100 Pts** *(Iframe GDrive)* |
+| **Pos 7** | **Lantai 6** | `POS-L6-7` | Fun Pos Tebak Gambar Budaya & Sejarah | `tebak_gambar` | `IMAGE_GUESS` | 5 Soal | 5 soal x 20 = **100 Pts** *(Local / MinIO / GDrive)* |
+| **Pos 8** | **Lantai 6** | `POS-L6-8` | Ingat Aku (Tebak Posisi Lantai) | `tebak_posisi` | `LOGIC` | 5 Soal | 5 soal x 20 = **100 Pts** *(Local / MinIO / GDrive)* |
 
 ---
 
-## 3. Integrasi Media MinIO Object Storage (Self-Hosted S3)
+## 3. Integrasi Media MinIO Object Storage & Google Drive Asset Sync
 
-Untuk menyajikan gambar kuis dengan performa maksimal, tanpa batasan iframe, dan tidak bergantung pada login Google Drive, sistem telah beralih menggunakan **MinIO Object Storage Service**.
+Untuk menyajikan gambar kuis dengan performa maksimal, tanpa batasan iframe, dan tidak bergantung pada login Google Drive, sistem telah beralih menggunakan **Penyimpanan Lokal Multi-Tier + MinIO Object Storage Service**.
 
 ### A. Cara Kerja Integrasi MinIO
 1. **Penyimpanan Objek & Bucket (`docker-compose.yml` & `backend/src/storage/minio.ts`):**
@@ -108,9 +108,27 @@ Untuk menyajikan gambar kuis dengan performa maksimal, tanpa batasan iframe, dan
        loading="lazy"
      />
      ```
-   * Loading instan, bebas blokir cookie browser, dan tetap memiliki fallback lokal di `/images/quiz/...`.
+   * Loading instan, bebas blokir cookie browser, dan otomatis fallback ke folder lokal `/images/quiz/...` atau Google Drive embed preview.
 
-### B. Pengecualian Folder TTS Pos 4
+### B. Otomatisasi Sinkronisasi Gambar Kuis dari Google Drive
+Tersedia skrip otomatis untuk mengunduh seluruh aset gambar resmi (Pos 7 Tebak Gambar Budaya dan Pos 8 Tebak Lokasi Lantai) langsung dari Google Drive ke folder public user dan admin:
+
+```bash
+# Jalankan skrip downloader aset kuis
+bun run backend/scripts/download_quiz_images.ts
+```
+
+* **Target Penyimpanan:**
+  * `frontend/user/public/images/quiz/pos7/` dan `pos8/`
+  * `frontend/admin/public/images/quiz/pos7/` dan `pos8/`
+* **Daftar Soal Pos 7 Resmi Terunduh:**
+  1. `soal_1_tongkonan.jpg` (Rumah Tongkonan Toraja)
+  2. `soal_2_cenderawasih.jpg` (Burung Cenderawasih Papua)
+  3. `soal_3_gudeg.jpg` (Kuliner Khas Yogyakarta)
+  4. `soal_4_gadang.jpg` (Rumah Gadang Minangkabau)
+  5. `soal_5_jenggolo.jpg` (Kerajaan Jenggolo Jawa Kuno)
+
+### C. Pengecualian Folder TTS Pos 4
 > [!NOTE]
 > Permainan TTS Pos 4 dirender murni secara interaktif via komponen Vue canvas [`TtsGame.vue`](file:///c:/KAIRAV/project/genius_project/frontend/user/src/components/minigames/TtsGame.vue) tanpa memerlukan media gambar latar.
 
@@ -132,7 +150,7 @@ http://localhost:3002/questions
   * Pos 4: Anti Narkoba
   * Pos 5: Anti Plagiarisme
   * Pos 6: Media Sosial & Komunikasi
-  * Pos 7: Fun Pos Tebak Gambar & Audio
+  * Pos 7: Fun Pos Tebak Gambar Budaya & Sejarah
   * Pos 8: Ingat Aku (Tebak Posisi)
   * Pos 9: Ingat Aku (Teks Blur & Tokoh NU)
 * **Filter Tingkat Kesulitan:** Mudah (EASY), Sedang (MEDIUM), Sulit (HARD).
