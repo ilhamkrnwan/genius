@@ -343,11 +343,26 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div class="text-right shrink-0">
-            <span class="text-[8px] text-[#a08060] font-sans block">Kehadiran:</span>
-            <span class="font-pixel text-[10.5px] sm:text-xs text-[#facc15] font-bold">
-              {{ attendedCount }} / 6 Sesi
-            </span>
+          <div class="flex items-center gap-2 shrink-0">
+            <!-- Cute Graduation Bird mascot -->
+            <div
+              class="cursor-pointer group"
+              title="Chirp! Maskot Burung Sarjana UNU"
+              @click="() => safeSound(() => soundEngine.playClick?.())"
+            >
+              <img
+                src="/bird.png"
+                alt="Maskot Burung Sarjana"
+                class="w-8 h-8 object-contain drop-shadow group-hover:scale-125 group-hover:rotate-6 transition-all duration-300"
+              />
+            </div>
+
+            <div class="text-right">
+              <span class="text-[8px] text-[#a08060] font-sans block">Kehadiran:</span>
+              <span class="font-pixel text-[10.5px] sm:text-xs text-[#facc15] font-bold">
+                {{ attendedCount }} / 6 Sesi
+              </span>
+            </div>
           </div>
         </div>
 

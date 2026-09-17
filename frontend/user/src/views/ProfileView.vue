@@ -345,6 +345,19 @@ watch(showCertificate, (val) => {
               />
               <!-- Ground Shadow -->
               <div class="absolute bottom-0 w-24 h-4 bg-black/60 rounded-[100%] blur-[2px] pointer-events-none" />
+
+              <!-- Cute Graduation Cat mascot chilling with student -->
+              <div
+                class="absolute bottom-1 right-2 sm:right-5 z-10 cursor-pointer group"
+                title="Meow! Kucing Sarjana UNU"
+                @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+              >
+                <img
+                  src="/cat.png"
+                  alt="Kucing Sarjana UNU"
+                  class="w-10 h-10 sm:w-11 sm:h-11 object-contain drop-shadow-md group-hover:scale-125 group-hover:-rotate-6 transition-all duration-300"
+                />
+              </div>
             </div>
 
             <!-- Locked Character Badge (Based on Registered Gender) -->

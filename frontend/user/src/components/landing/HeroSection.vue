@@ -310,6 +310,15 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <!-- Institutional Ranking & Accreditation Banner (Tengah Atas) -->
+      <div class="hidden md:flex items-center justify-center backdrop-blur-md bg-[#140e0a]/75 border border-[#f0d060]/50 rounded-full px-4 py-1.5 shadow-lg shrink-0 transition-transform hover:scale-105">
+        <img
+          src="/unu-hero-upper.png"
+          alt="UNU Yogyakarta — 303rd In The World WURI"
+          class="h-5 lg:h-6 w-auto object-contain brightness-0 invert opacity-90 hover:opacity-100 transition-opacity"
+        />
+      </div>
+
       <!-- Top Right Quick Controls & Student Profile -->
       <div class="flex items-center gap-1.5 sm:gap-2">
         <!-- Student Profile Button (Opens /profile page) -->
@@ -377,6 +386,17 @@ onUnmounted(() => {
     <!-- Main Content: GSAP Scroll Parallax Wrapper -->
     <div class="hero-scroll-content relative z-10 w-full my-auto will-change-transform">
       <div class="w-full max-w-2xl mx-auto px-3 sm:px-6 flex flex-col items-center justify-center text-center">
+      <!-- Mobile Center Top Banner -->
+      <div class="md:hidden flex items-center justify-center mb-1.5">
+        <div class="backdrop-blur-md bg-[#140e0a]/75 border border-[#f0d060]/50 rounded-full px-3.5 py-1 shadow-md max-w-[280px]">
+          <img
+            src="/unu-hero-upper.png"
+            alt="UNU Yogyakarta — 303rd In The World WURI"
+            class="h-4.5 w-auto object-contain brightness-0 invert opacity-90"
+          />
+        </div>
+      </div>
+
       <!-- Grand Title -->
       <div class="hero-title-wrap w-full flex justify-center mb-2.5 sm:mb-4">
         <img
@@ -393,8 +413,21 @@ onUnmounted(() => {
       <!-- A. Participant Profile Card (When Logged In / Registered) -->
       <div
         v-if="isUserRegistered"
-        class="hero-char-box backdrop-blur-md bg-[#19120c]/95 border-2 border-[#8b6f4e] hover:border-[#f0d060]/70 rounded-xl p-2.5 mb-2.5 sm:mb-3 max-w-sm w-full shadow-lg transition-all"
+        class="hero-char-box relative backdrop-blur-md bg-[#19120c]/95 border-2 border-[#8b6f4e] hover:border-[#f0d060]/70 rounded-xl p-2.5 mb-2.5 sm:mb-3 max-w-sm w-full shadow-lg transition-all"
       >
+        <!-- Cute Graduation Cat mascot perched on the character card -->
+        <div
+          class="absolute -top-6 -right-2 sm:-right-3 z-20 pointer-events-auto cursor-pointer group"
+          title="Meow! Maskot Kucing Sarjana UNU"
+          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+        >
+          <img
+            src="/cat.png"
+            alt="Maskot Kucing Sarjana"
+            class="w-10 h-10 object-contain drop-shadow-md group-hover:scale-125 group-hover:-rotate-6 transition-all duration-300"
+          />
+        </div>
+
         <!-- Header: Title & Action -->
         <div class="flex items-center justify-between gap-2 px-1 mb-2 border-b border-[#5a3a18]/60 pb-1.5">
           <div class="flex items-center gap-1.5">
@@ -508,11 +541,25 @@ onUnmounted(() => {
 
     <!-- Bottom Awwwards-style Floating Menu Dock with GSAP Scroll Parallax -->
     <div class="hero-scroll-dock hero-awwwards-dock relative z-20 w-full mx-auto px-2 sm:px-4 pb-3 sm:pb-5 shrink-0 flex flex-col items-center will-change-transform">
-      <!-- Floating Dock Container (Snug w-fit, compact gap, NO pills, pure Awwwards layout) -->
-      <nav
-        class="w-fit max-w-full backdrop-blur-xl bg-[#140e09]/95 border border-[#8b6f4e]/80 rounded-2xl p-1.5 sm:p-2 shadow-[0_16px_40px_rgba(0,0,0,0.85)] flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar"
-        aria-label="Navigasi Utama"
-      >
+      <div class="relative w-fit max-w-full">
+        <!-- Cute Graduation Bird mascot perched on the floating dock -->
+        <div
+          class="absolute -top-7 -right-1 sm:-right-3 z-30 pointer-events-auto cursor-pointer group"
+          title="Chirp! Maskot Burung Sarjana UNU"
+          @click="() => gameStore.soundEnabled && soundEngine.playClick()"
+        >
+          <img
+            src="/bird.png"
+            alt="Maskot Burung Sarjana"
+            class="w-8 h-8 sm:w-9 sm:h-9 object-contain drop-shadow-md group-hover:scale-125 group-hover:rotate-6 transition-all duration-300"
+          />
+        </div>
+
+        <!-- Floating Dock Container (Snug w-fit, compact gap, NO pills, pure Awwwards layout) -->
+        <nav
+          class="w-fit max-w-full backdrop-blur-xl bg-[#140e09]/95 border border-[#8b6f4e]/80 rounded-2xl p-1.5 sm:p-2 shadow-[0_16px_40px_rgba(0,0,0,0.85)] flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar"
+          aria-label="Navigasi Utama"
+        >
         <!-- 0. Profil Mahasiswa Box -->
         <RouterLink
           to="/profile"
@@ -594,6 +641,7 @@ onUnmounted(() => {
         </div>
       </nav>
     </div>
+  </div>
 
     <!-- Modal Login & Profile Setup Mahasiswa Baru (Onboarding Flow) -->
     <MabaAuthModal
