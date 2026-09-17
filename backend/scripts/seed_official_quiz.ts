@@ -808,56 +808,56 @@ export async function seedOfficialQuizDatabase() {
       category: "Fun Pos",
       difficulty: "MEDIUM" as const,
       type: "MULTIPLE_CHOICE" as const,
-      questionText: "Soal: Lagu apa yang cocok untukku? dan siapakah aku?",
-      options: ["MBG, Mas Bahlil Ganteng", "Syubbanul Wathan", "Indonesia Raya", "Mars UNU"],
-      correctAnswer: "MBG, Mas Bahlil Ganteng",
-      explanation: "Jawab: MBG, Mas Bahlil Ganteng",
+      questionText: "Aku adalah rumah adat khas Indonesia yang berbentuk seperti perahu dan dihiasi tanduk kerbau. Siapakah aku?",
+      options: ["Tongkonan", "Gadang", "Joglo", "Honai"],
+      correctAnswer: "Tongkonan",
+      explanation: "Jawaban: Tongkonan (Rumah adat khas suku Toraja, Sulawesi Selatan)",
       baseScore: 20,
-      tags: ["pos:7", "lantai:6", "minio:quiz/pos7/soal_1_mbg_bahlil.jpg", "media:/images/quiz/pos7/soal_1_mbg_bahlil.jpg"],
+      tags: ["pos:7", "lantai:6", "gdrive:10hYyDJm3Z61kpuoDK8KxN8RMmPaxrJtY", "minio:quiz/pos7/soal_1_tongkonan.jpg", "media:/images/quiz/pos7/soal_1_tongkonan.jpg"],
     },
     {
       category: "Fun Pos",
       difficulty: "MEDIUM" as const,
       type: "MULTIPLE_CHOICE" as const,
-      questionText: "Soal: Hari ini di jogja saya akan lawan, Siapakah diriku? dan mana asalku?",
-      options: ["Jokowi Pria Solo", "Gibran Solo", "Prabowo Jakarta", "Sultan Jogja"],
-      correctAnswer: "Jokowi Pria Solo",
-      explanation: "Jawab: Jokowi Pria Solo",
+      questionText: "Aku adalah burung cantik dari timur Indonesia. Karena keindahan buluku yang luar biasa, aku sering dijuluki sebagai burung dari surga. Aku adalah...",
+      options: ["Cenderawasih", "Jalak Bali", "Kasuari", "Merak"],
+      correctAnswer: "Cenderawasih",
+      explanation: "Jawaban: Cenderawasih (Burung surga fauna khas Papua/Indonesia Timur)",
       baseScore: 20,
-      tags: ["pos:7", "lantai:6", "minio:quiz/pos7/soal_2_jokowi_solo.jpg", "media:/images/quiz/pos7/soal_2_jokowi_solo.jpg"],
+      tags: ["pos:7", "lantai:6", "gdrive:1pEojMQRr_HWorBlNIy04iJklgPtrJkkb", "minio:quiz/pos7/soal_2_cenderawasih.jpg", "media:/images/quiz/pos7/soal_2_cenderawasih.jpg"],
     },
     {
       category: "Fun Pos",
       difficulty: "MEDIUM" as const,
       type: "MULTIPLE_CHOICE" as const,
-      questionText: "Soal: Siapa tokoh bersejarah ini? Dan apa kalimat motivasi nya?",
-      options: ["Prabowo, Saatnya untuk nyawit", "Soekarno, Jasmerah", "Hatta, Koperasi", "Gus Dur, Gitu aja kok repot"],
-      correctAnswer: "Prabowo, Saatnya untuk nyawit",
-      explanation: "Jawab: Prabowo, Saatnya untuk nyawit",
+      questionText: "Aku bukanlah penutup hidangan meski rasaku dominan manis. Pembuatanku butuh waktu semalam suntuk, dan penampilanku baru dianggap sempurna jika warnanya berubah menjadi kecokelatan mirip tanah tempatku dilahirkan. Aku adalah...",
+      options: ["Gudeg", "Bakpia", "Rawon", "Rendang"],
+      correctAnswer: "Gudeg",
+      explanation: "Jawaban: Gudeg (Kuliner khas legendaris Yogyakarta berbahan nangka muda)",
       baseScore: 20,
-      tags: ["pos:7", "lantai:6", "minio:quiz/pos7/soal_3_prabowo_nyawit.jpg", "media:/images/quiz/pos7/soal_3_prabowo_nyawit.jpg"],
+      tags: ["pos:7", "lantai:6", "gdrive:1oVvPNilB_t6K96vmIodFMgkY8z1WUPG9", "minio:quiz/pos7/soal_3_gudeg.jpg", "media:/images/quiz/pos7/soal_3_gudeg.jpg"],
     },
     {
       category: "Fun Pos",
       difficulty: "MEDIUM" as const,
       type: "MULTIPLE_CHOICE" as const,
-      questionText: "Soal: Aku adalah saudaramu, siapakah aku?",
-      options: ["monyet", "kucing", "harimau", "orangutan"],
-      correctAnswer: "monyet",
-      explanation: "Jawab: monyet",
+      questionText: "Atapku melengkung tajam bagai tanduk kerbau yang menembus awan, terikat oleh tali ijuk tanpa pasak paku tunggal pun. Aku dibangun menyerupai bentuk kapal kuno yang terdampar di tanah Minang. Aku adalah...",
+      options: ["Gadang", "Tongkonan", "Sasadu", "Limas"],
+      correctAnswer: "Gadang",
+      explanation: "Jawaban: Gadang (Rumah Gadang / Rumah Adat Minangkabau Sumatera Barat)",
       baseScore: 20,
-      tags: ["pos:7", "lantai:6", "minio:quiz/pos7/soal_4_monyet_saudara.jpg", "media:/images/quiz/pos7/soal_4_monyet_saudara.jpg"],
+      tags: ["pos:7", "lantai:6", "gdrive:1zoZ7qiIofoC9Wxh4lDn5PrZT7XBDIvrw", "minio:quiz/pos7/soal_4_gadang.jpg", "media:/images/quiz/pos7/soal_4_gadang.jpg"],
     },
     {
       category: "Fun Pos",
       difficulty: "MEDIUM" as const,
       type: "MULTIPLE_CHOICE" as const,
-      questionText: "Soal: Suaraku merdu seperti Ajeng Febri, siapakah aku? Dan bagaimana suaraku?",
-      options: ["Sapi, mohhh", "Kambing, mbeeek", "Kucing, meow", "Bebek, kwek"],
-      correctAnswer: "Sapi, mohhh",
-      explanation: "Jawab: Sapi, mohhh",
+      questionText: "Aku lahir dari pembagian takhta seorang raja besar demi mencegah perang saudara di tanah Jawa. Namaku diabadikan dalam kisah-kisah panji kuno dan jejak-jejak keramik terakota yang terkubur zaman. Siapakah aku?",
+      options: ["Jenggolo", "Majapahit", "Singasari", "Mataram Kuno"],
+      correctAnswer: "Jenggolo",
+      explanation: "Jawaban: Jenggolo (Kerajaan Jenggala pecahan Kerajaan Kahuripan oleh Raja Airlangga)",
       baseScore: 20,
-      tags: ["pos:7", "lantai:6", "minio:quiz/pos7/soal_5_suara_ajeng_febri.jpg", "media:/images/quiz/pos7/soal_5_suara_ajeng_febri.jpg"],
+      tags: ["pos:7", "lantai:6", "gdrive:1GjAz2B6I8DIv2mKd9mW_ItlJ3YQh-SJ9", "minio:quiz/pos7/soal_5_jenggolo.jpg", "media:/images/quiz/pos7/soal_5_jenggolo.jpg"],
     },
 
     // --- POS 8: Ingat Aku (Tebak Posisi) Gambar ada di sebelah mana atau lantai berapa ---
@@ -979,6 +979,20 @@ export async function seedOfficialQuizDatabase() {
       tags: ["pos:9", "lantai:4", "minio:quiz/pos9/soal_5_tokoh_muassis_nu.png", "media:/images/quiz/pos9/soal_5_tokoh_muassis_nu.png"],
     },
   ];
+
+  // Bersihkan soal Pos 7 lama jika teksnya sudah diganti dengan soal resmi baru
+  const newPos7Texts = rawQuestionsData
+    .filter((q) => Array.isArray(q.tags) && q.tags.includes("pos:7"))
+    .map((q) => q.questionText);
+
+  if (newPos7Texts.length > 0) {
+    await db.delete(questions).where(
+      and(
+        sql`${questions.tags}::text LIKE '%pos:7%'`,
+        sql`${questions.questionText} NOT IN (${sql.join(newPos7Texts.map((t) => sql`${t}`), sql`, `)})`
+      )
+    );
+  }
 
   let insertedCount = 0;
   let updatedCount = 0;
