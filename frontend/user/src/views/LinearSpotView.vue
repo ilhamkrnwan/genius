@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import {
   PhArrowLeft,
@@ -182,6 +182,17 @@ const selectedAvatarObj = computed(
 
 const showStoryModal = ref(!isAlreadyCompleted.value);
 const showCelebration = ref(false);
+
+watch(spotId, () => {
+  if (pollingInterval) clearInterval(pollingInterval);
+  backendBooth.value = null;
+  backendError.value = null;
+  waitingForGameMaster.value = false;
+  showCelebration.value = false;
+  showStoryModal.value = !isAlreadyCompleted.value;
+  void initializeBackendMission();
+});
+
 const celebrationDetails = ref<{
   stampRecord: StampRecord | null;
   isFloorCompleted: boolean;
@@ -391,7 +402,6 @@ const handleNextStep = () => {
         <MiniGameContainer
           v-else-if="gameSessionStore.status !== 'expired' && gameSessionStore.status !== 'error'"
           :booth="booth"
-          :isCompleted="isAlreadyCompleted"
           :serverSessionId="serverSessionId"
           @complete="handleMiniGameComplete"
         />

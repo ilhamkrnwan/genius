@@ -111,7 +111,7 @@ const checkSolution = () => {
   });
 
   correctClueIds.value = newCorrectClueIds;
-  isSubmitted.value = true;
+  isSubmitted.value = correctCount === clues.value.length;
 
   if (correctCount === clues.value.length) {
     if (gameStore.soundEnabled) soundEngine.playCorrect();
