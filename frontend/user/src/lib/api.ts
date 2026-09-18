@@ -151,7 +151,7 @@ export const api = {
     return res;
   },
 
-  async loginMaba(nim: string, password = 'genius2026') {
+  async loginMaba(nim: string, password: string) {
     const res = await this.request('/auth/login-maba', {
       method: 'POST',
       body: JSON.stringify({ nim, password }),

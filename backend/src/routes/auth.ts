@@ -121,18 +121,7 @@ export const authRoutes = new Elysia({
         return { success: false, error: { code: "ACCOUNT_INACTIVE", message: "Account is inactive" } };
       }
 
-      let valid = await verifyPassword(password, user.passwordHash);
-      if (!valid && user.role === "BUDDY" && (password === "buddy2026" || password === "genius2026")) {
-        valid = true;
-      }
-      if (!valid && user.role === "ORMAWA_PIC" && (
-        password === `${user.username}2026` ||
-        password === `${cleanUser}2026` ||
-        password === "ormawa2026" ||
-        password === "genius2026"
-      )) {
-        valid = true;
-      }
+      const valid = await verifyPassword(password, user.passwordHash);
       if (!valid) {
         set.status = 401;
         return { success: false, error: { code: "INVALID_CREDENTIALS", message: "Invalid username or password" } };
@@ -380,7 +369,11 @@ export const authRoutes = new Elysia({
     "/login-maba",
     async ({ body, set }) => {
       const nim = (body.nim || body.username || "").trim();
-      const password = body.password || "genius2026";
+      const password = (body.password || "").trim();
+      if (!password) {
+        set.status = 400;
+        return { success: false, error: { code: "VALIDATION_ERROR", message: "Password wajib diisi" } };
+      }
 
       const [user] = await db
         .select({
