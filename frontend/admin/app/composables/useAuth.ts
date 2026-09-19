@@ -133,6 +133,17 @@ export function useAuth() {
         } catch {}
       }
 
+      // Sanitize redirect target to avoid nested redirect loops
+      if (redirectTarget) {
+        const firstPart = redirectTarget.split("?")[0] || "";
+        const cleaned = firstPart.replace(/\/+$/, "") || "/";
+        if (cleaned === "/login" || cleaned === "/ormawa/login" || cleaned.startsWith("/login")) {
+          redirectTarget = undefined;
+        } else {
+          redirectTarget = cleaned;
+        }
+      }
+
       // Role-based routing
       if (res.data.user.role === "BUDDY") {
         if (redirectTarget && redirectTarget.startsWith("/buddy")) {
