@@ -38,6 +38,22 @@ const liveLeaderboard = ref<any>(null);
 const isMuted = ref(gameStore.soundEnabled === false);
 const isRefreshing = ref(false);
 
+const isParticipantLoggedIn = computed(() => {
+  if (!gameStore.isLoggedIn) return false;
+  const rawProfile = typeof window !== 'undefined' ? localStorage.getItem('genius_user_profile') : null;
+  if (rawProfile) {
+    try {
+      const u = JSON.parse(rawProfile);
+      if (u.role && u.role.toUpperCase() !== 'PARTICIPANT') {
+        return false;
+      }
+    } catch {
+      // Ignore
+    }
+  }
+  return Boolean(gameStore.participant?.nim || gameStore.participant?.id);
+});
+
 function safeSound(fn: () => void) {
   try {
     if (!isMuted.value && gameStore.soundEnabled) {
@@ -65,13 +81,15 @@ async function refreshLeaderboard() {
     const res = await api.getLeaderboard(500);
     if (res.success && res.data) {
       liveLeaderboard.value = res.data;
-      const myEntry = res.data.participantLeaderboard?.find(
-        (p: any) => p.username === gameStore.participant?.nim || p.participantId === gameStore.participant?.id
-      );
-      if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > (gameStore.participant?.totalXp || 0)) {
-        if (gameStore.participant) {
-          gameStore.participant.totalXp = myEntry.totalScore;
-          gameStore.saveToStorage();
+      if (isParticipantLoggedIn.value) {
+        const myEntry = res.data.participantLeaderboard?.find(
+          (p: any) => p.username === gameStore.participant?.nim || p.participantId === gameStore.participant?.id
+        );
+        if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > (gameStore.participant?.totalXp || 0)) {
+          if (gameStore.participant) {
+            gameStore.participant.totalXp = myEntry.totalScore;
+            gameStore.saveToStorage();
+          }
         }
       }
       nextTick(() => {
@@ -99,13 +117,15 @@ onMounted(async () => {
     const res = await api.getLeaderboard(500);
     if (res.success && res.data) {
       liveLeaderboard.value = res.data;
-      const myEntry = res.data.participantLeaderboard?.find(
-        (p: any) => p.username === gameStore.participant?.nim || p.participantId === gameStore.participant?.id
-      );
-      if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > (gameStore.participant?.totalXp || 0)) {
-        if (gameStore.participant) {
-          gameStore.participant.totalXp = myEntry.totalScore;
-          gameStore.saveToStorage();
+      if (isParticipantLoggedIn.value) {
+        const myEntry = res.data.participantLeaderboard?.find(
+          (p: any) => p.username === gameStore.participant?.nim || p.participantId === gameStore.participant?.id
+        );
+        if (myEntry && typeof myEntry.totalScore === 'number' && myEntry.totalScore > (gameStore.participant?.totalXp || 0)) {
+          if (gameStore.participant) {
+            gameStore.participant.totalXp = myEntry.totalScore;
+            gameStore.saveToStorage();
+          }
         }
       }
       nextTick(() => {
@@ -135,7 +155,9 @@ const getAvatarImage = (avatarId: string) => {
 const individualList = computed<LeaderboardUser[]>(() => {
   if (liveLeaderboard.value?.participantLeaderboard?.length > 0) {
     const list: LeaderboardUser[] = liveLeaderboard.value.participantLeaderboard.map((item: any, index: number) => {
-      const isCurrentUser = item.username === gameStore.participant?.nim || item.participantId === gameStore.participant?.id;
+      const isCurrentUser = isParticipantLoggedIn.value && (
+        item.username === gameStore.participant?.nim || item.participantId === gameStore.participant?.id
+      );
       return {
         id: item.participantId,
         rank: item.rank || index + 1,
@@ -158,7 +180,7 @@ const individualList = computed<LeaderboardUser[]>(() => {
     });
 
     const hasCurrentUser = list.some((u) => u.isCurrentUser);
-    if (!hasCurrentUser && gameStore.participant?.nim) {
+    if (!hasCurrentUser && isParticipantLoggedIn.value && gameStore.participant?.nim) {
       list.push({
         id: gameStore.participant.id || 'current-user',
         rank: list.length + 1,
@@ -179,8 +201,8 @@ const individualList = computed<LeaderboardUser[]>(() => {
     return list;
   }
 
-  // If no backend list loaded yet, only show current user entry if logged in
-  if (gameStore.participant?.nim) {
+  // If no backend list loaded yet, only show current user entry if logged in as participant
+  if (isParticipantLoggedIn.value && gameStore.participant?.nim) {
     return [
       {
         id: 'current-user',
@@ -241,7 +263,7 @@ function changePage(delta: number) {
 const groupList = computed<LeaderboardGroup[]>(() => {
   if (liveLeaderboard.value?.teamLeaderboard?.length > 0) {
     return liveLeaderboard.value.teamLeaderboard.map((team: any, index: number) => {
-      const myTeamName = gameStore.participant?.groupName || '';
+      const myTeamName = isParticipantLoggedIn.value ? (gameStore.participant?.groupName || '') : '';
       const isMyTeam = Boolean(myTeamName) && (team.teamName === myTeamName || (team.teamCode && myTeamName.includes(team.teamCode)));
 
       return {
@@ -282,6 +304,7 @@ const groupList = computed<LeaderboardGroup[]>(() => {
 });
 
 const currentUserRankInfo = computed(() => {
+  if (!isParticipantLoggedIn.value) return null;
   return individualList.value.find((u) => u.isCurrentUser);
 });
 </script>
@@ -306,15 +329,15 @@ const currentUserRankInfo = computed(() => {
 
     <!-- TOP HEADER: Format standar RPG Presensi & Ormawa Expo -->
     <header class="relative z-20 w-full max-w-xl mx-auto flex items-center justify-between gap-2 pb-2 shrink-0">
-      <!-- Left: Back to Menu -->
+      <!-- Left: Back to Menu or Home -->
       <RouterLink
-        to="/play"
+        :to="isParticipantLoggedIn ? '/play' : '/'"
         @click="() => safeSound(() => soundEngine.playClick?.())"
         class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#2a1a0e]/95 border border-[#8b6f4e] hover:border-[#f0d060] text-[#f0d060] hover:text-white transition-all text-[9.5px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer active:scale-95 shadow shrink-0"
-        title="Kembali ke Menu Utama"
+        :title="isParticipantLoggedIn ? 'Kembali ke Menu Utama' : 'Kembali ke Beranda'"
       >
         <PhArrowLeft :size="13" weight="bold" />
-        <span class="font-pixel">MENU</span>
+        <span class="font-pixel">{{ isParticipantLoggedIn ? 'MENU' : 'BERANDA' }}</span>
       </RouterLink>
 
       <!-- Center: Title Badge -->
@@ -350,6 +373,25 @@ const currentUserRankInfo = computed(() => {
 
     <!-- MAIN CONTENT: Clean, Centered & Unified Layout -->
     <main class="relative z-20 w-full max-w-xl mx-auto space-y-2.5 my-auto">
+      <!-- Guest Notice Banner (If not logged in as participant) -->
+      <div
+        v-if="!isParticipantLoggedIn"
+        class="bg-[#19110a]/90 backdrop-blur-md border border-[#8b6f4e]/80 rounded-xl p-3 shadow-md flex flex-col sm:flex-row items-center justify-between gap-2.5 text-center sm:text-left"
+      >
+        <div class="flex items-center gap-2">
+          <PhIdentificationBadge :size="20" weight="fill" class="text-[#f0d060] shrink-0" />
+          <div class="text-[10px] sm:text-[11px] text-[#e8d5b5] font-sans">
+            Anda melihat <span class="text-[#f0d060] font-bold">Papan Peringkat Publik</span>. Masuk dengan akun Mahasiswa Baru untuk melihat posisi dan skor Anda.
+          </div>
+        </div>
+        <RouterLink
+          to="/?auth=required&redirect=/leaderboard"
+          class="shrink-0 px-3 py-1.5 rounded-lg bg-[#3d7828] hover:bg-[#4d9432] text-[#f0d060] border border-[#f0d060] font-pixel text-[9px] uppercase tracking-wider transition-all shadow active:scale-95"
+        >
+          Masuk Maba
+        </RouterLink>
+      </div>
+
       <!-- Current User Highlight Banner -->
       <div
         v-if="currentUserRankInfo"

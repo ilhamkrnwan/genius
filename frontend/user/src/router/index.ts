@@ -126,8 +126,13 @@ const router = createRouter({
  * yang dapat diakses publik tanpa login.
  */
 router.beforeEach((to, _from, next) => {
-  // 1. Landing page ('/' atau route dengan nama 'home') bersifat publik
-  if (to.path === '/' || to.name === 'home') {
+  // 1. Landing page ('/' atau route dengan nama 'home') dan Leaderboard ('/leaderboard') bersifat publik
+  if (
+    to.path === '/' ||
+    to.name === 'home' ||
+    to.path === '/leaderboard' ||
+    to.name === 'leaderboard'
+  ) {
     return next();
   }
 
