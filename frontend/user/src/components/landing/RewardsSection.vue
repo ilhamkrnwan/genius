@@ -137,7 +137,7 @@ const navigationSteps = [
   { id: 0, label: 'Pengantar', icon: PhScroll },
   { id: 1, label: 'Grand Champion', icon: PhCrown, color: '#f0d060' },
   { id: 2, label: 'Best Team', icon: PhUsersThree, color: '#38bdf8' },
-  { id: 3, label: 'Mahasiswa Inspiratif', icon: PhSparkle, color: '#d97706' },
+  { id: 3, label: 'Maba Inspiratif', icon: PhSparkle, color: '#d97706' },
   { id: 4, label: 'Bintang Fakultas', icon: PhBuildings, color: '#7ec850' },
 ];
 
@@ -242,17 +242,18 @@ onUnmounted(() => {
       </div>
 
       <!-- Scrollytelling Two-Column Layout -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-start">
+      <!-- Scrollytelling Two-Column Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14">
         <!-- ================================================================= -->
         <!-- LEFT COLUMN: STICKY PODIUM & QUICK NAV                            -->
         <!-- ================================================================= -->
-        <div class="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-24 self-start z-20">
-          <div ref="leftPodiumRef" class="flex flex-col items-center select-none">
+        <div class="lg:col-span-5 xl:col-span-5 relative">
+          <div class="lg:sticky lg:top-20 z-20 flex flex-col items-center select-none pb-4">
             <!-- Header Status Mimbar -->
-            <div class="w-full flex items-center justify-between pb-3 mb-2 border-b border-[#5a3a18]/60">
-              <div class="flex items-center gap-2.5">
+            <div class="w-full flex items-center justify-between pb-2.5 mb-2 border-b border-[#5a3a18]/60">
+              <div class="flex items-center gap-2">
                 <div
-                  class="w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-300"
+                  class="w-7 h-7 sm:w-8 sm:h-8 rounded-md flex items-center justify-center transition-colors duration-300 shrink-0"
                   :style="{
                     backgroundColor:
                       activeStep === 1
@@ -266,22 +267,22 @@ onUnmounted(() => {
                         : '#f0d06020',
                   }"
                 >
-                  <PhCrown v-if="activeStep === 1" :size="20" weight="fill" class="text-[#f0d060]" />
-                  <PhUsersThree v-else-if="activeStep === 2" :size="20" weight="fill" class="text-[#38bdf8]" />
-                  <PhSparkle v-else-if="activeStep === 3" :size="20" weight="fill" class="text-[#d97706]" />
-                  <PhBuildings v-else-if="activeStep === 4" :size="20" weight="fill" class="text-[#7ec850]" />
-                  <PhTrophy v-else :size="20" weight="fill" class="text-[#f0d060]" />
+                  <PhCrown v-if="activeStep === 1" :size="18" weight="fill" class="text-[#f0d060]" />
+                  <PhUsersThree v-else-if="activeStep === 2" :size="18" weight="fill" class="text-[#38bdf8]" />
+                  <PhSparkle v-else-if="activeStep === 3" :size="18" weight="fill" class="text-[#d97706]" />
+                  <PhBuildings v-else-if="activeStep === 4" :size="18" weight="fill" class="text-[#7ec850]" />
+                  <PhTrophy v-else :size="18" weight="fill" class="text-[#f0d060]" />
                 </div>
 
-                <div>
-                  <div class="font-pixel text-[11px] sm:text-xs text-[#fbf6e9] tracking-wider uppercase">
+                <div class="min-w-0">
+                  <div class="font-pixel text-[10px] sm:text-xs text-[#fbf6e9] tracking-wider uppercase truncate">
                     <span v-if="activeStep === 0">Mimbar Penghargaan</span>
                     <span v-else-if="activeStep === 1" class="text-[#f0d060]">Grand Champion</span>
                     <span v-else-if="activeStep === 2" class="text-[#38bdf8]">Best Team</span>
                     <span v-else-if="activeStep === 3" class="text-[#d97706]">Maba Inspiratif</span>
                     <span v-else-if="activeStep === 4" class="text-[#7ec850]">Bintang Fakultas</span>
                   </div>
-                  <div class="text-[10px] text-[#a08060] font-sans">
+                  <div class="text-[9.5px] text-[#a08060] font-sans truncate">
                     PKKMB UNU Yogyakarta 2026
                   </div>
                 </div>
@@ -289,7 +290,7 @@ onUnmounted(() => {
 
               <!-- Step Tag -->
               <span
-                class="font-pixel text-[9px] px-2.5 py-1 rounded transition-colors duration-300"
+                class="font-pixel text-[8.5px] px-2 py-0.5 rounded transition-colors duration-300 shrink-0"
                 :class="[
                   activeStep === 1
                     ? 'bg-[#f0d060]/20 text-[#f0d060]'
@@ -306,40 +307,24 @@ onUnmounted(() => {
               </span>
             </div>
 
-            <!-- Mimbar Podium Image -->
-            <div class="relative w-full aspect-[1376/1000] flex items-center justify-center my-2">
-              <div
-                class="absolute inset-0 pointer-events-none transition-all duration-500 rounded-full blur-2xl"
-                :style="{
-                  backgroundColor:
-                    activeStep === 1
-                      ? 'rgba(240, 208, 96, 0.2)'
-                      : activeStep === 2
-                      ? 'rgba(56, 189, 248, 0.18)'
-                      : activeStep === 3
-                      ? 'rgba(217, 119, 6, 0.18)'
-                      : activeStep === 4
-                      ? 'rgba(126, 200, 80, 0.18)'
-                      : 'rgba(240, 208, 96, 0.1)',
-                }"
-              ></div>
-
+            <!-- Mimbar Podium Image (Clean, Free-standing, Tanpa Background) -->
+            <div class="relative w-full flex items-center justify-center my-1.5">
               <img
                 src="/mimbar-podium.webp"
                 alt="Mimbar Podium Penghargaan PKKMB UNU 2026"
-                class="w-full h-full object-contain filter drop-shadow-[0_16px_30px_rgba(0,0,0,0.95)] transition-transform duration-500"
+                class="w-auto h-auto max-h-48 sm:max-h-52 object-contain transition-transform duration-500"
                 :class="[activeStep > 0 ? 'scale-[1.02]' : 'scale-100']"
               />
             </div>
 
             <!-- Category Navigation Chips -->
-            <div class="w-full grid grid-cols-2 gap-1.5 pt-2">
+            <div class="w-full grid grid-cols-2 gap-1.5 pt-1.5">
               <button
                 v-for="step in navigationSteps.slice(1)"
                 :key="step.id"
                 type="button"
                 @click="scrollToStep(step.id)"
-                class="p-2 rounded-lg border text-left flex items-center gap-2 transition-all cursor-pointer"
+                class="p-2 rounded-lg border text-left flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer active:scale-95 shadow-sm"
                 :class="[
                   activeStep === step.id
                     ? 'bg-[#2a1a0e] border-[#f0d060] shadow-md'
@@ -348,12 +333,13 @@ onUnmounted(() => {
               >
                 <component
                   :is="step.icon"
-                  :size="15"
+                  :size="14"
                   weight="fill"
                   :class="activeStep === step.id ? 'text-[#f0d060]' : 'text-[#8b6f4e]'"
+                  class="shrink-0"
                 />
                 <span
-                  class="font-pixel text-[9.5px] truncate"
+                  class="font-pixel text-[8.5px] sm:text-[9px] leading-tight"
                   :class="activeStep === step.id ? 'text-[#fbf6e9] font-bold' : 'text-[#c4956a]'"
                 >
                   {{ step.label }}
@@ -362,14 +348,14 @@ onUnmounted(() => {
             </div>
 
             <!-- Direct Leaderboard CTA Box -->
-            <div class="w-full mt-4 p-3 rounded-xl bg-[#180f08]/90 border border-[#5a3a18] flex items-center justify-between gap-3 shadow">
+            <div class="w-full mt-3 p-2.5 sm:p-3 rounded-xl bg-[#180f08]/90 border border-[#5a3a18] flex items-center justify-between gap-2.5 shadow">
               <div class="flex items-center gap-2 min-w-0">
-                <PhChartLineUp :size="20" weight="fill" class="text-[#f0d060] shrink-0" />
+                <PhChartLineUp :size="18" weight="fill" class="text-[#f0d060] shrink-0" />
                 <div class="min-w-0">
-                  <div class="font-pixel text-[10px] text-[#f0d060] leading-tight">
+                  <div class="font-pixel text-[9.5px] text-[#f0d060] leading-tight">
                     Papan Peringkat Terbuka
                   </div>
-                  <div class="text-[9.5px] text-[#a08060] font-sans truncate">
+                  <div class="text-[9px] text-[#a08060] font-sans truncate">
                     Pantau akumulasi XP secara langsung
                   </div>
                 </div>
@@ -377,7 +363,7 @@ onUnmounted(() => {
               <RouterLink
                 to="/leaderboard"
                 @click="() => gameStore.soundEnabled && soundEngine.playClick()"
-                class="shrink-0 px-3 py-1.5 rounded-lg bg-[#3d7828] hover:bg-[#4d9432] text-[#f0d060] border border-[#f0d060] font-pixel text-[9px] uppercase tracking-wider transition-all active:scale-95 shadow"
+                class="shrink-0 px-2.5 py-1.5 rounded-lg bg-[#3d7828] hover:bg-[#4d9432] text-[#f0d060] border border-[#f0d060] font-pixel text-[8.5px] uppercase tracking-wider transition-all active:scale-95 shadow"
               >
                 Lihat Skor
               </RouterLink>
